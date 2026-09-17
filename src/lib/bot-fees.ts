@@ -13,8 +13,8 @@
  * lower bound, not a complete set.
  *
  * Bots that route fees through their own on-chain program instead of a
- * fixed wallet (Axiom, BullX) are NOT detectable this way yet — needs the
- * same manual tx-inspection treatment Photon and GMGN got below.
+ * fixed wallet (BullX) are NOT detectable this way yet — needs the same
+ * manual tx-inspection treatment Photon, GMGN and Axiom got below.
  *
  * Photon is a hybrid: verified 2026-09-17 from one real transaction
  * (solscan.io/tx/cJUQgkBGgwHWjnjPv2kUiLKGJXhBa9KihhUB41qpquB6idGF7dPY7m48Xu59jveKWSN199YV6oA2mPSvnRhoenz).
@@ -34,6 +34,13 @@
  * at least 4 other vault addresses rotating, so this single address is
  * provisional and likely undercounts until more are found. Fee matched
  * exactly 1.00% of swap size, confirming it against GMGN's stated rate.
+ *
+ * Axiom — the biggest bot by fee volume per the brief — was finally caught
+ * 2026-09-17 via one real transaction (solscan.io/tx/4NgaAx3HWJ7HCZTBEqv6iRhhtRmtiCDaixx3qrnQzRwaXwN3CRSF1mYiVnUhUQ6kZjhGxfngyJu9oMPWeW22RAaY).
+ * Solscan labels the program "Axiom Trade". Fee matched 1.01% of swap size.
+ * Program ID not captured yet (only the fee wallet address) — add it as
+ * `programId` once available for the same false-positive protection Photon
+ * and GMGN get. Single-tx sample, so treat as provisional/lower-bound.
  */
 
 export type Chain = "solana" | "ethereum" | "bsc" | "robinhood";
@@ -183,6 +190,11 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
     name: "GMGN",
     addresses: ["3t9EKmRiAUcQUYzTZpNojzeGP1KBAVEEbDNmy6wECQpK"],
     programId: "GMgnVFR8Jb39LoXsEVzb3DvBy3ywCmdmJquHUy1Lrkqb",
+    provisional: true,
+  },
+  axiom: {
+    name: "Axiom",
+    addresses: ["ECDrSz47nXihe5kyK4oWEePPsPi9qz6u5d6Fa2sDj3uM"],
     provisional: true,
   },
 };
