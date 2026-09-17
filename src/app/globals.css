@@ -4814,3 +4814,77 @@ a {
     justify-content: center;
   }
 }
+
+/* =========================================================
+   AUEVO — EARLY ACCESS FORM (in the "Next Auevo" card)
+   ========================================================= */
+
+/* Bigger card: more padding, larger type, so it reads as the primary CTA
+   of the whole teaser rather than one card among several. */
+.next-auevo-card-big {
+  padding: 26px !important;
+}
+
+.next-auevo-card-big h4 {
+  font-size: 30px !important;
+  margin: 20px 0 12px !important;
+}
+
+.next-auevo-card-big p {
+  font-size: 10px !important;
+}
+
+.early-access-form {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+}
+
+.early-access-form input {
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid #343c42;
+  border-radius: 6px;
+  outline: 0;
+  background: #f1f1ee;
+  color: #161819;
+  font-size: 12px;
+}
+
+.early-access-form input::placeholder {
+  color: #8a8d8a;
+}
+
+.early-access-form button {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: #ff344d;
+  color: white;
+  font: 700 10px/1 Arial, Helvetica, sans-serif;
+  box-shadow: 0 8px 28px rgba(255,52,77,.15);
+}
+
+.early-access-form button:disabled {
+  opacity: .6;
+}
+
+.early-access-form small {
+  color: #ff8f9c;
+  font-size: 8px;
+}
+
+.early-access-done {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 13px 0;
+  color: #4ee3a0;
+  font: 700 11px/1 Arial, Helvetica, sans-serif;
+}

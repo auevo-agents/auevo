@@ -87,9 +87,26 @@ function AuevoApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  function goToSection(id: string) {
+    setResult(null);
+    setStatus("idle");
+    setError(null);
+    // Landing (and its #home/#bots/#insights/#docs anchors) only exists
+    // when we're not showing a result — wait two frames for it to mount
+    // and paint before scrolling, since a plain #anchor jump does nothing
+    // when the target isn't in the DOM yet.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document
+          .getElementById(id)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
   return (
     <main className="site">
-      <Header />
+      <Header onNavigate={goToSection} />
 
       {status === "done" && result ? (
         <ResultView
@@ -113,18 +130,57 @@ function AuevoApp() {
   );
 }
 
-function Header() {
+function Header({ onNavigate }: { onNavigate: (id: string) => void }) {
   return (
     <header className="topbar">
-      <Link href="/" className="brand">
+      <Link
+        href="/"
+        className="brand"
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate("home");
+        }}
+      >
         auevo<span>_</span>
       </Link>
 
       <nav>
-        <a href="#home">Home</a>
-        <a href="#bots">Bots</a>
-        <a href="#insights">Insights</a>
-        <a href="#docs">Docs</a>
+        <a
+          href="#home"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate("home");
+          }}
+        >
+          Home
+        </a>
+        <a
+          href="#bots"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate("bots");
+          }}
+        >
+          Bots
+        </a>
+        <a
+          href="#insights"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate("insights");
+          }}
+        >
+          Insights
+        </a>
+        <a
+          href="#docs"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate("docs");
+          }}
+        >
+          Docs
+        </a>
       </nav>
 
       <div className="topbar-right">
@@ -793,7 +849,7 @@ function Landing({
               </div>
             </section>
 
-            <section className="next-auevo-card">
+            <section className="next-auevo-card next-auevo-card-big">
               <span>THE NEXT AUEVO</span>
               <h4>
                 Trade faster.<br />
@@ -810,10 +866,7 @@ function Landing({
                 <span><i /> Opportunity discovery</span>
               </div>
 
-              <button>
-                Get early access
-                <span>→</span>
-              </button>
+              <EarlyAccessForm />
             </section>
           </aside>
 
@@ -1033,6 +1086,52 @@ function ShareButtons({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function EarlyAccessForm() {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "done" | "error">(
+    "idle"
+  );
+
+  async function submit() {
+    if (!email.trim()) return;
+    setState("sending");
+
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      setState(res.ok ? "done" : "error");
+    } catch {
+      setState("error");
+    }
+  }
+
+  if (state === "done") {
+    return <p className="early-access-done">✓ You&apos;re on the list.</p>;
+  }
+
+  return (
+    <div className="early-access-form">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        placeholder="you@example.com"
+      />
+      <button onClick={submit} disabled={state === "sending"}>
+        {state === "sending" ? "…" : "Get early access"}
+        <span>→</span>
+      </button>
+      {state === "error" && (
+        <small>Couldn&apos;t save that — try again.</small>
+      )}
     </div>
   );
 }
