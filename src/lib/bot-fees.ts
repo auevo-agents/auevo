@@ -6,6 +6,12 @@
  * — these are the hardcoded `fee_receiver` constants Dune's own production
  * indexing models use to detect each bot's trades. Checked 2026-09-17.
  *
+ * Trojan rotates fee wallets: 2 more addresses (2jwHNx..., GV4Bt6...) were
+ * found 2026-09-17 by inspecting a live tx (program "Trojan Trade"), on top
+ * of the 2 from spellbook. Other bots below likely rotate too but haven't
+ * been checked yet — treat single-transaction-derived address lists as a
+ * lower bound, not a complete set.
+ *
  * Bots that route fees through their own on-chain program instead of a
  * fixed wallet (Axiom, BullX) are NOT detectable this way yet — needs the
  * same manual tx-inspection treatment Photon and GMGN got below.
@@ -64,6 +70,8 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
     addresses: [
       "BBYXdwhqbCxVRVtnuMTTxh8biNisz3ZxsnHfr44jXytR",
       "9yMwSPk9mrXSN7yDHUuZurAh1sjbJsfpUqjZ7SvVtdco",
+      "2jwHNxavSoMZMEDbT1eV9PcPt5dDcayCqM6MkgaPpmWQ",
+      "GV4Bt6ehW5x5dqtaWAJBSnz8uum5Z2Rp9P2Tr5iVuQn5",
     ],
   },
   bonkbot: {
