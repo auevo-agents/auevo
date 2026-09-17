@@ -167,7 +167,7 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
     totalBotTrades,
     breakdown,
     solPriceUsd,
-    unsupportedBots: ["Axiom", "BullX"],
+    unsupportedBots: ["BullX"],
     warnings,
   };
 }
