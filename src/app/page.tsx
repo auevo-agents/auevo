@@ -189,7 +189,7 @@ function Landing({
             />
 
             <button
-              onClick={onScan}
+              onClick={() => onScan()}
               disabled={status === "loading" || !wallet.trim()}
             >
               {status === "loading" ? <span className="loader" /> : "→"}
