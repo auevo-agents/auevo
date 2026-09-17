@@ -35,12 +35,20 @@
  * provisional and likely undercounts until more are found. Fee matched
  * exactly 1.00% of swap size, confirming it against GMGN's stated rate.
  *
- * Axiom — the biggest bot by fee volume per the brief — was finally caught
- * 2026-09-17 via one real transaction (solscan.io/tx/4NgaAx3HWJ7HCZTBEqv6iRhhtRmtiCDaixx3qrnQzRwaXwN3CRSF1mYiVnUhUQ6kZjhGxfngyJu9oMPWeW22RAaY).
- * Solscan labels the program "Axiom Trade". Fee matched 1.01% of swap size.
- * Program ID not captured yet (only the fee wallet address) — add it as
- * `programId` once available for the same false-positive protection Photon
- * and GMGN get. Single-tx sample, so treat as provisional/lower-bound.
+ * Axiom — the biggest bot by fee volume per the brief — is detected
+ * differently from everything else here: two real transactions inspected
+ * 2026-09-17 (solscan.io/tx/4NgaAx3HWJ7HCZTBEqv6iRhhtRmtiCDaixx3qrnQzRwaXwN3CRSF1mYiVnUhUQ6kZjhGxfngyJu9oMPWeW22RAaY
+ * and solscan.io/tx/fUZrqJQKu7XTXrJpEtJ28Qa1k6Nz7sCsvcefzzdNE9XbXfrHUnFGjt2mwexaRvYNcpKWSWLpHFZhtJFDsmwxWkw)
+ * sent the fee to TWO DIFFERENT addresses — Axiom apparently generates a
+ * fresh fee-destination address per trade/referrer, so a fixed address
+ * list can never catch it. Program ID confirmed instead: "Axiom Trade" =
+ * FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9. See `programOnly` below —
+ * scan.ts sums every native SOL transfer OUT of the wallet in any
+ * transaction touching this program, regardless of destination. Risk:
+ * this could misattribute an unrelated native-SOL transfer that happens to
+ * ride inside the same transaction (e.g. buying with raw SOL instead of
+ * WSOL) — not observed in the 2 samples checked, but worth re-verifying
+ * against more transactions before trusting this at scale.
  */
 
 export type Chain = "solana" | "ethereum" | "bsc" | "robinhood";
@@ -65,6 +73,13 @@ export interface BotFeeWallets {
   programId?: string;
   /** True when this entry came from inspecting one real tx, not a canonical source */
   provisional?: boolean;
+  /**
+   * True for bots whose fee-destination address changes per trade/referrer
+   * (no fixed address is possible). scan.ts detects these by summing every
+   * native SOL transfer OUT of the wallet in any tx that touches `programId`,
+   * regardless of destination — see the Axiom comment above for the caveat.
+   */
+  programOnly?: boolean;
 }
 
 export function chainOf(bot: BotFeeWallets): Chain {
@@ -194,7 +209,9 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
   },
   axiom: {
     name: "Axiom",
-    addresses: ["ECDrSz47nXihe5kyK4oWEePPsPi9qz6u5d6Fa2sDj3uM"],
+    addresses: [],
+    programId: "FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9",
+    programOnly: true,
     provisional: true,
   },
 };
