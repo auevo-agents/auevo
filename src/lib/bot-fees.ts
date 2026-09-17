@@ -230,6 +230,17 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
     programOnly: true,
     provisional: true,
   },
+  fomo: {
+    name: "Fomo",
+    // Found 2026-09-17 via one real tx: swap routed through DFlow Aggregator
+    // v4, signed by a smart-contract wallet ("Fomo Co-signer"). Fee went to
+    // the address below, labeled "Fomo Fees Vault" by Solscan. No program ID
+    // captured for this fee transfer specifically (couldn't relocate the
+    // original tx) — address-only detection for now, same tier of
+    // confidence as the ~25 bots above that also lack a programId check.
+    addresses: ["R4rNJHaffSUotNmqSKNEfDcJE8A7zJUkaoM5Jkd7cYX"],
+    provisional: true,
+  },
 };
 
 /** Fast reverse lookup: address -> bot key, built once at module load. */
