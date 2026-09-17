@@ -121,7 +121,7 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
   const perBot: Record<string, { solPaid: number; txCount: number }> = {};
 
   const programOnlyBots = Object.entries(BOT_FEE_REGISTRY).filter(
-    ([, bot]) => bot.programOnly && bot.programId
+    ([, bot]) => bot.programOnly && bot.programIds?.length
   );
 
   for (const tx of txs) {
@@ -134,9 +134,9 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
       if (!botKey) continue;
 
       const bot = BOT_FEE_REGISTRY[botKey];
-      if (bot.programId) {
+      if (bot.programIds?.length) {
         txProgramIds ??= programIdsIn(tx);
-        if (!txProgramIds.has(bot.programId)) continue; // transfer unrelated to this bot's program
+        if (!bot.programIds.some((id) => txProgramIds!.has(id))) continue; // transfer unrelated to this bot's program(s)
       }
 
       if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, txCount: 0 };
@@ -144,12 +144,13 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
       perBot[botKey].txCount += 1;
     }
 
-    // Pass 2: bots whose fee address changes per trade (e.g. Axiom) — sum
-    // every native SOL transfer OUT of the wallet in a tx touching their
-    // program, as long as it wasn't already claimed by an address-based bot.
+    // Pass 2: bots whose fee address changes per trade/isn't fully known
+    // (Axiom, Photon, GMGN, Trojan) — sum every native SOL transfer OUT of
+    // the wallet in a tx touching one of their programs, as long as it
+    // wasn't already claimed by an address-based match above.
     for (const [botKey, bot] of programOnlyBots) {
       txProgramIds ??= programIdsIn(tx);
-      if (!txProgramIds.has(bot.programId!)) continue;
+      if (!bot.programIds!.some((id) => txProgramIds!.has(id))) continue;
 
       let sol = 0;
       let matched = false;
