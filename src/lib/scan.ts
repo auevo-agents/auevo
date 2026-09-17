@@ -75,7 +75,9 @@ async function fetchSolPriceUsd(): Promise<number> {
  * Pull up to `LOOKBACK_DAYS` of transaction history for a wallet via Helius
  * Enhanced Transactions API, paginating backwards by signature.
  */
-async function fetchWalletHistory(wallet: string): Promise<HeliusTransaction[]> {
+async function fetchWalletHistory(
+  wallet: string
+): Promise<{ transactions: HeliusTransaction[]; hitCap: boolean }> {
   if (!HELIUS_API_KEY) {
     throw new Error(
       "HELIUS_API_KEY is not set. Get a free key at helius.dev and add it to .env.local"
@@ -85,7 +87,13 @@ async function fetchWalletHistory(wallet: string): Promise<HeliusTransaction[]> 
   const cutoff = Math.floor(Date.now() / 1000) - LOOKBACK_DAYS * 24 * 60 * 60;
   const all: HeliusTransaction[] = [];
   let before: string | undefined;
-  const MAX_PAGES = 20; // ~2000 tx safety cap for v1
+  // 60 pages x 100 tx = ~6,000 tx cap. Raised from 2,000 (20 pages) since
+  // very active wallets (bots trading hundreds of times/day) were hitting
+  // the old cap and undercounting fees for the exact users we most want an
+  // accurate number for. Sequential Helius calls, so this trades off
+  // against request time — see `maxDuration` on the API route.
+  const MAX_PAGES = 60;
+  let hitCap = true;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const url = new URL(
@@ -100,23 +108,38 @@ async function fetchWalletHistory(wallet: string): Promise<HeliusTransaction[]> 
       throw new Error(`Helius API error: ${res.status} ${await res.text()}`);
     }
     const batch: HeliusTransaction[] = await res.json();
-    if (batch.length === 0) break;
+    if (batch.length === 0) {
+      hitCap = false;
+      break;
+    }
 
     all.push(...batch);
     const oldest = batch[batch.length - 1];
-    if (oldest.timestamp < cutoff) break;
+    if (oldest.timestamp < cutoff) {
+      hitCap = false;
+      break;
+    }
     before = oldest.signature;
   }
 
-  return all.filter((tx) => tx.timestamp >= cutoff);
+  return {
+    transactions: all.filter((tx) => tx.timestamp >= cutoff),
+    hitCap,
+  };
 }
 
 export async function scanWallet(wallet: string): Promise<ScanResult> {
   const warnings: string[] = [];
-  const [txs, solPriceUsd] = await Promise.all([
+  const [{ transactions: txs, hitCap }, solPriceUsd] = await Promise.all([
     fetchWalletHistory(wallet),
     fetchSolPriceUsd(),
   ]);
+
+  if (hitCap) {
+    warnings.push(
+      "This wallet is very active — the scan stopped at the transaction cap, so the real total may be higher than shown."
+    );
+  }
 
   const perBot: Record<string, { solPaid: number; txCount: number }> = {};
 

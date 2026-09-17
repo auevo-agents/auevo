@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { scanWallet } from "@/lib/scan";
 import { getSupabaseServer } from "@/lib/supabase";
 
+// Very active wallets now paginate up to 60 sequential Helius calls (see
+// scan.ts MAX_PAGES) instead of 20, so the default serverless timeout isn't
+// enough headroom. 60s is the max on Vercel's Hobby plan without Fluid
+// Compute; if scans for heavy wallets still time out, this is the first
+// thing to check — either this needs Vercel's paid tier for more, or
+// MAX_PAGES needs to come back down.
+export const maxDuration = 60;
+
 const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export async function POST(req: NextRequest) {
