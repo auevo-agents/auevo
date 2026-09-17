@@ -120,9 +120,14 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
 
   const perBot: Record<string, { solPaid: number; txCount: number }> = {};
 
+  const programOnlyBots = Object.entries(BOT_FEE_REGISTRY).filter(
+    ([, bot]) => bot.programOnly && bot.programId
+  );
+
   for (const tx of txs) {
     let txProgramIds: Set<string> | null = null; // computed lazily, only if needed
 
+    // Pass 1: bots with a known fixed fee-wallet address.
     for (const transfer of tx.nativeTransfers ?? []) {
       if (transfer.fromUserAccount !== wallet) continue;
       const botKey = ADDRESS_TO_BOT[transfer.toUserAccount];
@@ -137,6 +142,29 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
       if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, txCount: 0 };
       perBot[botKey].solPaid += transfer.amount / LAMPORTS_PER_SOL;
       perBot[botKey].txCount += 1;
+    }
+
+    // Pass 2: bots whose fee address changes per trade (e.g. Axiom) — sum
+    // every native SOL transfer OUT of the wallet in a tx touching their
+    // program, as long as it wasn't already claimed by an address-based bot.
+    for (const [botKey, bot] of programOnlyBots) {
+      txProgramIds ??= programIdsIn(tx);
+      if (!txProgramIds.has(bot.programId!)) continue;
+
+      let sol = 0;
+      let matched = false;
+      for (const transfer of tx.nativeTransfers ?? []) {
+        if (transfer.fromUserAccount !== wallet) continue;
+        if (ADDRESS_TO_BOT[transfer.toUserAccount]) continue; // already counted elsewhere
+        sol += transfer.amount / LAMPORTS_PER_SOL;
+        matched = true;
+      }
+
+      if (matched) {
+        if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, txCount: 0 };
+        perBot[botKey].solPaid += sol;
+        perBot[botKey].txCount += 1;
+      }
     }
   }
 
