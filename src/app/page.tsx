@@ -39,11 +39,15 @@ function AuevoApp() {
     setError(null);
     setResult(null);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45_000);
+
     try {
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet: address }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
@@ -56,9 +60,17 @@ function AuevoApp() {
 
       setResult(data as ScanResult);
       setStatus("done");
-    } catch {
-      setError("Network error — try again");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(
+          "This wallet has a lot of history and the scan is taking too long — try again in a moment."
+        );
+      } else {
+        setError("Network error — try again");
+      }
       setStatus("error");
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
