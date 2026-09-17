@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ScanResult } from "@/lib/scan";
 
@@ -16,13 +17,23 @@ const EXAMPLE_FEES = [
 ];
 
 export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <AuevoApp />
+    </Suspense>
+  );
+}
+
+function AuevoApp() {
+  const searchParams = useSearchParams();
   const [wallet, setWallet] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
 
-  async function handleScan() {
-    if (!wallet.trim()) return;
+  async function handleScan(addressOverride?: string) {
+    const address = (addressOverride ?? wallet).trim();
+    if (!address) return;
 
     setStatus("loading");
     setError(null);
@@ -32,7 +43,7 @@ export default function Home() {
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet: wallet.trim() }),
+        body: JSON.stringify({ wallet: address }),
       });
 
       const data = await res.json();
@@ -50,6 +61,19 @@ export default function Home() {
       setStatus("error");
     }
   }
+
+  // Shareable links: auevo.io/?wallet=<address> pre-fills and auto-runs
+  // the scan, so a social post can link straight to a verifiable result
+  // instead of asking people to paste the address themselves.
+  useEffect(() => {
+    const fromUrl = searchParams.get("wallet");
+    if (fromUrl) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWallet(fromUrl);
+      handleScan(fromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <main className="site">
