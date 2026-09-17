@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ScanResult } from "@/lib/scan";
 
 type Status = "idle" | "loading" | "error" | "done";
@@ -79,9 +80,9 @@ export default function Home() {
 function Header() {
   return (
     <header className="topbar">
-      <a href="/" className="brand">
+      <Link href="/" className="brand">
         auevo<span>_</span>
-      </a>
+      </Link>
 
       <nav>
         <a href="#home">Home</a>
@@ -305,6 +306,64 @@ function Landing({
         </div>
       </section>
 
+      <section className="docs-section" id="docs">
+        <div className="docs-heading">
+          <span>HOW IT WORKS</span>
+          <strong>What we scan. What we don&apos;t.</strong>
+        </div>
+
+        <div className="docs-grid">
+          <article>
+            <h3>What we scan</h3>
+            <p>
+              The last 90 days of public on-chain history for the wallet you
+              paste — nothing else. No login, no wallet connection, no
+              signature. It&apos;s the same data anyone could pull from a
+              block explorer.
+            </p>
+          </article>
+
+          <article>
+            <h3>How we detect a fee</h3>
+            <p>
+              Most bots pay fees to a fixed wallet address, so we match
+              transfers against a list of known addresses. A few bots
+              (Axiom, Photon, GMGN, Trojan) generate a new fee address on
+              every trade instead — for those we detect it by the bot&apos;s
+              on-chain program being present in the transaction, not by a
+              fixed destination.
+            </p>
+          </article>
+
+          <article>
+            <h3>What we don&apos;t count</h3>
+            <p>
+              Network gas — that goes to Solana validators, not the bot.
+              Landing-speed tips (Jito, Astralane) — that&apos;s payment for
+              fast block inclusion, not platform revenue. And BullX isn&apos;t
+              covered yet; we haven&apos;t been able to inspect a live
+              transaction from it.
+            </p>
+          </article>
+
+          <article>
+            <h3>Sources</h3>
+            <p>
+              On-chain data via Helius. Known fee addresses cross-checked
+              against Dune Spellbook&apos;s open-source indexing models, plus
+              addresses we&apos;ve verified by hand against real transactions
+              on Solscan.
+            </p>
+          </article>
+        </div>
+
+        <p className="docs-caveat">
+          This is a best-effort estimate, not an audit. Some bots rotate fee
+          addresses faster than we can track, so totals may be a lower bound
+          rather than exact.
+        </p>
+      </section>
+
       <section className="platform-teaser platform-v3">
         <div className="platform-intro platform-v3-intro">
           <div>
@@ -328,6 +387,7 @@ function Landing({
 
           <aside className="product-sidebar">
             <div className="product-logo">
+
               <strong>auevo</strong>
               <i />
             </div>

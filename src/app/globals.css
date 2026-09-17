@@ -4647,3 +4647,89 @@ a {
   }
 }
 
+
+
+/* =========================================================
+   AUEVO — DOCS / METHODOLOGY SECTION
+   ========================================================= */
+
+.docs-section {
+  width: min(1180px, calc(100% - 96px));
+  margin: 0 auto;
+  padding: 90px 0 100px;
+  border-top: 1px solid var(--line);
+}
+
+.docs-heading {
+  margin-bottom: 34px;
+}
+
+.docs-heading span {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--red);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .11em;
+}
+
+.docs-heading strong {
+  display: block;
+  color: #f2f2ef;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.docs-grid article {
+  padding: 22px 24px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.014), transparent 55%),
+    var(--panel);
+}
+
+.docs-grid h3 {
+  margin: 0 0 10px;
+  color: #eceeec;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.docs-grid p {
+  margin: 0;
+  color: #9199a0;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.docs-caveat {
+  margin: 26px 0 0;
+  padding: 14px 17px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  background: var(--panel);
+  color: #7d858b;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+@media (max-width: 780px) {
+  .docs-section {
+    width: calc(100% - 36px);
+    padding: 60px 0 70px;
+  }
+
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+}
