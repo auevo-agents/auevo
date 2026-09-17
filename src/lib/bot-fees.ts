@@ -81,6 +81,20 @@ export function chainOf(bot: BotFeeWallets): Chain {
   return bot.chain ?? "solana";
 }
 
+/**
+ * Known relay/landing-speed tip accounts (Jito, Astralane, etc.) — NOT bot
+ * revenue, just payment for fast block inclusion. Every `programOnly`
+ * detection pass excludes transfers to these, otherwise a tip riding inside
+ * e.g. an Axiom transaction gets misattributed as Axiom's fee. Confirmed
+ * 2026-09-17: astraubkDw81n4LuutSQ8uzHCv4BhPVhfvTcYv8SKC (Astralane Tip
+ * Account, seen inside what looks like an Axiom-routed swap). Jito's own
+ * canonical tip accounts (documented publicly, ~8 addresses) aren't in here
+ * yet — add them if they start showing up misattributed too.
+ */
+export const INFRA_TIP_ADDRESSES = new Set<string>([
+  "astraubkDw81n4LuutSQ8uzHCv4BhPVhfvTcYv8SKC",
+]);
+
 export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
   trojan: {
     name: "Trojan",
