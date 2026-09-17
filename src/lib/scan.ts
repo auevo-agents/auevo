@@ -87,12 +87,18 @@ async function fetchWalletHistory(
   const cutoff = Math.floor(Date.now() / 1000) - LOOKBACK_DAYS * 24 * 60 * 60;
   const all: HeliusTransaction[] = [];
   let before: string | undefined;
-  // 60 pages x 100 tx = ~6,000 tx cap. Raised from 2,000 (20 pages) since
+  // 30 pages x 100 tx = ~3,000 tx cap. Raised from 2,000 (20 pages) since
   // very active wallets (bots trading hundreds of times/day) were hitting
   // the old cap and undercounting fees for the exact users we most want an
   // accurate number for. Sequential Helius calls, so this trades off
-  // against request time — see `maxDuration` on the API route.
-  const MAX_PAGES = 60;
+  // against request time — see `maxDuration` on the API route. Originally
+  // tried 60 pages (~6,000 tx) but that risks the request running long
+  // enough to hit Vercel's function timeout on very active wallets, which
+  // presents to the user as the scan silently doing nothing — dialed back
+  // to 30 until there's a way to page more safely (parallel fetch isn't
+  // possible with cursor-based pagination, or a progress-aware UI that
+  // tolerates a longer wait).
+  const MAX_PAGES = 30;
   let hitCap = true;
 
   for (let page = 0; page < MAX_PAGES; page++) {
