@@ -1,4 +1,4 @@
-import { ADDRESS_TO_BOT, BOT_FEE_REGISTRY } from "./bot-fees";
+import { ADDRESS_TO_BOT, BOT_FEE_REGISTRY, INFRA_TIP_ADDRESSES } from "./bot-fees";
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 const LOOKBACK_DAYS = 90;
@@ -157,6 +157,7 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
       for (const transfer of tx.nativeTransfers ?? []) {
         if (transfer.fromUserAccount !== wallet) continue;
         if (ADDRESS_TO_BOT[transfer.toUserAccount]) continue; // already counted elsewhere
+        if (INFRA_TIP_ADDRESSES.has(transfer.toUserAccount)) continue; // relay/landing tip, not a bot fee
         sol += transfer.amount / LAMPORTS_PER_SOL;
         matched = true;
       }
