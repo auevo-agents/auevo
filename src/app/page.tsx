@@ -5,6 +5,13 @@ import type { ScanResult } from "@/lib/scan";
 
 type Status = "idle" | "loading" | "error" | "done";
 
+const today = () =>
+  new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
 export default function Home() {
   const [wallet, setWallet] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -38,99 +45,184 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50 flex flex-col items-center px-6 py-16">
-      <div className="w-full max-w-xl">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-3">
-          How much have you paid trading bots?
-        </h1>
-        <p className="text-neutral-400 text-center mb-10">
-          Paste any Solana wallet address. We scan the last 90 days of public
-          transaction history and add up every fee sent to known trading bots
-          — Axiom, BullX, Trojan, BonkBot, and more. No wallet connection, no
-          risk, nothing to sign.
-        </p>
+    <main className="min-h-screen flex flex-col items-center px-6 py-20">
+      <div className="w-full max-w-[420px]">
+        <header className="text-center mb-10">
+          <p className="text-xs tracking-wide text-ink-faint mb-3">auevo.io</p>
+          <h1 className="text-2xl leading-snug">
+            what did the bots
+            <br />
+            take from you?
+          </h1>
+          <p className="text-sm text-ink-faint mt-4 leading-relaxed">
+            Paste a Solana wallet. We scan 90 days of public history and print
+            every fee it paid Axiom, BullX, Trojan, BonkBot and the rest.
+            Nothing to connect, nothing to sign.
+          </p>
+        </header>
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="mb-10">
           <input
             type="text"
             value={wallet}
             onChange={(e) => setWallet(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleScan()}
-            placeholder="Enter Solana wallet address"
-            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-sm outline-none focus:border-neutral-600"
+            placeholder="wallet address"
+            className="w-full bg-receipt border border-line px-4 py-3 text-sm outline-none focus:border-ink placeholder:text-ink-faint mb-3"
           />
           <button
             onClick={handleScan}
             disabled={status === "loading"}
-            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-neutral-950 font-semibold rounded-lg px-6 py-3 text-sm transition"
+            className="w-full bg-stamp disabled:opacity-50 text-receipt py-3 text-sm tracking-wide"
           >
-            {status === "loading" ? "Scanning…" : "Check my fees"}
+            {status === "loading" ? "printing…" : "print my receipt"}
           </button>
         </div>
 
         {status === "error" && (
-          <p className="text-red-400 text-sm text-center mb-6">{error}</p>
+          <p className="text-stamp text-sm text-center mb-6">{error}</p>
         )}
 
-        {status === "done" && result && <ResultCard result={result} />}
+        {status === "done" && result && <Receipt result={result} />}
+        {status === "done" && result && result.breakdown.length > 0 && (
+          <EmailCapture wallet={result.wallet} totalUsd={result.totalUsd} />
+        )}
       </div>
     </main>
   );
 }
 
-function ResultCard({ result }: { result: ScanResult }) {
-  if (result.totalTxScanned === 0) {
-    return (
-      <p className="text-neutral-400 text-center mt-6">
-        No transactions found for this wallet in the last {result.daysScanned}{" "}
-        days.
-      </p>
-    );
+function EmailCapture({ wallet, totalUsd }: { wallet: string; totalUsd: number }) {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
+
+  async function submit() {
+    if (!email.trim()) return;
+    setState("sending");
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), wallet, totalUsd }),
+      });
+      setState(res.ok ? "done" : "error");
+    } catch {
+      setState("error");
+    }
   }
 
-  if (result.breakdown.length === 0) {
+  if (state === "done") {
     return (
-      <p className="text-neutral-400 text-center mt-6">
-        No fees to known bots found in {result.totalTxScanned} scanned
-        transactions over the last {result.daysScanned} days. (Note: Axiom,
-        BullX, Photon and GMGN aren&apos;t detectable yet — see below.)
+      <p className="text-sm text-ink-faint text-center mt-6">
+        got it — we&apos;ll let you know when there&apos;s a way to stop paying this.
       </p>
     );
   }
 
   return (
-    <div className="mt-8 border border-neutral-800 rounded-xl p-6 bg-neutral-900/50">
-      <p className="text-neutral-400 text-sm mb-1 text-center">
-        Over the last {result.daysScanned} days you paid trading bots
+    <div className="mt-6">
+      <p className="text-sm text-ink-faint text-center mb-3">
+        want to know when there&apos;s a way to stop paying this?
       </p>
-      <p className="text-5xl font-bold text-center mb-6">
-        ${result.totalUsd.toFixed(0)}
-      </p>
+      <div className="flex gap-2">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder="you@example.com"
+          className="flex-1 bg-receipt border border-line px-3 py-2 text-sm outline-none focus:border-ink placeholder:text-ink-faint"
+        />
+        <button
+          onClick={submit}
+          disabled={state === "sending"}
+          className="bg-ink disabled:opacity-50 text-receipt px-4 text-sm"
+        >
+          {state === "sending" ? "…" : "notify me"}
+        </button>
+      </div>
+      {state === "error" && (
+        <p className="text-stamp text-xs text-center mt-2">
+          couldn&apos;t save that — try again
+        </p>
+      )}
+    </div>
+  );
+}
 
-      <div className="space-y-2 mb-6">
-        {result.breakdown.map((b) => (
-          <div
-            key={b.botKey}
-            className="flex justify-between text-sm border-b border-neutral-800 pb-2"
-          >
-            <span className="text-neutral-300">
-              {b.name}{" "}
-              <span className="text-neutral-500">
-                · {b.txCount} trade{b.txCount === 1 ? "" : "s"}
-              </span>
-            </span>
-            <span className="font-medium">${b.usdPaid.toFixed(0)}</span>
-          </div>
-        ))}
+function Receipt({ result }: { result: ScanResult }) {
+  const empty = result.totalTxScanned === 0;
+  const noFees = !empty && result.breakdown.length === 0;
+
+  return (
+    <div className="torn-edge receipt-print bg-receipt px-6 pt-7 pb-8 shadow-[0_2px_0_var(--line)]">
+      <div className="text-center mb-5">
+        <p className="text-sm tracking-widest">A U E V O</p>
+        <p className="text-[11px] text-ink-faint mt-1">
+          fee receipt · last {result.daysScanned} days
+        </p>
+        <p className="text-[11px] text-ink-faint">{today()}</p>
       </div>
 
-      <p className="text-neutral-500 text-xs text-center">
-        {result.totalBotTrades} trades detected · {result.totalTxScanned} total
-        transactions scanned · SOL @ ${result.solPriceUsd.toFixed(0)}
-      </p>
-      <p className="text-neutral-600 text-xs text-center mt-3">
-        {result.unsupportedBots.join(", ")} aren&apos;t counted yet — they don&apos;t
-        use a fixed fee wallet, support coming soon.
+      <div className="border-t border-dashed border-line mb-4" />
+
+      {empty && (
+        <p className="text-sm text-ink-faint text-center py-4">
+          no transactions found for this wallet
+        </p>
+      )}
+
+      {noFees && (
+        <p className="text-sm text-ink-faint text-center py-4 leading-relaxed">
+          no fees to known bots in {result.totalTxScanned} transactions.
+          <br />
+          axiom &amp; bullx not covered yet.
+        </p>
+      )}
+
+      {!empty && !noFees && (
+        <>
+          <div className="space-y-2 mb-4">
+            {result.breakdown.map((b) => (
+              <div key={b.botKey} className="flex items-baseline text-sm">
+                <span>
+                  {b.name.toLowerCase()}{" "}
+                  <span className="text-ink-faint">
+                    x{b.txCount}
+                  </span>
+                </span>
+                <span className="leader" />
+                <span>${b.usdPaid.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-dashed border-line mb-4" />
+
+          <div className="flex items-baseline text-base font-semibold mb-1">
+            <span>total</span>
+            <span className="leader" />
+            <span className="text-stamp">${result.totalUsd.toFixed(2)}</span>
+          </div>
+          <p className="text-[11px] text-ink-faint text-right mb-5">
+            {result.totalSol.toFixed(3)} SOL
+          </p>
+
+          <div className="border-t border-dashed border-line mb-4" />
+
+          <p className="text-[11px] text-ink-faint leading-relaxed">
+            {result.totalBotTrades} bot trades · {result.totalTxScanned} tx
+            scanned
+            <br />
+            sol @ ${result.solPriceUsd.toFixed(2)}
+            <br />
+            axiom · bullx not counted yet
+          </p>
+        </>
+      )}
+
+      <p className="text-center text-[11px] text-ink-faint mt-6">
+        · · · thank you for trading · · ·
       </p>
     </div>
   );

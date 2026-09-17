@@ -7,16 +7,55 @@
  * indexing models use to detect each bot's trades. Checked 2026-09-17.
  *
  * Bots that route fees through their own on-chain program instead of a
- * fixed wallet (Axiom, BullX, Photon, GMGN) are NOT detectable this way —
- * see docs/fee-detection.md for why, and lib/bot-fees-program.ts (TODO)
- * for the program-ID based approach those need.
+ * fixed wallet (Axiom, BullX) are NOT detectable this way yet — needs the
+ * same manual tx-inspection treatment Photon and GMGN got below.
+ *
+ * Photon is a hybrid: verified 2026-09-17 from one real transaction
+ * (solscan.io/tx/cJUQgkBGgwHWjnjPv2kUiLKGJXhBa9KihhUB41qpquB6idGF7dPY7m48Xu59jveKWSN199YV6oA2mPSvnRhoenz).
+ * It sends the fee as two separate native SOL transfers (~0.776% of the
+ * swap size each, split across two destination wallets — looks like
+ * protocol cut + referral cut) alongside a swap through program
+ * HAAoKJrdTktFs7zcBkpvw9ebPdu4L7Wx1CDx2waia6hD. Only one transaction has
+ * been checked so far, so these destination wallets are treated as
+ * provisional — see `programId` below, used to double-check the transfer
+ * actually happened inside a Photon-routed transaction before counting it,
+ * which limits false positives even if the wallets turn out to rotate.
+ *
+ * GMGN is also a hybrid: verified 2026-09-17 from one real transaction
+ * (solscan.io/tx/3QNvJwnqmpfiGUFPczJPdkTMKk75MSyYJvNoSMkwScEqvfnZJCCuiMq8DABTVWwXsP9W7FxkFoGSakyeMZ11Dbds).
+ * Solscan itself labels the program "GMGN Bot Program" and the fee
+ * destination "GMGN Fees Vault 5" — the "5" strongly suggests there are
+ * at least 4 other vault addresses rotating, so this single address is
+ * provisional and likely undercounts until more are found. Fee matched
+ * exactly 1.00% of swap size, confirming it against GMGN's stated rate.
  */
+
+export type Chain = "solana" | "ethereum" | "bsc" | "robinhood";
 
 export interface BotFeeWallets {
   /** Display name shown to the user */
   name: string;
   /** One or more fee-collector wallet addresses (some bots rotate/load-balance) */
   addresses: string[];
+  /**
+   * Which chain these addresses live on. Omitted = "solana" (the only chain
+   * v1 supports) so the ~25 existing entries don't all need editing now;
+   * set explicitly when adding the first non-Solana bot.
+   */
+  chain?: Chain;
+  /**
+   * Optional: the bot's on-chain program ID. When set, scan.ts only counts
+   * a transfer to `addresses` if the same transaction also touched this
+   * program — cuts false positives for bots confirmed via a single sample
+   * transaction rather than a canonical source like Dune spellbook.
+   */
+  programId?: string;
+  /** True when this entry came from inspecting one real tx, not a canonical source */
+  provisional?: boolean;
+}
+
+export function chainOf(bot: BotFeeWallets): Chain {
+  return bot.chain ?? "solana";
 }
 
 export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
@@ -123,6 +162,21 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
     ],
   },
   alpha_dex: { name: "Alpha Dex", addresses: ["6qgwjhV2RQxcPffRdtQBTTEezRykQKXqhcDyv1z3r9tq"] },
+  photon: {
+    name: "Photon",
+    addresses: [
+      "JuJcyJeyRrHkAWvfLn8TYtqsCbjEEFepWbqc1gUZmDY",
+      "GbH2v1qM9zPLYkFufqukdxzGFbrhFugmFwwazNjvvGP",
+    ],
+    programId: "HAAoKJrdTktFs7zcBkpvw9ebPdu4L7Wx1CDx2waia6hD",
+    provisional: true,
+  },
+  gmgn: {
+    name: "GMGN",
+    addresses: ["3t9EKmRiAUcQUYzTZpNojzeGP1KBAVEEbDNmy6wECQpK"],
+    programId: "GMgnVFR8Jb39LoXsEVzb3DvBy3ywCmdmJquHUy1Lrkqb",
+    provisional: true,
+  },
 };
 
 /** Fast reverse lookup: address -> bot key, built once at module load. */
