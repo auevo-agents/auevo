@@ -105,11 +105,27 @@ async function fetchWalletHistory(
     url.searchParams.set("limit", "100");
     if (before) url.searchParams.set("before", before);
 
-    const res = await fetch(url.toString());
-    if (!res.ok) {
-      throw new Error(`Helius API error: ${res.status} ${await res.text()}`);
+    // Helius rate-limits requests/second independently of total request
+    // count — sequentially paginating many pages with no delay can trip
+    // this even though the total request count is fine on its own. Retry
+    // with backoff on 429 instead of failing the whole scan outright.
+    let batch: HeliusTransaction[] | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const res = await fetch(url.toString());
+      if (res.status === 429) {
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        continue;
+      }
+      if (!res.ok) {
+        throw new Error(`Helius API error: ${res.status} ${await res.text()}`);
+      }
+      batch = await res.json();
+      break;
     }
-    const batch: HeliusTransaction[] = await res.json();
+    if (batch === null) {
+      throw new Error("Helius API error: 429 Too Many Requests (retries exhausted)");
+    }
+
     if (batch.length === 0) {
       hitCap = false;
       break;
@@ -122,6 +138,12 @@ async function fetchWalletHistory(
       break;
     }
     before = oldest.signature;
+
+    // Small pacing delay between pages to stay under Helius's per-second
+    // rate limit in the first place, rather than relying on retries alone.
+    if (page < MAX_PAGES - 1) {
+      await new Promise((r) => setTimeout(r, 120));
+    }
   }
 
   return {
