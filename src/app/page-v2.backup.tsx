@@ -305,289 +305,164 @@ function Landing({
         </div>
       </section>
 
-      <section className="platform-teaser platform-v3">
-        <div className="platform-intro platform-v3-intro">
+      <section className="platform-teaser platform-v2">
+        <div className="platform-intro">
           <div>
             <span>WHAT COMES NEXT</span>
             <h2>
-              Know every trade.<br />
-              Keep more of it.
+              See the leak.<br />
+              Then fix the execution.
             </h2>
           </div>
 
           <p>
-            Fee intelligence is the first layer. Auevo is evolving into a
-            complete trading workspace built around your wallets, execution
-            and performance.
+            Today Auevo shows where your trading fees went. Tomorrow it becomes
+            the execution layer that helps you keep more of every trade.
           </p>
         </div>
 
-        <div className="auevo-product">
-          <div className="product-glow product-glow-red" />
-          <div className="product-glow product-glow-green" />
+        <div className="auevo-terminal">
+          <div className="terminal-ambient terminal-ambient-red" />
+          <div className="terminal-ambient terminal-ambient-green" />
 
-          <aside className="product-sidebar">
-            <div className="product-logo">
-              <strong>auevo</strong>
-              <i />
+          <aside className="auevo-rail">
+            <div className="rail-brand">
+              a<span>_</span>
             </div>
 
-            <nav className="product-nav">
-              <button className="active">
-                <span className="nav-icon">
-                  <i /><i /><i /><i />
-                </span>
-                <b>Overview</b>
-              </button>
+            <div className="rail-nav">
+              <button className="active">⌗</button>
+              <button>⌁</button>
+              <button>◇</button>
+              <button>◎</button>
+              <button>▣</button>
+            </div>
 
-              <button>
-                <span className="nav-icon nav-trading">
-                  <i /><i /><i />
-                </span>
-                <b>Trading</b>
-              </button>
-
-              <button>
-                <span className="nav-icon nav-copy">
-                  <i /><i /><i />
-                </span>
-                <b>Copy</b>
-              </button>
-
-              <button>
-                <span className="nav-icon nav-position">
-                  <i /><i />
-                </span>
-                <b>Positions</b>
-              </button>
-
-              <button>
-                <span className="nav-icon nav-analytics">
-                  <i /><i /><i />
-                </span>
-                <b>Analytics</b>
-              </button>
-
-              <button>
-                <span className="nav-icon nav-bots">
-                  <i />
-                </span>
-                <b>Bots</b>
-              </button>
-
-              <button>
-                <span className="nav-icon nav-wallet">
-                  <i />
-                </span>
-                <b>Wallets</b>
-              </button>
-
-              <button>
-                <span className="nav-icon nav-alerts">
-                  <i />
-                </span>
-                <b>Alerts</b>
-              </button>
-            </nav>
-
-            <div className="product-sidebar-bottom">
-              <button><span>⚙</span> Settings</button>
-              <button><span>◇</span> Referrals</button>
+            <div className="rail-bottom">
+              <span>8M</span>
             </div>
           </aside>
 
-          <main className="product-main">
-            <header className="product-header">
+          <div className="terminal-workspace">
+            <div className="terminal-marketbar">
+              <div className="market-identity">
+                <span className="live-pulse" />
+                <div>
+                  <strong>AUEVO INTELLIGENCE</strong>
+                  <small>LIVE WALLET VIEW</small>
+                </div>
+              </div>
+
+              <div className="market-ticker">
+                <span>
+                  SOL
+                  <strong>$216.42</strong>
+                  <b className="up">+4.8%</b>
+                </span>
+                <span>
+                  P&amp;L
+                  <strong className="green">+$12,438</strong>
+                </span>
+                <span>
+                  BOT FEES
+                  <strong className="red">-$1,247</strong>
+                </span>
+                <span>
+                  SAVED
+                  <strong className="green">+$892</strong>
+                </span>
+              </div>
+
+              <div className="market-wallet">8M9TNz...yQVg</div>
+            </div>
+
+            <div className="workspace-heading">
               <div>
-                <h3>Overview</h3>
-                <p>Trade smarter. Keep more.</p>
+                <span>WALLET PERFORMANCE / 30D</span>
+                <h3>+$12,438.20</h3>
+                <p><b>+24.6%</b> net performance</p>
               </div>
 
-              <div className="product-header-actions">
-                <button>Last 30 days <span>⌄</span></button>
-
-                <button className="wallet-pill">
-                  <i>A</i>
-                  <span>8M9TNz...yQVg</span>
-                </button>
-
-                <button className="header-round">
-                  <span />
-                </button>
+              <div className="workspace-actions">
+                <button>30D⌄</button>
+                <button className="trade-action">TRADE ↗</button>
               </div>
-            </header>
-
-            <div className="product-kpis">
-              <article>
-                <div className="kpi-label">
-                  <span>Total P&amp;L</span>
-                  <i>30D</i>
-                </div>
-                <strong className="kpi-positive">+$12,438</strong>
-                <small className="kpi-positive">↗ +24.6%</small>
-                <div className="kpi-spark green-spark">
-                  <i /><i /><i /><i /><i /><i />
-                </div>
-              </article>
-
-              <article>
-                <div className="kpi-label">
-                  <span>Bot fees paid</span>
-                  <i>30D</i>
-                </div>
-                <strong className="kpi-negative">−$1,247</strong>
-                <small className="kpi-negative">8.3% of activity</small>
-                <div className="kpi-spark red-spark">
-                  <i /><i /><i /><i /><i /><i />
-                </div>
-              </article>
-
-              <article>
-                <div className="kpi-label">
-                  <span>Fees saved <em>(est.)</em></span>
-                  <i>AUEVO</i>
-                </div>
-                <strong className="kpi-positive">+$892</strong>
-                <small>vs average execution</small>
-                <div className="kpi-spark green-spark alt">
-                  <i /><i /><i /><i /><i /><i />
-                </div>
-              </article>
-
-              <article>
-                <div className="kpi-label">
-                  <span>Win rate</span>
-                  <i>30D</i>
-                </div>
-                <strong>68%</strong>
-                <small className="kpi-positive">↗ +12%</small>
-
-                <div className="win-meter">
-                  <i><b style={{ width: "68%" }} /></i>
-                  <span>68 / 100</span>
-                </div>
-              </article>
             </div>
 
-            <div className="product-grid">
-              <section className="performance-card">
-                <header className="card-heading">
-                  <div>
-                    <strong>Performance</strong>
-                    <span>Wallet P&amp;L vs fees paid</span>
-                  </div>
+            <div className="terminal-chart-stage">
+              <div className="terminal-chart-grid" />
 
-                  <div className="performance-controls">
-                    <span><i className="dot-red" /> Your P&amp;L</span>
-                    <span><i className="dot-gray" /> Fees paid</span>
-                    <button>P&amp;L⌄</button>
-                  </div>
-                </header>
+              <div className="chart-y-axis">
+                <span>$15K</span>
+                <span>$10K</span>
+                <span>$5K</span>
+                <span>$0</span>
+                <span>-$5K</span>
+              </div>
 
-                <div className="performance-chart">
-                  <div className="performance-y">
-                    <span>$30K</span>
-                    <span>$20K</span>
-                    <span>$10K</span>
-                    <span>$0</span>
-                    <span>−$10K</span>
-                  </div>
+              <svg
+                className="terminal-chart-svg"
+                viewBox="0 0 900 330"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient id="auevoArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff344d" stopOpacity=".24" />
+                    <stop offset="100%" stopColor="#ff344d" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
 
-                  <div className="performance-grid-lines" />
+                <path
+                  className="terminal-area"
+                  d="M0 285 L55 275 L100 253 L145 259 L190 220 L235 211 L280 180 L325 191 L370 153 L415 160 L460 124 L505 139 L550 99 L595 111 L640 76 L685 88 L730 51 L775 69 L820 40 L865 56 L900 38 L900 330 L0 330 Z"
+                />
 
-                  <svg
-                    viewBox="0 0 760 280"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="v3PerformanceArea"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#ff344d"
-                          stopOpacity=".19"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#ff344d"
-                          stopOpacity="0"
-                        />
-                      </linearGradient>
-                    </defs>
+                <polyline
+                  className="terminal-pnl-line"
+                  points="0,285 55,275 100,253 145,259 190,220 235,211 280,180 325,191 370,153 415,160 460,124 505,139 550,99 595,111 640,76 685,88 730,51 775,69 820,40 865,56 900,38"
+                />
 
-                    <path
-                      className="v3-chart-area"
-                      d="M0 230 L42 220 L78 205 L116 194 L152 177 L190 168 L228 146 L265 153 L302 126 L340 114 L378 98 L416 106 L454 82 L492 88 L530 65 L568 74 L606 48 L644 59 L682 39 L720 53 L760 43 L760 280 L0 280 Z"
-                    />
+                <polyline
+                  className="terminal-fee-line"
+                  points="0,288 70,289 140,292 210,294 280,298 350,299 420,304 490,307 560,310 630,313 700,317 770,319 840,322 900,324"
+                />
+              </svg>
 
-                    <polyline
-                      className="v3-pnl-line"
-                      points="0,230 42,220 78,205 116,194 152,177 190,168 228,146 265,153 302,126 340,114 378,98 416,106 454,82 492,88 530,65 568,74 606,48 644,59 682,39 720,53 760,43"
-                    />
+              <div className="chart-crosshair">
+                <i />
+                <span />
+              </div>
 
-                    <polyline
-                      className="v3-fee-line"
-                      points="0,232 55,233 110,235 165,234 220,238 275,239 330,241 385,243 440,244 495,248 550,250 605,252 660,251 715,249 760,247"
-                    />
-                  </svg>
+              <div className="chart-tooltip">
+                <small>SEP 14 · 18:42</small>
+                <strong>+$11,906</strong>
+                <span>fees −$1,184</span>
+              </div>
 
-                  <div className="performance-marker">
-                    <i />
-                    <span>+$12,438</span>
-                  </div>
+              <div className="chart-current">
+                <i />
+                <span>+$12,438</span>
+              </div>
 
-                  <div className="performance-dates">
-                    <span>Aug 1</span>
-                    <span>Aug 8</span>
-                    <span>Aug 15</span>
-                    <span>Aug 22</span>
-                    <span>Aug 29</span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="breakdown-card">
-                <header className="card-heading">
-                  <div>
-                    <strong>Fee breakdown</strong>
-                    <span>Where execution cost went</span>
-                  </div>
-                </header>
-
-                <div className="breakdown-content">
-                  <div className="v3-donut">
-                    <div>
-                      <strong>$1,247</strong>
-                      <span>total fees</span>
-                    </div>
-                  </div>
-
-                  <div className="v3-donut-legend">
-                    <div><i className="fee-a" /><span>Maestro</span><b>38%</b></div>
-                    <div><i className="fee-b" /><span>Axiom</span><b>26%</b></div>
-                    <div><i className="fee-c" /><span>BullX</span><b>18%</b></div>
-                    <div><i className="fee-d" /><span>Trojan</span><b>9%</b></div>
-                    <div><i className="fee-e" /><span>Others</span><b>9%</b></div>
-                  </div>
-                </div>
-
-                <div className="breakdown-insight">
-                  <span>AUEVO INSIGHT</span>
-                  <strong>$892 potentially recoverable</strong>
-                </div>
-              </section>
+              <div className="chart-dates">
+                <span>AUG 19</span>
+                <span>AUG 25</span>
+                <span>SEP 01</span>
+                <span>SEP 08</span>
+                <span>SEP 17</span>
+              </div>
             </div>
 
-            <div className="product-bottom-strip">
+            <div className="execution-strip">
               <div>
                 <span>EXECUTION SCORE</span>
-                <strong>82<small>/100</small></strong>
+                <strong>82<span>/100</span></strong>
+              </div>
+
+              <div>
+                <span>AVG BOT FEE</span>
+                <strong className="red">$4.18</strong>
               </div>
 
               <div>
@@ -596,132 +471,84 @@ function Landing({
               </div>
 
               <div>
-                <span>AVG BOT FEE</span>
-                <strong className="kpi-negative">$4.18</strong>
+                <span>WIN RATE</span>
+                <strong className="green">68%</strong>
               </div>
 
-              <div>
-                <span>WALLETS</span>
-                <strong>4</strong>
-              </div>
-
-              <div className="bottom-insight">
-                <i />
-                <span>
-                  <b>Execution intelligence</b>
-                  Finding where your trades leak value.
-                </span>
+              <div className="execution-insight">
+                <span>AUEVO INSIGHT</span>
+                <strong>You could have kept ~$892 more.</strong>
               </div>
             </div>
-          </main>
+          </div>
 
-          <aside className="product-right">
-            <section className="opportunity-card">
-              <header>
-                <div>
-                  <strong>Top opportunities</strong>
-                  <span>Across your watchlist</span>
-                </div>
-
-                <small><i /> Live</small>
-              </header>
-
-              <div className="opportunity-list">
-                <div>
-                  <i className="opp-icon opp-blue">M</i>
-                  <span><b>$MOOD</b><small>5m</small></span>
-                  <strong>+312%</strong>
-                </div>
-
-                <div>
-                  <i className="opp-icon opp-gray">A</i>
-                  <span><b>$ARC</b><small>12m</small></span>
-                  <strong>+124%</strong>
-                </div>
-
-                <div>
-                  <i className="opp-icon opp-purple">N</i>
-                  <span><b>$NOVA</b><small>18m</small></span>
-                  <strong>+89%</strong>
-                </div>
-
-                <div>
-                  <i className="opp-icon opp-orange">V</i>
-                  <span><b>$VIBE</b><small>21m</small></span>
-                  <strong>+76%</strong>
-                </div>
-
-                <div>
-                  <i className="opp-icon opp-gold">T</i>
-                  <span><b>$TRENCH</b><small>37m</small></span>
-                  <strong>+61%</strong>
-                </div>
-              </div>
-
-              <button className="view-market">
-                View market intelligence <span>→</span>
-              </button>
-            </section>
-
-            <section className="activity-card">
-              <header>
-                <strong>Execution activity</strong>
+          <aside className="terminal-feed">
+            <div className="feed-head">
+              <div>
                 <span>LIVE</span>
-              </header>
+                <strong>Opportunities</strong>
+              </div>
+              <i />
+            </div>
 
-              <div className="activity-line">
-                <i className="activity-green" />
-                <div>
-                  <strong>Trade routed</strong>
-                  <span>SOL → USDC · 14s ago</span>
-                </div>
-                <b>−0.18%</b>
+            <div className="feed-list">
+              <div>
+                <b className="coin coin-blue">M</b>
+                <span><strong>$MOOD</strong><small>5m</small></span>
+                <em>+312%</em>
+              </div>
+              <div>
+                <b className="coin coin-red">A</b>
+                <span><strong>$ARC</strong><small>12m</small></span>
+                <em>+124%</em>
+              </div>
+              <div>
+                <b className="coin coin-purple">N</b>
+                <span><strong>$NOVA</strong><small>18m</small></span>
+                <em>+89%</em>
+              </div>
+              <div>
+                <b className="coin coin-orange">V</b>
+                <span><strong>$VIBE</strong><small>21m</small></span>
+                <em>+76%</em>
+              </div>
+              <div>
+                <b className="coin coin-yellow">T</b>
+                <span><strong>$TRENCH</strong><small>37m</small></span>
+                <em>+61%</em>
+              </div>
+            </div>
+
+            <div className="feed-divider" />
+
+            <div className="fee-leak">
+              <span>FEE LEAK / 30D</span>
+              <strong>−$1,247</strong>
+
+              <div className="fee-leak-bar">
+                <i style={{ width: "38%" }} />
+                <i style={{ width: "26%" }} />
+                <i style={{ width: "18%" }} />
+                <i style={{ width: "9%" }} />
+                <i style={{ width: "9%" }} />
               </div>
 
-              <div className="activity-line">
-                <i className="activity-red" />
-                <div>
-                  <strong>Fee detected</strong>
-                  <span>Maestro · 2m ago</span>
-                </div>
-                <b>−$3.84</b>
-              </div>
+              <small>Maestro · Axiom · BullX · Trojan · Other</small>
+            </div>
 
-              <div className="activity-line">
-                <i className="activity-green" />
-                <div>
-                  <strong>Better route found</strong>
-                  <span>Execution · 4m ago</span>
-                </div>
-                <b>+$6.21</b>
-              </div>
-            </section>
-
-            <section className="next-auevo-card">
+            <div className="future-cta">
               <span>THE NEXT AUEVO</span>
-              <h4>
-                Trade faster.<br />
-                Pay less.
-              </h4>
+              <strong>Trade faster.<br />Keep more.</strong>
               <p>
-                Wallet intelligence, execution and opportunities — built into
-                one trading workspace.
+                Execution, wallet intelligence and opportunities in one place.
               </p>
-
-              <div className="next-features">
-                <span><i /> Execution routing</span>
-                <span><i /> Wallet intelligence</span>
-                <span><i /> Opportunity discovery</span>
-              </div>
-
-              <button>
-                Get early access
-                <span>→</span>
-              </button>
-            </section>
+              <button>Get early access →</button>
+            </div>
           </aside>
 
-          <div className="product-preview-stamp">
+          <div className="terminal-fade" />
+
+          <div className="terminal-development">
             PRODUCT PREVIEW · IN DEVELOPMENT
           </div>
         </div>
