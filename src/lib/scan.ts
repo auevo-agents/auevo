@@ -10,10 +10,28 @@ interface HeliusNativeTransfer {
   amount: number; // lamports
 }
 
+interface HeliusInstruction {
+  programId: string;
+  innerInstructions?: { programId: string }[];
+}
+
 interface HeliusTransaction {
   signature: string;
   timestamp: number; // unix seconds
   nativeTransfers?: HeliusNativeTransfer[];
+  instructions?: HeliusInstruction[];
+}
+
+/** All program IDs touched by a tx, top-level and inner instructions. */
+function programIdsIn(tx: HeliusTransaction): Set<string> {
+  const ids = new Set<string>();
+  for (const ix of tx.instructions ?? []) {
+    ids.add(ix.programId);
+    for (const inner of ix.innerInstructions ?? []) {
+      ids.add(inner.programId);
+    }
+  }
+  return ids;
 }
 
 export interface BotBreakdownEntry {
@@ -26,6 +44,8 @@ export interface BotBreakdownEntry {
 
 export interface ScanResult {
   wallet: string;
+  /** Chain this scan covered — always "solana" in v1, kept explicit for when more chains are added */
+  chain: "solana";
   daysScanned: number;
   totalTxScanned: number;
   totalSol: number;
@@ -101,10 +121,18 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
   const perBot: Record<string, { solPaid: number; txCount: number }> = {};
 
   for (const tx of txs) {
+    let txProgramIds: Set<string> | null = null; // computed lazily, only if needed
+
     for (const transfer of tx.nativeTransfers ?? []) {
       if (transfer.fromUserAccount !== wallet) continue;
       const botKey = ADDRESS_TO_BOT[transfer.toUserAccount];
       if (!botKey) continue;
+
+      const bot = BOT_FEE_REGISTRY[botKey];
+      if (bot.programId) {
+        txProgramIds ??= programIdsIn(tx);
+        if (!txProgramIds.has(bot.programId)) continue; // transfer unrelated to this bot's program
+      }
 
       if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, txCount: 0 };
       perBot[botKey].solPaid += transfer.amount / LAMPORTS_PER_SOL;
@@ -131,6 +159,7 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
 
   return {
     wallet,
+    chain: "solana",
     daysScanned: LOOKBACK_DAYS,
     totalTxScanned: txs.length,
     totalSol,
@@ -138,7 +167,7 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
     totalBotTrades,
     breakdown,
     solPriceUsd,
-    unsupportedBots: ["Axiom", "BullX", "Photon", "GMGN"],
+    unsupportedBots: ["Axiom", "BullX"],
     warnings,
   };
 }
