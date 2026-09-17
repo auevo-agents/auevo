@@ -853,6 +853,14 @@ function ResultView({
         </div>
       </div>
 
+      {result.warnings.length > 0 && (
+        <div className="result-warning">
+          {result.warnings.map((w, i) => (
+            <p key={i}>{w}</p>
+          ))}
+        </div>
+      )}
+
       {empty || noFees ? (
         <div className="empty-result">
           {empty
@@ -908,6 +916,8 @@ function ResultView({
             <span>SOL @ ${result.solPriceUsd.toFixed(2)}</span>
           </div>
 
+          <ShareButtons wallet={result.wallet} totalUsd={result.totalUsd} />
+
           <EmailCapture
             wallet={result.wallet}
             totalUsd={result.totalUsd}
@@ -921,6 +931,97 @@ function ResultView({
         MORE FOR YOU.
       </div>
     </section>
+  );
+}
+
+function ShareButtons({
+  wallet,
+  totalUsd,
+}: {
+  wallet: string;
+  totalUsd: number;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl = `https://auevo.io/?wallet=${wallet}`;
+  const amount = totalUsd.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const shareText = `I paid $${amount} in trading bot fees over the last 90 days. See your own receipt:`;
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API unavailable — silently ignore, link is still visible
+      // to the user via the other share options
+    }
+  }
+
+  function openShare(url: string) {
+    window.open(url, "_blank", "noopener,noreferrer,width=600,height=600");
+  }
+
+  const canNativeShare =
+    typeof navigator !== "undefined" && "share" in navigator;
+
+  async function nativeShare() {
+    try {
+      await (
+        navigator as Navigator & {
+          share: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+        }
+      ).share({ text: shareText, url: shareUrl });
+    } catch {
+      // user cancelled or API failed — no-op
+    }
+  }
+
+  return (
+    <div className="share-block">
+      <span className="share-label">SHARE YOUR RECEIPT</span>
+
+      <div className="share-buttons">
+        <button
+          className="share-btn share-btn-x"
+          onClick={() =>
+            openShare(
+              `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                shareText
+              )}&url=${encodeURIComponent(shareUrl)}`
+            )
+          }
+        >
+          <span>𝕏</span> Post
+        </button>
+
+        <button
+          className="share-btn"
+          onClick={() =>
+            openShare(
+              `https://t.me/share/url?url=${encodeURIComponent(
+                shareUrl
+              )}&text=${encodeURIComponent(shareText)}`
+            )
+          }
+        >
+          <span>✈</span> Telegram
+        </button>
+
+        <button className="share-btn" onClick={copyLink}>
+          <span>{copied ? "✓" : "⛓"}</span> {copied ? "Copied" : "Copy link"}
+        </button>
+
+        {canNativeShare && (
+          <button className="share-btn" onClick={nativeShare}>
+            <span>↑</span> Share
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
