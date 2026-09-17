@@ -6,48 +6,41 @@
  * — these are the hardcoded `fee_receiver` constants Dune's own production
  * indexing models use to detect each bot's trades. Checked 2026-09-17.
  *
- * Trojan rotates fee wallets: 2 more addresses (2jwHNx..., GV4Bt6...) were
- * found 2026-09-17 by inspecting a live tx (program "Trojan Trade"), on top
- * of the 2 from spellbook. Other bots below likely rotate too but haven't
- * been checked yet — treat single-transaction-derived address lists as a
- * lower bound, not a complete set.
+ * Trojan rotates fee wallets AND fee-collector addresses beyond what's
+ * listed: 2 more addresses (2jwHNx..., GV4Bt6...) found 2026-09-17 via one
+ * tx (program "Trojan Trade" = troyXT7Ty3s2rjJe4bqWaroUrS4Fjd8rbHHNHxcACF4),
+ * then a SECOND tx same day showed yet two more unlisted destinations
+ * ("Trojan Fees" and one unlabeled). Given addresses keep not repeating,
+ * Trojan is now `programOnly` too — the known addresses stay as a fast
+ * path but aren't relied on to be complete.
  *
  * Bots that route fees through their own on-chain program instead of a
  * fixed wallet (BullX) are NOT detectable this way yet — needs the same
- * manual tx-inspection treatment Photon, GMGN and Axiom got below.
+ * manual tx-inspection treatment Photon, GMGN, Axiom and Trojan got below.
  *
- * Photon is a hybrid: verified 2026-09-17 from one real transaction
- * (solscan.io/tx/cJUQgkBGgwHWjnjPv2kUiLKGJXhBa9KihhUB41qpquB6idGF7dPY7m48Xu59jveKWSN199YV6oA2mPSvnRhoenz).
- * It sends the fee as two separate native SOL transfers (~0.776% of the
- * swap size each, split across two destination wallets — looks like
- * protocol cut + referral cut) alongside a swap through program
- * HAAoKJrdTktFs7zcBkpvw9ebPdu4L7Wx1CDx2waia6hD. Only one transaction has
- * been checked so far, so these destination wallets are treated as
- * provisional — see `programId` below, used to double-check the transfer
- * actually happened inside a Photon-routed transaction before counting it,
- * which limits false positives even if the wallets turn out to rotate.
+ * Photon: TWO different programs seen so far (HAAoKJrd...aia6hD from the
+ * first tx checked, BSfD6SHZ...1mrRW — labeled "Photon Program" — from a
+ * second tx 2026-09-17), each paying a DIFFERENT fee-vault address neither
+ * of which is in `addresses` below. `programOnly` is set so any further
+ * unlisted vaults get caught automatically rather than needing to be found
+ * one by one.
  *
- * GMGN is also a hybrid: verified 2026-09-17 from one real transaction
- * (solscan.io/tx/3QNvJwnqmpfiGUFPczJPdkTMKk75MSyYJvNoSMkwScEqvfnZJCCuiMq8DABTVWwXsP9W7FxkFoGSakyeMZ11Dbds).
- * Solscan itself labels the program "GMGN Bot Program" and the fee
+ * GMGN: Solscan itself labels the program "GMGN Bot Program" and the fee
  * destination "GMGN Fees Vault 5" — the "5" strongly suggests there are
- * at least 4 other vault addresses rotating, so this single address is
- * provisional and likely undercounts until more are found. Fee matched
- * exactly 1.00% of swap size, confirming it against GMGN's stated rate.
+ * at least 4 other vault addresses rotating, so `programOnly` is set here
+ * too rather than trying to enumerate every vault.
  *
- * Axiom — the biggest bot by fee volume per the brief — is detected
- * differently from everything else here: two real transactions inspected
- * 2026-09-17 (solscan.io/tx/4NgaAx3HWJ7HCZTBEqv6iRhhtRmtiCDaixx3qrnQzRwaXwN3CRSF1mYiVnUhUQ6kZjhGxfngyJu9oMPWeW22RAaY
- * and solscan.io/tx/fUZrqJQKu7XTXrJpEtJ28Qa1k6Nz7sCsvcefzzdNE9XbXfrHUnFGjt2mwexaRvYNcpKWSWLpHFZhtJFDsmwxWkw)
- * sent the fee to TWO DIFFERENT addresses — Axiom apparently generates a
- * fresh fee-destination address per trade/referrer, so a fixed address
- * list can never catch it. Program ID confirmed instead: "Axiom Trade" =
- * FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9. See `programOnly` below —
- * scan.ts sums every native SOL transfer OUT of the wallet in any
- * transaction touching this program, regardless of destination. Risk:
- * this could misattribute an unrelated native-SOL transfer that happens to
- * ride inside the same transaction (e.g. buying with raw SOL instead of
- * WSOL) — not observed in the 2 samples checked, but worth re-verifying
+ * Axiom — the biggest bot by fee volume per the brief — sent its fee to a
+ * DIFFERENT address in each of 2 transactions checked 2026-09-17, so no
+ * address list is kept for it at all; detection is 100% programOnly via
+ * "Axiom Trade" = FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9.
+ *
+ * `programOnly` mechanics (see scan.ts): for a tx touching any of a bot's
+ * `programIds`, every native SOL transfer OUT of the wallet that isn't
+ * already claimed by a different bot's known address is summed and
+ * attributed to that bot. Risk: could misattribute an unrelated native-SOL
+ * transfer riding in the same tx (e.g. paying with raw SOL instead of
+ * WSOL) — not observed in samples checked so far, but worth re-verifying
  * against more transactions before trusting this at scale.
  */
 
@@ -65,19 +58,21 @@ export interface BotFeeWallets {
    */
   chain?: Chain;
   /**
-   * Optional: the bot's on-chain program ID. When set, scan.ts only counts
-   * a transfer to `addresses` if the same transaction also touched this
-   * program — cuts false positives for bots confirmed via a single sample
-   * transaction rather than a canonical source like Dune spellbook.
+   * Optional: the bot's on-chain program ID(s). When set, scan.ts only
+   * counts a transfer to `addresses` if the same transaction also touched
+   * one of these programs — cuts false positives for bots confirmed via a
+   * single sample transaction rather than a canonical source like Dune
+   * spellbook. Bots can use more than one program (Photon does).
    */
-  programId?: string;
+  programIds?: string[];
   /** True when this entry came from inspecting one real tx, not a canonical source */
   provisional?: boolean;
   /**
    * True for bots whose fee-destination address changes per trade/referrer
-   * (no fixed address is possible). scan.ts detects these by summing every
-   * native SOL transfer OUT of the wallet in any tx that touches `programId`,
-   * regardless of destination — see the Axiom comment above for the caveat.
+   * (no fixed address is possible, or the known list is incomplete). scan.ts
+   * detects these by summing every native SOL transfer OUT of the wallet in
+   * any tx that touches one of `programIds`, as long as it wasn't already
+   * counted via a known address — see the Axiom comment above for the caveat.
    */
   programOnly?: boolean;
 }
@@ -95,6 +90,8 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
       "2jwHNxavSoMZMEDbT1eV9PcPt5dDcayCqM6MkgaPpmWQ",
       "GV4Bt6ehW5x5dqtaWAJBSnz8uum5Z2Rp9P2Tr5iVuQn5",
     ],
+    programIds: ["troyXT7Ty3s2rjJe4bqWaroUrS4Fjd8rbHHNHxcACF4"],
+    programOnly: true,
   },
   bonkbot: {
     name: "BonkBot",
@@ -198,19 +195,24 @@ export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
       "JuJcyJeyRrHkAWvfLn8TYtqsCbjEEFepWbqc1gUZmDY",
       "GbH2v1qM9zPLYkFufqukdxzGFbrhFugmFwwazNjvvGP",
     ],
-    programId: "HAAoKJrdTktFs7zcBkpvw9ebPdu4L7Wx1CDx2waia6hD",
+    programIds: [
+      "HAAoKJrdTktFs7zcBkpvw9ebPdu4L7Wx1CDx2waia6hD",
+      "BSfD6SHZigAfDWSjzD5Q41jw8LmKwtmjskPH9XW1mrRW",
+    ],
+    programOnly: true,
     provisional: true,
   },
   gmgn: {
     name: "GMGN",
     addresses: ["3t9EKmRiAUcQUYzTZpNojzeGP1KBAVEEbDNmy6wECQpK"],
-    programId: "GMgnVFR8Jb39LoXsEVzb3DvBy3ywCmdmJquHUy1Lrkqb",
+    programIds: ["GMgnVFR8Jb39LoXsEVzb3DvBy3ywCmdmJquHUy1Lrkqb"],
+    programOnly: true,
     provisional: true,
   },
   axiom: {
     name: "Axiom",
     addresses: [],
-    programId: "FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9",
+    programIds: ["FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9"],
     programOnly: true,
     provisional: true,
   },
