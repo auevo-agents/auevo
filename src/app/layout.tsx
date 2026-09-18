@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     description:
       "Paste any Solana wallet address and see exactly how much you've paid trading bots in fees. Free, no wallet connection.",
   },
+  verification: {
+    google: "-qVb443obwXraFs4OWaGDR9l8lFDZcl5fDKT6fMVN-c",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
