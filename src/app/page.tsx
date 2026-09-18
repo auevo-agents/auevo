@@ -910,6 +910,12 @@ function ResultView({
           </h1>
           <h2>in trading bot fees over the last {result.daysScanned} days</h2>
           <p>That&apos;s {result.totalSol.toFixed(3)} SOL.</p>
+
+          {!empty && !noFees && (
+            <Link href="/trade" className="trade-cta">
+              Trade this wallet for ~0.15% instead of ~1% →
+            </Link>
+          )}
         </div>
 
         <div className="result-note">
