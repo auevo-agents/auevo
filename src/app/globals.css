@@ -5004,3 +5004,17 @@ a {
     text-align: center;
   }
 }
+
+/* =========================================================
+   AUEVO — Jupiter Terminal re-skin (official CSS variables,
+   see dev.jup.ag/docs/tool-kits/terminal/customization)
+   ========================================================= */
+
+:root {
+  --jupiter-terminal-primary: 255, 52, 77;       /* our --red accent */
+  --jupiter-terminal-background: 8, 11, 13;      /* our --bg */
+  --jupiter-terminal-primaryText: 243, 242, 239; /* our --ink */
+  --jupiter-terminal-warning: 251, 191, 36;      /* kept default amber — a warning shouldn't look like our brand red */
+  --jupiter-terminal-interactive: 48, 56, 64;    /* close to our --line-2 */
+  --jupiter-terminal-module: 14, 19, 23;         /* our --panel */
+}

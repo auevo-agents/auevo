@@ -9,6 +9,13 @@ import Link from "next/link";
 // via the Jupiter Referral Program instead of building/maintaining our own
 // execution layer. No custody: the user connects their own wallet inside
 // the widget, we never touch their keys or funds.
+//
+// Re-skinned to Auevo's own name/logo/colors via Jupiter's officially
+// documented `branding` prop and `--jupiter-terminal-*` CSS variables
+// (dev.jup.ag/docs/tool-kits/terminal/customization) — this is a
+// supported white-label feature, not a hack, and doesn't touch anything
+// Jupiter requires to stay visible (their program is still what actually
+// executes the swap on-chain regardless of what the UI is labeled).
 declare global {
   interface Window {
     Jupiter?: {
@@ -32,6 +39,15 @@ export default function TradePage() {
     window.Jupiter.init({
       displayMode: "integrated",
       integratedTargetId: "jupiter-terminal",
+      containerStyles: {
+        width: "100%",
+        borderRadius: "12px",
+        overflow: "hidden",
+      },
+      branding: {
+        name: "Auevo",
+        logoUri: "https://auevo.io/icon.png",
+      },
       endpoint:
         process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT ??
         "https://api.mainnet-beta.solana.com",
@@ -81,14 +97,6 @@ export default function TradePage() {
             <p className="trade-loading">Loading swap widget…</p>
           )}
         </div>
-
-        {!REFERRAL_ACCOUNT && (
-          <p className="trade-config-warning">
-            NEXT_PUBLIC_JUPITER_REFERRAL_ACCOUNT isn&apos;t set yet — the
-            widget works, but fee collection is off until it&apos;s
-            configured.
-          </p>
-        )}
       </main>
     </>
   );
