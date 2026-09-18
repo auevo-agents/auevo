@@ -913,7 +913,7 @@ function ResultView({
 
           {!empty && !noFees && (
             <Link href="/trade" className="trade-cta">
-              Trade this wallet for ~0.15% instead of ~1% →
+              Trade this wallet for ~0.5% instead of ~1% →
             </Link>
           )}
         </div>
