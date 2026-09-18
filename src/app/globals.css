@@ -4888,3 +4888,119 @@ a {
   color: #4ee3a0;
   font: 700 11px/1 Arial, Helvetica, sans-serif;
 }
+
+/* =========================================================
+   AUEVO — /trade (Jupiter Terminal widget page)
+   ========================================================= */
+
+.trade-page {
+  width: min(720px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 0 0 100px;
+}
+
+.trade-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88px;
+}
+
+.trade-back {
+  color: #9ba1a6;
+  font-size: 11px;
+}
+
+.trade-intro {
+  margin: 40px 0 28px;
+  text-align: center;
+}
+
+.trade-eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--red);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.trade-intro h1 {
+  margin: 0 0 14px;
+  color: #f2f2ef;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.05;
+  letter-spacing: -.02em;
+}
+
+.trade-intro p {
+  max-width: 480px;
+  margin: 0 auto;
+  color: #9199a0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.trade-widget-frame {
+  position: relative;
+  min-height: 560px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.trade-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6f777d;
+  font-size: 12px;
+}
+
+.trade-config-warning {
+  margin: 16px 0 0;
+  padding: 12px 15px;
+  border: 1px solid rgba(255, 52, 77, 0.25);
+  border-radius: 7px;
+  background: rgba(255, 52, 77, 0.06);
+  color: #ff8f9c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#jupiter-terminal {
+  width: 100%;
+  min-height: 560px;
+}
+
+.trade-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 12px 18px;
+  border-radius: 7px;
+  background: var(--red);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 28px rgba(255,52,77,.2);
+  transition: transform .15s ease, background .15s ease;
+}
+
+.trade-cta:hover {
+  background: #ff4960;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 520px) {
+  .trade-cta {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
