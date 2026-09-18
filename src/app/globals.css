@@ -4890,131 +4890,672 @@ a {
 }
 
 /* =========================================================
-   AUEVO — /trade (Jupiter Terminal widget page)
+   AUEVO — /trade v2
    ========================================================= */
 
-.trade-page {
-  width: min(720px, calc(100% - 48px));
-  margin: 0 auto;
-  padding: 0 0 100px;
+.trade-page-v2 {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 38% 45%, rgba(255, 52, 77, .08), transparent 30%),
+    radial-gradient(circle at 80% 25%, rgba(120, 150, 180, .04), transparent 30%),
+    #080b0d;
+  color: #f3f2ef;
+  overflow: hidden;
 }
 
-.trade-topbar {
+.trade-page-v2 .trade-topbar {
+  width: min(1380px, calc(100% - 64px));
+  height: 94px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: relative;
+  z-index: 20;
+}
+
+.trade-page-v2 .brand {
+  justify-self: start;
+}
+
+.trade-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 88px;
+  gap: 38px;
+  color: #8e969d;
+  font-size: 13px;
+}
+
+.trade-nav a,
+.trade-nav span {
+  position: relative;
+}
+
+.trade-nav-active {
+  color: #f3f2ef;
+}
+
+.trade-nav-active::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ff344d;
+  left: 50%;
+  bottom: -13px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 14px rgba(255,52,77,.8);
 }
 
 .trade-back {
-  color: #9ba1a6;
-  font-size: 11px;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 17px;
+  border: 1px solid #273038;
+  border-radius: 999px;
+  color: #a7adb2;
+  font-size: 12px;
+  transition: .2s ease;
 }
 
-.trade-intro {
-  margin: 40px 0 28px;
-  text-align: center;
+.trade-back:hover {
+  color: #f3f2ef;
+  border-color: #46515a;
+}
+
+.trade-back span {
+  color: #737d84;
+  transform: rotate(180deg);
+}
+
+.trade-shell {
+  width: min(1380px, calc(100% - 64px));
+  min-height: calc(100vh - 94px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(430px, .95fr);
+  gap: 64px;
+  align-items: center;
+  padding: 40px 0 80px;
+}
+
+.trade-hero {
+  position: relative;
+  min-height: 700px;
+  display: flex;
+  align-items: center;
+}
+
+.trade-hero::before {
+  content: "";
+  position: absolute;
+  inset: 2% -8% 0 32%;
+  pointer-events: none;
+  background:
+    linear-gradient(130deg, transparent 15%, rgba(255,52,77,.025) 45%, transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 72px);
+  mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent);
+}
+
+.trade-hero-glow {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  right: -60px;
+  top: 105px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,52,77,.13) 0, rgba(255,52,77,.04) 28%, transparent 66%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.trade-orbit {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid rgba(255,52,77,.12);
+  border-radius: 50%;
+  transform: rotate(-35deg);
+}
+
+.trade-orbit-one {
+  width: 330px;
+  height: 120px;
+  right: -5px;
+  top: 220px;
+}
+
+.trade-orbit-two {
+  width: 230px;
+  height: 78px;
+  right: 45px;
+  top: 240px;
+  border-color: rgba(255,255,255,.06);
+}
+
+.trade-hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 690px;
 }
 
 .trade-eyebrow {
   display: block;
-  margin-bottom: 14px;
-  color: var(--red);
+  margin-bottom: 20px;
+  color: #ff344d;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: .12em;
+  letter-spacing: .24em;
 }
 
-.trade-intro h1 {
-  margin: 0 0 14px;
-  color: #f2f2ef;
-  font-size: clamp(28px, 4vw, 38px);
-  line-height: 1.05;
-  letter-spacing: -.02em;
+.trade-hero h1 {
+  margin: 0;
+  max-width: 650px;
+  font-size: clamp(58px, 6vw, 92px);
+  line-height: .91;
+  letter-spacing: -.055em;
+  font-weight: 650;
 }
 
-.trade-intro p {
-  max-width: 480px;
-  margin: 0 auto;
-  color: #9199a0;
+.trade-hero h1 strong {
+  display: block;
+  margin-top: 8px;
+  font-weight: 650;
+  color: #ff344d;
+  background: linear-gradient(90deg, #ff304b 0%, #ff5068 52%, #f48aa0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.trade-lead {
+  max-width: 590px;
+  margin: 30px 0 0;
+  color: #9aa1a7;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.trade-benefits {
+  width: min(590px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 30px;
+  margin-top: 36px;
+}
+
+.trade-benefit {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 11px 0;
+}
+
+.trade-benefit-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,52,77,.13);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(255,52,77,.10), rgba(255,52,77,.025));
+  color: #ff4058;
+  font-size: 20px;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+
+.trade-benefit div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trade-benefit strong {
+  color: #f0efec;
   font-size: 13px;
-  line-height: 1.6;
+}
+
+.trade-benefit small {
+  color: #737c83;
+  font-size: 11px;
+}
+
+.trade-savings {
+  width: min(590px, 100%);
+  display: grid;
+  grid-template-columns: .85fr 1.15fr;
+  align-items: end;
+  gap: 32px;
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid #1c2328;
+}
+
+.trade-savings-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.trade-savings-main > span {
+  margin-bottom: 7px;
+  color: #6e777e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: .22em;
+}
+
+.trade-savings-main > strong {
+  color: #ff344d;
+  font-size: 53px;
+  line-height: 1;
+  letter-spacing: -.05em;
+}
+
+.trade-savings-main > small {
+  margin-top: 5px;
+  color: #d8d8d5;
+  font-size: 13px;
+}
+
+.trade-savings-compare {
+  padding-left: 28px;
+  border-left: 1px solid #252c31;
+}
+
+.trade-savings-compare > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid #171d21;
+  font-size: 11px;
+}
+
+.trade-savings-compare span {
+  color: #81898f;
+}
+
+.trade-savings-compare strong {
+  color: #b7bdc1;
+  font-weight: 500;
+}
+
+.trade-savings-compare > div:first-child strong {
+  color: #ff4058;
+}
+
+.trade-signoff {
+  margin-top: 46px;
+  color: #5e686f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: .32em;
+}
+
+.trade-signoff::after {
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+  width: 80px;
+  height: 1px;
+  margin-left: 18px;
+  background: #313a40;
+}
+
+.trade-swap-side {
+  position: relative;
+  width: 100%;
+  max-width: 590px;
+  justify-self: end;
+}
+
+.trade-swap-glow {
+  position: absolute;
+  inset: -80px -100px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255,52,77,.075), transparent 55%);
+  filter: blur(20px);
 }
 
 .trade-widget-frame {
   position: relative;
-  min-height: 560px;
-  border: 1px solid var(--line-2);
-  border-radius: 12px;
+  z-index: 2;
+  min-height: 590px;
+  padding: 14px;
+  border: 1px solid #242d33;
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, rgba(18,23,27,.96), rgba(8,11,13,.98));
+  box-shadow:
+    0 40px 100px rgba(0,0,0,.38),
+    inset 0 1px rgba(255,255,255,.025);
   overflow: hidden;
-  background: var(--panel);
 }
 
-.trade-loading {
+.trade-widget-frame::before {
+  content: "";
   position: absolute;
+  z-index: -1;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6f777d;
-  font-size: 12px;
-}
-
-.trade-config-warning {
-  margin: 16px 0 0;
-  padding: 12px 15px;
-  border: 1px solid rgba(255, 52, 77, 0.25);
-  border-radius: 7px;
-  background: rgba(255, 52, 77, 0.06);
-  color: #ff8f9c;
-  font-size: 11px;
-  line-height: 1.5;
+  background: linear-gradient(125deg, rgba(255,255,255,.025), transparent 30%);
+  pointer-events: none;
 }
 
 #jupiter-plugin {
   width: 100%;
   min-height: 560px;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
-.trade-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  padding: 12px 18px;
-  border-radius: 7px;
-  background: var(--red);
-  color: white;
+.trade-loading {
+  position: absolute;
+  inset: 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #080b0d;
+  color: #707980;
   font-size: 12px;
-  font-weight: 700;
-  box-shadow: 0 8px 28px rgba(255,52,77,.2);
-  transition: transform .15s ease, background .15s ease;
 }
 
-.trade-cta:hover {
-  background: #ff4960;
-  transform: translateY(-1px);
+.trade-trust-row {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 16px 12px 0;
+  padding: 17px 0;
+  border-top: 1px solid #1b2227;
 }
 
-@media (max-width: 520px) {
-  .trade-cta {
+.trade-trust-row > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border-right: 1px solid #1b2227;
+}
+
+.trade-trust-row > div:last-child {
+  border-right: 0;
+}
+
+.trade-trust-row strong {
+  color: #e5e5e2;
+  font-size: 11px;
+}
+
+.trade-trust-row span {
+  color: #666f76;
+  font-size: 9px;
+}
+
+:root {
+  --jupiter-plugin-primary: 255, 52, 77;
+  --jupiter-plugin-background: 8, 11, 13;
+  --jupiter-plugin-primaryText: 243, 242, 239;
+  --jupiter-plugin-warning: 251, 191, 36;
+  --jupiter-plugin-interactive: 48, 56, 64;
+  --jupiter-plugin-module: 14, 19, 23;
+}
+
+@media (max-width: 1050px) {
+  .trade-page-v2 .trade-topbar,
+  .trade-shell {
+    width: min(920px, calc(100% - 40px));
+  }
+
+  .trade-nav {
+    display: none;
+  }
+
+  .trade-page-v2 .trade-topbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .trade-shell {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .trade-hero {
+    min-height: auto;
+    padding: 50px 0;
+  }
+
+  .trade-hero-content {
+    max-width: 720px;
+  }
+
+  .trade-swap-side {
+    max-width: 620px;
+    justify-self: center;
     width: 100%;
-    justify-content: center;
-    text-align: center;
   }
 }
 
-/* =========================================================
-   AUEVO — Jupiter Terminal re-skin (official CSS variables,
-   see dev.jup.ag/docs/tool-kits/terminal/customization)
-   ========================================================= */
+@media (max-width: 620px) {
+  .trade-page-v2 .trade-topbar,
+  .trade-shell {
+    width: calc(100% - 28px);
+  }
 
-:root {
-  --jupiter-plugin-primary: 255, 52, 77;       /* our --red accent */
-  --jupiter-plugin-background: 8, 11, 13;      /* our --bg */
-  --jupiter-plugin-primaryText: 243, 242, 239; /* our --ink */
-  --jupiter-plugin-warning: 251, 191, 36;      /* kept default amber — a warning shouldn't look like our brand red */
-  --jupiter-plugin-interactive: 48, 56, 64;    /* close to our --line-2 */
-  --jupiter-plugin-module: 14, 19, 23;         /* our --panel */
+  .trade-page-v2 .trade-topbar {
+    height: 74px;
+  }
+
+  .trade-back {
+    padding: 9px 12px;
+    font-size: 10px;
+  }
+
+  .trade-shell {
+    padding-top: 20px;
+  }
+
+  .trade-hero {
+    padding: 34px 0 24px;
+  }
+
+  .trade-hero h1 {
+    font-size: clamp(48px, 15vw, 68px);
+  }
+
+  .trade-lead {
+    font-size: 13px;
+  }
+
+  .trade-benefits {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+  }
+
+  .trade-benefit-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+
+  .trade-benefit strong {
+    font-size: 11px;
+  }
+
+  .trade-benefit small {
+    font-size: 9px;
+  }
+
+  .trade-savings {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .trade-savings-compare {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .trade-signoff {
+    margin-bottom: 20px;
+  }
+
+  .trade-widget-frame {
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .trade-trust-row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .trade-trust-row span {
+    font-size: 8px;
+  }
+}
+
+
+/* AUEVO TRADE — full width swap */
+.trade-swap-side {
+  max-width: 680px;
+}
+
+.trade-widget-frame {
+  min-height: 650px;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+#jupiter-plugin {
+  width: 100% !important;
+  min-height: 650px !important;
+  height: 100%;
+}
+
+/* Jupiter integrated mode normally limits its inner app width.
+   Let it use the full Auevo trade panel. */
+#jupiter-plugin > div {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 650px !important;
+}
+
+#jupiter-plugin > div > div {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+@media (min-width: 1051px) {
+  .trade-shell {
+    grid-template-columns: minmax(0, .95fr) minmax(540px, 1.05fr);
+    gap: 54px;
+  }
+}
+
+@media (max-width: 620px) {
+  .trade-widget-frame,
+  #jupiter-plugin,
+  #jupiter-plugin > div {
+    min-height: 600px !important;
+  }
+}
+
+/* Jupiter Plugin — expand internal integrated layout */
+#jupiter-plugin div[class*="max-w-"],
+#jupiter-plugin div[class*="w-["],
+#jupiter-plugin main,
+#jupiter-plugin form {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#jupiter-plugin > div,
+#jupiter-plugin > div > div,
+#jupiter-plugin > div > div > div {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Jupiter Plugin — remove its internal 360/384px desktop width cap */
+#jupiter-plugin .max-w-\[360px\],
+#jupiter-plugin .max-w-\[384px\] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#jupiter-plugin .w-full {
+  max-width: 100% !important;
+}
+
+/* Auevo Trade — let Jupiter card follow actual content height */
+.trade-widget-frame {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+#jupiter-plugin,
+#jupiter-plugin > div,
+#jupiter-plugin > div > div,
+#jupiter-plugin > div > div > div {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* Auevo Trade — compact Jupiter container */
+.trade-swap-side {
+  align-self: start;
+}
+
+.trade-widget-frame {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+#jupiter-plugin {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+#jupiter-plugin > div,
+#jupiter-plugin > div > div,
+#jupiter-plugin > div > div > div {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.trade-widget-frame {
+  overflow: hidden;
+}
+
+/* Auevo Trade — remove empty space below swap */
+.trade-widget-frame {
+  height: 470px !important;
+  min-height: 470px !important;
+}
+
+#jupiter-plugin {
+  height: 470px !important;
+  min-height: 470px !important;
+}
+
+@media (max-width: 1050px) {
+  .trade-widget-frame,
+  #jupiter-plugin {
+    height: 470px !important;
+    min-height: 470px !important;
+  }
+}
+
+/* Trade header — remove old active indicator dot */
+.topbar .trade-nav-active::after,
+.topbar .trade-nav-active::before {
+  display: none !important;
+  content: none !important;
 }

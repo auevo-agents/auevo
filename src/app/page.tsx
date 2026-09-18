@@ -181,6 +181,9 @@ function Header({ onNavigate }: { onNavigate: (id: string) => void }) {
         >
           Docs
         </a>
+        <a href="/trade">
+          Trade
+        </a>
       </nav>
 
       <div className="topbar-right">
