@@ -1,4 +1,9 @@
-import { ADDRESS_TO_BOT, BOT_FEE_REGISTRY, INFRA_TIP_ADDRESSES } from "./bot-fees";
+import {
+  ADDRESS_TO_BOT,
+  BOT_FEE_REGISTRY,
+  INFRA_TIP_ADDRESSES,
+  STABLECOIN_MINTS,
+} from "./bot-fees";
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 const LOOKBACK_DAYS = 90;
@@ -10,6 +15,13 @@ interface HeliusNativeTransfer {
   amount: number; // lamports
 }
 
+interface HeliusTokenTransfer {
+  fromUserAccount: string;
+  toUserAccount: string;
+  tokenAmount: number; // already in the token's own decimal units
+  mint: string;
+}
+
 interface HeliusInstruction {
   programId: string;
   innerInstructions?: { programId: string }[];
@@ -19,6 +31,7 @@ interface HeliusTransaction {
   signature: string;
   timestamp: number; // unix seconds
   nativeTransfers?: HeliusNativeTransfer[];
+  tokenTransfers?: HeliusTokenTransfer[];
   instructions?: HeliusInstruction[];
 }
 
@@ -91,9 +104,7 @@ async function fetchWalletHistory(
   // briefly rolled back to 30 pages on a wrong hypothesis — the scan button
   // failing entirely at the time was actually an unrelated onClick bug
   // (see git history), not a timeout from this cap. Restored to 60 with
-  // `maxDuration: 60` on the API route once the real bug was fixed; watch
-  // actual scan time on a heavy wallet to see how much headroom is left
-  // before this genuinely needs dialing back or moving off Vercel Hobby.
+  // `maxDuration: 60` on the API route once the real bug was fixed.
   const MAX_PAGES = 60;
   let hitCap = true;
 
@@ -165,7 +176,13 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
     );
   }
 
-  const perBot: Record<string, { solPaid: number; txCount: number }> = {};
+  // stableUsd tracks fees paid directly in a stablecoin (USDC/USDT) —
+  // counted 1:1 as USD, separate from solPaid since it needs no price
+  // conversion. A bot's total cost is solPaid*solPriceUsd + stableUsd.
+  const perBot: Record<
+    string,
+    { solPaid: number; stableUsd: number; txCount: number }
+  > = {};
 
   const programOnlyBots = Object.entries(BOT_FEE_REGISTRY).filter(
     ([, bot]) => bot.programOnly && bot.programIds?.length
@@ -174,7 +191,9 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
   for (const tx of txs) {
     let txProgramIds: Set<string> | null = null; // computed lazily, only if needed
 
-    // Pass 1: bots with a known fixed fee-wallet address.
+    // Pass 1: bots with a known fixed fee-wallet address. A fee can arrive
+    // as native SOL or as a stablecoin token transfer (e.g. Fomo pays some
+    // fees in USDC) — check both.
     for (const transfer of tx.nativeTransfers ?? []) {
       if (transfer.fromUserAccount !== wallet) continue;
       const botKey = ADDRESS_TO_BOT[transfer.toUserAccount];
@@ -186,21 +205,40 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
         if (!bot.programIds.some((id) => txProgramIds!.has(id))) continue; // transfer unrelated to this bot's program(s)
       }
 
-      if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, txCount: 0 };
+      if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, stableUsd: 0, txCount: 0 };
       perBot[botKey].solPaid += transfer.amount / LAMPORTS_PER_SOL;
       perBot[botKey].txCount += 1;
     }
 
+    for (const transfer of tx.tokenTransfers ?? []) {
+      if (transfer.fromUserAccount !== wallet) continue;
+      if (!STABLECOIN_MINTS.has(transfer.mint)) continue;
+      const botKey = ADDRESS_TO_BOT[transfer.toUserAccount];
+      if (!botKey) continue;
+
+      const bot = BOT_FEE_REGISTRY[botKey];
+      if (bot.programIds?.length) {
+        txProgramIds ??= programIdsIn(tx);
+        if (!bot.programIds.some((id) => txProgramIds!.has(id))) continue;
+      }
+
+      if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, stableUsd: 0, txCount: 0 };
+      perBot[botKey].stableUsd += transfer.tokenAmount;
+      perBot[botKey].txCount += 1;
+    }
+
     // Pass 2: bots whose fee address changes per trade/isn't fully known
-    // (Axiom, Photon, GMGN, Trojan) — sum every native SOL transfer OUT of
-    // the wallet in a tx touching one of their programs, as long as it
-    // wasn't already claimed by an address-based match above.
+    // (Axiom, Photon, GMGN, Trojan) — sum every native SOL or stablecoin
+    // transfer OUT of the wallet in a tx touching one of their programs,
+    // as long as it wasn't already claimed by an address-based match above.
     for (const [botKey, bot] of programOnlyBots) {
       txProgramIds ??= programIdsIn(tx);
       if (!bot.programIds!.some((id) => txProgramIds!.has(id))) continue;
 
       let sol = 0;
+      let stable = 0;
       let matched = false;
+
       for (const transfer of tx.nativeTransfers ?? []) {
         if (transfer.fromUserAccount !== wallet) continue;
         if (ADDRESS_TO_BOT[transfer.toUserAccount]) continue; // already counted elsewhere
@@ -209,9 +247,18 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
         matched = true;
       }
 
+      for (const transfer of tx.tokenTransfers ?? []) {
+        if (transfer.fromUserAccount !== wallet) continue;
+        if (!STABLECOIN_MINTS.has(transfer.mint)) continue;
+        if (ADDRESS_TO_BOT[transfer.toUserAccount]) continue;
+        stable += transfer.tokenAmount;
+        matched = true;
+      }
+
       if (matched) {
-        if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, txCount: 0 };
+        if (!perBot[botKey]) perBot[botKey] = { solPaid: 0, stableUsd: 0, txCount: 0 };
         perBot[botKey].solPaid += sol;
+        perBot[botKey].stableUsd += stable;
         perBot[botKey].txCount += 1;
       }
     }
@@ -222,12 +269,13 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
       botKey,
       name: BOT_FEE_REGISTRY[botKey].name,
       solPaid: v.solPaid,
-      usdPaid: v.solPaid * solPriceUsd,
+      usdPaid: v.solPaid * solPriceUsd + v.stableUsd,
       txCount: v.txCount,
     }))
     .sort((a, b) => b.usdPaid - a.usdPaid);
 
   const totalSol = breakdown.reduce((s, b) => s + b.solPaid, 0);
+  const totalUsd = breakdown.reduce((s, b) => s + b.usdPaid, 0);
   const totalBotTrades = breakdown.reduce((s, b) => s + b.txCount, 0);
 
   if (txs.length === 0) {
@@ -240,7 +288,7 @@ export async function scanWallet(wallet: string): Promise<ScanResult> {
     daysScanned: LOOKBACK_DAYS,
     totalTxScanned: txs.length,
     totalSol,
-    totalUsd: totalSol * solPriceUsd,
+    totalUsd,
     totalBotTrades,
     breakdown,
     solPriceUsd,

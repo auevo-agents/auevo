@@ -95,6 +95,19 @@ export const INFRA_TIP_ADDRESSES = new Set<string>([
   "astraubkDw81n4LuutSQ8uzHCv4BhPVhfvTcYv8SKC",
 ]);
 
+/**
+ * Stablecoin mints treated as worth $1 each — lets scan.ts count a fee paid
+ * in USDC/USDT directly as USD, no SOL price lookup needed. Found necessary
+ * 2026-09-18: a Fomo fee (address already in the registry) went out in USDC
+ * instead of native SOL and was invisible to detection, which only ever
+ * looked at `nativeTransfers`. Any bot's fee — address-based or
+ * `programOnly` — can now be paid in either SOL or one of these mints.
+ */
+export const STABLECOIN_MINTS = new Set<string>([
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+  "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", // USDT
+]);
+
 export const BOT_FEE_REGISTRY: Record<string, BotFeeWallets> = {
   trojan: {
     name: "Trojan",
