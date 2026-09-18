@@ -18,7 +18,9 @@ declare global {
   }
 }
 
-const REFERRAL_ACCOUNT = process.env.NEXT_PUBLIC_JUPITER_REFERRAL_ACCOUNT;
+const REFERRAL_ACCOUNT =
+  process.env.NEXT_PUBLIC_JUPITER_REFERRAL_ACCOUNT ??
+  "CwczUtJgizVz8bKyKYVUkYbVDMpDudeQ6PLcKyd4PeRv";
 const FEE_BPS = Number(process.env.NEXT_PUBLIC_JUPITER_FEE_BPS ?? "15"); // 15 bps = 0.15%
 
 export default function TradePage() {
