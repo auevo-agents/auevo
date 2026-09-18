@@ -4,18 +4,26 @@ import { useEffect, useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
 
-// Jupiter's own low-cost, embeddable swap widget — see developers.jup.ag.
-// We charge our own platform fee (far below what Axiom/BullX/etc charge)
-// via the Jupiter Referral Program instead of building/maintaining our own
-// execution layer. No custody: the user connects their own wallet inside
-// the widget, we never touch their keys or funds.
+// Jupiter Plugin (developers.jup.ag) — the actively maintained successor to
+// the now-deprecated Jupiter Terminal. Same underlying idea: a free,
+// embeddable swap widget, powered by Jupiter's own Ultra routing/MEV
+// protection, that lets us set our own platform fee (far below what
+// Axiom/BullX/etc charge) via the Jupiter Referral Program instead of
+// building/maintaining our own execution layer. No custody: the user
+// connects their own wallet inside the widget, we never touch their keys
+// or funds.
 //
 // Re-skinned to Auevo's own name/logo/colors via Jupiter's officially
-// documented `branding` prop and `--jupiter-terminal-*` CSS variables
-// (dev.jup.ag/docs/tool-kits/terminal/customization) — this is a
-// supported white-label feature, not a hack, and doesn't touch anything
-// Jupiter requires to stay visible (their program is still what actually
-// executes the swap on-chain regardless of what the UI is labeled).
+// documented `branding` prop and `--jupiter-plugin-*` CSS variables
+// (developers.jup.ag/docs/tool-kits/plugin/customization) — a supported
+// white-label feature, not a hack. There is no documented option to
+// remove the "Powered by Jupiter" attribution line specifically (checked
+// both Terminal's and Plugin's docs) — it appears to be a fixed condition
+// of using the widget for free, not an oversight. Hiding it via
+// undocumented CSS targeting of their internal DOM would be fragile
+// (breaks on their next release) and wouldn't change what's on-chain
+// anyway: the swap still executes through Jupiter's program regardless of
+// what the UI says, visible to anyone who checks the transaction.
 declare global {
   interface Window {
     Jupiter?: {
@@ -38,7 +46,7 @@ export default function TradePage() {
 
     window.Jupiter.init({
       displayMode: "integrated",
-      integratedTargetId: "jupiter-terminal",
+      integratedTargetId: "jupiter-plugin",
       containerStyles: {
         width: "100%",
         borderRadius: "12px",
@@ -48,24 +56,17 @@ export default function TradePage() {
         name: "Auevo",
         logoUri: "https://auevo.io/icon.png",
       },
-      endpoint:
-        process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT ??
-        "https://api.mainnet-beta.solana.com",
-      ...(REFERRAL_ACCOUNT
-        ? {
-            formProps: {
-              referralAccount: REFERRAL_ACCOUNT,
-              referralFee: FEE_BPS,
-            },
-          }
-        : {}),
+      formProps: {
+        referralAccount: REFERRAL_ACCOUNT,
+        referralFee: FEE_BPS,
+      },
     });
   }, [scriptLoaded]);
 
   return (
     <>
       <Script
-        src="https://terminal.jup.ag/main-v4.js"
+        src="https://plugin.jup.ag/plugin-v1.js"
         data-preload
         onLoad={() => setScriptLoaded(true)}
         strategy="afterInteractive"
@@ -92,7 +93,7 @@ export default function TradePage() {
         </div>
 
         <div className="trade-widget-frame">
-          <div id="jupiter-terminal" />
+          <div id="jupiter-plugin" />
           {!scriptLoaded && (
             <p className="trade-loading">Loading swap widget…</p>
           )}
