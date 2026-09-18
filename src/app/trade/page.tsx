@@ -70,6 +70,59 @@ export default function TradePage() {
     });
   }, [scriptLoaded]);
 
+  // Jupiter's widget defaults to a narrow max-width (360-384px) meant for
+  // a small popup/sidebar use case. We want it to fill our own container
+  // instead. No documented containerStyles/containerClassName option
+  // reaches inside their shadow DOM for this, so this specifically widens
+  // the widget — nothing here touches colors, text, or the Jupiter
+  // attribution line.
+  useEffect(() => {
+    if (!scriptLoaded) return;
+
+    const widenWidget = () => {
+      const root = document.getElementById("jupiter-plugin");
+      if (!root) return false;
+
+      for (const host of [root, ...Array.from(root.querySelectorAll("*"))]) {
+        const shadow = (host as HTMLElement).shadowRoot;
+        if (!shadow) continue;
+
+        if (!shadow.getElementById("auevo-jupiter-width-override")) {
+          const style = document.createElement("style");
+          style.id = "auevo-jupiter-width-override";
+          style.textContent = `
+            .max-w-\\[360px\\],
+            .max-w-\\[384px\\] {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+            #portal-container {
+              width: 100% !important;
+              max-width: none !important;
+            }
+          `;
+          shadow.appendChild(style);
+        }
+        return true;
+      }
+      return false;
+    };
+
+    widenWidget();
+    const observer = new MutationObserver(() => widenWidget());
+    const root = document.getElementById("jupiter-plugin");
+    if (root) observer.observe(root, { childList: true, subtree: true });
+
+    const timer = window.setInterval(() => {
+      if (widenWidget()) window.clearInterval(timer);
+    }, 250);
+
+    return () => {
+      observer.disconnect();
+      window.clearInterval(timer);
+    };
+  }, [scriptLoaded]);
+
   return (
     <>
       <Script
