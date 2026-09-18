@@ -28,7 +28,7 @@ declare global {
 const REFERRAL_ACCOUNT =
   process.env.NEXT_PUBLIC_JUPITER_REFERRAL_ACCOUNT ??
   "CwczUtJgizVz8bKyKYVUkYbVDMpDudeQ6PLcKyd4PeRv";
-const FEE_BPS = Number(process.env.NEXT_PUBLIC_JUPITER_FEE_BPS ?? "15"); // 15 bps = 0.15%
+const FEE_BPS = Number(process.env.NEXT_PUBLIC_JUPITER_FEE_BPS ?? "50"); // 50 bps = 0.5% — Jupiter's documented minimum for referralFee is 50; anything lower is rejected at swap time
 
 export default function TradePage() {
   const [scriptLoaded, setScriptLoaded] = useState(false);
