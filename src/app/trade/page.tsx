@@ -16,14 +16,15 @@ import Link from "next/link";
 // Re-skinned to Auevo's own name/logo/colors via Jupiter's officially
 // documented `branding` prop and `--jupiter-plugin-*` CSS variables
 // (developers.jup.ag/docs/tool-kits/plugin/customization) — a supported
-// white-label feature, not a hack. There is no documented option to
-// remove the "Powered by Jupiter" attribution line specifically (checked
-// both Terminal's and Plugin's docs) — it appears to be a fixed condition
-// of using the widget for free, not an oversight. Hiding it via
-// undocumented CSS targeting of their internal DOM would be fragile
-// (breaks on their next release) and wouldn't change what's on-chain
-// anyway: the swap still executes through Jupiter's program regardless of
-// what the UI says, visible to anyone who checks the transaction.
+// white-label feature. There is no documented option to remove the
+// "Powered by Jupiter" attribution line, and no documented way to
+// recolor Jupiter's own internal Swap button (it renders inside their
+// shadow DOM) — both would require reaching into undocumented internal
+// markup, which is fragile (breaks on their updates) and, for the
+// attribution specifically, not something this codebase does — see
+// git history for why. Swap success/error feedback below uses Jupiter's
+// official onSuccess/onSwapError callbacks and is shown as a border/glow
+// on our own container, not a recolor of their button.
 declare global {
   interface Window {
     Jupiter?: {
@@ -38,8 +39,11 @@ const REFERRAL_ACCOUNT =
   "76zSkZWyH9di7V5d7cfp5aU8es3XCR6KrQRwDDEEJufV"; // Ultra referral account — Plugin runs on Ultra, which uses a separate referral registration from the old Swap+Trigger one
 const FEE_BPS = Number(process.env.NEXT_PUBLIC_JUPITER_FEE_BPS ?? "50"); // 50 bps = 0.5% — Jupiter's documented minimum for referralFee is 50; anything lower is rejected at swap time
 
+type SwapState = "idle" | "success" | "error";
+
 export default function TradePage() {
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [swapState, setSwapState] = useState<SwapState>("idle");
 
   useEffect(() => {
     if (!scriptLoaded || !window.Jupiter) return;
@@ -60,138 +64,10 @@ export default function TradePage() {
         referralAccount: REFERRAL_ACCOUNT,
         referralFee: FEE_BPS,
       },
+      onSuccess: () => setSwapState("success"),
+      onSwapError: () => setSwapState("error"),
+      onFormUpdate: () => setSwapState("idle"),
     });
-  }, [scriptLoaded]);
-
-  useEffect(() => {
-    if (!scriptLoaded) return;
-
-    let observer: MutationObserver | null = null;
-
-    const patchJupiter = () => {
-      const root = document.getElementById("jupiter-plugin");
-      if (!root) return false;
-
-      const hosts = [root, ...Array.from(root.querySelectorAll("*"))];
-
-      for (const host of hosts) {
-        const shadow = (host as HTMLElement).shadowRoot;
-        if (!shadow) continue;
-
-        if (!(window as any).__auevoJupiterDumped) {
-          (window as any).__auevoJupiterDumped = true;
-          shadow.querySelectorAll("*").forEach((el) => {
-            if ((el.textContent || "").includes("Powered by Jupiter")) {
-              console.log("AUEVO_JUPITER_ATTR", {
-                tag: el.tagName,
-                className: (el as HTMLElement).className,
-                html: el.outerHTML
-              });
-            }
-          });
-        }
-
-        if (!shadow.getElementById("auevo-jupiter-overrides")) {
-          const style = document.createElement("style");
-          style.id = "auevo-jupiter-overrides";
-          style.textContent = `
-            .max-w-\\[360px\\],
-            .max-w-\\[384px\\] {
-              width: 100% !important;
-              max-width: 100% !important;
-            }
-
-            #portal-container {
-              width: 100% !important;
-              max-width: none !important;
-            }
-
-            a[href*="jup.ag"],
-            a[href*="jup.ag"] *,
-            a[href*="jupiter.ag"],
-            a[href*="jupiter.ag"] * {
-              color: #000000 !important;
-              fill: #000000 !important;
-              stroke: #000000 !important;
-              opacity: 1 !important;
-            }
-          `;
-          shadow.appendChild(style);
-        }
-
-        {
-          const walker = document.createTreeWalker(
-            shadow,
-            NodeFilter.SHOW_TEXT
-          );
-
-          const textNodes: Text[] = [];
-          let current: Node | null;
-
-          while ((current = walker.nextNode())) {
-            if (current.textContent?.trim() === "Powered by") {
-              textNodes.push(current as Text);
-            }
-          }
-
-          textNodes.forEach((textNode) => {
-            const span = document.createElement("span");
-            span.textContent = textNode.textContent;
-            span.style.setProperty("color", "#000000", "important");
-            span.style.setProperty("opacity", "1", "important");
-            textNode.parentNode?.replaceChild(span, textNode);
-          });
-        }
-
-        shadow.querySelectorAll("*").forEach((el) => {
-          const text = el.textContent?.replace(/\\s+/g, " ").trim() || "";
-
-          if (text === "Powered by") {
-            const node = el as HTMLElement;
-            node.style.setProperty("color", "#000000", "important");
-            node.style.setProperty("fill", "#000000", "important");
-            node.style.setProperty("opacity", "1", "important");
-          }
-
-          if (text === "Powered by Jupiter") {
-            const node = el as HTMLElement;
-            node.style.setProperty("font-size", "7px", "important");
-            node.style.setProperty("opacity", "1", "important");
-            node.style.setProperty("color", "#000000", "important");
-
-            node.querySelectorAll("*").forEach((child) => {
-              const c = child as HTMLElement;
-              c.style.setProperty("color", "#000000", "important");
-              c.style.setProperty("opacity", "1", "important");
-              c.style.setProperty("color", "#000000", "important");
-              c.style.setProperty("fill", "#000000", "important");
-              c.style.setProperty("stroke", "#000000", "important");
-            });
-          }
-        });
-
-        return true;
-      }
-
-      return false;
-    };
-
-    patchJupiter();
-
-    const root = document.getElementById("jupiter-plugin");
-    if (root) {
-      observer = new MutationObserver(() => patchJupiter());
-      observer.observe(root, { childList: true, subtree: true });
-    }
-
-    const timer = window.setInterval(() => {
-      if (patchJupiter()) window.clearInterval(timer);
-    }, 250);
-
-    return () => {
-      observer?.disconnect();
-      window.clearInterval(timer);
-    };
   }, [scriptLoaded]);
 
   return (
@@ -305,13 +181,26 @@ export default function TradePage() {
           <div className="trade-swap-side">
             <div className="trade-swap-glow" />
 
-            <div className="trade-widget-frame">
+            <div
+              className={`trade-widget-frame trade-widget-frame-${swapState}`}
+            >
               <div id="jupiter-plugin" />
 
               {!scriptLoaded && (
                 <p className="trade-loading">Loading swap…</p>
               )}
             </div>
+
+            {swapState === "success" && (
+              <p className="trade-swap-status trade-swap-status-success">
+                ✓ Swap successful
+              </p>
+            )}
+            {swapState === "error" && (
+              <p className="trade-swap-status trade-swap-status-error">
+                ✕ Swap failed — try again
+              </p>
+            )}
 
             <div className="trade-trust-row">
               <div>
