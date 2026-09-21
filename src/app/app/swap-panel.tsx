@@ -26,6 +26,11 @@ import {
 } from "@/lib/uniswap";
 import { robinhoodChain } from "@/lib/chains";
 import { shortenAddress } from "@/lib/format";
+import {
+  DEFAULT_QUICK_BUY_PRESETS,
+  readQuickBuyPresets,
+  writeQuickBuyPresets,
+} from "@/lib/quick-buy-presets";
 
 /**
  * The actual swap form — single-hop Uniswap V3 on Robinhood Chain.
@@ -240,6 +245,14 @@ export function SwapPanel({
   const [quote, setQuote] = useState<Quote>(null);
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+
+  // Lazy-initialized from localStorage — fine to differ from the SSR
+  // markup for one paint, same reasoning as FavoriteStar.
+  const [quickBuyPresets, setQuickBuyPresets] = useState<string[]>(() =>
+    typeof window === "undefined" ? DEFAULT_QUICK_BUY_PRESETS : readQuickBuyPresets()
+  );
+  const [editingPresets, setEditingPresets] = useState(false);
+  const [presetDraft, setPresetDraft] = useState<string[]>(quickBuyPresets);
 
   // In locked mode, "buy" spends the quote token to receive the base
   // token; "sell" is the reverse. initialTokenIn/Out are always passed
@@ -569,6 +582,60 @@ export function SwapPanel({
           inputMode="decimal"
         />
       </label>
+
+      {lockPair && side === "buy" && (
+        <div className="trade-quick-buy">
+          {editingPresets ? (
+            <>
+              <div className="trade-pill-row trade-quick-buy-edit">
+                {presetDraft.map((value, i) => (
+                  <input
+                    key={i}
+                    value={value}
+                    inputMode="decimal"
+                    onChange={(e) => {
+                      const next = [...presetDraft];
+                      next[i] = e.target.value;
+                      setPresetDraft(next);
+                    }}
+                  />
+                ))}
+              </div>
+              <button
+                className="trade-quick-buy-save"
+                onClick={() => {
+                  const cleaned = presetDraft.map((v, i) =>
+                    v.trim() && !Number.isNaN(Number(v)) ? v.trim() : quickBuyPresets[i]
+                  );
+                  setQuickBuyPresets(cleaned);
+                  writeQuickBuyPresets(cleaned);
+                  setEditingPresets(false);
+                }}
+              >
+                Save
+              </button>
+            </>
+          ) : (
+            <div className="trade-pill-row">
+              {quickBuyPresets.map((value, i) => (
+                <button key={i} onClick={() => setAmountIn(value)}>
+                  {value} {displayInSymbol ?? ""}
+                </button>
+              ))}
+              <button
+                className="trade-quick-buy-edit-btn"
+                title="Edit quick-buy amounts"
+                onClick={() => {
+                  setPresetDraft(quickBuyPresets);
+                  setEditingPresets(true);
+                }}
+              >
+                ✎
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {typeof inBalance === "bigint" && typeof inDecimals === "number" && (
         <div className="trade-pill-row">
