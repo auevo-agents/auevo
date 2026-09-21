@@ -74,9 +74,11 @@ function AuevoApp() {
     }
   }
 
-  // Shareable links: auevo.io/?wallet=<address> pre-fills and auto-runs
+  // Shareable links: auevo.io/fees?wallet=<address> pre-fills and auto-runs
   // the scan, so a social post can link straight to a verifiable result
-  // instead of asking people to paste the address themselves.
+  // instead of asking people to paste the address themselves. Links from
+  // before the scanner moved off the homepage (auevo.io/?wallet=<address>)
+  // still work — "/" forwards here and carries the parameter over.
   useEffect(() => {
     const fromUrl = searchParams.get("wallet");
     if (fromUrl) {
