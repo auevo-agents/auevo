@@ -1,6 +1,6 @@
 "use client";
 
-/** Browser-local favorite pools — same pattern as auevo.watchedWallets / auevo.trackedTokens. */
+/** Browser-local favorite pools — same pattern as watched-wallets.ts. */
 
 const STORAGE_KEY = "auevo.favoritePools";
 

@@ -7644,3 +7644,28 @@ a {
   font-size: 10px;
   letter-spacing: .08em;
 }
+
+.position-row {
+  display: grid;
+  grid-template-columns: 0.7fr 0.8fr 1fr 1fr 1fr;
+  align-items: center;
+  gap: 10px;
+  min-width: 620px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #1c2226;
+  font-size: 12.5px;
+  color: #d7dadb;
+}
+
+.position-row:last-child {
+  border-bottom: none;
+}
+
+.position-head {
+  position: sticky;
+  top: 0;
+  background: #0a0e10;
+  color: #5a6469;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
