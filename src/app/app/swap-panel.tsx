@@ -9,6 +9,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+import type { PublicClient } from "viem";
 import {
   FEE_TIERS,
   UNISWAP_QUOTER_V2,
@@ -28,6 +29,12 @@ import { shortenAddress } from "@/lib/format";
  * audited SwapRouter02 — the pool itself holds the funds, not code we
  * wrote. Every step (approve, swap) is a transaction the connected
  * wallet signs itself; nothing here ever custodies a token.
+ *
+ * Order type is Market only. A "Limit" tab is shown but disabled rather
+ * than left out — the intent is real (Uniswap X is live on Robinhood
+ * Chain with zero-gas limit orders via its filler network), it just
+ * isn't wired up yet; showing a working-looking tab that silently does
+ * nothing would be worse than showing none.
  */
 
 const ERC20_ABI = [
@@ -132,14 +139,36 @@ type Quote = {
   amountOut: bigint;
 } | null;
 
+type GasTier = "low" | "med" | "high";
+
 function isValidAddress(value: string): value is Address {
   return isAddress(value, { strict: false });
+}
+
+/**
+ * Real EIP-1559 priority: "med" leaves the wallet/RPC's own defaults
+ * alone (identical behaviour to before this existed), "low"/"high" scale
+ * a fresh fee estimate. Best-effort — a failed estimate just falls back
+ * to defaults rather than blocking the transaction.
+ */
+async function gasOverridesFor(publicClient: PublicClient | undefined, tier: GasTier) {
+  if (tier === "med" || !publicClient) return {};
+  try {
+    const est = await publicClient.estimateFeesPerGas();
+    const multiplier = tier === "low" ? 80n : 150n;
+    return {
+      maxFeePerGas: (est.maxFeePerGas * multiplier) / 100n,
+      maxPriorityFeePerGas: (est.maxPriorityFeePerGas * multiplier) / 100n,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export interface SwapPanelProps {
   initialTokenIn?: string;
   initialTokenOut?: string;
-  /** When set, the pair is fixed (no address inputs) — used on the token detail page, where the pair is already known. */
+  /** When set, the pair is fixed — used on the token detail page, where the pair is already known, with a Buy/Sell toggle instead of address inputs. */
   lockPair?: boolean;
 }
 
@@ -151,16 +180,34 @@ export function SwapPanel({
   const { address: account, isConnected } = useAccount();
   const publicClient = usePublicClient();
 
-  const [tokenInAddr, setTokenInAddr] = useState(initialTokenIn);
-  const [tokenOutAddr, setTokenOutAddr] = useState(initialTokenOut);
+  // Locked mode: initialTokenIn/Out are the "buy" orientation (spend
+  // quote, receive base); "sell" just swaps which one is in/out.
+  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const [manualTokenIn, setManualTokenIn] = useState(initialTokenIn);
+  const [manualTokenOut, setManualTokenOut] = useState(initialTokenOut);
   const [amountIn, setAmountIn] = useState("");
   const [slippageBps, setSlippageBps] = useState(100); // 1%
+  const [gasTier, setGasTier] = useState<GasTier>("med");
   const [quote, setQuote] = useState<Quote>(null);
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
-  const tokenIn = isValidAddress(tokenInAddr) ? tokenInAddr : undefined;
-  const tokenOut = isValidAddress(tokenOutAddr) ? tokenOutAddr : undefined;
+  // In locked mode, "buy" spends the quote token to receive the base
+  // token; "sell" is the reverse. initialTokenIn/Out are always passed
+  // in the "buy" orientation (quote, base) by the caller.
+  const effectiveTokenIn = lockPair
+    ? side === "buy"
+      ? initialTokenIn
+      : initialTokenOut
+    : manualTokenIn;
+  const effectiveTokenOut = lockPair
+    ? side === "buy"
+      ? initialTokenOut
+      : initialTokenIn
+    : manualTokenOut;
+
+  const tokenIn = isValidAddress(effectiveTokenIn) ? effectiveTokenIn : undefined;
+  const tokenOut = isValidAddress(effectiveTokenOut) ? effectiveTokenOut : undefined;
 
   const tokenMeta = useReadContracts({
     allowFailure: true,
@@ -290,20 +337,23 @@ export function SwapPanel({
   const swap = useWriteContract();
   const swapReceipt = useWaitForTransactionReceipt({ hash: swap.data });
 
-  function handleApprove() {
+  async function handleApprove() {
     if (!tokenIn || !parsedAmountIn) return;
+    const overrides = await gasOverridesFor(publicClient, gasTier);
     approve.writeContract({
       address: tokenIn,
       abi: ERC20_ABI,
       functionName: "approve",
       args: [UNISWAP_SWAP_ROUTER_02, parsedAmountIn],
+      ...overrides,
     });
   }
 
-  function handleSwap() {
+  async function handleSwap() {
     if (!tokenIn || !tokenOut || !account || !parsedAmountIn || !quote || amountOutMinimum === null) {
       return;
     }
+    const overrides = await gasOverridesFor(publicClient, gasTier);
     swap.writeContract({
       address: UNISWAP_SWAP_ROUTER_02,
       abi: SWAP_ROUTER_ABI,
@@ -319,7 +369,14 @@ export function SwapPanel({
           sqrtPriceLimitX96: 0n,
         },
       ],
+      ...overrides,
     });
+  }
+
+  function fillFraction(fraction: number) {
+    if (typeof inBalance !== "bigint" || typeof inDecimals !== "number") return;
+    const amount = (inBalance * BigInt(Math.round(fraction * 1000))) / 1000n;
+    setAmountIn(formatUnits(amount, inDecimals));
   }
 
   if (!isConnected) {
@@ -328,15 +385,37 @@ export function SwapPanel({
 
   return (
     <div className="trade-form">
+      {lockPair && (
+        <div className="trade-side-toggle">
+          <button
+            className={side === "buy" ? "trade-side-btn buy active" : "trade-side-btn buy"}
+            onClick={() => setSide("buy")}
+          >
+            Buy
+          </button>
+          <button
+            className={side === "sell" ? "trade-side-btn sell active" : "trade-side-btn sell"}
+            onClick={() => setSide("sell")}
+          >
+            Sell
+          </button>
+        </div>
+      )}
+
+      <div className="trade-order-tabs">
+        <span className="trade-order-tab active">Market</span>
+        <span className="trade-order-tab disabled" title="Uniswap X limit orders are live on Robinhood Chain — not wired up here yet">
+          Limit · soon
+        </span>
+      </div>
+
       {lockPair ? (
         <div className="trade-locked-pair">
           <span>{inSymbol ?? (tokenIn ? shortenAddress(tokenIn) : "?")}</span>
           <span className="trade-locked-arrow">→</span>
           <span>{outSymbol ?? (tokenOut ? shortenAddress(tokenOut) : "?")}</span>
           {typeof inBalance === "bigint" && typeof inDecimals === "number" && (
-            <small>
-              balance {Number(formatUnits(inBalance, inDecimals)).toFixed(4)}
-            </small>
+            <small>balance {Number(formatUnits(inBalance, inDecimals)).toFixed(4)}</small>
           )}
         </div>
       ) : (
@@ -344,8 +423,8 @@ export function SwapPanel({
           <label className="trade-field">
             <span>Token in (address)</span>
             <input
-              value={tokenInAddr}
-              onChange={(e) => setTokenInAddr(e.target.value.trim())}
+              value={manualTokenIn}
+              onChange={(e) => setManualTokenIn(e.target.value.trim())}
               placeholder="0x…"
               spellCheck={false}
             />
@@ -362,8 +441,8 @@ export function SwapPanel({
           <label className="trade-field">
             <span>Token out (address)</span>
             <input
-              value={tokenOutAddr}
-              onChange={(e) => setTokenOutAddr(e.target.value.trim())}
+              value={manualTokenOut}
+              onChange={(e) => setManualTokenOut(e.target.value.trim())}
               placeholder="0x…"
               spellCheck={false}
             />
@@ -382,13 +461,42 @@ export function SwapPanel({
         />
       </label>
 
+      {typeof inBalance === "bigint" && typeof inDecimals === "number" && (
+        <div className="trade-pill-row">
+          <button onClick={() => fillFraction(0.25)}>25%</button>
+          <button onClick={() => fillFraction(0.5)}>50%</button>
+          <button onClick={() => fillFraction(1)}>MAX</button>
+        </div>
+      )}
+
       <label className="trade-field">
         <span>Slippage tolerance</span>
-        <select value={slippageBps} onChange={(e) => setSlippageBps(Number(e.target.value))}>
-          <option value={50}>0.5%</option>
-          <option value={100}>1%</option>
-          <option value={300}>3%</option>
-        </select>
+        <div className="trade-pill-row">
+          {[50, 100, 300, 500].map((bps) => (
+            <button
+              key={bps}
+              className={slippageBps === bps ? "active" : undefined}
+              onClick={() => setSlippageBps(bps)}
+            >
+              {(bps / 100).toFixed(1)}%
+            </button>
+          ))}
+        </div>
+      </label>
+
+      <label className="trade-field">
+        <span>Priority</span>
+        <div className="trade-pill-row">
+          {(["low", "med", "high"] as const).map((tier) => (
+            <button
+              key={tier}
+              className={gasTier === tier ? "active" : undefined}
+              onClick={() => setGasTier(tier)}
+            >
+              {tier === "med" ? "Med" : tier === "low" ? "Low" : "High"}
+            </button>
+          ))}
+        </div>
       </label>
 
       <div className="trade-quote">
@@ -424,7 +532,11 @@ export function SwapPanel({
           disabled={!quote || swap.isPending || swapReceipt.isLoading}
           onClick={handleSwap}
         >
-          {swap.isPending || swapReceipt.isLoading ? "Swapping…" : "Swap"}
+          {swap.isPending || swapReceipt.isLoading
+            ? "Swapping…"
+            : lockPair
+              ? `${side === "buy" ? "Buy" : "Sell"} ${(side === "buy" ? outSymbol : inSymbol) ?? "token"}`
+              : "Swap"}
         </button>
       )}
 

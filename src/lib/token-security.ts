@@ -25,6 +25,7 @@ import {
   externalFindings,
   resolveLiquidity,
   takeBackOverridesRenounce,
+  type LiquidityCoverage,
 } from "./external-findings";
 import { SEVERITY_RANK, type Finding, type Severity } from "./evm/types";
 
@@ -105,6 +106,7 @@ export interface TokenScanReport {
     renounced: boolean;
     source: string;
   } | null;
+  liquidity: LiquidityCoverage;
   capabilities: {
     id: string;
     label: string;
@@ -248,6 +250,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
         totalSupplyFormatted: null,
       },
       ownership: null,
+      liquidity: { secured: null, source: "" },
       capabilities: [],
       deployment: null,
       holders: null,
@@ -408,7 +411,8 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
   // Same pattern as the two checks above: GoPlus is attempted by default,
   // so this is a gap whenever it (and Quick Intel, once it covers this
   // chain) came back with nothing — never a "not attempted" limitation.
-  if (resolveLiquidity(goplus, quickIntel).secured === null) {
+  const liquidity = resolveLiquidity(goplus, quickIntel);
+  if (liquidity.secured === null) {
     evidenceGaps.push(GAP.liquidity);
     checksSkipped.push(
       "Whether the liquidity pool is locked or burned could not be established from any configured audit source."
@@ -464,6 +468,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     ownership: ownerInfo
       ? { owner: ownerInfo.owner, renounced, source: ownerInfo.source }
       : null,
+    liquidity,
     capabilities: detected.map(({ definition, matched }) => ({
       id: definition.id,
       label: definition.label,

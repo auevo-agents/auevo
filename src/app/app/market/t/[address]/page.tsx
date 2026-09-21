@@ -6,6 +6,7 @@ import { ConnectButton } from "../../../connect-button";
 import { SwapPanel } from "../../../swap-panel";
 import { CandlestickChart } from "../../candlestick-chart";
 import { TradeList } from "../../trade-list";
+import { TokenInfoPanel } from "../../token-info-panel";
 import {
   formatAge,
   formatPercent,
@@ -337,8 +338,10 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                 <p>
                   Routed through Uniswap&apos;s own SwapRouter02 — you approve and sign
                   every step yourself in your own wallet; nothing here custodies funds.
-                  No limit orders, ladders or martingale strategies exist behind this
-                  yet — only a direct market swap.
+                  Market orders only here — no ladders or martingale strategies. For
+                  recurring buys, see <Link href="/app/bots">Bots</Link>; limit orders
+                  aren&apos;t wired up yet, even though Uniswap X supports them on this
+                  chain — that&apos;s next, not faked here in the meantime.
                 </p>
                 {pool.baseToken.address && pool.quoteToken.address ? (
                   <SwapPanel
@@ -351,15 +354,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                 )}
               </div>
 
-              <div className="token-side-card">
-                <h4>About this data</h4>
-                <p>
-                  Price, chart, trades, liquidity, volume and market cap are read live
-                  from GeckoTerminal&apos;s public DEX API, not computed by us. No safety
-                  verdict is shown or implied here — this page does not say whether{" "}
-                  {pool.baseToken.symbol ?? "this token"} is safe to hold.
-                </p>
-              </div>
+              {pool.baseToken.address && <TokenInfoPanel tokenAddress={pool.baseToken.address} />}
             </div>
           </div>
 
