@@ -5921,3 +5921,44 @@ a {
 }
 
 .scan-score-muted { color: var(--faint); }
+
+/* --- data source roster --- */
+
+.scan-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.scan-sources > span:first-child {
+  font-size: 10px;
+  letter-spacing: .18em;
+  color: var(--faint);
+}
+
+.scan-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.scan-source i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.scan-source-unavailable { color: var(--faint); }
+.scan-source-unavailable i { background: var(--line-2); }
+
+.scan-source small {
+  font-size: 11px;
+  color: var(--faint);
+}

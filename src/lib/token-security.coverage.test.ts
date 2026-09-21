@@ -147,6 +147,9 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
   process.env.ROBINHOOD_RPC_URL = `http://127.0.0.1:${port}`;
+  // Empty means "source off" — this test covers the RPC path only.
+  process.env.GOPLUS_API_URL = "";
+  process.env.BLOCKSCOUT_API_URL = "";
 
   const { scanToken } = await import("./token-security");
   report = await scanToken(TOKEN);

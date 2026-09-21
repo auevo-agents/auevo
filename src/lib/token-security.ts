@@ -12,6 +12,14 @@ import { findDeployment, type DeploymentInfo } from "./evm/deployment";
 import { readOwner, readTokenMetadata } from "./evm/erc20";
 import { analyseHolders, type HolderDistribution } from "./evm/holders";
 import { detectProxy, type ProxyInfo } from "./evm/proxy";
+import {
+  fetchBlockscoutContract,
+  fetchBlockscoutDeployment,
+  fetchBlockscoutToken,
+  type BlockscoutTokenInfo,
+} from "./evm/blockscout";
+import { fetchGoPlus } from "./evm/goplus";
+import { externalFindings, takeBackOverridesRenounce } from "./external-findings";
 import { SEVERITY_RANK, type Finding, type Severity } from "./evm/types";
 
 /**
@@ -63,6 +71,8 @@ export type Verdict = "critical" | "high-risk" | "caution" | "low-risk";
  */
 export type Confidence = "high" | "medium" | "low";
 
+export type SourceStatus = "ok" | "unavailable";
+
 export interface TokenScanReport {
   address: Address;
   chain: { id: number; name: string };
@@ -104,6 +114,12 @@ export interface TokenScanReport {
   confidence: Confidence;
   /** The major checks that came back unknown — what caps the confidence. */
   evidenceGaps: string[];
+  /** Which data sources answered. Shown so a silent outage is visible. */
+  sources: {
+    rpc: SourceStatus;
+    goplus: SourceStatus;
+    blockscout: SourceStatus;
+  };
   /** Checks that could not be completed, in plain language. */
   checksSkipped: string[];
 }
@@ -163,10 +179,21 @@ function sortFindings(findings: Finding[]): Finding[] {
  * see, and leaving them implicit is how a "clean" result gets over-read.
  */
 const BASE_LIMITATIONS = [
-  "No trade is simulated, so a token that blocks selling only at execution time (a honeypot) cannot be ruled out from bytecode alone.",
   "Liquidity depth and whether it is locked are not checked — that needs the DEX contracts, which are not wired up yet.",
-  "Source code is not compared against the deployed bytecode; a contract can be unverified and still scan clean here.",
 ];
+
+/**
+ * An evidence gap is a check we attempted and could not settle; a standing
+ * limitation is something this version does not attempt at all. Both are
+ * published, but only gaps move the confidence, so "confidence" keeps
+ * meaning "how much of what we tried actually came back".
+ */
+const GAP = {
+  age: "Age unknown",
+  distribution: "Distribution incomplete",
+  sellBehaviour: "Sell behaviour unknown",
+  verification: "Source verification unknown",
+} as const;
 
 export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
   if (!isAddress(rawAddress, { strict: false })) throw new NotAnAddressError();
@@ -228,6 +255,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
       verdict: "critical",
       confidence: "high",
       evidenceGaps: [],
+      sources: { rpc: "ok", goplus: "unavailable", blockscout: "unavailable" },
       checksSkipped,
     };
   }
@@ -259,6 +287,15 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     );
   }
 
+  // Kicked off here so the third-party round trips overlap the RPC work
+  // below rather than adding to it. Both fetchers resolve to null on any
+  // failure, so neither can reject and neither can block the scan.
+  const externalLookups = Promise.all([
+    fetchGoPlus(address),
+    fetchBlockscoutToken(address),
+    fetchBlockscoutContract(address),
+  ]);
+
   const profile = profileBytecode(analysedCode);
   const erc20Surface = checkErc20Surface(profile);
   const detected = detectCapabilities(profile);
@@ -282,22 +319,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
 
   const evidenceGaps: string[] = [];
 
-  const deployment = await findDeployment(client, address, headBlock, deadline);
-  if (deployment) {
-    findings.push(...ageFindings(deployment));
-  } else {
-    evidenceGaps.push("Age unknown");
-    checksSkipped.push(
-      "Deployment date could not be determined — the RPC does not serve the historical state this needs."
-    );
-    findings.push({
-      id: "age-unknown",
-      title: "Deployment date could not be determined",
-      severity: "info",
-      detail:
-        "We could not establish when this contract went live, so the strongest early warning there is — a token deployed hours ago — could not be checked either way.",
-    });
-  }
+  let deployment = await findDeployment(client, address, headBlock, deadline);
 
   let holders: HolderDistribution | null = null;
   if (metadata.totalSupply && metadata.totalSupply > 0n) {
@@ -311,18 +333,71 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     );
   }
 
+  const [goplus, blockscoutToken, blockscoutContract] = await externalLookups;
+
+  // The explorer has indexed what the public node cannot serve, so it
+  // fills gaps the RPC pass left open — never overrides what the RPC
+  // established.
+  if (!deployment && blockscoutContract?.creationTxHash) {
+    deployment = await deploymentFromExplorer(blockscoutContract.creationTxHash);
+  }
+
+  if (deployment) {
+    findings.push(...ageFindings(deployment));
+  } else {
+    evidenceGaps.push(GAP.age);
+    checksSkipped.push(
+      "Deployment date could not be determined — neither the RPC's historical state nor the explorer answered."
+    );
+    findings.push({
+      id: "age-unknown",
+      title: "Deployment date could not be determined",
+      severity: "info",
+      detail:
+        "We could not establish when this contract went live, so the strongest early warning there is — a token deployed hours ago — could not be checked either way.",
+    });
+  }
+
+  if (blockscoutToken && metadata.totalSupply && metadata.totalSupply > 0n) {
+    holders = distributionFromExplorer(blockscoutToken, metadata.totalSupply);
+  }
+
   if (holders) findings.push(...holderFindings(holders));
   else
     checksSkipped.push(
-      "Holder distribution could not be reconstructed — the RPC returned no usable Transfer history within the scan budget."
+      "Holder distribution could not be reconstructed — neither Transfer history nor the explorer returned a usable holder list."
     );
 
   if (!holders || holders.partial) {
-    evidenceGaps.push("Distribution incomplete");
+    evidenceGaps.push(GAP.distribution);
     checksSkipped.push(
       "Holder distribution was read from a slice of Transfer history, not all of it, so a wallet holding most of the supply can sit outside what we scanned."
     );
   }
+
+  // Selling is the question bytecode cannot answer, so it is a gap only
+  // when the simulation source stayed silent.
+  if (goplus?.isHoneypot === null || !goplus) {
+    evidenceGaps.push(GAP.sellBehaviour);
+    checksSkipped.push(
+      "No sell was simulated for this token, so a contract that blocks selling only at execution time — a honeypot — cannot be ruled out."
+    );
+  }
+
+  if (blockscoutContract?.isVerified == null && goplus?.isOpenSource == null) {
+    evidenceGaps.push(GAP.verification);
+    checksSkipped.push(
+      "Whether the published source matches the deployed bytecode could not be established."
+    );
+  }
+
+  findings.push(
+    ...externalFindings(
+      goplus,
+      blockscoutContract,
+      new Set(findings.map((finding) => finding.id))
+    )
+  );
 
   if (metadata.totalSupply === 0n) {
     findings.push({
@@ -334,7 +409,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     });
   }
 
-  const sorted = sortFindings(findings);
+  const sorted = sortFindings(takeBackOverridesRenounce(findings, goplus));
   const score = scoreFrom(sorted);
   const confidence = confidenceFrom(evidenceGaps);
 
@@ -378,7 +453,83 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     verdict: verdictFrom(score, sorted, confidence),
     confidence,
     evidenceGaps,
+    sources: {
+      rpc: "ok",
+      goplus: goplus ? "ok" : "unavailable",
+      blockscout: blockscoutToken || blockscoutContract ? "ok" : "unavailable",
+    },
     checksSkipped,
+  };
+}
+
+/** Deployment date from the explorer, when the node cannot serve it. */
+async function deploymentFromExplorer(
+  creationTxHash: string
+): Promise<DeploymentInfo | null> {
+  const creation = await fetchBlockscoutDeployment(creationTxHash);
+  if (!creation) return null;
+
+  return {
+    blockNumber: creation.blockNumber ?? "0",
+    timestamp: creation.timestamp,
+    ageDays: Math.max(0, (Date.now() / 1000 - creation.timestamp) / 86_400),
+  };
+}
+
+/**
+ * Distribution from the explorer's index. Unlike the log-derived version
+ * this is a ranked list over every holder, so it is not partial — that
+ * flag exists to mark a window, and there is no window here.
+ */
+function distributionFromExplorer(
+  token: BlockscoutTokenInfo,
+  totalSupply: bigint
+): HolderDistribution {
+  const burn = new Set([
+    "0x000000000000000000000000000000000000dEaD".toLowerCase(),
+    "0x0000000000000000000000000000000000000001".toLowerCase(),
+    "0x0000000000000000000000000000000000000000".toLowerCase(),
+  ]);
+
+  const share = (value: bigint) =>
+    totalSupply > 0n ? Number((value * 1_000_000n) / totalSupply) / 10_000 : 0;
+
+  let burned = 0n;
+  const holders = [];
+
+  for (const holder of token.holders) {
+    let balance: bigint;
+    try {
+      balance = BigInt(holder.balance);
+    } catch {
+      continue;
+    }
+    if (balance <= 0n) continue;
+
+    if (burn.has(holder.address.toLowerCase())) {
+      burned += balance;
+      continue;
+    }
+
+    holders.push({
+      address: holder.address,
+      balance: holder.balance,
+      percent: share(balance),
+    });
+  }
+
+  const top = holders.slice(0, 10);
+
+  return {
+    scannedRanges: [],
+    blocksScanned: "0",
+    partial: false,
+    candidatesConsidered: token.holderCount ?? token.holders.length,
+    top,
+    topPercent: top[0]?.percent ?? 0,
+    top10Percent: top.reduce((sum, holder) => sum + holder.percent, 0),
+    burnedPercent: share(burned),
+    usedMulticall: false,
   };
 }
 
