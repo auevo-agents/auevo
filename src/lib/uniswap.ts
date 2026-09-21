@@ -21,25 +21,25 @@ import type { Address } from "viem";
  * for an encoding bug to move funds to the wrong place.
  */
 export const UNISWAP_V3_FACTORY: Address =
-  "0x1f7D7550B1B028f7571e69A784071f0205fd2eFA";
+  "0x1f7d7550B1b028f7571E69A784071F0205FD2EfA";
 export const UNISWAP_QUOTER_V2: Address =
-  "0x33e885Ed0Ec9BF04eCfB19341582AAdcb4C8a9E7";
+  "0x33e885eD0Ec9bF04EcfB19341582aADCb4c8A9E7";
 export const UNISWAP_SWAP_ROUTER_02: Address =
-  "0xcaF681A66d020601342297493863E78C959E5cB2";
+  "0xCaf681a66D020601342297493863E78C959E5cb2";
 
 /**
- * WETH9 / wrapped native ETH for Robinhood Chain mainnet — not yet
- * confirmed. The one address surfaced in research was flagged by the
- * source itself as possibly the testnet deployment, and a wrong WETH
- * address here would send a wrap or swap to a contract that either isn't
- * WETH at all or is the wrong chain's WETH.
+ * WETH9 / wrapped native ETH for Robinhood Chain mainnet.
  *
- * Left unset on purpose rather than guessed. Trading currently supports
- * ERC-20 <-> ERC-20 pairs only (see /app/trading) — no native-ETH wrap
- * step — until this is confirmed against Robinhood Chain's own docs or
- * Blockscout and set here.
+ * Confirmed 2026-09-21 against two independent official Uniswap sources
+ * that agree exactly: github.com/Uniswap/contracts's own deployments
+ * manifest (deployments/4663.md — the same file the addresses above came
+ * from) and github.com/Uniswap/UniswapX's chain playbook
+ * (playbook/chains/robinhood.md). This had been left unset for most of
+ * this project rather than guessed — the one earlier candidate was
+ * flagged by its own source as possibly testnet-only — until both of
+ * these confirmed it independently.
  */
-export const WETH9: Address | null = null;
+export const WETH9: Address = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73";
 
 /** Fee tiers to probe when looking for a live pool between two tokens. */
 export const FEE_TIERS = [500, 3000, 10000, 100] as const;
