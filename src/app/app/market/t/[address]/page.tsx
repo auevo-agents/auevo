@@ -105,6 +105,46 @@ function aggregateTopTraders(trades: Trade[]): TraderAgg[] {
   return [...byAddress.values()].sort((a, b) => b.volumeUsd - a.volumeUsd).slice(0, 15);
 }
 
+interface Pulse {
+  volumeUsd: number;
+  buys: number;
+  sells: number;
+  netVolumeUsd: number;
+}
+
+const PULSE_WINDOW_SECONDS = 5 * 60;
+
+/**
+ * Trailing-5-minute activity, the same quick momentum read every leader
+ * terminal shows next to Buy/Sell — computed from the trades already
+ * being polled for the Trades/Top Traders tabs rather than a separate
+ * call. ageSeconds is a snapshot from whenever this trade batch was last
+ * fetched (polled every 20s), so this is accurate to within one poll,
+ * not tick-by-tick live.
+ */
+function fiveMinutePulse(trades: Trade[]): Pulse {
+  let volumeUsd = 0;
+  let buys = 0;
+  let sells = 0;
+  let buyVolumeUsd = 0;
+  let sellVolumeUsd = 0;
+
+  for (const t of trades) {
+    if (t.ageSeconds === null || t.ageSeconds > PULSE_WINDOW_SECONDS) continue;
+    const v = t.volumeUsd ?? 0;
+    volumeUsd += v;
+    if (t.kind === "buy") {
+      buys += 1;
+      buyVolumeUsd += v;
+    } else if (t.kind === "sell") {
+      sells += 1;
+      sellVolumeUsd += v;
+    }
+  }
+
+  return { volumeUsd, buys, sells, netVolumeUsd: buyVolumeUsd - sellVolumeUsd };
+}
+
 function copyToClipboard(value: string, onDone: () => void) {
   navigator.clipboard?.writeText(value).then(onDone).catch(() => {});
 }
@@ -244,6 +284,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
   }, [trades, tradesMinUsd]);
 
   const topTraders = useMemo(() => (trades ? aggregateTopTraders(trades) : null), [trades]);
+  const pulse = useMemo(() => (trades ? fiveMinutePulse(trades) : null), [trades]);
 
   function copyField(field: string, value: string) {
     copyToClipboard(value, () => {
@@ -417,6 +458,29 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
             <div className="token-side-column">
               <div className="token-side-card">
                 <h4>Trade</h4>
+                {pulse && (
+                  <div className="token-pulse">
+                    <div className="token-pulse-item">
+                      <span>5M VOL</span>
+                      <strong>{formatUsdCompact(pulse.volumeUsd)}</strong>
+                    </div>
+                    <div className="token-pulse-item">
+                      <span>BUYS</span>
+                      <strong className="token-pulse-buy">{pulse.buys}</strong>
+                    </div>
+                    <div className="token-pulse-item">
+                      <span>SELLS</span>
+                      <strong className="token-pulse-sell">{pulse.sells}</strong>
+                    </div>
+                    <div className="token-pulse-item">
+                      <span>NET VOL</span>
+                      <strong className={changeClass(pulse.netVolumeUsd)}>
+                        {pulse.netVolumeUsd >= 0 ? "+" : "-"}
+                        {formatUsdCompact(Math.abs(pulse.netVolumeUsd))}
+                      </strong>
+                    </div>
+                  </div>
+                )}
                 <p>
                   Routed through Uniswap&apos;s own SwapRouter02 — you approve and sign
                   every step yourself in your own wallet; nothing here custodies funds.

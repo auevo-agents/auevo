@@ -7273,6 +7273,46 @@ a {
   line-height: 1.6;
 }
 
+.token-pulse {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-bottom: 14px;
+  background: #1c2226;
+  border: 1px solid #1c2226;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.token-pulse-item {
+  padding: 9px 8px;
+  background: #0a0e10;
+  text-align: center;
+}
+
+.token-pulse-item span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: .1em;
+  color: #5a6469;
+}
+
+.token-pulse-item strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #eef0ef;
+}
+
+.token-pulse-buy {
+  color: #34d399 !important;
+}
+
+.token-pulse-sell {
+  color: #ff4259 !important;
+}
+
 .token-trades-section {
   margin-top: 24px;
 }
