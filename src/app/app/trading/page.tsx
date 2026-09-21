@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatUnits, isAddress, parseUnits, type Address } from "viem";
 import {
@@ -155,8 +154,12 @@ function TradingApp() {
   const { address: account, isConnected } = useAccount();
   const publicClient = usePublicClient();
 
-  const [tokenInAddr, setTokenInAddr] = useState(searchParams.get("tokenIn") ?? "");
-  const [tokenOutAddr, setTokenOutAddr] = useState(searchParams.get("tokenOut") ?? "");
+  const [tokenInAddr, setTokenInAddr] = useState(
+    searchParams.get("tokenIn") ?? "",
+  );
+  const [tokenOutAddr, setTokenOutAddr] = useState(
+    searchParams.get("tokenOut") ?? "",
+  );
   const [amountIn, setAmountIn] = useState("");
   const [slippageBps, setSlippageBps] = useState(100); // 1%
   const [quote, setQuote] = useState<Quote>(null);
@@ -171,7 +174,11 @@ function TradingApp() {
     contracts: [
       tokenIn && { address: tokenIn, abi: ERC20_ABI, functionName: "decimals" },
       tokenIn && { address: tokenIn, abi: ERC20_ABI, functionName: "symbol" },
-      tokenOut && { address: tokenOut, abi: ERC20_ABI, functionName: "decimals" },
+      tokenOut && {
+        address: tokenOut,
+        abi: ERC20_ABI,
+        functionName: "decimals",
+      },
       tokenOut && { address: tokenOut, abi: ERC20_ABI, functionName: "symbol" },
       tokenIn &&
         account && {
@@ -193,7 +200,7 @@ function TradingApp() {
 
   const tokenMetaResults = useMemo(
     () => tokenMeta.data?.map((r) => r.result) ?? [],
-    [tokenMeta.data]
+    [tokenMeta.data],
   );
   const [inDecimals, inSymbol, outDecimals, outSymbol, inBalance, allowance] =
     tokenMetaResults;
@@ -217,7 +224,13 @@ function TradingApp() {
       setQuote(null);
       setQuoteError(null);
 
-      if (!publicClient || !tokenIn || !tokenOut || !parsedAmountIn || parsedAmountIn <= 0n) {
+      if (
+        !publicClient ||
+        !tokenIn ||
+        !tokenOut ||
+        !parsedAmountIn ||
+        parsedAmountIn <= 0n
+      ) {
         return;
       }
       if (tokenIn.toLowerCase() === tokenOut.toLowerCase()) {
@@ -263,10 +276,13 @@ function TradingApp() {
           }
         }
         if (!cancelled) {
-          setQuoteError("No live pool found for this pair on any standard fee tier");
+          setQuoteError(
+            "No live pool found for this pair on any standard fee tier",
+          );
         }
       } catch {
-        if (!cancelled) setQuoteError("Could not reach the chain to quote this pair");
+        if (!cancelled)
+          setQuoteError("Could not reach the chain to quote this pair");
       } finally {
         if (!cancelled) setQuoting(false);
       }
@@ -305,7 +321,14 @@ function TradingApp() {
   }
 
   function handleSwap() {
-    if (!tokenIn || !tokenOut || !account || !parsedAmountIn || !quote || amountOutMinimum === null) {
+    if (
+      !tokenIn ||
+      !tokenOut ||
+      !account ||
+      !parsedAmountIn ||
+      !quote ||
+      amountOutMinimum === null
+    ) {
       return;
     }
     swap.writeContract({
@@ -327,193 +350,128 @@ function TradingApp() {
   }
 
   return (
-    <main className="app-shell">
-      <TradingSidebar />
-
-      <div className="product-main app-main">
-        <header className="product-header">
-          <div>
-            <h3>Trading</h3>
-            <p>Single-hop swap via Uniswap V3 · non-custodial</p>
-          </div>
-          <ConnectButton />
-        </header>
-
-        <div className="app-notice app-notice-info">
-          Routed through Uniswap&apos;s own SwapRouter02 on Robinhood Chain —
-          not a contract of ours. You approve and sign every step in your
-          own wallet. ERC-20 pairs only for now; native-ETH swaps need a
-          confirmed WETH address first.
+    <>
+      <header className="product-header">
+        <div>
+          <h3>Trading</h3>
+          <p>Single-hop swap via Uniswap V3 · non-custodial</p>
         </div>
+        <ConnectButton />
+      </header>
 
-        {!isConnected ? (
-          <div className="app-empty">Connect a wallet above to trade.</div>
-        ) : (
-          <div className="trade-form">
-            <label className="trade-field">
-              <span>Token in (address)</span>
-              <input
-                value={tokenInAddr}
-                onChange={(e) => setTokenInAddr(e.target.value.trim())}
-                placeholder="0x…"
-                spellCheck={false}
-              />
-              {typeof inSymbol === "string" && (
-                <small>
-                  {inSymbol}
-                  {typeof inBalance === "bigint" && typeof inDecimals === "number"
-                    ? ` · balance ${Number(formatUnits(inBalance, inDecimals)).toFixed(4)}`
-                    : ""}
-                </small>
-              )}
-            </label>
+      <div className="app-notice app-notice-info">
+        Routed through Uniswap&apos;s own SwapRouter02 on Robinhood Chain — not
+        a contract of ours. You approve and sign every step in your own wallet.
+        ERC-20 pairs only for now; native-ETH swaps need a confirmed WETH
+        address first.
+      </div>
 
-            <label className="trade-field">
-              <span>Token out (address)</span>
-              <input
-                value={tokenOutAddr}
-                onChange={(e) => setTokenOutAddr(e.target.value.trim())}
-                placeholder="0x…"
-                spellCheck={false}
-              />
-              {typeof outSymbol === "string" && <small>{outSymbol}</small>}
-            </label>
-
-            <label className="trade-field">
-              <span>Amount in</span>
-              <input
-                value={amountIn}
-                onChange={(e) => setAmountIn(e.target.value)}
-                placeholder="0.0"
-                inputMode="decimal"
-              />
-            </label>
-
-            <label className="trade-field">
-              <span>Slippage tolerance</span>
-              <select
-                value={slippageBps}
-                onChange={(e) => setSlippageBps(Number(e.target.value))}
-              >
-                <option value={50}>0.5%</option>
-                <option value={100}>1%</option>
-                <option value={300}>3%</option>
-              </select>
-            </label>
-
-            <div className="trade-quote">
-              {quoting && <span>Finding the best available pool…</span>}
-              {quoteError && <span className="trade-quote-error">{quoteError}</span>}
-              {quote && typeof outDecimals === "number" && (
-                <>
-                  <span>
-                    ≈ {Number(formatUnits(quote.amountOut, outDecimals)).toFixed(6)}{" "}
-                    {outSymbol ?? "tokens"}
-                  </span>
-                  <small>
-                    {(quote.fee / 10_000).toFixed(2)}% pool · min received{" "}
-                    {amountOutMinimum !== null
-                      ? Number(formatUnits(amountOutMinimum, outDecimals)).toFixed(6)
-                      : "—"}
-                  </small>
-                </>
-              )}
-            </div>
-
-            {needsApproval ? (
-              <button
-                className="app-connect-button"
-                disabled={approve.isPending || approveReceipt.isLoading}
-                onClick={handleApprove}
-              >
-                {approve.isPending || approveReceipt.isLoading
-                  ? "Approving…"
-                  : `Approve ${inSymbol ?? "token"}`}
-              </button>
-            ) : (
-              <button
-                className="app-connect-button"
-                disabled={!quote || swap.isPending || swapReceipt.isLoading}
-                onClick={handleSwap}
-              >
-                {swap.isPending || swapReceipt.isLoading ? "Swapping…" : "Swap"}
-              </button>
+      {!isConnected ? (
+        <div className="app-empty">Connect a wallet above to trade.</div>
+      ) : (
+        <div className="trade-form">
+          <label className="trade-field">
+            <span>Token in (address)</span>
+            <input
+              value={tokenInAddr}
+              onChange={(e) => setTokenInAddr(e.target.value.trim())}
+              placeholder="0x…"
+              spellCheck={false}
+            />
+            {typeof inSymbol === "string" && (
+              <small>
+                {inSymbol}
+                {typeof inBalance === "bigint" && typeof inDecimals === "number"
+                  ? ` · balance ${Number(formatUnits(inBalance, inDecimals)).toFixed(4)}`
+                  : ""}
+              </small>
             )}
+          </label>
 
-            {approve.error && <p className="error">{approve.error.message}</p>}
-            {swap.error && <p className="error">{swap.error.message}</p>}
-            {swapReceipt.isSuccess && (
-              <p className="trade-success">Swap confirmed on-chain.</p>
+          <label className="trade-field">
+            <span>Token out (address)</span>
+            <input
+              value={tokenOutAddr}
+              onChange={(e) => setTokenOutAddr(e.target.value.trim())}
+              placeholder="0x…"
+              spellCheck={false}
+            />
+            {typeof outSymbol === "string" && <small>{outSymbol}</small>}
+          </label>
+
+          <label className="trade-field">
+            <span>Amount in</span>
+            <input
+              value={amountIn}
+              onChange={(e) => setAmountIn(e.target.value)}
+              placeholder="0.0"
+              inputMode="decimal"
+            />
+          </label>
+
+          <label className="trade-field">
+            <span>Slippage tolerance</span>
+            <select
+              value={slippageBps}
+              onChange={(e) => setSlippageBps(Number(e.target.value))}
+            >
+              <option value={50}>0.5%</option>
+              <option value={100}>1%</option>
+              <option value={300}>3%</option>
+            </select>
+          </label>
+
+          <div className="trade-quote">
+            {quoting && <span>Finding the best available pool…</span>}
+            {quoteError && (
+              <span className="trade-quote-error">{quoteError}</span>
+            )}
+            {quote && typeof outDecimals === "number" && (
+              <>
+                <span>
+                  ≈{" "}
+                  {Number(formatUnits(quote.amountOut, outDecimals)).toFixed(6)}{" "}
+                  {outSymbol ?? "tokens"}
+                </span>
+                <small>
+                  {(quote.fee / 10_000).toFixed(2)}% pool · min received{" "}
+                  {amountOutMinimum !== null
+                    ? Number(
+                        formatUnits(amountOutMinimum, outDecimals),
+                      ).toFixed(6)
+                    : "—"}
+                </small>
+              </>
             )}
           </div>
-        )}
-      </div>
-    </main>
-  );
-}
 
-function TradingSidebar() {
-  return (
-    <aside className="product-sidebar">
-      <div className="product-logo">
-        <strong>auevo</strong>
-        <i />
-      </div>
+          {needsApproval ? (
+            <button
+              className="app-connect-button"
+              disabled={approve.isPending || approveReceipt.isLoading}
+              onClick={handleApprove}
+            >
+              {approve.isPending || approveReceipt.isLoading
+                ? "Approving…"
+                : `Approve ${inSymbol ?? "token"}`}
+            </button>
+          ) : (
+            <button
+              className="app-connect-button"
+              disabled={!quote || swap.isPending || swapReceipt.isLoading}
+              onClick={handleSwap}
+            >
+              {swap.isPending || swapReceipt.isLoading ? "Swapping…" : "Swap"}
+            </button>
+          )}
 
-      <nav className="product-nav">
-        <Link href="/app" className="app-nav-link">
-          <span className="nav-icon">
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Overview</b>
-        </Link>
-        <Link href="/app/market" className="app-nav-link">
-          <span className="nav-icon nav-bots">
-            <i />
-          </span>
-          <b>Market</b>
-        </Link>
-        <button className="active">
-          <span className="nav-icon nav-trading">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Trading</b>
-        </button>
-        <Link href="/app/bots" className="app-nav-link">
-          <span className="nav-icon nav-copy">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Bots</b>
-        </Link>
-        <Link href="/app/positions" className="app-nav-link">
-          <span className="nav-icon nav-position">
-            <i />
-            <i />
-          </span>
-          <b>Positions</b>
-        </Link>
-        <Link href="/app/wallets" className="app-nav-link">
-          <span className="nav-icon nav-wallet">
-            <i />
-          </span>
-          <b>Wallets</b>
-        </Link>
-        <Link href="/scanner" className="app-nav-link">
-          <span className="nav-icon nav-analytics">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Token Scanner</b>
-        </Link>
-      </nav>
-    </aside>
+          {approve.error && <p className="error">{approve.error.message}</p>}
+          {swap.error && <p className="error">{swap.error.message}</p>}
+          {swapReceipt.isSuccess && (
+            <p className="trade-success">Swap confirmed on-chain.</p>
+          )}
+        </div>
+      )}
+    </>
   );
 }
