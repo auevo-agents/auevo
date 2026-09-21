@@ -6627,6 +6627,37 @@ a {
   background: rgba(255,52,77,.08);
 }
 
+.trade-quick-buy {
+  display: grid;
+  gap: 6px;
+}
+
+.trade-quick-buy-edit-btn {
+  flex: 0 0 26px !important;
+  color: #5a6469;
+}
+
+.trade-quick-buy-edit input {
+  flex: 1;
+  height: 30px;
+  min-width: 0;
+  border: 1px solid #252c30;
+  border-radius: 6px;
+  background: #0a0e10;
+  color: #d7dadb;
+  font: 500 11.5px/1 Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+.trade-quick-buy-save {
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(54,229,160,.12);
+  color: #36e5a0;
+  font: 600 11px/1 Arial, Helvetica, sans-serif;
+}
+
 .trade-quote {
   padding: 12px 14px;
   border: 1px solid #1c2226;
