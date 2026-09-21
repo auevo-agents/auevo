@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Trade } from "@/lib/geckoterminal";
 import { formatAge, formatPrice, formatUsdCompact, shortenAddress } from "@/lib/format";
+import { watchWallet } from "@/lib/watched-wallets";
 
 /**
  * A list of real trades — shared by Smart Money (large trades across many
@@ -10,28 +11,6 @@ import { formatAge, formatPrice, formatUsdCompact, shortenAddress } from "@/lib/
  * trade feed (one pool, so the pair is already in the page header and
  * repeating it on every row would just be noise).
  */
-
-const STORAGE_KEY = "auevo.watchedWallets";
-
-function readWatched(): string[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function watchWallet(address: string) {
-  try {
-    const current = readWatched();
-    if (!current.includes(address)) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...current, address]));
-    }
-  } catch {
-    // Best-effort only — the click still gives visual feedback either way.
-  }
-}
 
 export function TradeList({ trades, showPair }: { trades: Trade[]; showPair: boolean }) {
   const [watchedNow, setWatchedNow] = useState<string[]>([]);
