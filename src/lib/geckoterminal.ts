@@ -1,5 +1,3 @@
-import { fetchJson } from "./evm/http";
-
 /**
  * GeckoTerminal's On-Chain DEX API — real price, market cap, liquidity,
  * volume and OHLCV for Robinhood Chain, already indexed under network id
@@ -11,9 +9,14 @@ import { fetchJson } from "./evm/http";
  * since none of that is in the event itself. It also never showed
  * anything already trading, only brand-new pools, which undersells what
  * "Market" should be. GeckoTerminal is a purpose-built, publicly
- * documented DEX indexer already covering this chain: free, no API key,
- * a 30 req/min rate limit — the same source dexscreener-style terminals
- * for other chains build on.
+ * documented DEX indexer already covering this chain: free, no API key —
+ * but a 30 req/min rate limit *shared across every visitor to the site*,
+ * not per-visitor. Every call here goes through Next.js's own fetch
+ * cache (`next: { revalidate }`) rather than a raw uncached fetch, so
+ * traffic from many concurrent users collapses onto one upstream call
+ * per cache window instead of multiplying it — without that, a handful
+ * of open tabs is enough to start hitting 429s, which is what silently
+ * empty market/trade data in production almost always was.
  *
  * Every parser here treats an unexpected shape as "give up and return
  * null/empty", never as a thrown exception that takes the whole page
@@ -27,6 +30,36 @@ function baseUrl(): string {
   const configured = process.env.GECKOTERMINAL_API_URL?.trim();
   if (configured) return configured.replace(/\/+$/, "");
   return "https://api.geckoterminal.com/api/v2";
+}
+
+/**
+ * Deliberately separate from lib/evm/http.ts's fetchJson: that one is
+ * `cache: "no-store"` on purpose (the security scanner must never trust
+ * a stale read), which is the wrong default here — GeckoTerminal data is
+ * fine a few seconds stale, and caching it is what keeps this app inside
+ * the shared rate limit at all.
+ */
+async function geckoFetch<T>(
+  url: string,
+  revalidateSeconds: number,
+  timeoutMs = 10_000
+): Promise<T | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+      next: { revalidate: revalidateSeconds },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 interface JsonApiRef {
@@ -194,25 +227,48 @@ function mapPool(doc: PoolDoc, lookup: Map<string, IncludedDoc>): MarketPool | n
 }
 
 /**
- * Pools on Robinhood Chain, newest-activity-first ("all", already
- * trading — GeckoTerminal's own top-pools ranking) or newest-pool-first
- * ("radar", freshly created — the token-discovery feed).
+ * Pools on Robinhood Chain — "all" (already trading, ranked by 24h
+ * volume) or "radar" (freshly created, newest-pool-first). Pages through
+ * up to `pages` pages of GeckoTerminal's own listing (20 pools/page, up
+ * to 10 pages on the free tier) and merges them, since a single page was
+ * the reason the screener only ever showed a handful of pairs. Fetched
+ * in parallel and cached (25s per page) so raising this doesn't raise
+ * the real request rate anywhere near as much as it raises pair count.
+ *
+ * GeckoTerminal's own docs and changelog disagree with themselves on
+ * whether the sort query param is named `sort` or `order` — both are
+ * sent so it works either way; an unrecognized param is just ignored,
+ * never an error.
  */
 export async function fetchMarketPools(
   kind: "all" | "radar" = "all",
-  page = 1
+  pages = 5
 ): Promise<MarketPool[]> {
   const endpoint = kind === "radar" ? "new_pools" : "pools";
-  const url = `${baseUrl()}/networks/${NETWORK}/${endpoint}?page=${page}&include=base_token,quote_token,dex`;
+  const sortParams = kind === "all" ? "&sort=h24_volume_usd_desc&order=h24_volume_usd_desc" : "";
 
-  const json = await fetchJson<PoolListResponse>(url, 10_000);
-  if (!json || !Array.isArray(json.data)) return [];
+  const pageNumbers = Array.from({ length: Math.max(1, pages) }, (_, i) => i + 1);
+  const responses = await Promise.all(
+    pageNumbers.map((page) =>
+      geckoFetch<PoolListResponse>(
+        `${baseUrl()}/networks/${NETWORK}/${endpoint}?page=${page}${sortParams}&include=base_token,quote_token,dex`,
+        25
+      )
+    )
+  );
 
-  const lookup = includedLookup(json.included ?? []);
+  const seen = new Set<string>();
   const pools: MarketPool[] = [];
-  for (const doc of json.data) {
-    const pool = mapPool(doc, lookup);
-    if (pool) pools.push(pool);
+  for (const json of responses) {
+    if (!json || !Array.isArray(json.data)) continue;
+    const lookup = includedLookup(json.included ?? []);
+    for (const doc of json.data) {
+      const pool = mapPool(doc, lookup);
+      if (pool && !seen.has(pool.id)) {
+        seen.add(pool.id);
+        pools.push(pool);
+      }
+    }
   }
   return pools;
 }
@@ -220,7 +276,7 @@ export async function fetchMarketPools(
 /** A single pool, keyed by its own on-chain address — what the token detail page loads. */
 export async function fetchMarketPool(poolAddress: string): Promise<MarketPool | null> {
   const url = `${baseUrl()}/networks/${NETWORK}/pools/${poolAddress}?include=base_token,quote_token,dex`;
-  const json = await fetchJson<PoolSingleResponse>(url, 10_000);
+  const json = await geckoFetch<PoolSingleResponse>(url, 15);
   if (!json?.data) return null;
 
   const lookup = includedLookup(json.included ?? []);
@@ -263,7 +319,7 @@ export async function fetchOhlcv(
     `${baseUrl()}/networks/${NETWORK}/pools/${poolAddress}/ohlcv/${timeframe}` +
     `?aggregate=${aggregate}&limit=${limit}&currency=usd&token=base`;
 
-  const json = await fetchJson<OhlcvResponse>(url, 10_000);
+  const json = await geckoFetch<OhlcvResponse>(url, 30);
   const rows = json?.data?.attributes?.ohlcv_list;
   if (!Array.isArray(rows)) return [];
 
@@ -316,7 +372,7 @@ interface TokenInfoResponse {
  */
 export async function fetchTokenInfo(tokenAddress: string): Promise<TokenInfo | null> {
   const url = `${baseUrl()}/networks/${NETWORK}/tokens/${tokenAddress}/info`;
-  const json = await fetchJson<TokenInfoResponse>(url, 8_000);
+  const json = await geckoFetch<TokenInfoResponse>(url, 3_600);
   const attrs = json?.data?.attributes;
   if (!attrs) return null;
 
@@ -376,7 +432,7 @@ export async function fetchPoolTrades(
     `${baseUrl()}/networks/${NETWORK}/pools/${poolAddress}/trades` +
     (minUsd > 0 ? `?trade_volume_in_usd_greater_than=${minUsd}` : "");
 
-  const json = await fetchJson<TradesResponse>(url, 10_000);
+  const json = await geckoFetch<TradesResponse>(url, 12);
   if (!json || !Array.isArray(json.data)) return [];
 
   const trades: Trade[] = [];
@@ -411,10 +467,11 @@ export async function fetchPoolTrades(
  * claims a wallet is skilled, only that it made a trade over `minUsd`.
  * Fans out across the top `poolLimit` pools by GeckoTerminal's own
  * ranking (already fetched for the Market page's ALL tab) since there is
- * no chain-wide trades endpoint on the free API — one call per pool.
+ * no chain-wide trades endpoint on the free API — one call per pool, all
+ * of them cached the same as everywhere else in this module.
  */
 export async function fetchLargeTrades(minUsd = 5_000, poolLimit = 12): Promise<Trade[]> {
-  const pools = await fetchMarketPools("all");
+  const pools = await fetchMarketPools("all", 1);
   const top = pools.slice(0, poolLimit).filter((p) => p.poolAddress);
 
   const perPool = await Promise.all(
