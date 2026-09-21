@@ -41,7 +41,7 @@ export default function SmartMoneyPage() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setWatchedNow(readWatchedWallets());
+    setWatchedNow(readWatchedWallets().map((w) => w.address));
   }, []);
 
   useEffect(() => {

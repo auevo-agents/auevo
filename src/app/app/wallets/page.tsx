@@ -1,14 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatUnits, isAddress, type Address } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 import { ConnectButton } from "../connect-button";
+import { shortenAddress } from "@/lib/format";
+import {
+  readWatchedWallets,
+  unwatchWallet,
+  watchWallet,
+  type WatchedWallet,
+} from "@/lib/watched-wallets";
 
 /**
- * A watchlist of addresses — read-only, browser-local. Useful for
- * keeping an eye on other wallets (a treasury, a team member, a wallet
- * flagged by the token scanner) without connecting them.
+ * A watchlist of addresses — read-only, browser-local, no different from
+ * before in that sense. What changed: a followed wallet is a card with a
+ * name you give it, not a bare address, and clicking it opens a real
+ * profile (balance + our own indexer's activity feed) instead of dead-
+ * ending here — the "just a list" gap this page used to have.
  */
 
 const BALANCE_ABI = [
@@ -24,41 +34,25 @@ const BALANCE_ABI = [
 // Multicall3 — canonical address, identical across EVM chains.
 const MULTICALL3: Address = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
-const STORAGE_KEY = "auevo.watchedWallets";
-
 export default function WalletsPage() {
   const { address: connected } = useAccount();
-  const [watched, setWatched] = useState<string[]>([]);
+  const [watched, setWatched] = useState<WatchedWallet[]>([]);
   const [newAddress, setNewAddress] = useState("");
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setWatched(JSON.parse(raw));
-    } catch {
-      // Private window or blocked storage — list just starts empty.
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWatched(readWatchedWallets());
   }, []);
-
-  function persist(next: string[]) {
-    setWatched(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // Best-effort — still works for this page load.
-    }
-  }
 
   const balances = useReadContracts({
     allowFailure: true,
     contracts: watched.map(
-      (addr) =>
+      (w) =>
         ({
           address: MULTICALL3,
           abi: BALANCE_ABI,
           functionName: "getEthBalance",
-          args: [addr as Address],
+          args: [w.address as Address],
         }) as const,
     ),
     query: { enabled: watched.length > 0 },
@@ -69,13 +63,13 @@ export default function WalletsPage() {
       <header className="product-header">
         <div>
           <h3>Wallets</h3>
-          <p>Watch any address&apos;s native balance, read-only</p>
+          <p>Follow any address — balance, name, and its real activity feed</p>
         </div>
         <ConnectButton />
       </header>
 
       <div className="trade-field" style={{ maxWidth: 460, marginTop: 20 }}>
-        <span>Address to watch</span>
+        <span>Address to follow</span>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={newAddress}
@@ -86,64 +80,76 @@ export default function WalletsPage() {
           <button
             className="app-connect-button"
             onClick={() => {
-              if (
-                isAddress(newAddress, { strict: false }) &&
-                !watched.includes(newAddress)
-              ) {
-                persist([...watched, newAddress]);
+              if (isAddress(newAddress, { strict: false })) {
+                setWatched(watchWallet(newAddress));
                 setNewAddress("");
               }
             }}
           >
-            Watch
+            Follow
           </button>
         </div>
       </div>
 
-      {connected && !watched.includes(connected) && (
+      {connected && !watched.some((w) => w.address.toLowerCase() === connected.toLowerCase()) && (
         <p className="scan-note" style={{ marginTop: 12 }}>
-          Your connected wallet ({connected.slice(0, 6)}…{connected.slice(-4)})
-          isn&apos;t on the list —{" "}
-          <button
-            className="app-link-button"
-            onClick={() => persist([...watched, connected])}
-          >
-            add it
+          Your connected wallet ({shortenAddress(connected)}) isn&apos;t on the list —{" "}
+          <button className="app-link-button" onClick={() => setWatched(watchWallet(connected))}>
+            follow it
           </button>
           .
         </p>
       )}
 
       {watched.length > 0 && (
-        <div className="scan-holder-table" style={{ marginTop: 20 }}>
-          {watched.map((addr, i) => {
+        <div className="wallet-card-grid">
+          {watched.map((w, i) => {
             const raw = balances.data?.[i]?.result as bigint | undefined;
+            const isYou = w.address.toLowerCase() === connected?.toLowerCase();
             return (
-              <div
-                className="scan-holder-row"
-                key={addr}
-                style={{ gridTemplateColumns: "1fr auto auto" }}
-              >
-                <code className="scan-mono">
-                  {addr.slice(0, 8)}…{addr.slice(-6)}
-                  {addr.toLowerCase() === connected?.toLowerCase() && " (you)"}
-                </code>
-                <span>
-                  {raw !== undefined
-                    ? `${Number(formatUnits(raw, 18)).toFixed(4)} ETH`
-                    : "…"}
+              <Link key={w.address} href={`/app/wallets/${w.address}`} className="wallet-card">
+                <span className="wallet-card-avatar" style={{ background: colorFor(w.address) }} />
+                <span className="wallet-card-body">
+                  <strong>
+                    {w.label ?? shortenAddress(w.address, 6, 4)}
+                    {isYou && " (you)"}
+                  </strong>
+                  <code className="scan-mono">{shortenAddress(w.address, 8, 6)}</code>
+                </span>
+                <span className="wallet-card-balance">
+                  {raw !== undefined ? `${Number(formatUnits(raw, 18)).toFixed(4)} ETH` : "…"}
                 </span>
                 <button
                   className="app-untrack"
-                  onClick={() => persist(watched.filter((a) => a !== addr))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setWatched(unwatchWallet(w.address));
+                  }}
                 >
                   remove
                 </button>
-              </div>
+              </Link>
             );
           })}
         </div>
       )}
+
+      {watched.length === 0 && (
+        <div className="app-empty" style={{ marginTop: 20 }}>
+          Not following any wallets yet.
+        </div>
+      )}
     </>
   );
+}
+
+/** A stable, deterministic color per address — same idea as a blockie, without pulling in an image library for it. */
+function colorFor(address: string): string {
+  let hash = 0;
+  for (let i = 2; i < address.length; i++) {
+    hash = (hash * 31 + address.charCodeAt(i)) | 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 55%, 42%)`;
 }
