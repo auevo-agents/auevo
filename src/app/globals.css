@@ -6837,6 +6837,15 @@ a {
   color: #7c8589;
 }
 
+.favorite-star:disabled {
+  cursor: default;
+  color: #252c30;
+}
+
+.favorite-star:disabled:hover {
+  color: #252c30;
+}
+
 .favorite-star.active {
   color: #fbbf24;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useAccount } from "wagmi";
 import { ConnectButton } from "../connect-button";
 import { FavoriteStar } from "./favorite-star";
 import {
@@ -156,13 +157,16 @@ function useSearch(query: string) {
 }
 
 export default function MarketPage() {
+  const { isConnected } = useAccount();
   const [tab, setTab] = useState<Tab>("all");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchBoxRef = useRef<HTMLDivElement>(null);
 
   const { pools: rawPools, error } = useMarketPools(tab === "radar" ? "radar" : "all");
-  const { pools: favoritePools, error: favoritesError } = useFavoritePools(tab === "favorites");
+  const { pools: favoritePools, error: favoritesError } = useFavoritePools(
+    tab === "favorites" && isConnected
+  );
   const { results: searchResults, loading: searching } = useSearch(query);
 
   useEffect(() => {
@@ -254,9 +258,15 @@ export default function MarketPage() {
         </p>
       )}
 
-      {!pools && !activeError && <div className="app-empty">Loading market data…</div>}
+      {tab === "favorites" && !isConnected && (
+        <div className="app-empty">Connect a wallet above to use favorites.</div>
+      )}
 
-      {pools && pools.length === 0 && (
+      {!(tab === "favorites" && !isConnected) && !pools && !activeError && (
+        <div className="app-empty">Loading market data…</div>
+      )}
+
+      {!(tab === "favorites" && !isConnected) && pools && pools.length === 0 && (
         <div className="app-empty">
           {tab === "radar"
             ? "No new pools found yet."
