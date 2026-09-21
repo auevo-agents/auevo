@@ -46,6 +46,11 @@ const SEVERITY_LABEL: Record<Severity, string> = {
   good: "GOOD",
 };
 
+// Human-facing explorer, kept separate from the API base the scanner talks
+// to (report.sources.blockscoutBase) — that one may be the multichain API
+// host, not something meant for a person to browse.
+const EXPLORER_BASE = "https://robinhoodchain.blockscout.com";
+
 export default function ScannerPage() {
   return (
     <Suspense fallback={null}>
@@ -134,12 +139,12 @@ function ScannerApp() {
         </div>
       </header>
 
-      <section className="scan-shell">
-        <div className="scan-intro">
+      <section className="scan-layout">
+        <aside className="scan-sidebar">
           <div className="pill">
             <span>FREE</span>
             <i />
-            NO WALLET CONNECTION
+            NO WALLET
             <i />
             READ-ONLY
           </div>
@@ -152,8 +157,8 @@ function ScannerApp() {
 
           <p className="scan-lead">
             Paste a token address on Robinhood Chain. We read the deployed
-            contract and tell you what its owner can still do to you — mint,
-            pause, blacklist, or replace the code entirely.
+            contract and tell you what its owner can still do — mint, pause,
+            blacklist, or replace the code entirely.
           </p>
 
           <div className="wallet-box">
@@ -178,9 +183,44 @@ function ScannerApp() {
           <p className="truth-line">
             Public chain data only. No connection, no signature.
           </p>
-        </div>
 
-        {status === "done" && report && <Report report={report} />}
+          {status === "done" && report && (
+            <ul className="scan-sidebar-legend">
+              <li>
+                <i className="scan-severity-dot scan-severity-dot-critical" />
+                Critical / High — act on this
+              </li>
+              <li>
+                <i className="scan-severity-dot scan-severity-dot-medium" />
+                Medium / Low — worth knowing
+              </li>
+              <li>
+                <i className="scan-severity-dot scan-severity-dot-good" />
+                Good — reduces risk
+              </li>
+            </ul>
+          )}
+        </aside>
+
+        <div className="scan-results">
+          {status === "done" && report ? (
+            <Report report={report} />
+          ) : (
+            <div className="scan-empty">
+              {status === "loading" ? (
+                <>
+                  <span className="loader loader-lg" />
+                  <p>Reading the contract, cross-checking with GoPlus and Blockscout…</p>
+                </>
+              ) : (
+                <>
+                  <span className="scan-empty-mark">◇</span>
+                  <p>Paste a contract address to see the report here.</p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );
@@ -199,6 +239,7 @@ function Report({ report }: { report: TokenScanReport }) {
             {report.token.name ? ` · ${report.token.name}` : ""}
           </strong>
           <p>{verdict.line}</p>
+          <ExplorerLink address={report.address} label="View contract on explorer" />
         </div>
 
         <div className="scan-score">
@@ -217,10 +258,7 @@ function Report({ report }: { report: TokenScanReport }) {
           <span className="scan-confidence-label">
             CONFIDENCE: {report.confidence.toUpperCase()}
           </span>
-          <p>
-            {CONFIDENCE_COPY[report.confidence]} A token can look clean here
-            purely because we could not see far enough.
-          </p>
+          <p>{CONFIDENCE_COPY[report.confidence]}</p>
           <div className="scan-gap-tags">
             {report.evidenceGaps.map((gap) => (
               <span key={gap}>{gap}</span>
@@ -230,7 +268,7 @@ function Report({ report }: { report: TokenScanReport }) {
       )}
 
       <div className="scan-facts">
-        <Fact label="CONTRACT" value={shorten(report.address)} mono />
+        <Fact label="CONTRACT" value={shorten(report.address)} address={report.address} />
         <Fact
           label="SUPPLY"
           value={
@@ -248,7 +286,11 @@ function Report({ report }: { report: TokenScanReport }) {
                 : shorten(report.ownership.owner)
               : "none exposed"
           }
-          mono={Boolean(report.ownership && !report.ownership.renounced)}
+          address={
+            report.ownership && !report.ownership.renounced
+              ? report.ownership.owner
+              : undefined
+          }
         />
         <Fact
           label="AGE"
@@ -291,9 +333,7 @@ function Report({ report }: { report: TokenScanReport }) {
             <div>
               <strong>{finding.title}</strong>
               <p>{finding.detail}</p>
-              {finding.evidence && (
-                <code className="scan-evidence">{finding.evidence}</code>
-              )}
+              {finding.evidence && <Evidence value={finding.evidence} />}
             </div>
           </article>
         ))}
@@ -314,7 +354,13 @@ function Report({ report }: { report: TokenScanReport }) {
             {report.holders.top.map((holder, index) => (
               <div className="scan-holder-row" key={holder.address}>
                 <span className="scan-holder-rank">{index + 1}</span>
-                <code>{shorten(holder.address)}</code>
+                <a
+                  href={`${EXPLORER_BASE}/address/${holder.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {shorten(holder.address)}
+                </a>
                 <div className="bar-cell">
                   <span>{holder.percent.toFixed(2)}%</span>
                   <i>
@@ -327,12 +373,11 @@ function Report({ report }: { report: TokenScanReport }) {
 
           {report.holders.partial && (
             <p className="scan-note">
-              Balances above are exact, read from the contract. The list of
-              wallets is not — it was gathered from{" "}
+              Balances are exact, read from the contract. The wallet list is
+              not — gathered from{" "}
               {Number(report.holders.blocksScanned).toLocaleString("en-US")}{" "}
-              blocks of Transfer history, not all of it. A wallet holding most
-              of the supply that did not move in that window would not appear
-              here, so this concentration figure can only be understated.
+              blocks of Transfer history, not all of it. A large holder that
+              didn&apos;t move in that window wouldn&apos;t appear here.
             </p>
           )}
         </div>
@@ -341,7 +386,6 @@ function Report({ report }: { report: TokenScanReport }) {
       <div className="scan-limits">
         <div className="scan-section-heading">
           <span>WHAT THIS DOESN&apos;T COVER</span>
-          <strong>Read this before trusting a good score.</strong>
         </div>
 
         <ul>
@@ -351,9 +395,9 @@ function Report({ report }: { report: TokenScanReport }) {
         </ul>
 
         <p className="scan-note">
-          This is a best-effort read of public chain data, not an audit. A
-          clean report means we found no dangerous powers in the code — it is
-          not a promise that a token is safe to buy.
+          Best-effort read of public chain data, not an audit. A clean report
+          means no dangerous powers were found in the code — not a promise
+          the token is safe to buy.
         </p>
 
         <div className="scan-sources">
@@ -410,17 +454,60 @@ function hostOf(url: string | null): string | null {
 function Fact({
   label,
   value,
-  mono,
+  address,
 }: {
   label: string;
   value: string;
-  mono?: boolean;
+  address?: string;
 }) {
   return (
     <div className="scan-fact">
       <span>{label}</span>
-      <strong className={mono ? "scan-mono" : undefined}>{value}</strong>
+      {address ? (
+        <a
+          className="scan-mono scan-fact-link"
+          href={`${EXPLORER_BASE}/address/${address}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {value}
+        </a>
+      ) : (
+        <strong>{value}</strong>
+      )}
     </div>
+  );
+}
+
+/** A finding's evidence is sometimes an address — link it when it is. */
+const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+
+function Evidence({ value }: { value: string }) {
+  if (ADDRESS_RE.test(value)) {
+    return (
+      <a
+        className="scan-evidence scan-evidence-link"
+        href={`${EXPLORER_BASE}/address/${value}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {shorten(value)} ↗
+      </a>
+    );
+  }
+  return <code className="scan-evidence">{value}</code>;
+}
+
+function ExplorerLink({ address, label }: { address: string; label: string }) {
+  return (
+    <a
+      className="scan-explorer-link"
+      href={`${EXPLORER_BASE}/address/${address}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {label} ↗
+    </a>
   );
 }
 
