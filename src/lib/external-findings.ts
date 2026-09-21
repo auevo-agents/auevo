@@ -248,6 +248,28 @@ export function externalFindings(
     });
   }
 
+  if (goplus.ownerChangeBalance === true) {
+    add({
+      id: "owner-change-balance",
+      title: "Owner can rewrite any balance directly",
+      severity: "critical",
+      detail:
+        "The owner can set an arbitrary address's balance to whatever they choose — including zeroing out yours — without a transfer or a mint. This is a step beyond minting: it does not just dilute holders, it can erase a specific one.",
+      evidence: "GoPlus",
+    });
+  }
+
+  if (goplus.externalCall === true) {
+    add({
+      id: "external-call",
+      title: "Transfers call into another contract",
+      severity: "medium",
+      detail:
+        "A transfer on this token executes code in a separate contract. That contract is outside what this scan analysed, so behaviour can live there that neither this report nor a quick read of this contract alone would catch.",
+      evidence: "GoPlus",
+    });
+  }
+
   if (goplus.canTakeBackOwnership === true) {
     add({
       id: "ownership-reclaimable",
@@ -288,7 +310,7 @@ export function externalFindings(
       severity: goplus.creatorPercent >= 0.5 ? "high" : "medium",
       detail:
         "The deploying wallet still holds a large share of the supply and can exit into whatever liquidity exists.",
-      evidence: "GoPlus",
+      evidence: goplus.creatorAddress ?? "GoPlus",
     });
   }
 

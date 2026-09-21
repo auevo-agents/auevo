@@ -176,6 +176,12 @@ describe("a clean contract scanned with incomplete evidence", () => {
     expect(report.verdict).toBe("caution");
   });
 
+  it("still carries a numeric score at low confidence, so the page always has one to show", () => {
+    expect(report.confidence).toBe("low");
+    expect(typeof report.score).toBe("number");
+    expect(Number.isFinite(report.score)).toBe(true);
+  });
+
   it("does not present a log window as the full distribution", () => {
     expect(report.holders?.partial).toBe(true);
   });

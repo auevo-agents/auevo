@@ -5689,8 +5689,21 @@ a {
 
 .scan-score {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.scan-score-number {
+  display: flex;
   align-items: baseline;
   gap: 6px;
+}
+
+.scan-score-caveat {
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: #fbbf24;
 }
 
 .scan-score strong {
@@ -5920,7 +5933,6 @@ a {
   color: var(--muted);
 }
 
-.scan-score-muted { color: var(--faint); }
 
 /* --- data source roster --- */
 
