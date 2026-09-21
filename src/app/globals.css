@@ -6556,71 +6556,368 @@ a {
   color: var(--red);
 }
 
-/* --- market table --- */
+/* --- market desk (screener) --- */
 
-.market-table {
-  margin-top: 20px;
-  border: 1px solid #1c2226;
-  border-radius: 8px;
-  overflow: hidden;
+.desk-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 22px 0 14px;
+  border-bottom: 1px solid #1c2226;
 }
 
-.market-row {
-  display: grid;
-  grid-template-columns: 1.4fr .6fr .5fr 1fr 2fr;
-  align-items: center;
-  gap: 12px;
+.desk-tab {
   padding: 10px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #7c8589;
+  font: 500 12px/1 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+
+.desk-tab:hover {
+  color: #d7dadb;
+}
+
+.desk-tab.active {
+  color: #eef0ef;
+  border-bottom-color: var(--red);
+}
+
+.desk-scroll {
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.desk-row {
+  display: grid;
+  grid-template-columns:
+    2fr 0.9fr 0.55fr 0.55fr 0.55fr 0.6fr 0.85fr 0.85fr 0.85fr 0.95fr 0.55fr 1.15fr;
+  align-items: center;
+  gap: 10px;
+  min-width: 1180px;
+  padding: 11px 16px;
   border-bottom: 1px solid #1c2226;
   font-size: 12.5px;
   color: #d7dadb;
 }
 
-.market-row:last-child {
+.desk-row:last-child {
   border-bottom: none;
 }
 
-.market-head {
+.desk-head {
+  position: sticky;
+  top: 0;
   background: #0a0e10;
   color: #5a6469;
   font-size: 10px;
-  letter-spacing: .1em;
+  letter-spacing: .08em;
 }
 
-.market-pair {
+.desk-col-right {
+  text-align: right;
+  justify-self: end;
+}
+
+.desk-pair {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
   font-weight: 500;
+  color: #eef0ef;
+  text-decoration: none;
 }
 
-.market-actions {
+.desk-pair:hover .desk-pair-base {
+  color: var(--red);
+}
+
+.desk-pair-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  background: #1c2226;
+  object-fit: cover;
+}
+
+.desk-pair-symbols {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.desk-pair-base {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desk-pair-symbols small {
+  color: #5a6469;
+  font-size: 10.5px;
+}
+
+.desk-tag-new {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(52,211,153,.12);
+  color: #34d399;
+  font-size: 9px;
+  letter-spacing: .05em;
+  vertical-align: middle;
+}
+
+.desk-change-pos {
+  color: #34d399;
+}
+
+.desk-change-neg {
+  color: #ff4259;
+}
+
+.desk-change-flat {
+  color: #5a6469;
+}
+
+.desk-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
 }
 
-.market-actions a {
+.desk-actions a {
   color: #7c8589;
   font-size: 11.5px;
   text-decoration: none;
 }
 
-.market-actions a:hover {
+.desk-actions a:hover {
   color: var(--red);
   text-decoration: underline;
 }
 
-.market-trade-link {
+.desk-trade-link {
   color: var(--red) !important;
   font-weight: 500;
 }
 
-@media (max-width: 900px) {
-  .market-row {
+.desk-note {
+  margin: 10px 2px 0;
+  color: #5a6469;
+  font-size: 11.5px;
+}
+
+/* --- token detail page (/app/market/t/[address]) --- */
+
+.token-back {
+  display: inline-block;
+  margin-top: 4px;
+  color: #7c8589;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.token-back:hover {
+  color: #d7dadb;
+}
+
+.token-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 14px;
+}
+
+.token-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.token-detail-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 50%;
+  background: #1c2226;
+  object-fit: cover;
+}
+
+.token-detail-name strong {
+  display: block;
+  font-size: 19px;
+  color: #eef0ef;
+}
+
+.token-detail-name span {
+  display: block;
+  margin-top: 3px;
+  color: #7c8589;
+  font-size: 12.5px;
+}
+
+.token-detail-address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.token-detail-address button {
+  border: 0;
+  background: transparent;
+  color: #5a6469;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.token-detail-address button:hover {
+  color: #d7dadb;
+}
+
+.token-detail-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.token-detail-links a {
+  color: #7c8589;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.token-detail-links a:hover {
+  color: var(--red);
+}
+
+.token-detail-price {
+  text-align: right;
+}
+
+.token-detail-price strong {
+  display: block;
+  font-size: 25px;
+  font-weight: 500;
+  color: #eef0ef;
+}
+
+.token-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 22px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .token-detail-grid {
     grid-template-columns: 1fr;
-    row-gap: 6px;
   }
-  .market-actions {
-    justify-content: flex-start;
-  }
+}
+
+.token-chart-card {
+  padding: 16px;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  background: #0d1214;
+}
+
+.token-chart-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.token-chart-tab {
+  padding: 6px 12px;
+  border: 1px solid #1c2226;
+  border-radius: 6px;
+  background: transparent;
+  color: #7c8589;
+  font: 500 11.5px/1 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+}
+
+.token-chart-tab:hover {
+  color: #d7dadb;
+}
+
+.token-chart-tab.active {
+  color: #eef0ef;
+  border-color: var(--red);
+  background: rgba(255,52,77,.06);
+}
+
+.token-chart-svg {
+  width: 100%;
+  height: 340px;
+  display: block;
+}
+
+.token-stat-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: #1c2226;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.token-stat {
+  padding: 14px 16px;
+  background: #0d1214;
+}
+
+.token-stat span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: #5a6469;
+}
+
+.token-stat strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #eef0ef;
+}
+
+.token-side-card {
+  padding: 18px;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  background: #0d1214;
+}
+
+.token-side-card + .token-side-card {
+  margin-top: 16px;
+}
+
+.token-side-card h4 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #eef0ef;
+}
+
+.token-side-card p {
+  margin: 0;
+  color: #9aa1a4;
+  font-size: 12.5px;
+  line-height: 1.6;
 }
 
 .app-notice-warn {

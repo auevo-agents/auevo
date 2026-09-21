@@ -5,6 +5,11 @@ Solidity contracts for the Auevo platform on Robinhood Chain (chain id
 compiler and test toolchain for contracts has no reason to be part of
 the web app's dependency tree or its Vercel build.
 
+See [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md) for the running
+list of everything here that's ready (or getting ready) for a mainnet
+deploy — kept as one list so the deploys happen together as a batch,
+not one at a time.
+
 ## DcaVault — status: written, tested, statically analysed. **Not deployed.**
 
 Recurring-buy (dollar-cost-average) vault for ERC-20↔ERC-20 pairs,
