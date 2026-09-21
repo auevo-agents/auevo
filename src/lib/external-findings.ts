@@ -30,6 +30,49 @@ function percent(fraction: number): string {
   return `${(fraction * 100).toFixed(1)}%`;
 }
 
+export interface LiquidityCoverage {
+  /** Combined burned + locked percent, 0-100, or null if neither source answered. */
+  secured: number | null;
+  source: string;
+}
+
+/**
+ * Prefers GoPlus, since it is the source actually confirmed to cover this
+ * chain; Quick Intel is read as a fallback for if or when it adds
+ * coverage, without a code change on this side when it does. The two are
+ * not combined even when both answer — they would be describing the same
+ * LP supply, and summing two answers to the same question invites double
+ * counting rather than confidence.
+ */
+export function resolveLiquidity(
+  goplus: GoPlusReport | null,
+  quickIntel: QuickIntelReport | null
+): LiquidityCoverage {
+  const fromGoPlus =
+    goplus && (goplus.lpBurnedPercent !== null || goplus.lpLockedPercent !== null)
+      ? { burned: goplus.lpBurnedPercent, locked: goplus.lpLockedPercent, source: "GoPlus" }
+      : null;
+
+  const fromQuickIntel =
+    !fromGoPlus &&
+    quickIntel &&
+    (quickIntel.lpBurnedPercent !== null || quickIntel.lpLockedPercent !== null)
+      ? {
+          burned: quickIntel.lpBurnedPercent,
+          locked: quickIntel.lpLockedPercent,
+          source: "Quick Intel",
+        }
+      : null;
+
+  const resolved = fromGoPlus ?? fromQuickIntel;
+  if (!resolved) return { secured: null, source: "" };
+
+  return {
+    secured: (resolved.burned ?? 0) + (resolved.locked ?? 0),
+    source: resolved.source,
+  };
+}
+
 export function externalFindings(
   goplus: GoPlusReport | null,
   contract: BlockscoutContractInfo | null,
@@ -67,35 +110,32 @@ export function externalFindings(
     });
   }
 
-  // --- liquidity, which only Quick Intel reports ---------------------------
-  if (quickIntel) {
-    const burned = quickIntel.lpBurnedPercent;
-    const locked = quickIntel.lpLockedPercent;
+  // --- liquidity -------------------------------------------------------
+  const liquidity = resolveLiquidity(goplus, quickIntel);
 
-    if (burned !== null || locked !== null) {
-      const secured = (burned ?? 0) + (locked ?? 0);
-
-      if (secured >= 90) {
-        add({
-          id: "liquidity-secured",
-          title: `${secured.toFixed(0)}% of liquidity is burned or locked`,
-          severity: "good",
-          detail:
-            "The pool backing this token cannot simply be withdrawn, which removes the most common way a token goes to zero in one transaction.",
-          evidence: "Quick Intel",
-        });
-      } else if (secured < 10) {
-        add({
-          id: "liquidity-unlocked",
-          title: "Liquidity is neither locked nor burned",
-          severity: "high",
-          detail:
-            "Whoever owns the pool can pull it at any moment, which takes the price to zero and leaves holders with tokens nobody can sell.",
-          evidence: "Quick Intel",
-        });
-      }
+  if (liquidity.secured !== null) {
+    if (liquidity.secured >= 90) {
+      add({
+        id: "liquidity-secured",
+        title: `${liquidity.secured.toFixed(0)}% of liquidity is burned or locked`,
+        severity: "good",
+        detail:
+          "The pool backing this token cannot simply be withdrawn, which removes the most common way a token goes to zero in one transaction.",
+        evidence: liquidity.source,
+      });
+    } else if (liquidity.secured < 10) {
+      add({
+        id: "liquidity-unlocked",
+        title: "Liquidity is neither locked nor burned",
+        severity: "high",
+        detail:
+          "Whoever owns the pool can pull it at any moment, which takes the price to zero and leaves holders with tokens nobody can sell.",
+        evidence: liquidity.source,
+      });
     }
+  }
 
+  if (quickIntel) {
     if (quickIntel.isHoneypot === true) {
       add({
         id: "honeypot",
