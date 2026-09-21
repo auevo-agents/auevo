@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppProviders } from "./providers";
+import { Sidebar } from "./sidebar";
 
 /**
  * Internal workspace — not the public marketing site. Kept out of the
@@ -14,8 +15,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AppSectionLayout({
-  children,
-}: LayoutProps<"/app">) {
-  return <AppProviders>{children}</AppProviders>;
+export default function AppSectionLayout({ children }: LayoutProps<"/app">) {
+  return (
+    <AppProviders>
+      <main className="app-shell">
+        <Sidebar />
+        <div className="product-main app-main">{children}</div>
+      </main>
+    </AppProviders>
+  );
 }

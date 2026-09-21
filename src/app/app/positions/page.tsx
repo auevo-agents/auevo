@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatUnits } from "viem";
 import { useAccount, useBalance, useReadContracts } from "wagmi";
@@ -77,8 +76,16 @@ export default function PositionsPage() {
   const contracts = useReadContracts({
     allowFailure: true,
     contracts: tracked.flatMap((token) => [
-      { address: token as `0x${string}`, abi: ERC20_ABI, functionName: "symbol" } as const,
-      { address: token as `0x${string}`, abi: ERC20_ABI, functionName: "decimals" } as const,
+      {
+        address: token as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: "symbol",
+      } as const,
+      {
+        address: token as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: "decimals",
+      } as const,
       address
         ? ({
             address: token as `0x${string}`,
@@ -92,157 +99,106 @@ export default function PositionsPage() {
   });
 
   return (
-    <main className="app-shell">
-      <PositionsSidebar />
+    <>
+      <header className="product-header">
+        <div>
+          <h3>Positions</h3>
+          <p>What the connected wallet holds on Robinhood Chain</p>
+        </div>
+        <ConnectButton />
+      </header>
 
-      <div className="product-main app-main">
-        <header className="product-header">
-          <div>
-            <h3>Positions</h3>
-            <p>What the connected wallet holds on Robinhood Chain</p>
+      {!isConnected ? (
+        <div className="app-empty">
+          Connect a wallet above to see positions.
+        </div>
+      ) : (
+        <>
+          <div className="app-kpis" style={{ marginTop: 20 }}>
+            <article className="app-kpi">
+              <span>NATIVE BALANCE</span>
+              <strong>
+                {native.data
+                  ? `${Number(
+                      formatUnits(native.data.value, native.data.decimals),
+                    ).toFixed(4)} ${native.data.symbol}`
+                  : "—"}
+              </strong>
+            </article>
           </div>
-          <ConnectButton />
-        </header>
 
-        {!isConnected ? (
-          <div className="app-empty">Connect a wallet above to see positions.</div>
-        ) : (
-          <>
-            <div className="app-kpis" style={{ marginTop: 20 }}>
-              <article className="app-kpi">
-                <span>NATIVE BALANCE</span>
-                <strong>
-                  {native.data
-                    ? `${Number(
-                        formatUnits(native.data.value, native.data.decimals)
-                      ).toFixed(4)} ${native.data.symbol}`
-                    : "—"}
-                </strong>
-              </article>
+          <div className="app-tools">
+            <div className="scan-section-heading">
+              <span>TRACKED TOKENS</span>
+              <strong>Add any ERC-20 by address to watch its balance</strong>
             </div>
 
-            <div className="app-tools">
-              <div className="scan-section-heading">
-                <span>TRACKED TOKENS</span>
-                <strong>Add any ERC-20 by address to watch its balance</strong>
+            <div className="trade-field" style={{ maxWidth: 420 }}>
+              <span>Token contract address</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={newToken}
+                  onChange={(e) => setNewToken(e.target.value.trim())}
+                  placeholder="0x…"
+                  spellCheck={false}
+                />
+                <button
+                  className="app-connect-button"
+                  onClick={() => {
+                    if (newToken && !tracked.includes(newToken)) {
+                      persist([...tracked, newToken]);
+                      setNewToken("");
+                    }
+                  }}
+                >
+                  Track
+                </button>
               </div>
-
-              <div className="trade-field" style={{ maxWidth: 420 }}>
-                <span>Token contract address</span>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    value={newToken}
-                    onChange={(e) => setNewToken(e.target.value.trim())}
-                    placeholder="0x…"
-                    spellCheck={false}
-                  />
-                  <button
-                    className="app-connect-button"
-                    onClick={() => {
-                      if (newToken && !tracked.includes(newToken)) {
-                        persist([...tracked, newToken]);
-                        setNewToken("");
-                      }
-                    }}
-                  >
-                    Track
-                  </button>
-                </div>
-              </div>
-
-              {tracked.length > 0 && (
-                <div className="scan-holder-table" style={{ marginTop: 16 }}>
-                  {tracked.map((token, i) => {
-                    const symbol = contracts.data?.[i * 3]?.result as string | undefined;
-                    const decimals = contracts.data?.[i * 3 + 1]?.result as
-                      | number
-                      | undefined;
-                    const balance = contracts.data?.[i * 3 + 2]?.result as
-                      | bigint
-                      | undefined;
-
-                    return (
-                      <div className="scan-holder-row" key={token} style={{ gridTemplateColumns: "1fr auto auto" }}>
-                        <code className="scan-mono">
-                          {symbol ?? `${token.slice(0, 6)}…${token.slice(-4)}`}
-                        </code>
-                        <span>
-                          {balance !== undefined && decimals !== undefined
-                            ? Number(formatUnits(balance, decimals)).toFixed(4)
-                            : "…"}
-                        </span>
-                        <button
-                          className="app-untrack"
-                          onClick={() => persist(tracked.filter((t) => t !== token))}
-                        >
-                          remove
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
-          </>
-        )}
-      </div>
-    </main>
-  );
-}
 
-function PositionsSidebar() {
-  return (
-    <aside className="product-sidebar">
-      <div className="product-logo">
-        <strong>auevo</strong>
-        <i />
-      </div>
-      <nav className="product-nav">
-        <Link href="/app" className="app-nav-link">
-          <span className="nav-icon">
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Overview</b>
-        </Link>
-        <Link href="/app/market" className="app-nav-link">
-          <span className="nav-icon nav-bots">
-            <i />
-          </span>
-          <b>Market</b>
-        </Link>
-        <Link href="/app/trading" className="app-nav-link">
-          <span className="nav-icon nav-trading">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Trading</b>
-        </Link>
-        <Link href="/app/bots" className="app-nav-link">
-          <span className="nav-icon nav-copy">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Bots</b>
-        </Link>
-        <button className="active">
-          <span className="nav-icon nav-position">
-            <i />
-            <i />
-          </span>
-          <b>Positions</b>
-        </button>
-        <Link href="/app/wallets" className="app-nav-link">
-          <span className="nav-icon nav-wallet">
-            <i />
-          </span>
-          <b>Wallets</b>
-        </Link>
-      </nav>
-    </aside>
+            {tracked.length > 0 && (
+              <div className="scan-holder-table" style={{ marginTop: 16 }}>
+                {tracked.map((token, i) => {
+                  const symbol = contracts.data?.[i * 3]?.result as
+                    | string
+                    | undefined;
+                  const decimals = contracts.data?.[i * 3 + 1]?.result as
+                    | number
+                    | undefined;
+                  const balance = contracts.data?.[i * 3 + 2]?.result as
+                    | bigint
+                    | undefined;
+
+                  return (
+                    <div
+                      className="scan-holder-row"
+                      key={token}
+                      style={{ gridTemplateColumns: "1fr auto auto" }}
+                    >
+                      <code className="scan-mono">
+                        {symbol ?? `${token.slice(0, 6)}…${token.slice(-4)}`}
+                      </code>
+                      <span>
+                        {balance !== undefined && decimals !== undefined
+                          ? Number(formatUnits(balance, decimals)).toFixed(4)
+                          : "…"}
+                      </span>
+                      <button
+                        className="app-untrack"
+                        onClick={() =>
+                          persist(tracked.filter((t) => t !== token))
+                        }
+                      >
+                        remove
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
 }

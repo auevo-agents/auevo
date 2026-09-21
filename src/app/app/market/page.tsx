@@ -70,118 +70,64 @@ export default function MarketPage() {
   }, []);
 
   return (
-    <main className="app-shell">
-      <MarketSidebar />
+    <>
+      <header className="product-header">
+        <div>
+          <h3>Market</h3>
+          <p>New Uniswap V3 pools on Robinhood Chain · live</p>
+        </div>
+        <ConnectButton />
+      </header>
 
-      <div className="product-main app-main">
-        <header className="product-header">
-          <div>
-            <h3>Market</h3>
-            <p>New Uniswap V3 pools on Robinhood Chain · live</p>
+      {error && (
+        <p className="error" style={{ marginTop: 16 }}>
+          {error}
+        </p>
+      )}
+
+      {!pools && !error && <div className="app-empty">Loading new pairs…</div>}
+
+      {pools && pools.length === 0 && (
+        <div className="app-empty">No new pools found yet.</div>
+      )}
+
+      {pools && pools.length > 0 && (
+        <div className="market-table">
+          <div className="market-row market-head">
+            <span>PAIR</span>
+            <span>FEE</span>
+            <span>AGE</span>
+            <span>POOL</span>
+            <span></span>
           </div>
-          <ConnectButton />
-        </header>
 
-        {error && <p className="error" style={{ marginTop: 16 }}>{error}</p>}
-
-        {!pools && !error && (
-          <div className="app-empty">Loading new pairs…</div>
-        )}
-
-        {pools && pools.length === 0 && (
-          <div className="app-empty">No new pools found yet.</div>
-        )}
-
-        {pools && pools.length > 0 && (
-          <div className="market-table">
-            <div className="market-row market-head">
-              <span>PAIR</span>
-              <span>FEE</span>
-              <span>AGE</span>
-              <span>POOL</span>
-              <span></span>
+          {pools.map((p) => (
+            <div className="market-row" key={p.pool}>
+              <span className="market-pair">
+                {p.token0Symbol ?? shorten(p.token0)} /{" "}
+                {p.token1Symbol ?? shorten(p.token1)}
+              </span>
+              <span>{(p.fee / 10_000).toFixed(2)}%</span>
+              <span>{formatAge(p.ageSeconds)}</span>
+              <code className="scan-mono">{shorten(p.pool)}</code>
+              <span className="market-actions">
+                <Link href={`/scanner?token=${p.token0}`}>
+                  scan {p.token0Symbol ?? "0"}
+                </Link>
+                <Link href={`/scanner?token=${p.token1}`}>
+                  scan {p.token1Symbol ?? "1"}
+                </Link>
+                <Link
+                  href={`/app/trading?tokenIn=${p.token1}&tokenOut=${p.token0}`}
+                  className="market-trade-link"
+                >
+                  trade
+                </Link>
+              </span>
             </div>
-
-            {pools.map((p) => (
-              <div className="market-row" key={p.pool}>
-                <span className="market-pair">
-                  {p.token0Symbol ?? shorten(p.token0)} / {p.token1Symbol ?? shorten(p.token1)}
-                </span>
-                <span>{(p.fee / 10_000).toFixed(2)}%</span>
-                <span>{formatAge(p.ageSeconds)}</span>
-                <code className="scan-mono">{shorten(p.pool)}</code>
-                <span className="market-actions">
-                  <Link href={`/scanner?token=${p.token0}`}>scan {p.token0Symbol ?? "0"}</Link>
-                  <Link href={`/scanner?token=${p.token1}`}>scan {p.token1Symbol ?? "1"}</Link>
-                  <Link
-                    href={`/app/trading?tokenIn=${p.token1}&tokenOut=${p.token0}`}
-                    className="market-trade-link"
-                  >
-                    trade
-                  </Link>
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-
-function MarketSidebar() {
-  return (
-    <aside className="product-sidebar">
-      <div className="product-logo">
-        <strong>auevo</strong>
-        <i />
-      </div>
-      <nav className="product-nav">
-        <Link href="/app" className="app-nav-link">
-          <span className="nav-icon">
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Overview</b>
-        </Link>
-        <button className="active">
-          <span className="nav-icon nav-bots">
-            <i />
-          </span>
-          <b>Market</b>
-        </button>
-        <Link href="/app/trading" className="app-nav-link">
-          <span className="nav-icon nav-trading">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Trading</b>
-        </Link>
-        <Link href="/app/bots" className="app-nav-link">
-          <span className="nav-icon nav-copy">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Bots</b>
-        </Link>
-        <Link href="/app/positions" className="app-nav-link">
-          <span className="nav-icon nav-position">
-            <i />
-            <i />
-          </span>
-          <b>Positions</b>
-        </Link>
-        <Link href="/app/wallets" className="app-nav-link">
-          <span className="nav-icon nav-wallet">
-            <i />
-          </span>
-          <b>Wallets</b>
-        </Link>
-      </nav>
-    </aside>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

@@ -1,9 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { formatUnits, isAddress, parseUnits, type Address } from "viem";
-import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useAccount,
+  useReadContracts,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { DCA_VAULT_ABI } from "@/lib/dcaVaultAbi";
 import { ConnectButton } from "../connect-button";
 
@@ -26,7 +30,9 @@ import { ConnectButton } from "../connect-button";
  * plainly instead of rendering a form that would fail confusingly.
  */
 
-const VAULT_ADDRESS = process.env.NEXT_PUBLIC_DCA_VAULT_ADDRESS as Address | undefined;
+const VAULT_ADDRESS = process.env.NEXT_PUBLIC_DCA_VAULT_ADDRESS as
+  | Address
+  | undefined;
 
 const ERC20_ABI = [
   {
@@ -54,52 +60,47 @@ const ERC20_ABI = [
 
 export default function BotsPage() {
   return (
-    <main className="app-shell">
-      <BotsSidebar />
-      <div className="product-main app-main">
-        <header className="product-header">
-          <div>
-            <h3>Bots</h3>
-            <p>Recurring-buy (DCA) positions · non-custodial escrow</p>
-          </div>
-          <ConnectButton />
-        </header>
-
-        <div className="app-notice app-notice-warn">
-          <strong>Experimental, reviewed, not audited.</strong> Written
-          with OpenZeppelin&apos;s security primitives, TWAP-protected
-          against sandwich attacks, tested (13 tests, including two
-          reentrancy vectors) and run through Slither — full write-up in{" "}
-          <code>contracts/README.md</code>. That is real work, not a
-          substitute for an independent paid audit. Only the deposit
-          principal you put in is ever at risk — nobody, including us,
-          can withdraw it but you — but size positions as unaudited
-          code, not audited code.
+    <>
+      <header className="product-header">
+        <div>
+          <h3>Bots</h3>
+          <p>Recurring-buy (DCA) positions · non-custodial escrow</p>
         </div>
+        <ConnectButton />
+      </header>
 
-        {!VAULT_ADDRESS ? (
-          <div className="app-empty app-empty-text">
-            <p>
-              <strong>Not deployed yet.</strong> The contract is written,
-              tested and statically analysed (see the notice above and
-              the contracts/ directory in the repo), but deploying it is
-              a decision with immediate financial-security consequences —
-              it becomes a public, fundable address the moment it&apos;s
-              live. That step is deliberately manual: someone runs{" "}
-              <code>contracts/script/deploy-dca.mjs</code> with their own
-              key, from their own machine. Nothing here does it
-              automatically.
-            </p>
-            <p>
-              Once deployed, set <code>NEXT_PUBLIC_DCA_VAULT_ADDRESS</code>{" "}
-              to bring this page live.
-            </p>
-          </div>
-        ) : (
-          <BotsApp vaultAddress={VAULT_ADDRESS} />
-        )}
+      <div className="app-notice app-notice-warn">
+        <strong>Experimental, reviewed, not audited.</strong> Written with
+        OpenZeppelin&apos;s security primitives, TWAP-protected against sandwich
+        attacks, tested (13 tests, including two reentrancy vectors) and run
+        through Slither — full write-up in <code>contracts/README.md</code>.
+        That is real work, not a substitute for an independent paid audit. Only
+        the deposit principal you put in is ever at risk — nobody, including us,
+        can withdraw it but you — but size positions as unaudited code, not
+        audited code.
       </div>
-    </main>
+
+      {!VAULT_ADDRESS ? (
+        <div className="app-empty app-empty-text">
+          <p>
+            <strong>Not deployed yet.</strong> The contract is written, tested
+            and statically analysed (see the notice above and the contracts/
+            directory in the repo), but deploying it is a decision with
+            immediate financial-security consequences — it becomes a public,
+            fundable address the moment it&apos;s live. That step is
+            deliberately manual: someone runs{" "}
+            <code>contracts/script/deploy-dca.mjs</code> with their own key,
+            from their own machine. Nothing here does it automatically.
+          </p>
+          <p>
+            Once deployed, set <code>NEXT_PUBLIC_DCA_VAULT_ADDRESS</code> to
+            bring this page live.
+          </p>
+        </div>
+      ) : (
+        <BotsApp vaultAddress={VAULT_ADDRESS} />
+      )}
+    </>
   );
 }
 
@@ -114,21 +115,39 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
   const [principal, setPrincipal] = useState("");
   const [maxSlippageBps, setMaxSlippageBps] = useState(300);
 
-  const validTokenIn = isAddress(tokenIn, { strict: false }) ? (tokenIn as Address) : undefined;
-  const validTokenOut = isAddress(tokenOut, { strict: false }) ? (tokenOut as Address) : undefined;
+  const validTokenIn = isAddress(tokenIn, { strict: false })
+    ? (tokenIn as Address)
+    : undefined;
+  const validTokenOut = isAddress(tokenOut, { strict: false })
+    ? (tokenOut as Address)
+    : undefined;
 
   const tokenMeta = useReadContracts({
     allowFailure: true,
     contracts: [
-      validTokenIn && { address: validTokenIn, abi: ERC20_ABI, functionName: "decimals" },
-      validTokenIn && { address: validTokenIn, abi: ERC20_ABI, functionName: "symbol" },
+      validTokenIn && {
+        address: validTokenIn,
+        abi: ERC20_ABI,
+        functionName: "decimals",
+      },
+      validTokenIn && {
+        address: validTokenIn,
+        abi: ERC20_ABI,
+        functionName: "symbol",
+      },
     ].filter(Boolean) as never[],
     query: { enabled: Boolean(validTokenIn) },
   });
   const [inDecimals, inSymbol] = tokenMeta.data?.map((r) => r.result) ?? [];
 
   const nextId = useReadContracts({
-    contracts: [{ address: vaultAddress, abi: DCA_VAULT_ABI, functionName: "nextPositionId" }],
+    contracts: [
+      {
+        address: vaultAddress,
+        abi: DCA_VAULT_ABI,
+        functionName: "nextPositionId",
+      },
+    ],
   });
   const positionCount = Number(nextId.data?.[0]?.result ?? 0n);
 
@@ -200,14 +219,16 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
             ],
           });
         },
-      }
+      },
     );
   }
 
   return (
     <>
       {!isConnected ? (
-        <div className="app-empty">Connect a wallet above to create or manage a DCA position.</div>
+        <div className="app-empty">
+          Connect a wallet above to create or manage a DCA position.
+        </div>
       ) : (
         <div className="trade-form" style={{ marginTop: 22 }}>
           <div className="scan-section-heading">
@@ -217,18 +238,31 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
 
           <label className="trade-field">
             <span>Spend token (address)</span>
-            <input value={tokenIn} onChange={(e) => setTokenIn(e.target.value.trim())} placeholder="0x…" spellCheck={false} />
+            <input
+              value={tokenIn}
+              onChange={(e) => setTokenIn(e.target.value.trim())}
+              placeholder="0x…"
+              spellCheck={false}
+            />
             {typeof inSymbol === "string" && <small>{inSymbol}</small>}
           </label>
 
           <label className="trade-field">
             <span>Buy token (address)</span>
-            <input value={tokenOut} onChange={(e) => setTokenOut(e.target.value.trim())} placeholder="0x…" spellCheck={false} />
+            <input
+              value={tokenOut}
+              onChange={(e) => setTokenOut(e.target.value.trim())}
+              placeholder="0x…"
+              spellCheck={false}
+            />
           </label>
 
           <label className="trade-field">
             <span>Pool fee tier</span>
-            <select value={fee} onChange={(e) => setFee(Number(e.target.value))}>
+            <select
+              value={fee}
+              onChange={(e) => setFee(Number(e.target.value))}
+            >
               <option value={100}>0.01%</option>
               <option value={500}>0.05%</option>
               <option value={3000}>0.30%</option>
@@ -238,7 +272,12 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
 
           <label className="trade-field">
             <span>Amount per buy</span>
-            <input value={tranche} onChange={(e) => setTranche(e.target.value)} placeholder="0.0" inputMode="decimal" />
+            <input
+              value={tranche}
+              onChange={(e) => setTranche(e.target.value)}
+              placeholder="0.0"
+              inputMode="decimal"
+            />
           </label>
 
           <label className="trade-field">
@@ -252,12 +291,20 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
 
           <label className="trade-field">
             <span>Total to deposit now</span>
-            <input value={principal} onChange={(e) => setPrincipal(e.target.value)} placeholder="0.0" inputMode="decimal" />
+            <input
+              value={principal}
+              onChange={(e) => setPrincipal(e.target.value)}
+              placeholder="0.0"
+              inputMode="decimal"
+            />
           </label>
 
           <label className="trade-field">
             <span>Max slippage vs. TWAP</span>
-            <select value={maxSlippageBps} onChange={(e) => setMaxSlippageBps(Number(e.target.value))}>
+            <select
+              value={maxSlippageBps}
+              onChange={(e) => setMaxSlippageBps(Number(e.target.value))}
+            >
               <option value={100}>1%</option>
               <option value={300}>3%</option>
               <option value={500}>5%</option>
@@ -286,7 +333,9 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
 
           {approve.error && <p className="error">{approve.error.message}</p>}
           {create.error && <p className="error">{create.error.message}</p>}
-          {createReceipt.isSuccess && <p className="trade-success">Position created.</p>}
+          {createReceipt.isSuccess && (
+            <p className="trade-success">Position created.</p>
+          )}
         </div>
       )}
 
@@ -301,14 +350,31 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
         {myPositions.data && myPositions.data.length > 0 && (
           <div className="scan-holder-table">
             {myPositions.data.map((r, id) => {
-              const pos = r.result as readonly [
-                Address, Address, Address, Address, number, bigint, bigint, bigint, bigint, number, boolean
-              ] | undefined;
+              const pos = r.result as
+                | readonly [
+                    Address,
+                    Address,
+                    Address,
+                    Address,
+                    number,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    number,
+                    boolean,
+                  ]
+                | undefined;
               if (!pos) return null;
               const [owner, , , , , , , remaining, , , active] = pos;
-              const isMine = account && owner.toLowerCase() === account.toLowerCase();
+              const isMine =
+                account && owner.toLowerCase() === account.toLowerCase();
               return (
-                <div className="scan-holder-row" key={id} style={{ gridTemplateColumns: "40px 1fr auto auto" }}>
+                <div
+                  className="scan-holder-row"
+                  key={id}
+                  style={{ gridTemplateColumns: "40px 1fr auto auto" }}
+                >
                   <span className="scan-holder-rank">#{id}</span>
                   <code className="scan-mono">
                     {owner.slice(0, 6)}…{owner.slice(-4)}
@@ -323,62 +389,5 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
         )}
       </div>
     </>
-  );
-}
-
-function BotsSidebar() {
-  return (
-    <aside className="product-sidebar">
-      <div className="product-logo">
-        <strong>auevo</strong>
-        <i />
-      </div>
-      <nav className="product-nav">
-        <Link href="/app" className="app-nav-link">
-          <span className="nav-icon">
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Overview</b>
-        </Link>
-        <Link href="/app/market" className="app-nav-link">
-          <span className="nav-icon nav-bots">
-            <i />
-          </span>
-          <b>Market</b>
-        </Link>
-        <Link href="/app/trading" className="app-nav-link">
-          <span className="nav-icon nav-trading">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Trading</b>
-        </Link>
-        <button className="active">
-          <span className="nav-icon nav-copy">
-            <i />
-            <i />
-            <i />
-          </span>
-          <b>Bots</b>
-        </button>
-        <Link href="/app/positions" className="app-nav-link">
-          <span className="nav-icon nav-position">
-            <i />
-            <i />
-          </span>
-          <b>Positions</b>
-        </Link>
-        <Link href="/app/wallets" className="app-nav-link">
-          <span className="nav-icon nav-wallet">
-            <i />
-          </span>
-          <b>Wallets</b>
-        </Link>
-      </nav>
-    </aside>
   );
 }
