@@ -6285,3 +6285,262 @@ a {
     overflow-x: auto;
   }
 }
+
+/* ============================================================
+   Wallet picker modal, trading form, and small /app utilities.
+   ============================================================ */
+
+.wallet-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(2px);
+}
+
+.wallet-modal {
+  width: min(420px, calc(100% - 32px));
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid #252c30;
+  border-radius: 12px;
+  background: #0d1214;
+  box-shadow: 0 30px 80px rgba(0,0,0,.5);
+}
+
+.wallet-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wallet-modal-header strong {
+  font-size: 16px;
+  color: #eef0ef;
+}
+
+.wallet-modal-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7c8589;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.wallet-modal-close:hover {
+  color: #eef0ef;
+  background: rgba(255,255,255,.05);
+}
+
+.wallet-modal-sub {
+  margin: 8px 0 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #7c8589;
+}
+
+.wallet-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wallet-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  background: #0a0e10;
+  color: #eef0ef;
+  font-size: 13px;
+  text-align: left;
+}
+
+.wallet-modal-item:hover:not(:disabled) {
+  border-color: rgba(255,52,77,.4);
+}
+
+.wallet-modal-item:disabled {
+  opacity: .6;
+}
+
+.wallet-modal-item img {
+  border-radius: 6px;
+  flex: none;
+}
+
+.wallet-modal-icon-fallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #1c2226;
+  flex: none;
+}
+
+.wallet-modal-item small {
+  margin-left: auto;
+  color: #7c8589;
+  font-size: 11px;
+}
+
+.wallet-modal-empty {
+  padding: 12px;
+  color: #7c8589;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.wallet-modal-error {
+  margin-top: 12px;
+}
+
+.wallet-modal-foot {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #1c2226;
+  color: #5a6469;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* --- trading form --- */
+
+.trade-form {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 420px;
+}
+
+.trade-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #7c8589;
+}
+
+.trade-field input,
+.trade-field select {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #252c30;
+  border-radius: 6px;
+  background: #0a0e10;
+  color: #eef0ef;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.trade-field select {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.trade-field small {
+  color: #5a6469;
+}
+
+.trade-quote {
+  padding: 12px 14px;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  background: #0a0e10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #eef0ef;
+}
+
+.trade-quote small {
+  color: #7c8589;
+  font-size: 11px;
+}
+
+.trade-quote-error {
+  color: var(--red);
+  font-size: 12px;
+}
+
+.trade-success {
+  color: var(--green);
+  font-size: 12.5px;
+}
+
+/* --- shared small utilities --- */
+
+.app-empty {
+  margin-top: 40px;
+  padding: 30px;
+  border: 1px dashed #252c30;
+  border-radius: 8px;
+  color: #7c8589;
+  font-size: 13px;
+  text-align: center;
+}
+
+.app-notice-info {
+  border-color: rgba(255,255,255,.1);
+  border-left-color: #4b5257;
+  background: rgba(255,255,255,.02);
+  color: #9aa3a8;
+}
+
+.app-link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--red);
+  text-decoration: underline;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.app-untrack {
+  border: 0;
+  background: none;
+  color: #5a6469;
+  font-size: 11px;
+  text-decoration: underline;
+}
+
+.app-untrack:hover {
+  color: var(--red);
+}
+
+.app-nav-link.active {
+  color: #ff4259;
+  background:
+    linear-gradient(90deg, rgba(255,52,77,.12), rgba(255,52,77,.035));
+  box-shadow: inset 0 0 0 1px rgba(255,52,77,.13);
+}
+
+.app-empty-text {
+  text-align: left;
+  max-width: 560px;
+  margin-top: 24px;
+  padding: 22px 24px;
+}
+
+.app-empty-text p {
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+
+.app-empty-text p:last-child {
+  margin-bottom: 0;
+}
+
+.app-empty-text a {
+  color: var(--red);
+}
