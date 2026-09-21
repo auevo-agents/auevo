@@ -6611,3 +6611,16 @@ a {
     justify-content: flex-start;
   }
 }
+
+.app-notice-warn {
+  border-color: rgba(251,191,36,.4);
+  border-left-color: #fbbf24;
+  background: rgba(251,191,36,.05);
+  color: #d7dadb;
+}
+
+.app-notice-warn code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: #eef0ef;
+}

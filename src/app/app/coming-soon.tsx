@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { id: "overview", label: "Overview", icon: "", href: "/app" },
   { id: "market", label: "Market", icon: "nav-bots", href: "/app/market" },
   { id: "trading", label: "Trading", icon: "nav-trading", href: "/app/trading" },
+  { id: "bots", label: "Bots", icon: "nav-copy", href: "/app/bots" },
   { id: "positions", label: "Positions", icon: "nav-position", href: "/app/positions" },
   { id: "wallets", label: "Wallets", icon: "nav-wallet", href: "/app/wallets" },
   { id: "scanner", label: "Token Scanner", icon: "nav-analytics", href: "/scanner" },

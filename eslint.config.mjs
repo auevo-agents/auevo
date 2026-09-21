@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // contracts/ is a separate Node/Solidity toolchain (its own
+    // package.json), not part of the Next.js app — plain CommonJS
+    // scripts there are normal, not a lint violation.
+    "contracts/**",
   ]),
 ]);
 

@@ -484,6 +484,27 @@ function TradingSidebar() {
           </span>
           <b>Trading</b>
         </button>
+        <Link href="/app/bots" className="app-nav-link">
+          <span className="nav-icon nav-copy">
+            <i />
+            <i />
+            <i />
+          </span>
+          <b>Bots</b>
+        </Link>
+        <Link href="/app/positions" className="app-nav-link">
+          <span className="nav-icon nav-position">
+            <i />
+            <i />
+          </span>
+          <b>Positions</b>
+        </Link>
+        <Link href="/app/wallets" className="app-nav-link">
+          <span className="nav-icon nav-wallet">
+            <i />
+          </span>
+          <b>Wallets</b>
+        </Link>
         <Link href="/scanner" className="app-nav-link">
           <span className="nav-icon nav-analytics">
             <i />
