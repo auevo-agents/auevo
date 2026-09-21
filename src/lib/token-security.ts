@@ -21,7 +21,11 @@ import {
 } from "./evm/blockscout";
 import { fetchGoPlus } from "./evm/goplus";
 import { fetchQuickIntel, quickIntelConfigured } from "./evm/quickintel";
-import { externalFindings, takeBackOverridesRenounce } from "./external-findings";
+import {
+  externalFindings,
+  resolveLiquidity,
+  takeBackOverridesRenounce,
+} from "./external-findings";
 import { SEVERITY_RANK, type Finding, type Severity } from "./evm/types";
 
 /**
@@ -178,15 +182,6 @@ function sortFindings(findings: Finding[]): Finding[] {
     (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
   );
 }
-
-/**
- * Standing limits of this method, listed on every report. They are not
- * failures of a particular scan — they are what a read-only scan cannot
- * see, and leaving them implicit is how a "clean" result gets over-read.
- */
-const BASE_LIMITATIONS = [
-  "Liquidity depth and whether it is locked are not checked — that needs the DEX contracts, which are not wired up yet.",
-];
 
 /**
  * An evidence gap is a check we attempted and could not settle; a standing
@@ -410,19 +405,14 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     );
   }
 
-  // Liquidity is only a gap once we have a source configured to answer it.
-  // Unconfigured means "not attempted", which is a standing limitation, and
-  // conflating the two would make confidence meaningless.
-  const liquidityKnown =
-    quickIntel?.lpBurnedPercent != null || quickIntel?.lpLockedPercent != null;
-
-  if (quickIntelConfigured() && !liquidityKnown) {
+  // Same pattern as the two checks above: GoPlus is attempted by default,
+  // so this is a gap whenever it (and Quick Intel, once it covers this
+  // chain) came back with nothing — never a "not attempted" limitation.
+  if (resolveLiquidity(goplus, quickIntel).secured === null) {
     evidenceGaps.push(GAP.liquidity);
     checksSkipped.push(
-      "Whether the liquidity pool is locked or burned could not be established — the audit source did not return it."
+      "Whether the liquidity pool is locked or burned could not be established from any configured audit source."
     );
-  } else if (!quickIntelConfigured()) {
-    checksSkipped.push(...BASE_LIMITATIONS);
   }
 
   findings.push(

@@ -166,3 +166,56 @@ describe("proxy detection", () => {
     expect(minimalProxyImplementation(bytecode("6001600100"))).toBeNull();
   });
 });
+
+describe("liquidity resolution", () => {
+  it("reads locked/burned LP holders out of the GoPlus response", async () => {
+    const { fetchGoPlus } = await import("./goplus");
+    void fetchGoPlus; // imported to confirm the module still loads cleanly
+
+    const { resolveLiquidity } = await import("../external-findings");
+
+    const goplus = {
+      lpBurnedPercent: 60,
+      lpLockedPercent: 35,
+    } as Parameters<typeof resolveLiquidity>[0];
+
+    const result = resolveLiquidity(goplus, null);
+    expect(result.secured).toBeCloseTo(95, 5);
+    expect(result.source).toBe("GoPlus");
+  });
+
+  it("prefers GoPlus over Quick Intel when both answer", async () => {
+    const { resolveLiquidity } = await import("../external-findings");
+
+    const goplus = {
+      lpBurnedPercent: 100,
+      lpLockedPercent: 0,
+    } as Parameters<typeof resolveLiquidity>[0];
+    const quickIntel = {
+      lpBurnedPercent: 0,
+      lpLockedPercent: 0,
+    } as Parameters<typeof resolveLiquidity>[1];
+
+    const result = resolveLiquidity(goplus, quickIntel);
+    expect(result.secured).toBe(100);
+    expect(result.source).toBe("GoPlus");
+  });
+
+  it("falls back to Quick Intel when GoPlus has nothing to say", async () => {
+    const { resolveLiquidity } = await import("../external-findings");
+
+    const quickIntel = {
+      lpBurnedPercent: null,
+      lpLockedPercent: 12,
+    } as Parameters<typeof resolveLiquidity>[1];
+
+    const result = resolveLiquidity(null, quickIntel);
+    expect(result.secured).toBe(12);
+    expect(result.source).toBe("Quick Intel");
+  });
+
+  it("is unresolved when neither source has LP data", async () => {
+    const { resolveLiquidity } = await import("../external-findings");
+    expect(resolveLiquidity(null, null).secured).toBeNull();
+  });
+});

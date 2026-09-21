@@ -58,6 +58,70 @@ export interface GoPlusReport {
   ownerPercent: number | null;
   lpHolderCount: number | null;
   isInDex: boolean | null;
+  /** Percent of LP supply sitting at a burn address, 0-100. */
+  lpBurnedPercent: number | null;
+  /** Percent of LP supply held in a recognised lock contract, 0-100. */
+  lpLockedPercent: number | null;
+}
+
+/** Addresses whose LP balance is out of circulation, not someone's position. */
+const BURN_ADDRESSES = new Set([
+  "0x000000000000000000000000000000000000dead",
+  "0x0000000000000000000000000000000000000000",
+  "0x0000000000000000000000000000000000000001",
+]);
+
+/**
+ * GoPlus reports the LP token's own holder list in the same response as
+ * everything else here — same call, no extra round trip. Each holder
+ * carries `is_locked`, which GoPlus sets from a small set of recognised
+ * lock contracts; it is a real signal but not exhaustive, so this can
+ * under-count a lock done through a contract GoPlus does not recognise.
+ * A burned share (sent to a dead address) is unambiguous by contrast, so
+ * it is read from the address itself rather than trusted to a flag.
+ */
+function parseLpDistribution(entry: Record<string, unknown>): {
+  burnedPercent: number | null;
+  lockedPercent: number | null;
+} {
+  const holders = entry.lp_holders;
+  if (!Array.isArray(holders) || holders.length === 0) {
+    return { burnedPercent: null, lockedPercent: null };
+  }
+
+  let burned = 0;
+  let locked = 0;
+  let sawAny = false;
+
+  for (const raw of holders) {
+    if (!raw || typeof raw !== "object") continue;
+    const holder = raw as Record<string, unknown>;
+
+    const fraction = decimalOrNull(holder.percent as string);
+    if (fraction === null) continue;
+    sawAny = true;
+
+    const address =
+      typeof holder.address === "string" ? holder.address.toLowerCase() : "";
+    const percent = fraction * 100;
+
+    if (BURN_ADDRESSES.has(address)) burned += percent;
+    else if (triState(holder.is_locked) === true) locked += percent;
+  }
+
+  return sawAny
+    ? { burnedPercent: burned, lockedPercent: locked }
+    : { burnedPercent: null, lockedPercent: null };
+}
+
+function toReportKeys(distribution: {
+  burnedPercent: number | null;
+  lockedPercent: number | null;
+}): Pick<GoPlusReport, "lpBurnedPercent" | "lpLockedPercent"> {
+  return {
+    lpBurnedPercent: distribution.burnedPercent,
+    lpLockedPercent: distribution.lockedPercent,
+  };
 }
 
 function intOrNull(value: unknown): number | null {
@@ -111,5 +175,6 @@ export async function fetchGoPlus(
     ownerPercent: decimalOrNull(entry.owner_percent),
     lpHolderCount: intOrNull(entry.lp_holder_count),
     isInDex: triState(entry.is_in_dex),
+    ...toReportKeys(parseLpDistribution(entry)),
   };
 }

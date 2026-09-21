@@ -97,6 +97,29 @@ function httpRoute(path: string): unknown | undefined {
           // buy_tax / sell_tax deliberately absent: the common case on
           // this chain, and it must stay unknown rather than become 0.
           holder_count: "412",
+          // Robinhood Chain is not in Quick Intel's coverage (checked
+          // directly against their published chain list), so GoPlus's
+          // own lp_holders — part of this same response, no extra call —
+          // is what actually answers "is liquidity locked" on this chain
+          // in practice. Quick Intel's mock below deliberately disagrees
+          // (0/0, unlocked) to prove GoPlus wins when both answer.
+          lp_holders: [
+            {
+              address: "0x000000000000000000000000000000000000dead",
+              percent: "0.55",
+              is_locked: "0",
+            },
+            {
+              address: "0x6666666666666666666666666666666666666666",
+              percent: "0.37",
+              is_locked: "1",
+            },
+            {
+              address: "0x7777777777777777777777777777777777777777",
+              percent: "0.08",
+              is_locked: "0",
+            },
+          ],
         },
       },
     };
@@ -212,8 +235,12 @@ describe("second opinion from established scanners", () => {
     expect(report.sources.blockscoutBase).toBeTruthy();
   });
 
-  it("reports unlocked liquidity, which no other source covers", () => {
-    expect(report.findings.map((f) => f.id)).toContain("liquidity-unlocked");
+  it("resolves liquidity from GoPlus's own lp_holders, over Quick Intel's disagreeing answer", () => {
+    // 55% burned + 37% locked = 92% secured, from the mock above.
+    const finding = report.findings.find((f) => f.id === "liquidity-secured");
+    expect(finding).toBeTruthy();
+    expect(finding?.evidence).toBe("GoPlus");
+    expect(report.findings.map((f) => f.id)).not.toContain("liquidity-unlocked");
     expect(report.evidenceGaps).not.toContain("Liquidity lock unknown");
   });
 
