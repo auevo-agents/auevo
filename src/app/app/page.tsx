@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { formatUnits } from "viem";
-import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useBalance } from "wagmi";
 import { robinhoodChain } from "@/lib/chains";
+import { ConnectButton } from "./connect-button";
 
 /**
  * Internal workspace overview — the first real (non-mockup) screen of the
@@ -25,19 +26,17 @@ const NAV_ITEMS: {
   soon?: boolean;
 }[] = [
   { id: "overview", label: "Overview", icon: "" },
+  { id: "trading", label: "Trading", icon: "nav-trading", href: "/app/trading" },
+  { id: "positions", label: "Positions", icon: "nav-position", href: "/app/positions" },
+  { id: "wallets", label: "Wallets", icon: "nav-wallet", href: "/app/wallets" },
   { id: "scanner", label: "Token Scanner", icon: "nav-analytics", href: "/scanner" },
   { id: "fees", label: "Fee Scanner", icon: "nav-bots", href: "/fees" },
-  { id: "trading", label: "Trading", icon: "nav-trading", soon: true },
-  { id: "positions", label: "Positions", icon: "nav-position", soon: true },
-  { id: "otc", label: "OTC Desk", icon: "nav-copy", soon: true },
-  { id: "launch", label: "Launchpad", icon: "nav-alerts", soon: true },
-  { id: "wallets", label: "Wallets", icon: "nav-wallet", soon: true },
+  { id: "otc", label: "OTC Desk", icon: "nav-copy", href: "/app/otc" },
+  { id: "launch", label: "Launchpad", icon: "nav-alerts", href: "/app/launch" },
 ];
 
 export default function AppOverviewPage() {
   const { address, isConnected, chainId } = useAccount();
-  const { connectors, connect, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
   const balance = useBalance({
     address,
     chainId: robinhoodChain.id,
@@ -45,7 +44,6 @@ export default function AppOverviewPage() {
   });
 
   const wrongChain = isConnected && chainId !== robinhoodChain.id;
-  const injectedConnector = connectors.find((c) => c.id === "injected") ?? connectors[0];
 
   return (
     <main className="app-shell">
@@ -94,33 +92,7 @@ export default function AppOverviewPage() {
             <p>Internal workspace · Robinhood Chain</p>
           </div>
 
-          <div className="product-header-actions">
-            {isConnected && address ? (
-              <>
-                <button className="wallet-pill" title={address}>
-                  <i>{address.slice(2, 3).toUpperCase()}</i>
-                  <span>
-                    {address.slice(0, 6)}…{address.slice(-4)}
-                  </span>
-                </button>
-                <button onClick={() => disconnect()}>Disconnect</button>
-              </>
-            ) : (
-              <button
-                className="app-connect-button"
-                disabled={isPending || !injectedConnector}
-                onClick={() =>
-                  injectedConnector && connect({ connector: injectedConnector })
-                }
-              >
-                {isPending
-                  ? "Connecting…"
-                  : injectedConnector
-                    ? "Connect wallet"
-                    : "No wallet found"}
-              </button>
-            )}
-          </div>
+          <ConnectButton />
         </header>
 
         {wrongChain && (
