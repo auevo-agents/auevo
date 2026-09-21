@@ -1,12 +1,14 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ConnectButton } from "../../../connect-button";
 import { SwapPanel } from "../../../swap-panel";
 import { CandlestickChart } from "../../candlestick-chart";
 import { TradeList } from "../../trade-list";
 import { TokenInfoPanel } from "../../token-info-panel";
+import { FavoriteStar } from "../../favorite-star";
+import { useTokenScan } from "../../use-token-scan";
 import {
   formatAge,
   formatPercent,
@@ -14,19 +16,17 @@ import {
   formatUsdCompact,
   shortenAddress,
 } from "@/lib/format";
-import type { Candle, MarketPool, OhlcvTimeframe, Trade } from "@/lib/geckoterminal";
+import type { Candle, MarketPool, OhlcvTimeframe, Trade, TokenInfo } from "@/lib/geckoterminal";
+import { formatUnits } from "viem";
 
 /**
  * Token/pool detail — the "click a pair" page from Market. Everything
- * shown is real, live data from the same GeckoTerminal source as the
- * Market list (see src/lib/geckoterminal.ts): a live interactive chart
- * (TradingView's lightweight-charts, not a static image), this pool's
- * own recent trades, and a real embedded swap panel (shared with Trading
- * — see ../../../swap-panel.tsx — rather than a second copy of the swap
- * logic). No Limit/Ladder/Martingale order types: there is no on-chain
- * infrastructure behind those here (no limit-order book, no bot
- * executor), so showing those tabs would advertise a capability that
- * doesn't exist.
+ * shown is real, live data: a live interactive chart (TradingView's
+ * lightweight-charts), this pool's own trades (and two views derived
+ * from the same fetch — Top Traders and, once scanned, Holders — rather
+ * than separate heavy calls), a real embedded swap panel, and Token Info
+ * driven by an on-demand scan rather than one fired automatically on
+ * every page view (that was the main thing making this page feel slow).
  */
 
 const CHART_TABS: {
@@ -49,6 +49,16 @@ const TRADE_FILTERS = [
   { value: 10_000, label: "≥ $10,000" },
 ];
 
+type Section = "trades" | "traders" | "holders" | "orders" | "info";
+
+const SECTION_TABS: { id: Section; label: string }[] = [
+  { id: "trades", label: "TRADES" },
+  { id: "traders", label: "TOP TRADERS" },
+  { id: "holders", label: "HOLDERS" },
+  { id: "orders", label: "MY ORDERS" },
+  { id: "info", label: "INFO" },
+];
+
 function changeClass(value: number | null): string {
   if (value === null || value === 0) return "";
   return value > 0 ? "desk-change-pos" : "desk-change-neg";
@@ -67,6 +77,38 @@ function McapValue({ pool }: { pool: MarketPool }) {
   return <>—</>;
 }
 
+interface TraderAgg {
+  address: string;
+  volumeUsd: number;
+  trades: number;
+  buys: number;
+  sells: number;
+}
+
+function aggregateTopTraders(trades: Trade[]): TraderAgg[] {
+  const byAddress = new Map<string, TraderAgg>();
+  for (const t of trades) {
+    if (!t.traderAddress) continue;
+    const entry = byAddress.get(t.traderAddress) ?? {
+      address: t.traderAddress,
+      volumeUsd: 0,
+      trades: 0,
+      buys: 0,
+      sells: 0,
+    };
+    entry.volumeUsd += t.volumeUsd ?? 0;
+    entry.trades += 1;
+    if (t.kind === "buy") entry.buys += 1;
+    if (t.kind === "sell") entry.sells += 1;
+    byAddress.set(t.traderAddress, entry);
+  }
+  return [...byAddress.values()].sort((a, b) => b.volumeUsd - a.volumeUsd).slice(0, 15);
+}
+
+function copyToClipboard(value: string, onDone: () => void) {
+  navigator.clipboard?.writeText(value).then(onDone).catch(() => {});
+}
+
 export default function TokenDetailPage(props: PageProps<"/app/market/t/[address]">) {
   const { address } = use(props.params);
 
@@ -74,10 +116,14 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
   const [poolError, setPoolError] = useState<string | null>(null);
   const [chartTabId, setChartTabId] = useState("1h");
   const [candles, setCandles] = useState<Candle[] | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [section, setSection] = useState<Section>("trades");
   const [tradesMinUsd, setTradesMinUsd] = useState(0);
   const [trades, setTrades] = useState<Trade[] | null>(null);
   const [tradesError, setTradesError] = useState<string | null>(null);
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | null | undefined>(undefined);
+
+  const scan = useTokenScan(pool?.baseToken.address ?? "");
 
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +183,9 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
     };
   }, [address, chartTab.timeframe, chartTab.aggregate]);
 
+  // Fetched unfiltered (minUsd=0) once per pool — the Trades tab's size
+  // filter and the Top Traders tab's ranking are both derived from this
+  // same set client-side, instead of two separate calls.
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -144,7 +193,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
 
     async function loadTrades() {
       try {
-        const res = await fetch(`/api/market/trades/${address}?minUsd=${tradesMinUsd}`);
+        const res = await fetch(`/api/market/trades/${address}`);
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok) {
@@ -164,18 +213,43 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
       cancelled = true;
       clearInterval(interval);
     };
-  }, [address, tradesMinUsd]);
+  }, [address]);
 
-  function copyAddress() {
-    const tokenAddress = pool?.baseToken.address;
-    if (!tokenAddress) return;
-    navigator.clipboard
-      ?.writeText(tokenAddress)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+  // Info tab's socials are cheap but still a network call — fetched only
+  // once the tab is actually opened, same "nothing loads until asked
+  // for" rule as the security scan.
+  useEffect(() => {
+    if (section !== "info" || tokenInfo !== undefined || !pool?.baseToken.address) return;
+    let cancelled = false;
+
+    fetch(`/api/market/token-info/${pool.baseToken.address}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setTokenInfo(data.info ?? null);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setTokenInfo(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [section, tokenInfo, pool?.baseToken.address]);
+
+  const filteredTrades = useMemo(() => {
+    if (!trades) return null;
+    return tradesMinUsd === 0
+      ? trades
+      : trades.filter((t) => (t.volumeUsd ?? 0) >= tradesMinUsd);
+  }, [trades, tradesMinUsd]);
+
+  const topTraders = useMemo(() => (trades ? aggregateTopTraders(trades) : null), [trades]);
+
+  function copyField(field: string, value: string) {
+    copyToClipboard(value, () => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField((f) => (f === field ? null : f)), 1500);
+    });
   }
 
   return (
@@ -217,6 +291,11 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
 
               <div className="token-detail-name">
                 <strong>
+                  {pool.poolAddress && (
+                    <span style={{ marginRight: 8 }}>
+                      <FavoriteStar poolAddress={pool.poolAddress} />
+                    </span>
+                  )}
                   {pool.baseToken.symbol ?? "Unknown"} / {pool.quoteToken.symbol ?? "?"}
                 </strong>
                 <span>
@@ -229,7 +308,9 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                     <code className="scan-mono">
                       {shortenAddress(pool.baseToken.address, 10, 8)}
                     </code>
-                    <button onClick={copyAddress}>{copied ? "copied" : "copy"}</button>
+                    <button onClick={() => copyField("header", pool.baseToken.address as string)}>
+                      {copiedField === "header" ? "copied" : "copy"}
+                    </button>
                   </div>
                 )}
 
@@ -332,7 +413,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
               </div>
             </div>
 
-            <div>
+            <div className="token-side-column">
               <div className="token-side-card">
                 <h4>Trade</h4>
                 <p>
@@ -354,37 +435,257 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                 )}
               </div>
 
-              {pool.baseToken.address && <TokenInfoPanel tokenAddress={pool.baseToken.address} />}
+              {pool.baseToken.address && (
+                <TokenInfoPanel
+                  tokenAddress={pool.baseToken.address}
+                  status={scan.status}
+                  report={scan.report}
+                  onScan={scan.run}
+                />
+              )}
             </div>
           </div>
 
           <div className="token-trades-section">
-            <div className="scan-section-heading">
-              <span>LIVE</span>
-              <strong>Recent trades — this pool</strong>
-            </div>
-
             <div className="desk-tabs">
-              {TRADE_FILTERS.map((f) => (
+              {SECTION_TABS.map((t) => (
                 <button
-                  key={f.value}
-                  className={tradesMinUsd === f.value ? "desk-tab active" : "desk-tab"}
-                  onClick={() => setTradesMinUsd(f.value)}
+                  key={t.id}
+                  className={section === t.id ? "desk-tab active" : "desk-tab"}
+                  onClick={() => setSection(t.id)}
                 >
-                  {f.label}
+                  {t.label}
                 </button>
               ))}
             </div>
 
-            {tradesError && <p className="error">{tradesError}</p>}
-            {!trades && !tradesError && <div className="app-empty">Loading trades…</div>}
-            {trades && trades.length === 0 && (
-              <div className="app-empty">No trades at this size in the last 24h.</div>
+            {section === "trades" && (
+              <>
+                <div className="desk-tabs" style={{ marginTop: 0, marginBottom: 12, borderBottom: "none" }}>
+                  {TRADE_FILTERS.map((f) => (
+                    <button
+                      key={f.value}
+                      className={tradesMinUsd === f.value ? "desk-tab active" : "desk-tab"}
+                      onClick={() => setTradesMinUsd(f.value)}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                {tradesError && <p className="error">{tradesError}</p>}
+                {!filteredTrades && !tradesError && <div className="app-empty">Loading trades…</div>}
+                {filteredTrades && filteredTrades.length === 0 && (
+                  <div className="app-empty">No trades at this size in the last 24h.</div>
+                )}
+                {filteredTrades && filteredTrades.length > 0 && (
+                  <TradeList trades={filteredTrades} showPair={false} />
+                )}
+              </>
             )}
-            {trades && trades.length > 0 && <TradeList trades={trades} showPair={false} />}
+
+            {section === "traders" && (
+              <>
+                {!topTraders && <div className="app-empty">Loading trades…</div>}
+                {topTraders && topTraders.length === 0 && (
+                  <div className="app-empty">No trades in the last 24h to rank.</div>
+                )}
+                {topTraders && topTraders.length > 0 && (
+                  <div className="desk-scroll">
+                    <div className="rank-row rank-head">
+                      <span>#</span>
+                      <span>TRADER</span>
+                      <span className="desk-col-right">VOLUME (24H)</span>
+                      <span className="desk-col-right">TRADES</span>
+                      <span />
+                    </div>
+                    {topTraders.map((t, i) => (
+                      <div className="rank-row" key={t.address}>
+                        <span>{i + 1}</span>
+                        <code className="scan-mono">{shortenAddress(t.address)}</code>
+                        <span className="desk-col-right">{formatUsdCompact(t.volumeUsd)}</span>
+                        <span className="desk-col-right">
+                          {t.trades} ({t.buys}/{t.sells})
+                        </span>
+                        <span className="desk-actions">
+                          <a
+                            href={`https://robinhoodchain.blockscout.com/address/${t.address}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            view
+                          </a>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="desk-note">
+                  Ranked by trade volume in this pool over the last 24h (up to the
+                  most recent 300 trades) — not an all-time or cross-pool ranking.
+                </p>
+              </>
+            )}
+
+            {section === "holders" && (
+              <HoldersSection scan={scan} />
+            )}
+
+            {section === "orders" && (
+              <div className="app-empty app-empty-text">
+                <p>No open orders. Swaps here execute immediately as market orders —
+                  there&apos;s no resting-order book behind this yet.</p>
+                <p>Uniswap X supports real (zero-gas, filler-network) limit orders on
+                  this chain; wiring that up here is next, not something to fake in
+                  the meantime.</p>
+              </div>
+            )}
+
+            {section === "info" && pool && (
+              <InfoSection pool={pool} tokenInfo={tokenInfo} onCopy={copyField} copiedField={copiedField} />
+            )}
           </div>
         </>
       )}
     </>
+  );
+}
+
+function HoldersSection({ scan }: { scan: ReturnType<typeof useTokenScan> }) {
+  if (scan.status === "idle") {
+    return (
+      <div className="app-empty app-empty-text">
+        <p>Not scanned yet — holder distribution comes from the same security scan as Token Info.</p>
+        <button className="app-link-button" onClick={scan.run}>
+          Run security scan →
+        </button>
+      </div>
+    );
+  }
+  if (scan.status === "loading") {
+    return (
+      <div className="app-empty">
+        <span className="loader" style={{ marginRight: 8 }} />
+        Scanning holders…
+      </div>
+    );
+  }
+  if (scan.status === "error" || !scan.report) {
+    return <div className="app-empty">Could not load holder data right now.</div>;
+  }
+
+  const { holders, token } = scan.report;
+  if (!holders || holders.top.length === 0) {
+    return <div className="app-empty">No holder data available for this token.</div>;
+  }
+
+  return (
+    <>
+      <div className="desk-scroll">
+        <div className="rank-row rank-head">
+          <span>#</span>
+          <span>HOLDER</span>
+          <span className="desk-col-right">BALANCE</span>
+          <span className="desk-col-right">% SUPPLY</span>
+          <span />
+        </div>
+        {holders.top.map((h, i) => (
+          <div className="rank-row" key={h.address}>
+            <span>{i + 1}</span>
+            <code className="scan-mono">{shortenAddress(h.address)}</code>
+            <span className="desk-col-right">
+              {typeof token.decimals === "number"
+                ? Number(formatUnits(BigInt(h.balance), token.decimals)).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })
+                : h.balance}
+            </span>
+            <span className="desk-col-right">{h.percent.toFixed(2)}%</span>
+            <span className="desk-actions">
+              <a
+                href={`https://robinhoodchain.blockscout.com/address/${h.address}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                view
+              </a>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="desk-note">
+        {holders.partial
+          ? "Gathered from a partial block range — a larger holder may exist outside it."
+          : "Gathered from this token's full history."}{" "}
+        Top-10 concentration: {holders.top10Percent.toFixed(1)}%.
+      </p>
+    </>
+  );
+}
+
+function InfoSection({
+  pool,
+  tokenInfo,
+  onCopy,
+  copiedField,
+}: {
+  pool: MarketPool;
+  tokenInfo: TokenInfo | null | undefined;
+  onCopy: (field: string, value: string) => void;
+  copiedField: string | null;
+}) {
+  const rows: { label: string; value: string | null }[] = [
+    { label: "TOKEN", value: pool.baseToken.address },
+    { label: "QUOTE", value: pool.quoteToken.address },
+    { label: "POOL", value: pool.poolAddress },
+  ];
+
+  const socials = tokenInfo
+    ? [
+        { label: "Website", href: tokenInfo.website },
+        { label: "Twitter", href: tokenInfo.twitter ? `https://x.com/${tokenInfo.twitter}` : null },
+        { label: "Telegram", href: tokenInfo.telegram ? `https://t.me/${tokenInfo.telegram}` : null },
+        { label: "Discord", href: tokenInfo.discord },
+      ].filter((s): s is { label: string; href: string } => Boolean(s.href))
+    : [];
+
+  return (
+    <div className="token-info-list">
+      <div className="token-info-list-row">
+        <span>DEX</span>
+        <span>{pool.dexName ?? "Uniswap V3"}</span>
+      </div>
+      {rows.map(
+        (row) =>
+          row.value && (
+            <div className="token-info-list-row" key={row.label}>
+              <span>{row.label}</span>
+              <code className="scan-mono">{row.value}</code>
+              <button onClick={() => onCopy(row.label, row.value as string)}>
+                {copiedField === row.label ? "copied" : "copy"}
+              </button>
+            </div>
+          )
+      )}
+
+      {tokenInfo === undefined && <p style={{ marginTop: 14 }}>Loading description &amp; socials…</p>}
+
+      {tokenInfo?.description && <p style={{ marginTop: 14 }}>{tokenInfo.description}</p>}
+
+      {socials.length > 0 && (
+        <div className="token-detail-links" style={{ marginTop: 14 }}>
+          {socials.map((s) => (
+            <a key={s.label} href={s.href} target="_blank" rel="noreferrer">
+              {s.label} ↗
+            </a>
+          ))}
+        </div>
+      )}
+
+      {tokenInfo === null && (
+        <p style={{ marginTop: 14, color: "#5a6469" }}>
+          No description or socials on record with GeckoTerminal for this token.
+        </p>
+      )}
+    </div>
   );
 }

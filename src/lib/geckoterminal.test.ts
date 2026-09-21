@@ -7,6 +7,7 @@ import {
   fetchMarketPools,
   fetchOhlcv,
   fetchPoolTrades,
+  fetchSearchPools,
   fetchTokenInfo,
 } from "./geckoterminal";
 
@@ -78,6 +79,9 @@ const INCLUDED = [
 
 function routes(path: string): unknown {
   if (path === "/networks/robinhood/pools") {
+    return { data: [poolDoc("robinhood_pool_1")], included: INCLUDED };
+  }
+  if (path === "/search/pools") {
     return { data: [poolDoc("robinhood_pool_1")], included: INCLUDED };
   }
   if (path === "/networks/robinhood/new_pools") {
@@ -227,6 +231,19 @@ describe("fetchMarketPool", () => {
   it("returns null for an address the API doesn't have", async () => {
     const pool = await fetchMarketPool("0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead");
     expect(pool).toBeNull();
+  });
+});
+
+describe("fetchSearchPools", () => {
+  it("decodes search results the same way as the pool list", async () => {
+    const pools = await fetchSearchPools("FOO");
+    expect(pools).toHaveLength(1);
+    expect(pools[0].baseToken.symbol).toBe("FOO");
+  });
+
+  it("returns empty for a blank query without hitting the network", async () => {
+    const pools = await fetchSearchPools("   ");
+    expect(pools).toEqual([]);
   });
 });
 

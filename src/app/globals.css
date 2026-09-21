@@ -6703,10 +6703,10 @@ a {
 .desk-row {
   display: grid;
   grid-template-columns:
-    2fr 0.9fr 0.55fr 0.55fr 0.55fr 0.6fr 0.85fr 0.85fr 0.85fr 0.95fr 0.55fr 1.15fr;
+    0.3fr 2fr 0.9fr 0.55fr 0.55fr 0.55fr 0.6fr 0.85fr 0.85fr 0.85fr 0.95fr 0.55fr 1.15fr;
   align-items: center;
   gap: 10px;
-  min-width: 1180px;
+  min-width: 1210px;
   padding: 11px 16px;
   border-bottom: 1px solid #1c2226;
   font-size: 12.5px;
@@ -6822,6 +6822,88 @@ a {
   margin: 10px 2px 0;
   color: #5a6469;
   font-size: 11.5px;
+}
+
+.favorite-star {
+  border: 0;
+  background: transparent;
+  color: #3a4146;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.favorite-star:hover {
+  color: #7c8589;
+}
+
+.favorite-star.active {
+  color: #fbbf24;
+}
+
+.desk-search {
+  position: relative;
+  margin-top: 20px;
+  max-width: 420px;
+}
+
+.desk-search input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #252c30;
+  border-radius: 8px;
+  background: #0a0e10;
+  color: #eef0ef;
+  font-size: 13px;
+}
+
+.desk-search input::placeholder {
+  color: #5a6469;
+}
+
+.desk-search-results {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #252c30;
+  border-radius: 8px;
+  background: #0d1214;
+  box-shadow: 0 12px 30px rgba(0,0,0,.4);
+}
+
+.desk-search-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  color: #d7dadb;
+  text-decoration: none;
+  font-size: 12.5px;
+  border-bottom: 1px solid #1c2226;
+}
+
+.desk-search-result:last-child {
+  border-bottom: none;
+}
+
+.desk-search-result:hover {
+  background: rgba(255,255,255,.03);
+}
+
+.desk-search-result small {
+  margin-left: auto;
+  color: #5a6469;
+}
+
+.desk-search-empty {
+  padding: 12px 14px;
+  color: #5a6469;
+  font-size: 12px;
 }
 
 /* --- smart money (large trades) --- */
@@ -6969,6 +7051,18 @@ a {
   .token-detail-grid {
     grid-template-columns: 1fr;
   }
+
+  /* The trade form is the reason someone opened this page — on a
+     stacked (narrow) layout it must not end up scrolled below the
+     entire chart and stats block. */
+  .token-side-column {
+    order: -1;
+  }
+}
+
+.token-side-column {
+  display: flex;
+  flex-direction: column;
 }
 
 .token-chart-card {
@@ -7085,6 +7179,72 @@ a {
 
 .token-trades-section {
   margin-top: 24px;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 0.4fr 1.6fr 1fr 1fr 0.8fr;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #1c2226;
+  font-size: 12.5px;
+  color: #d7dadb;
+}
+
+.rank-row:last-child {
+  border-bottom: none;
+}
+
+.rank-head {
+  background: #0a0e10;
+  color: #5a6469;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.token-info-list {
+  margin-top: 6px;
+}
+
+.token-info-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #1c2226;
+  font-size: 12.5px;
+}
+
+.token-info-list-row:last-child {
+  border-bottom: none;
+}
+
+.token-info-list-row span:first-child {
+  flex: 0 0 60px;
+  color: #5a6469;
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+
+.token-info-list-row code {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #d7dadb;
+}
+
+.token-info-list-row button {
+  border: 0;
+  background: transparent;
+  color: #5a6469;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.token-info-list-row button:hover {
+  color: #d7dadb;
 }
 
 .verdict-pill {
