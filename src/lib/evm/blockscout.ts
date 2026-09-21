@@ -15,12 +15,64 @@ import { fetchJson } from "./http";
  * representation at all, and one an unverified scam token cannot fake.
  */
 
-const DEFAULT_BASE_URL = "https://robinhoodchain.blockscout.com";
+/**
+ * Blockscout serves Robinhood Chain from two places — the chain's own
+ * instance and the multichain endpoint keyed by chain id — and the first
+ * live scan showed the instance host alone does not answer. Rather than
+ * pick one and be wrong again, the candidates are tried in order and the
+ * one that answers is pinned for the rest of the process.
+ */
+const DEFAULT_BASE_URLS = [
+  "https://api.blockscout.com/4663",
+  "https://robinhoodchain.blockscout.com",
+];
 
-function baseUrl(): string | null {
+function candidateBases(): string[] {
   const configured = process.env.BLOCKSCOUT_API_URL?.trim();
-  if (configured === "") return null;
-  return (configured || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  // An explicit empty value is how you turn the source off.
+  if (configured === "") return [];
+  if (configured) return [configured.replace(/\/+$/, "")];
+  return DEFAULT_BASE_URLS;
+}
+
+/** Pinned once a base answers, so later calls in the same scan skip the probe. */
+let pinnedBase: string | null = null;
+
+export function resolvedBlockscoutBase(): string | null {
+  return pinnedBase;
+}
+
+/** Resets the pin — tests point the client at a different host per file. */
+export function resetBlockscoutBase(): void {
+  pinnedBase = null;
+}
+
+function withKey(url: string): string {
+  const key = process.env.BLOCKSCOUT_API_KEY?.trim();
+  if (!key) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}apikey=${encodeURIComponent(key)}`;
+}
+
+/**
+ * Fetches a path against whichever base answers. A null result means every
+ * candidate failed or the path genuinely 404s — callers must not read that
+ * as a statement about the token.
+ */
+async function blockscoutFetch<T>(
+  path: string,
+  timeoutMs: number
+): Promise<T | null> {
+  const bases = pinnedBase ? [pinnedBase] : candidateBases();
+
+  for (const base of bases) {
+    const result = await fetchJson<T>(withKey(`${base}${path}`), timeoutMs);
+    if (result !== null) {
+      pinnedBase = base;
+      return result;
+    }
+  }
+
+  return null;
 }
 
 export interface BlockscoutHolder {
@@ -67,16 +119,18 @@ function parseHolders(payload: unknown): BlockscoutHolder[] {
 export async function fetchBlockscoutToken(
   token: Address
 ): Promise<BlockscoutTokenInfo | null> {
-  const base = baseUrl();
-  if (!base) return null;
+  if (candidateBases().length === 0) return null;
 
-  const [holdersPayload, counters] = await Promise.all([
-    fetchJson<unknown>(`${base}/api/v2/tokens/${token}/holders`, 8_000),
-    fetchJson<{ token_holders_count?: unknown }>(
-      `${base}/api/v2/tokens/${token}/counters`,
-      6_000
-    ),
-  ]);
+  // Sequential on purpose: the first call is also what pins the base, so
+  // firing both at once would probe every candidate twice.
+  const holdersPayload = await blockscoutFetch<unknown>(
+    `/api/v2/tokens/${token}/holders`,
+    8_000
+  );
+  const counters = await blockscoutFetch<{ token_holders_count?: unknown }>(
+    `/api/v2/tokens/${token}/counters`,
+    6_000
+  );
 
   const holders = parseHolders(holdersPayload);
   if (holders.length === 0) return null;
@@ -96,22 +150,20 @@ export async function fetchBlockscoutToken(
 export async function fetchBlockscoutContract(
   token: Address
 ): Promise<BlockscoutContractInfo | null> {
-  const base = baseUrl();
-  if (!base) return null;
+  if (candidateBases().length === 0) return null;
 
-  const [contract, addressInfo] = await Promise.all([
-    // 404 here is meaningful on its own: the explorer has no verified
-    // source for this address.
-    fetchJson<{ is_verified?: unknown }>(
-      `${base}/api/v2/smart-contracts/${token}`,
-      8_000
-    ),
-    fetchJson<{
-      creator_address_hash?: unknown;
-      creation_transaction_hash?: unknown;
-      is_verified?: unknown;
-    }>(`${base}/api/v2/addresses/${token}`, 8_000),
-  ]);
+  const addressInfo = await blockscoutFetch<{
+    creator_address_hash?: unknown;
+    creation_transaction_hash?: unknown;
+    is_verified?: unknown;
+  }>(`/api/v2/addresses/${token}`, 8_000);
+
+  // A 404 here is meaningful, but only once a base has answered something
+  // else — otherwise "no verified source" would just mean "wrong host".
+  const contract = await blockscoutFetch<{ is_verified?: unknown }>(
+    `/api/v2/smart-contracts/${token}`,
+    8_000
+  );
 
   if (!contract && !addressInfo) return null;
 
@@ -143,13 +195,12 @@ export interface BlockscoutDeployment {
 export async function fetchBlockscoutDeployment(
   txHash: string
 ): Promise<BlockscoutDeployment | null> {
-  const base = baseUrl();
-  if (!base) return null;
+  if (candidateBases().length === 0) return null;
 
-  const tx = await fetchJson<{ timestamp?: unknown; block_number?: unknown }>(
-    `${base}/api/v2/transactions/${txHash}`,
-    6_000
-  );
+  const tx = await blockscoutFetch<{
+    timestamp?: unknown;
+    block_number?: unknown;
+  }>(`/api/v2/transactions/${txHash}`, 6_000);
 
   if (!tx || typeof tx.timestamp !== "string") return null;
 

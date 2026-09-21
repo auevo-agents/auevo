@@ -364,27 +364,51 @@ function Report({ report }: { report: TokenScanReport }) {
           <span>SOURCES</span>
           <Source name="Robinhood Chain RPC" status={report.sources.rpc} />
           <Source name="GoPlus" status={report.sources.goplus} />
-          <Source name="Blockscout" status={report.sources.blockscout} />
+          <Source
+            name="Blockscout"
+            status={report.sources.blockscout}
+            note={hostOf(report.sources.blockscoutBase)}
+          />
+          <Source name="Quick Intel" status={report.sources.quickIntel} />
         </div>
       </div>
     </div>
   );
 }
 
+const SOURCE_NOTE: Record<string, string> = {
+  unavailable: "unavailable",
+  off: "not configured",
+};
+
 function Source({
   name,
   status,
+  note,
 }: {
   name: string;
-  status: "ok" | "unavailable";
+  status: "ok" | "unavailable" | "off";
+  note?: string | null;
 }) {
   return (
     <span className={`scan-source scan-source-${status}`}>
       <i />
       {name}
-      {status === "unavailable" && <small>unavailable</small>}
+      {(SOURCE_NOTE[status] || note) && (
+        <small>{SOURCE_NOTE[status] ?? note}</small>
+      )}
     </span>
   );
+}
+
+/** Just the host, so the roster shows which endpoint served the data. */
+function hostOf(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
 }
 
 function Fact({

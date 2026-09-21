@@ -1,5 +1,6 @@
 import type { BlockscoutContractInfo } from "./evm/blockscout";
 import type { GoPlusReport } from "./evm/goplus";
+import type { QuickIntelReport } from "./evm/quickintel";
 import type { Finding } from "./evm/types";
 
 /**
@@ -32,24 +33,108 @@ function percent(fraction: number): string {
 export function externalFindings(
   goplus: GoPlusReport | null,
   contract: BlockscoutContractInfo | null,
+  quickIntel: QuickIntelReport | null,
   existingIds: Set<string>
 ): Finding[] {
   const findings: Finding[] = [];
-  const add = (finding: Finding) => findings.push(finding);
+  const seen = new Set(existingIds);
+
+  /** Two sources agreeing is not a reason to print the same finding twice. */
+  const add = (finding: Finding) => {
+    if (seen.has(finding.id)) return;
+    seen.add(finding.id);
+    findings.push(finding);
+  };
 
   // --- source verification -------------------------------------------------
-  const unverified =
-    contract?.isVerified === false || goplus?.isOpenSource === false;
+  const unverifiedBy =
+    contract?.isVerified === false
+      ? "Blockscout"
+      : goplus?.isOpenSource === false
+        ? "GoPlus"
+        : quickIntel?.contractVerified === false
+          ? "Quick Intel"
+          : null;
 
-  if (unverified) {
+  if (unverifiedBy) {
     add({
       id: "source-unverified",
       title: "Source code is not verified",
       severity: "medium",
       detail:
         "Nobody has published source matching this contract's deployed code, so there is nothing to read but the bytecode. Legitimate projects verify; it is free and takes minutes.",
-      evidence: contract?.isVerified === false ? "Blockscout" : "GoPlus",
+      evidence: unverifiedBy,
     });
+  }
+
+  // --- liquidity, which only Quick Intel reports ---------------------------
+  if (quickIntel) {
+    const burned = quickIntel.lpBurnedPercent;
+    const locked = quickIntel.lpLockedPercent;
+
+    if (burned !== null || locked !== null) {
+      const secured = (burned ?? 0) + (locked ?? 0);
+
+      if (secured >= 90) {
+        add({
+          id: "liquidity-secured",
+          title: `${secured.toFixed(0)}% of liquidity is burned or locked`,
+          severity: "good",
+          detail:
+            "The pool backing this token cannot simply be withdrawn, which removes the most common way a token goes to zero in one transaction.",
+          evidence: "Quick Intel",
+        });
+      } else if (secured < 10) {
+        add({
+          id: "liquidity-unlocked",
+          title: "Liquidity is neither locked nor burned",
+          severity: "high",
+          detail:
+            "Whoever owns the pool can pull it at any moment, which takes the price to zero and leaves holders with tokens nobody can sell.",
+          evidence: "Quick Intel",
+        });
+      }
+    }
+
+    if (quickIntel.isHoneypot === true) {
+      add({
+        id: "honeypot",
+        title: "Selling fails in simulation",
+        severity: "critical",
+        detail:
+          "A simulated sell did not go through. This is the signature of a honeypot: money goes in and does not come out.",
+        evidence: "Quick Intel",
+      });
+    }
+
+    const quickIntelPowers: [string, boolean | null][] = [
+      ["mint", quickIntel.canMint],
+      ["blacklist", quickIntel.canBlacklist],
+      ["pause", quickIntel.canPauseTrading],
+    ];
+
+    for (const [key, flagged] of quickIntelPowers) {
+      if (flagged !== true || seen.has(CORROBORATES[key])) continue;
+      add({
+        id: `external-${key}`,
+        title: `${key[0].toUpperCase() + key.slice(1)} reported by Quick Intel`,
+        severity: key === "blacklist" ? "critical" : "high",
+        detail:
+          "An established auditor reports this power on the contract while our own bytecode pass did not find it. Treat it as present — it may sit behind code we could not resolve.",
+        evidence: "Quick Intel",
+      });
+    }
+
+    if (quickIntel.hiddenOwner === true) {
+      add({
+        id: "hidden-owner",
+        title: "Hidden owner",
+        severity: "critical",
+        detail:
+          "Control is held through an address the contract does not report as the owner. Whatever the owner field says, someone else still has the keys.",
+        evidence: "Quick Intel",
+      });
+    }
   }
 
   if (!goplus) return findings;
@@ -178,7 +263,7 @@ export function externalFindings(
 
   for (const [key, flagged] of corroborated) {
     if (flagged !== true) continue;
-    if (existingIds.has(CORROBORATES[key])) continue;
+    if (seen.has(CORROBORATES[key])) continue;
 
     // Flagged by GoPlus but not by us: the power is real and lives
     // somewhere our bytecode pass could not see.

@@ -16,9 +16,11 @@ import {
   fetchBlockscoutContract,
   fetchBlockscoutDeployment,
   fetchBlockscoutToken,
+  resolvedBlockscoutBase,
   type BlockscoutTokenInfo,
 } from "./evm/blockscout";
 import { fetchGoPlus } from "./evm/goplus";
+import { fetchQuickIntel, quickIntelConfigured } from "./evm/quickintel";
 import { externalFindings, takeBackOverridesRenounce } from "./external-findings";
 import { SEVERITY_RANK, type Finding, type Severity } from "./evm/types";
 
@@ -119,6 +121,10 @@ export interface TokenScanReport {
     rpc: SourceStatus;
     goplus: SourceStatus;
     blockscout: SourceStatus;
+    /** The Blockscout host that answered, if any. */
+    blockscoutBase: string | null;
+    /** "off" means no API key is configured, which is not a failure. */
+    quickIntel: SourceStatus | "off";
   };
   /** Checks that could not be completed, in plain language. */
   checksSkipped: string[];
@@ -193,6 +199,7 @@ const GAP = {
   distribution: "Distribution incomplete",
   sellBehaviour: "Sell behaviour unknown",
   verification: "Source verification unknown",
+  liquidity: "Liquidity lock unknown",
 } as const;
 
 export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
@@ -202,7 +209,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
   const client = getRobinhoodClient();
   const deadline = Deadline.in(DEEP_CHECK_BUDGET_MS);
   const findings: Finding[] = [];
-  const checksSkipped = [...BASE_LIMITATIONS];
+  const checksSkipped: string[] = [];
 
   let code: `0x${string}` | undefined;
   let headBlock: bigint | null = null;
@@ -255,7 +262,13 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
       verdict: "critical",
       confidence: "high",
       evidenceGaps: [],
-      sources: { rpc: "ok", goplus: "unavailable", blockscout: "unavailable" },
+      sources: {
+        rpc: "ok",
+        goplus: "unavailable",
+        blockscout: "unavailable",
+        blockscoutBase: null,
+        quickIntel: quickIntelConfigured() ? "unavailable" : "off",
+      },
       checksSkipped,
     };
   }
@@ -294,6 +307,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     fetchGoPlus(address),
     fetchBlockscoutToken(address),
     fetchBlockscoutContract(address),
+    fetchQuickIntel(address),
   ]);
 
   const profile = profileBytecode(analysedCode);
@@ -333,7 +347,8 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     );
   }
 
-  const [goplus, blockscoutToken, blockscoutContract] = await externalLookups;
+  const [goplus, blockscoutToken, blockscoutContract, quickIntel] =
+    await externalLookups;
 
   // The explorer has indexed what the public node cannot serve, so it
   // fills gaps the RPC pass left open — never overrides what the RPC
@@ -377,24 +392,44 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
 
   // Selling is the question bytecode cannot answer, so it is a gap only
   // when the simulation source stayed silent.
-  if (goplus?.isHoneypot === null || !goplus) {
+  if (goplus?.isHoneypot == null && quickIntel?.isHoneypot == null) {
     evidenceGaps.push(GAP.sellBehaviour);
     checksSkipped.push(
       "No sell was simulated for this token, so a contract that blocks selling only at execution time — a honeypot — cannot be ruled out."
     );
   }
 
-  if (blockscoutContract?.isVerified == null && goplus?.isOpenSource == null) {
+  if (
+    blockscoutContract?.isVerified == null &&
+    goplus?.isOpenSource == null &&
+    quickIntel?.contractVerified == null
+  ) {
     evidenceGaps.push(GAP.verification);
     checksSkipped.push(
       "Whether the published source matches the deployed bytecode could not be established."
     );
   }
 
+  // Liquidity is only a gap once we have a source configured to answer it.
+  // Unconfigured means "not attempted", which is a standing limitation, and
+  // conflating the two would make confidence meaningless.
+  const liquidityKnown =
+    quickIntel?.lpBurnedPercent != null || quickIntel?.lpLockedPercent != null;
+
+  if (quickIntelConfigured() && !liquidityKnown) {
+    evidenceGaps.push(GAP.liquidity);
+    checksSkipped.push(
+      "Whether the liquidity pool is locked or burned could not be established — the audit source did not return it."
+    );
+  } else if (!quickIntelConfigured()) {
+    checksSkipped.push(...BASE_LIMITATIONS);
+  }
+
   findings.push(
     ...externalFindings(
       goplus,
       blockscoutContract,
+      quickIntel,
       new Set(findings.map((finding) => finding.id))
     )
   );
@@ -457,6 +492,10 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
       rpc: "ok",
       goplus: goplus ? "ok" : "unavailable",
       blockscout: blockscoutToken || blockscoutContract ? "ok" : "unavailable",
+      // Which host answered, so a silently wrong endpoint is visible on
+      // the page instead of only in a log nobody reads.
+      blockscoutBase: resolvedBlockscoutBase(),
+      quickIntel: quickIntel ? "ok" : quickIntelConfigured() ? "unavailable" : "off",
     },
     checksSkipped,
   };

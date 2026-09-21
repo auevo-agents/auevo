@@ -5962,3 +5962,6 @@ a {
   font-size: 11px;
   color: var(--faint);
 }
+
+.scan-source-off { color: var(--faint); }
+.scan-source-off i { background: var(--line-2); }
