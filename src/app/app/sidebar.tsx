@@ -19,15 +19,24 @@ export const NAV_ITEMS: {
   { id: "overview", label: "Overview", href: "/app" },
   { id: "market", label: "Market", href: "/app/market" },
   { id: "smart-money", label: "Smart Money", href: "/app/smart-money" },
-  { id: "trading", label: "Trading", href: "/app/trading" },
+  { id: "dex", label: "DEX", href: "/app/trading" },
   { id: "bots", label: "Bots", href: "/app/bots" },
   { id: "positions", label: "Positions", href: "/app/positions" },
   { id: "wallets", label: "Wallets", href: "/app/wallets" },
-  { id: "scanner", label: "Token Scanner", href: "/scanner" },
-  { id: "fees", label: "Fee Scanner", href: "/fees" },
   { id: "otc", label: "OTC Desk", href: "/app/otc" },
   { id: "launch", label: "Launchpad", href: "/app/launch" },
 ];
+
+// Token Scanner (/scanner) and Fee Scanner (/fees) used to live here too,
+// but both are public-site pages with their own chrome (marketing header,
+// or /fees' own hand-rolled result view) — clicking either from inside
+// /app jumped to a visibly different menu, which is exactly what looked
+// broken. Pulling them out is step one; step two is a real Tools/Scan
+// section that wraps them in this same top nav instead of just linking
+// out. Note for whenever that happens: Fee Scanner reads a *Solana*
+// wallet's fees paid to Solana trading bots (Axiom, BullX, Trojan,
+// Bonkbot…) — nothing to do with Robinhood Chain — so it needs a label
+// that says that, not a spot next to Robinhood-chain-only tools.
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/app") return pathname === "/app";
