@@ -9,6 +9,7 @@ import { robinhoodChain } from "@/lib/chains";
 import { formatAge, shortenAddress } from "@/lib/format";
 import { isWatched, readWatchedWallets, setWalletLabel, watchWallet } from "@/lib/watched-wallets";
 import { computeWalletPnl } from "@/lib/wallet-pnl";
+import { aggregatePositions, evaluatePosition, type PositionView } from "@/lib/wallet-positions";
 import { WETH9 } from "@/lib/uniswap";
 
 const ERC20_ABI = [
@@ -174,6 +175,36 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
     return computeWalletPnl(inputs, WETH9);
   }, [activity]);
 
+  const positionsByToken = useMemo(() => {
+    if (!activity) return new Map();
+    const inputs = activity.swaps
+      .map((s) => {
+        const pool = activity.pools[s.pool_address];
+        return pool
+          ? { amount0: s.amount0, amount1: s.amount1, token0: pool.token0, token1: pool.token1, tick: s.tick, blockNumber: s.block_number }
+          : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    return aggregatePositions(inputs, WETH9, (t) => decimalsByToken.get(t.toLowerCase()) ?? 18);
+  }, [activity, decimalsByToken]);
+
+  const positionViews = useMemo(() => {
+    const views: PositionView[] = [];
+    for (const [token, pos] of positionsByToken) {
+      const balanceRaw = balanceByToken.get(token);
+      if (balanceRaw === undefined) continue;
+      const decimals = decimalsByToken.get(token) ?? 18;
+      views.push(evaluatePosition(pos, Number(formatUnits(balanceRaw, decimals))));
+    }
+    return views.sort((a, b) => b.currentValueWeth - a.currentValueWeth);
+  }, [positionsByToken, balanceByToken, decimalsByToken]);
+
+  const totalUnrealizedPnlWeth = useMemo(() => {
+    const withData = positionViews.filter((p) => p.unrealizedPnlWeth !== null);
+    if (withData.length === 0) return null;
+    return withData.reduce((sum, p) => sum + (p.unrealizedPnlWeth ?? 0), 0);
+  }, [positionViews]);
+
   if (!address) {
     return (
       <>
@@ -296,25 +327,42 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
                 <span>TOKENS TRADED</span>
                 <strong>{pnl.tokensTraded}</strong>
               </div>
+              <div className="token-stat">
+                <span>UNREALIZED PNL</span>
+                <strong className={totalUnrealizedPnlWeth === null ? "" : totalUnrealizedPnlWeth >= 0 ? "desk-change-pos" : "desk-change-neg"}>
+                  {totalUnrealizedPnlWeth === null
+                    ? "—"
+                    : `${totalUnrealizedPnlWeth >= 0 ? "+" : ""}${totalUnrealizedPnlWeth.toFixed(4)} ETH`}
+                </strong>
+              </div>
             </div>
           )}
           <p className="desk-note" style={{ marginTop: 12 }}>
             Realized PnL and win rate only count a token where both a buy and a sell are visible in
             this window, priced in ETH from the exact WETH leg of each swap — not a USD
-            approximation. Same methodology as <Link href="/app/smart-money">Smart Money</Link>,
-            applied to this one wallet.
+            approximation. Unrealized PnL marks whatever is still held against the pool&apos;s own
+            last traded price (no third-party feed) and average cost from this wallet&apos;s own
+            buys — a token moved in from outside this window will show a skewed cost basis. Same
+            methodology as <Link href="/app/smart-money">Smart Money</Link>, applied to this one wallet.
           </p>
         </div>
       )}
 
       {tokenAddresses.length > 0 && (
         <div className="token-side-card" style={{ marginTop: 20 }}>
-          <h4>Holdings</h4>
+          <h4>Positions</h4>
           <p className="desk-note" style={{ marginBottom: 10 }}>
             Live balances for tokens seen in this wallet&apos;s recent activity — not every token it
-            has ever held, only what this window surfaced.
+            has ever held, only what this window surfaced. Avg cost and mark price only price
+            against WETH-paired pools.
           </p>
-          <HoldingsList tokenAddresses={tokenAddresses} symbolByToken={symbolByToken} decimalsByToken={decimalsByToken} balanceByToken={balanceByToken} />
+          <PositionsList
+            tokenAddresses={tokenAddresses}
+            symbolByToken={symbolByToken}
+            decimalsByToken={decimalsByToken}
+            balanceByToken={balanceByToken}
+            positionsByToken={positionsByToken}
+          />
         </div>
       )}
 
@@ -364,26 +412,36 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
   );
 }
 
-function HoldingsList({
+function PositionsList({
   tokenAddresses,
   symbolByToken,
   decimalsByToken,
   balanceByToken,
+  positionsByToken,
 }: {
   tokenAddresses: string[];
   symbolByToken: Map<string, string>;
   decimalsByToken: Map<string, number>;
   balanceByToken: Map<string, bigint>;
+  positionsByToken: ReturnType<typeof aggregatePositions>;
 }) {
   const held = tokenAddresses
-    .map((t) => ({
-      address: t,
-      symbol: symbolByToken.get(t) ?? shortenAddress(t, 4, 4),
-      decimals: decimalsByToken.get(t) ?? 18,
-      balance: balanceByToken.get(t),
-    }))
-    .filter((h) => h.balance !== undefined && h.balance > 0n)
-    .sort((a, b) => (b.balance! > a.balance! ? 1 : -1));
+    .map((t) => {
+      const balance = balanceByToken.get(t);
+      if (balance === undefined || balance <= 0n) return null;
+      const decimals = decimalsByToken.get(t) ?? 18;
+      const balanceHuman = Number(formatUnits(balance, decimals));
+      const pos = positionsByToken.get(t);
+      const view = pos ? evaluatePosition(pos, balanceHuman) : null;
+      return {
+        address: t,
+        symbol: symbolByToken.get(t) ?? shortenAddress(t, 4, 4),
+        balanceHuman,
+        view,
+      };
+    })
+    .filter((h): h is NonNullable<typeof h> => h !== null)
+    .sort((a, b) => (b.view?.currentValueWeth ?? 0) - (a.view?.currentValueWeth ?? 0));
 
   if (balanceByToken.size === 0) {
     return <p className="app-empty">Loading…</p>;
@@ -393,11 +451,29 @@ function HoldingsList({
   }
 
   return (
-    <div className="scan-holder-table">
+    <div className="desk-scroll">
+      <div className="position-row position-head">
+        <span>TOKEN</span>
+        <span>BALANCE</span>
+        <span>AVG COST</span>
+        <span>MARK PRICE</span>
+        <span>UNREALIZED PNL</span>
+      </div>
       {held.map((h) => (
-        <div className="scan-holder-row" key={h.address} style={{ gridTemplateColumns: "1fr auto" }}>
+        <div className="position-row" key={h.address}>
           <code className="scan-mono">{h.symbol}</code>
-          <span>{Number(formatUnits(h.balance!, h.decimals)).toFixed(4)}</span>
+          <span>{h.balanceHuman.toFixed(4)}</span>
+          <span>{h.view?.avgCostWeth !== null && h.view?.avgCostWeth !== undefined ? `${h.view.avgCostWeth.toFixed(6)} ETH` : "—"}</span>
+          <span>{h.view ? `${h.view.currentPriceWeth.toFixed(6)} ETH` : "—"}</span>
+          <span
+            className={
+              h.view?.unrealizedPnlWeth == null ? "" : h.view.unrealizedPnlWeth >= 0 ? "desk-change-pos" : "desk-change-neg"
+            }
+          >
+            {h.view?.unrealizedPnlWeth == null
+              ? "—"
+              : `${h.view.unrealizedPnlWeth >= 0 ? "+" : ""}${h.view.unrealizedPnlWeth.toFixed(4)} ETH`}
+          </span>
         </div>
       ))}
     </div>
