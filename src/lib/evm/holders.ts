@@ -60,7 +60,13 @@ export interface HolderEntry {
 export interface HolderDistribution {
   /** Block range(s) the candidate set was gathered from. */
   scannedRanges: { fromBlock: string; toBlock: string }[];
-  /** True when log scanning hit a cap, so a large holder may be missing. */
+  /** How many blocks of history the candidate set was gathered from. */
+  blocksScanned: string;
+  /**
+   * True unless the scan provably covered every block since deployment.
+   * Anything less means a larger holder may exist outside the window, so
+   * a low concentration number here proves nothing.
+   */
   partial: boolean;
   candidatesConsidered: number;
   top: HolderEntry[];
@@ -295,9 +301,27 @@ export async function analyseHolders(
   holders.sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
   const top = holders.slice(0, TOP_N);
 
+  // Completeness has to be demonstrated: one uninterrupted range reaching
+  // back to deployment. Without a deployment block we cannot know how much
+  // history exists, so the scan is partial by definition — on a chain
+  // producing sub-second blocks, the window covers hours, not months.
+  const complete =
+    deploymentBlock !== null &&
+    !partial &&
+    ranked.length < cap &&
+    scannedRanges.length === 1 &&
+    BigInt(scannedRanges[0].fromBlock) <= deploymentBlock &&
+    BigInt(scannedRanges[0].toBlock) >= headBlock;
+
+  const blocksScanned = scannedRanges.reduce(
+    (total, range) => total + (BigInt(range.toBlock) - BigInt(range.fromBlock)),
+    0n
+  );
+
   return {
     scannedRanges,
-    partial: partial || ranked.length >= cap,
+    blocksScanned: blocksScanned.toString(),
+    partial: !complete,
     candidatesConsidered: candidates.length,
     top,
     topPercent: top[0]?.percent ?? 0,

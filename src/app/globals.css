@@ -5873,3 +5873,51 @@ a {
   .scan-holder-row { grid-template-columns: 28px 1fr; row-gap: 8px; }
   .scan-holder-row .bar-cell { grid-column: 1 / -1; }
 }
+
+/* --- confidence banner: coverage, shown next to the risk verdict --- */
+
+.scan-confidence {
+  margin-top: -24px;
+  padding: 18px 24px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.scan-confidence-low { border-left-color: #fbbf24; }
+.scan-confidence-medium { border-left-color: var(--line-2); }
+.scan-confidence-high { border-left-color: var(--green); }
+
+.scan-confidence-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .18em;
+  color: var(--faint);
+}
+
+.scan-confidence p {
+  margin: 8px 0 0;
+  max-width: 640px;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.scan-gap-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.scan-gap-tags span {
+  padding: 5px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
+.scan-score-muted { color: var(--faint); }
