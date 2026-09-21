@@ -10,14 +10,16 @@ import { POOL_CREATED_EVENT, SWAP_EVENT } from "./events";
  * scan, reused here rather than reinvented, since it already reflects
  * what this chain's RPC can actually handle in one call.
  *
- * Swap events are scanned with NO address filter — every Uniswap V3 pool
- * emits the same Swap topic, so one getLogs call per chunk catches every
- * pool at once instead of one call per known pool. That does mean any
- * other contract sharing this exact event signature would show up too;
- * callers are expected to join against discovered pools (from
- * PoolCreated, which IS filtered to the real factory address) and drop
- * anything that doesn't match a known pool.
+ * Swap events are scanned filtered to a known pool address list, in
+ * batches — an unfiltered, chain-wide getLogs call for the Swap topic
+ * (tried first) was rejected outright by Robinhood Chain's public RPC in
+ * production, whether from a hard "no wildcard log queries" policy or
+ * just timing out; a real deployed run surfaced this, not a guess.
+ * Address-filtered batches are slower (one call per ~100 pools per
+ * block-range instead of one call total) but actually work.
  */
+
+const ADDRESS_BATCH_SIZE = 100;
 
 export const CHUNK_BLOCKS = 10_000n;
 
@@ -126,15 +128,38 @@ export async function scanSwaps(
   client: RobinhoodClient,
   fromBlock: bigint,
   toBlock: bigint,
+  poolAddresses: Address[],
   maxChunks: number,
   deadline: Deadline
 ): Promise<ScanResult<RawSwap>> {
+  if (poolAddresses.length === 0) {
+    return { items: [], scannedTo: fromBlock > 0n ? fromBlock - 1n : 0n, partial: false };
+  }
+
+  const batches: Address[][] = [];
+  for (let i = 0; i < poolAddresses.length; i += ADDRESS_BATCH_SIZE) {
+    batches.push(poolAddresses.slice(i, i + ADDRESS_BATCH_SIZE));
+  }
+
   return scanChunks(client, fromBlock, toBlock, maxChunks, deadline, async (chunkFrom, chunkTo) => {
-    const logs = await client.getLogs({
-      event: SWAP_EVENT,
-      fromBlock: chunkFrom,
-      toBlock: chunkTo,
-    });
+    const batchResults = [];
+    for (const batch of batches) {
+      // A half-scanned chunk would advance the checkpoint past pools we
+      // never actually queried this chunk's block range for — throwing
+      // here (instead of just breaking) makes scanChunks treat the whole
+      // chunk as failed, so the next run retries it in full rather than
+      // silently losing those pools' swaps for this range forever.
+      if (deadline.expired) throw new Error("deadline expired mid-chunk");
+      batchResults.push(
+        await client.getLogs({
+          address: batch,
+          event: SWAP_EVENT,
+          fromBlock: chunkFrom,
+          toBlock: chunkTo,
+        })
+      );
+    }
+    const logs = batchResults.flat();
 
     const blockNumbers = [...new Set(logs.map((l) => l.blockNumber).filter((b): b is bigint => b !== null))];
     const timestamps = new Map<bigint, string | null>();

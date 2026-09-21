@@ -10,6 +10,14 @@ import { encodeAbiParameters, pad, toEventSelector, toHex } from "viem";
  * sandbox), extended to also cover the write side (upserts, checkpoint
  * advance), since this is the first thing in the codebase that writes
  * to a database rather than only reading and returning.
+ *
+ * Swap scanning is address-filtered against known pools (scan.ts) — a
+ * real deployed run found that an unfiltered, chain-wide getLogs call
+ * for the Swap topic was rejected outright by this chain's public RPC.
+ * This mock's eth_getLogs only returns a Swap log when the queried
+ * address filter actually includes it, the same way a real filtered
+ * RPC would, so the test proves the address list built from
+ * indexer_pools is what drives what gets found — not a wildcard scan.
  */
 
 const FACTORY = "0x1f7d7550b1b028f7571e69a784071f0205fd2efa"; // lowercased for topic/address comparisons below
@@ -20,10 +28,6 @@ const TOKEN0 = "0x1111111111111111111111111111111111111111";
 const TOKEN1 = "0x2222222222222222222222222222222222222222";
 const SENDER = "0x3333333333333333333333333333333333333333";
 const RECIPIENT = "0x4444444444444444444444444444444444444444";
-// Deliberately NOT the discovered pool — scanSwaps has no address filter,
-// so a swap from any contract sharing the topic is still captured raw;
-// attributing it to a known pool (or not) happens at query time, later.
-const OTHER_EMITTER = "0x5555555555555555555555555555555555555555";
 
 const HEAD_BLOCK = 100n;
 
@@ -90,14 +94,17 @@ function rpcHandle(method: string, params: unknown[]): unknown {
     case "eth_blockNumber":
       return toHex(HEAD_BLOCK);
     case "eth_getLogs": {
-      const [filter] = params as [{ address?: string; topics?: string[] }];
+      const [filter] = params as [{ address?: string | string[]; topics?: string[] }];
       const topic0 = filter.topics?.[0];
       if (topic0 === POOL_CREATED_TOPIC) return [poolCreatedLog()];
       if (topic0 === SWAP_TOPIC) {
-        return [
-          swapLog(POOL_ADDRESS, 60n, 0, "0xswapfrompool"),
-          swapLog(OTHER_EMITTER, 70n, 0, "0xswapfromother"),
-        ];
+        const addresses = (Array.isArray(filter.address) ? filter.address : [filter.address ?? ""]).map(
+          (a) => a.toLowerCase()
+        );
+        if (addresses.includes(POOL_ADDRESS.toLowerCase())) {
+          return [swapLog(POOL_ADDRESS, 60n, 0, "0xswapfrompool")];
+        }
+        return [];
       }
       return [];
     }
@@ -169,6 +176,13 @@ beforeAll(async () => {
         res.end(JSON.stringify({ pools_synced_to_block: 0, swaps_synced_to_block: 0 }));
         return;
       }
+      // Pretends the pool discovered this same run was already known —
+      // simplest way to exercise the address-filter path without also
+      // making this mock stateful across the upsert that precedes it.
+      if (req.method === "GET" && table === "indexer_pools") {
+        res.end(JSON.stringify([{ pool_address: POOL_ADDRESS }]));
+        return;
+      }
       if (req.method === "POST") {
         writes.push({ table, op: "upsert", body: JSON.parse(raw), query: url.search });
         res.end("[]");
@@ -197,15 +211,16 @@ afterAll(() => {
 });
 
 describe("runIndexerPass against a scripted node and a scripted Supabase", () => {
-  it("discovers the pool, captures both swaps raw, and advances the checkpoint", async () => {
+  it("discovers the pool, captures its swap via the address-filtered scan, and advances the checkpoint", async () => {
     const { runIndexerPass } = await import("./run");
     const result = await runIndexerPass();
 
     expect(result.status).toBe("ok");
     expect(result.headBlock).toBe(HEAD_BLOCK.toString());
     expect(result.pools?.discovered).toBe(1);
-    expect(result.swaps?.found).toBe(2);
-    // Scanned the whole 0..100 range in one chunk (well under CHUNK_BLOCKS).
+    expect(result.swaps?.found).toBe(1);
+    // Scanned the whole 0..100 range in one chunk (well under CHUNK_BLOCKS
+    // and well inside the lookback window, since head is tiny here).
     expect(result.pools?.syncedTo).toBe(HEAD_BLOCK.toString());
     expect(result.swaps?.syncedTo).toBe(HEAD_BLOCK.toString());
     expect(result.pools?.partial).toBe(false);
@@ -224,18 +239,12 @@ describe("runIndexerPass against a scripted node and a scripted Supabase", () =>
     const swapWrite = writes.find((w) => w.table === "indexer_swaps");
     expect(swapWrite).toBeDefined();
     const swapRows = swapWrite!.body as Record<string, unknown>[];
-    expect(swapRows).toHaveLength(2);
-    // The pool-emitted swap decodes correctly, signed amounts included.
-    const fromPool = swapRows.find((r) => r.pool_address === POOL_ADDRESS);
-    expect(fromPool).toBeDefined();
-    expect(fromPool!.amount0).toBe("1000000000000000000000");
-    expect(fromPool!.amount1).toBe("-500000000");
-    expect(fromPool!.tick).toBe(-100);
-    expect(fromPool!.block_timestamp).toBe(new Date(1_800_000_000_000).toISOString());
-    // The swap from an emitter that isn't (yet) a known pool is still
-    // captured raw, by design — attribution happens at query time.
-    const fromOther = swapRows.find((r) => r.pool_address === OTHER_EMITTER);
-    expect(fromOther).toBeDefined();
+    expect(swapRows).toHaveLength(1);
+    expect(swapRows[0].pool_address).toBe(POOL_ADDRESS);
+    expect(swapRows[0].amount0).toBe("1000000000000000000000");
+    expect(swapRows[0].amount1).toBe("-500000000");
+    expect(swapRows[0].tick).toBe(-100);
+    expect(swapRows[0].block_timestamp).toBe(new Date(1_800_000_000_000).toISOString());
 
     const stateWrite = writes.find((w) => w.table === "indexer_state");
     expect(stateWrite).toBeDefined();
