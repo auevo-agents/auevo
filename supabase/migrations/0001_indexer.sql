@@ -59,3 +59,10 @@ create table if not exists indexer_state (
 );
 
 insert into indexer_state (id) values (1) on conflict (id) do nothing;
+
+-- Same posture as the existing scans/subscribers tables: RLS enabled,
+-- no policies — locked to the service role (which bypasses RLS) only.
+-- Nothing here is ever read through the public anon key.
+alter table indexer_pools enable row level security;
+alter table indexer_swaps enable row level security;
+alter table indexer_state enable row level security;
