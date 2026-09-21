@@ -153,6 +153,21 @@ beforeAll(async () => {
     let raw = "";
     req.on("data", (chunk) => (raw += chunk));
     req.on("end", () => {
+      if (path === "/v1/getquickiauditfull") {
+        res.setHeader("Content-Type", "application/json");
+        res.end(
+          JSON.stringify({
+            quickiAudit: { contract_Verified: "0" },
+            tokenDynamicDetails: {
+              is_Honeypot: true,
+              lp_Burned_Percent: 0,
+              lp_Locked_Percent: 0,
+            },
+          })
+        );
+        return;
+      }
+
       const request = JSON.parse(raw);
       const respond = (one: { id: number; method: string; params: unknown[] }) => {
         try {
@@ -176,6 +191,8 @@ beforeAll(async () => {
   process.env.ROBINHOOD_RPC_URL = origin;
   process.env.GOPLUS_API_URL = origin;
   process.env.BLOCKSCOUT_API_URL = origin;
+  process.env.QUICKINTEL_API_URL = origin;
+  process.env.QUICKINTEL_API_KEY = "test-key";
 
   const { scanToken } = await import("./token-security");
   report = await scanToken(TOKEN);
@@ -187,11 +204,22 @@ afterAll(() => {
 
 describe("second opinion from established scanners", () => {
   it("records which sources answered", () => {
-    expect(report.sources).toEqual({
-      rpc: "ok",
-      goplus: "ok",
-      blockscout: "ok",
-    });
+    expect(report.sources.rpc).toBe("ok");
+    expect(report.sources.goplus).toBe("ok");
+    expect(report.sources.blockscout).toBe("ok");
+    expect(report.sources.quickIntel).toBe("ok");
+    // Naming the host that answered is what makes a wrong endpoint visible.
+    expect(report.sources.blockscoutBase).toBeTruthy();
+  });
+
+  it("reports unlocked liquidity, which no other source covers", () => {
+    expect(report.findings.map((f) => f.id)).toContain("liquidity-unlocked");
+    expect(report.evidenceGaps).not.toContain("Liquidity lock unknown");
+  });
+
+  it("does not print the same finding once per source that agrees", () => {
+    const honeypots = report.findings.filter((f) => f.id === "honeypot");
+    expect(honeypots).toHaveLength(1);
   });
 
   it("lands a honeypot verdict on bytecode that looks clean", () => {
