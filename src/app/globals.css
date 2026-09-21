@@ -3338,7 +3338,7 @@ a {
   opacity: 1;
 }
 
-.nav-icon:not(.nav-trading):not(.nav-copy):not(.nav-position):not(.nav-analytics):not(.nav-bots):not(.nav-wallet):not(.nav-alerts) {
+.nav-icon:not(.nav-trading):not(.nav-copy):not(.nav-position):not(.nav-analytics):not(.nav-bots):not(.nav-wallet):not(.nav-alerts):not(.nav-money) {
   display: grid;
   grid-template-columns: 5px 5px;
   grid-template-rows: 5px 5px;
@@ -3347,7 +3347,7 @@ a {
   justify-content: center;
 }
 
-.nav-icon:not(.nav-trading):not(.nav-copy):not(.nav-position):not(.nav-analytics):not(.nav-bots):not(.nav-wallet):not(.nav-alerts) i {
+.nav-icon:not(.nav-trading):not(.nav-copy):not(.nav-position):not(.nav-analytics):not(.nav-bots):not(.nav-wallet):not(.nav-alerts):not(.nav-money) i {
   position: static;
   width: 5px;
   height: 5px;
@@ -3396,6 +3396,17 @@ a {
 .nav-analytics i:nth-child(1) { left: 2px; height: 7px; }
 .nav-analytics i:nth-child(2) { left: 8px; height: 13px; }
 .nav-analytics i:nth-child(3) { left: 14px; height: 10px; }
+
+.nav-money i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.nav-money i:nth-child(1) { left: 1px; bottom: 2px; }
+.nav-money i:nth-child(2) { left: 7px; bottom: 6px; }
+.nav-money i:nth-child(3) { left: 13px; bottom: 10px; }
 
 .nav-bots i {
   inset: 2px;
@@ -6461,6 +6472,33 @@ a {
   color: #5a6469;
 }
 
+.trade-locked-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #252c30;
+  border-radius: 6px;
+  background: #0a0e10;
+  color: #eef0ef;
+  font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.trade-locked-arrow {
+  color: #5a6469;
+}
+
+.trade-locked-pair small {
+  margin-left: auto;
+  color: #5a6469;
+  font: 400 11px/1 Arial, Helvetica, sans-serif;
+}
+
+.token-side-card .trade-form {
+  margin-top: 14px;
+  max-width: none;
+}
+
 .trade-quote {
   padding: 12px 14px;
   border: 1px solid #1c2226;
@@ -6714,6 +6752,41 @@ a {
   font-size: 11.5px;
 }
 
+/* --- smart money (large trades) --- */
+
+.money-row {
+  display: grid;
+  grid-template-columns: 0.9fr 0.6fr 1fr 0.9fr 0.9fr 1fr 1.2fr;
+  align-items: center;
+  gap: 10px;
+  min-width: 820px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #1c2226;
+  font-size: 12.5px;
+  color: #d7dadb;
+}
+
+.money-row:last-child {
+  border-bottom: none;
+}
+
+.money-row-nopair {
+  grid-template-columns: 0.9fr 0.6fr 0.9fr 0.9fr 1fr 1.2fr;
+  min-width: 640px;
+}
+
+.money-head {
+  background: #0a0e10;
+  color: #5a6469;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.app-link-button:disabled {
+  color: #5a6469;
+  cursor: default;
+}
+
 /* --- token detail page (/app/market/t/[address]) --- */
 
 .token-back {
@@ -6859,10 +6932,28 @@ a {
   background: rgba(255,52,77,.06);
 }
 
-.token-chart-svg {
+.token-chart-container {
   width: 100%;
   height: 340px;
-  display: block;
+}
+
+.token-chart-legend {
+  position: absolute;
+  z-index: 2;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(10,14,16,.7);
+  font-size: 11px;
+  color: #7c8589;
+}
+
+.token-chart-legend b {
+  color: #d7dadb;
+  font-weight: 500;
 }
 
 .token-stat-grid {
@@ -6918,6 +7009,10 @@ a {
   color: #9aa1a4;
   font-size: 12.5px;
   line-height: 1.6;
+}
+
+.token-trades-section {
+  margin-top: 24px;
 }
 
 .app-notice-warn {

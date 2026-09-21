@@ -1,74 +1,124 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import {
+  CandlestickSeries,
+  createChart,
+  type IChartApi,
+  type ISeriesApi,
+  type UTCTimestamp,
+} from "lightweight-charts";
 import type { Candle } from "@/lib/geckoterminal";
+import { formatPrice } from "@/lib/format";
 
 /**
- * A plain SVG candlestick chart — no charting library. For one pool's
- * OHLCV series (a few hundred points at most) a hand-rolled scale is
- * simpler and lighter than pulling in a charting dependency for a single
- * chart type, and there's nothing here a library would meaningfully
- * simplify: min/max, a linear scale, and a rect per candle.
+ * A real interactive chart — TradingView's own lightweight-charts
+ * (MIT-licensed, the same library most DEX terminals build on), not a
+ * static hand-drawn SVG. Pan, zoom and a crosshair with an OHLC readout
+ * come for free from the library; this component's job is just feeding
+ * it data and matching the site's dark theme.
  */
 
-const WIDTH = 900;
-const HEIGHT = 320;
-const PAD_TOP = 12;
-const PAD_BOTTOM = 22;
+interface Ohlc {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
 
 export function CandlestickChart({ candles }: { candles: Candle[] }) {
-  if (candles.length === 0) return null;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const [hover, setHover] = useState<Ohlc | null>(null);
 
-  const high = Math.max(...candles.map((c) => c.high));
-  const low = Math.min(...candles.map((c) => c.low));
-  const range = high - low || high || 1;
-  const plotHeight = HEIGHT - PAD_TOP - PAD_BOTTOM;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  const slot = WIDTH / candles.length;
-  const bodyWidth = Math.max(1, Math.min(9, slot * 0.6));
+    const chart: IChartApi = createChart(container, {
+      width: container.clientWidth,
+      height: 340,
+      layout: {
+        background: { color: "transparent" },
+        textColor: "#7c8589",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: "#161b1e" },
+        horzLines: { color: "#161b1e" },
+      },
+      rightPriceScale: { borderColor: "#1c2226" },
+      timeScale: { borderColor: "#1c2226", timeVisible: true, secondsVisible: false },
+      crosshair: { mode: 0 },
+    });
 
-  function y(value: number): number {
-    return PAD_TOP + (1 - (value - low) / range) * plotHeight;
-  }
+    const series = chart.addSeries(CandlestickSeries, {
+      upColor: "#34d399",
+      downColor: "#ff4259",
+      borderVisible: false,
+      wickUpColor: "#34d399",
+      wickDownColor: "#ff4259",
+    });
+    seriesRef.current = series;
 
-  const openingPrice = candles[0].open;
+    chart.subscribeCrosshairMove((param) => {
+      const point = param.seriesData?.get(series);
+      if (point && "open" in point) {
+        setHover({ open: point.open, high: point.high, low: point.low, close: point.close });
+      } else {
+        setHover(null);
+      }
+    });
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) chart.applyOptions({ width });
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+      chart.remove();
+      seriesRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    series.setData(
+      candles.map((c) => ({
+        time: c.timestamp as UTCTimestamp,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }))
+    );
+  }, [candles]);
+
+  const legend = hover ?? (candles.length > 0 ? candles[candles.length - 1] : null);
 
   return (
-    <svg
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      className="token-chart-svg"
-      preserveAspectRatio="none"
-      role="img"
-      aria-label="Price candlestick chart"
-    >
-      <line
-        x1={0}
-        x2={WIDTH}
-        y1={y(openingPrice)}
-        y2={y(openingPrice)}
-        stroke="#1c2226"
-        strokeDasharray="4 4"
-      />
-
-      {candles.map((c, i) => {
-        const cx = slot * i + slot / 2;
-        const up = c.close >= c.open;
-        const color = up ? "#34d399" : "#ff4259";
-        const bodyTop = y(Math.max(c.open, c.close));
-        const bodyBottom = y(Math.min(c.open, c.close));
-
-        return (
-          <g key={c.timestamp}>
-            <line x1={cx} x2={cx} y1={y(c.high)} y2={y(c.low)} stroke={color} strokeWidth={1} />
-            <rect
-              x={cx - bodyWidth / 2}
-              y={bodyTop}
-              width={bodyWidth}
-              height={Math.max(1, bodyBottom - bodyTop)}
-              fill={color}
-            />
-          </g>
-        );
-      })}
-    </svg>
+    <div style={{ position: "relative" }}>
+      {legend && (
+        <div className="token-chart-legend">
+          <span>
+            O <b>{formatPrice(legend.open)}</b>
+          </span>
+          <span>
+            H <b>{formatPrice(legend.high)}</b>
+          </span>
+          <span>
+            L <b>{formatPrice(legend.low)}</b>
+          </span>
+          <span>
+            C <b>{formatPrice(legend.close)}</b>
+          </span>
+        </div>
+      )}
+      <div ref={containerRef} className="token-chart-container" />
+    </div>
   );
 }

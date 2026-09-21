@@ -3,7 +3,9 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ConnectButton } from "../../../connect-button";
+import { SwapPanel } from "../../../swap-panel";
 import { CandlestickChart } from "../../candlestick-chart";
+import { TradeList } from "../../trade-list";
 import {
   formatAge,
   formatPercent,
@@ -11,20 +13,17 @@ import {
   formatUsdCompact,
   shortenAddress,
 } from "@/lib/format";
-import type { Candle, MarketPool, OhlcvTimeframe } from "@/lib/geckoterminal";
+import type { Candle, MarketPool, OhlcvTimeframe, Trade } from "@/lib/geckoterminal";
 
 /**
  * Token/pool detail — the "click a pair" page from Market. Everything
  * shown is real, live data from the same GeckoTerminal source as the
- * Market list (see src/lib/geckoterminal.ts), plus a link into the real
- * Token Scanner for an actual security read.
- *
- * Deliberately does not reimplement the swap form here: Trading already
- * has a real, working Uniswap V3 swap flow (approve + exactInputSingle),
- * and a second copy of that logic is a second place for a bug in
- * money-moving code to hide. This links into it prefilled instead. It
- * also does not offer Limit/Ladder/Martingale order types — there is no
- * on-chain infrastructure behind those here (no limit-order book, no bot
+ * Market list (see src/lib/geckoterminal.ts): a live interactive chart
+ * (TradingView's lightweight-charts, not a static image), this pool's
+ * own recent trades, and a real embedded swap panel (shared with Trading
+ * — see ../../../swap-panel.tsx — rather than a second copy of the swap
+ * logic). No Limit/Ladder/Martingale order types: there is no on-chain
+ * infrastructure behind those here (no limit-order book, no bot
  * executor), so showing those tabs would advertise a capability that
  * doesn't exist.
  */
@@ -40,6 +39,13 @@ const CHART_TABS: {
   { id: "1h", label: "1H", timeframe: "hour", aggregate: 1 },
   { id: "4h", label: "4H", timeframe: "hour", aggregate: 4 },
   { id: "1d", label: "1D", timeframe: "day", aggregate: 1 },
+];
+
+const TRADE_FILTERS = [
+  { value: 0, label: "ALL" },
+  { value: 500, label: "≥ $500" },
+  { value: 2_500, label: "≥ $2,500" },
+  { value: 10_000, label: "≥ $10,000" },
 ];
 
 function changeClass(value: number | null): string {
@@ -68,6 +74,9 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
   const [chartTabId, setChartTabId] = useState("1h");
   const [candles, setCandles] = useState<Candle[] | null>(null);
   const [copied, setCopied] = useState(false);
+  const [tradesMinUsd, setTradesMinUsd] = useState(0);
+  const [trades, setTrades] = useState<Trade[] | null>(null);
+  const [tradesError, setTradesError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +135,35 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
       clearInterval(interval);
     };
   }, [address, chartTab.timeframe, chartTab.aggregate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTrades(null);
+
+    async function loadTrades() {
+      try {
+        const res = await fetch(`/api/market/trades/${address}?minUsd=${tradesMinUsd}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setTradesError(data.error ?? "Could not load trades");
+          return;
+        }
+        setTrades(data.trades);
+        setTradesError(null);
+      } catch {
+        if (!cancelled) setTradesError("Network error loading trades");
+      }
+    }
+
+    loadTrades();
+    const interval = setInterval(loadTrades, 20_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [address, tradesMinUsd]);
 
   function copyAddress() {
     const tokenAddress = pool?.baseToken.address;
@@ -297,39 +335,58 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
               <div className="token-side-card">
                 <h4>Trade</h4>
                 <p>
-                  Swaps route through Uniswap&apos;s own SwapRouter02 — you approve and
-                  sign every step yourself in your own wallet; nothing here custodies
-                  funds. No limit orders, ladders or martingale strategies exist behind
-                  this yet — only a direct market swap.
+                  Routed through Uniswap&apos;s own SwapRouter02 — you approve and sign
+                  every step yourself in your own wallet; nothing here custodies funds.
+                  No limit orders, ladders or martingale strategies exist behind this
+                  yet — only a direct market swap.
                 </p>
                 {pool.baseToken.address && pool.quoteToken.address ? (
-                  <Link
-                    href={`/app/trading?tokenIn=${pool.quoteToken.address}&tokenOut=${pool.baseToken.address}`}
-                    className="app-connect-button"
-                    style={{
-                      display: "inline-block",
-                      marginTop: 14,
-                      textDecoration: "none",
-                      textAlign: "center",
-                    }}
-                  >
-                    Trade {pool.baseToken.symbol ?? "token"} →
-                  </Link>
+                  <SwapPanel
+                    initialTokenIn={pool.quoteToken.address}
+                    initialTokenOut={pool.baseToken.address}
+                    lockPair
+                  />
                 ) : (
-                  <p>Token address unavailable — can&apos;t prefill a trade.</p>
+                  <p>Token address unavailable — can&apos;t trade this pair here.</p>
                 )}
               </div>
 
               <div className="token-side-card">
                 <h4>About this data</h4>
                 <p>
-                  Price, chart, liquidity, volume and market cap are read live from
-                  GeckoTerminal&apos;s public DEX API, not computed by us. No safety
+                  Price, chart, trades, liquidity, volume and market cap are read live
+                  from GeckoTerminal&apos;s public DEX API, not computed by us. No safety
                   verdict is shown or implied here — this page does not say whether{" "}
                   {pool.baseToken.symbol ?? "this token"} is safe to hold.
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="token-trades-section">
+            <div className="scan-section-heading">
+              <span>LIVE</span>
+              <strong>Recent trades — this pool</strong>
+            </div>
+
+            <div className="desk-tabs">
+              {TRADE_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  className={tradesMinUsd === f.value ? "desk-tab active" : "desk-tab"}
+                  onClick={() => setTradesMinUsd(f.value)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {tradesError && <p className="error">{tradesError}</p>}
+            {!trades && !tradesError && <div className="app-empty">Loading trades…</div>}
+            {trades && trades.length === 0 && (
+              <div className="app-empty">No trades at this size in the last 24h.</div>
+            )}
+            {trades && trades.length > 0 && <TradeList trades={trades} showPair={false} />}
           </div>
         </>
       )}
