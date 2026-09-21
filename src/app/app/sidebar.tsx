@@ -14,40 +14,19 @@ import { usePathname } from "next/navigation";
 export const NAV_ITEMS: {
   id: string;
   label: string;
-  icon: string;
   href: string;
 }[] = [
-  { id: "overview", label: "Overview", icon: "", href: "/app" },
-  { id: "market", label: "Market", icon: "nav-bots", href: "/app/market" },
-  {
-    id: "smart-money",
-    label: "Smart Money",
-    icon: "nav-money",
-    href: "/app/smart-money",
-  },
-  {
-    id: "trading",
-    label: "Trading",
-    icon: "nav-trading",
-    href: "/app/trading",
-  },
-  { id: "bots", label: "Bots", icon: "nav-copy", href: "/app/bots" },
-  {
-    id: "positions",
-    label: "Positions",
-    icon: "nav-position",
-    href: "/app/positions",
-  },
-  { id: "wallets", label: "Wallets", icon: "nav-wallet", href: "/app/wallets" },
-  {
-    id: "scanner",
-    label: "Token Scanner",
-    icon: "nav-analytics",
-    href: "/scanner",
-  },
-  { id: "fees", label: "Fee Scanner", icon: "nav-bots", href: "/fees" },
-  { id: "otc", label: "OTC Desk", icon: "nav-copy", href: "/app/otc" },
-  { id: "launch", label: "Launchpad", icon: "nav-alerts", href: "/app/launch" },
+  { id: "overview", label: "Overview", href: "/app" },
+  { id: "market", label: "Market", href: "/app/market" },
+  { id: "smart-money", label: "Smart Money", href: "/app/smart-money" },
+  { id: "trading", label: "Trading", href: "/app/trading" },
+  { id: "bots", label: "Bots", href: "/app/bots" },
+  { id: "positions", label: "Positions", href: "/app/positions" },
+  { id: "wallets", label: "Wallets", href: "/app/wallets" },
+  { id: "scanner", label: "Token Scanner", href: "/scanner" },
+  { id: "fees", label: "Fee Scanner", href: "/fees" },
+  { id: "otc", label: "OTC Desk", href: "/app/otc" },
+  { id: "launch", label: "Launchpad", href: "/app/launch" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -55,17 +34,22 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/**
+ * Top navigation bar for the /app workspace — a horizontal row (logo left,
+ * links in a line), matching how the market leaders (Axiom, nlyra) lay out
+ * their own app chrome, instead of the left sidebar this used to be.
+ */
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="product-sidebar">
-      <div className="product-logo">
+    <header className="app-topnav">
+      <Link href="/app" className="app-topnav-logo">
         <strong>auevo</strong>
         <i />
-      </div>
+      </Link>
 
-      <nav className="product-nav">
+      <nav className="app-topnav-links">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.id}
@@ -76,16 +60,10 @@ export function Sidebar() {
                 : "app-nav-link"
             }
           >
-            <span className={`nav-icon ${item.icon}`}>
-              <i />
-              <i />
-              <i />
-              <i />
-            </span>
             <b>{item.label}</b>
           </Link>
         ))}
       </nav>
-    </aside>
+    </header>
   );
 }
