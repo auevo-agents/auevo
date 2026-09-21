@@ -283,6 +283,31 @@ export async function fetchMarketPool(poolAddress: string): Promise<MarketPool |
   return mapPool(json.data, lookup);
 }
 
+/**
+ * Search by token/pool address, symbol or name — GeckoTerminal matches
+ * across the whole chain, not just what's in the top-volume pages this
+ * module otherwise fetches, so this is how a token outside the current
+ * pagination window actually gets found.
+ */
+export async function fetchSearchPools(query: string): Promise<MarketPool[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const url =
+    `${baseUrl()}/search/pools?query=${encodeURIComponent(trimmed)}` +
+    `&network=${NETWORK}&include=base_token,quote_token,dex`;
+  const json = await geckoFetch<PoolListResponse>(url, 20);
+  if (!json || !Array.isArray(json.data)) return [];
+
+  const lookup = includedLookup(json.included ?? []);
+  const pools: MarketPool[] = [];
+  for (const doc of json.data) {
+    const pool = mapPool(doc, lookup);
+    if (pool) pools.push(pool);
+  }
+  return pools;
+}
+
 export type OhlcvTimeframe = "day" | "hour" | "minute";
 
 export interface Candle {

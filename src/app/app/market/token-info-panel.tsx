@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { TokenScanReport } from "@/lib/token-security";
 
 /**
- * Real Token Info — not a fabricated risk tag. Runs the same scanner
- * behind /scanner (POST /api/token-scan) against this pool's base token
- * and surfaces only the fields it actually computes: top-10 holder
- * concentration, LP burned/locked, total supply burned, and ownership.
- * No Dev Holdings / Snipers / Insiders / Bundlers here — those need
- * deployer-labeled and first-block forensics this scanner doesn't do
- * yet, and showing them as 0% would read as "checked, found none"
- * rather than "not measured", which is exactly the kind of false
- * reassurance this whole app has avoided everywhere else.
+ * Real Token Info — not a fabricated risk tag. Shows what the scanner
+ * behind /scanner actually computes: top-10 holder concentration, LP
+ * burned/locked, total supply burned, and ownership. No Dev Holdings /
+ * Snipers / Insiders / Bundlers here — those need deployer-labeled and
+ * first-block forensics this scanner doesn't do yet, and showing them
+ * as 0% would read as "checked, found none" rather than "not measured",
+ * which is exactly the kind of false reassurance this whole app has
+ * avoided everywhere else.
+ *
+ * Driven by useTokenScan, lifted to the page so the Holders tab can
+ * share the same result instead of running a second scan.
  */
 
 const VERDICT_LABEL: Record<TokenScanReport["verdict"], string> = {
@@ -32,45 +33,29 @@ function VerdictPill({ report }: { report: TokenScanReport }) {
   );
 }
 
-export function TokenInfoPanel({ tokenAddress }: { tokenAddress: string }) {
-  const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
-  const [report, setReport] = useState<TokenScanReport | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setStatus("loading");
-    setReport(null);
-
-    async function run() {
-      try {
-        const res = await fetch("/api/token-scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address: tokenAddress }),
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setStatus("error");
-          return;
-        }
-        setReport(data);
-        setStatus("done");
-      } catch {
-        if (!cancelled) setStatus("error");
-      }
-    }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [tokenAddress]);
-
+export function TokenInfoPanel({
+  tokenAddress,
+  status,
+  report,
+  onScan,
+}: {
+  tokenAddress: string;
+  status: "idle" | "loading" | "done" | "error";
+  report: TokenScanReport | null;
+  onScan: () => void;
+}) {
   return (
     <div className="token-side-card">
       <h4>Token Info</h4>
+
+      {status === "idle" && (
+        <>
+          <p>Not scanned yet — a full scan takes a few seconds (contract, holders, liquidity).</p>
+          <button className="app-link-button" onClick={onScan}>
+            Run security scan →
+          </button>
+        </>
+      )}
 
       {status === "loading" && (
         <p>

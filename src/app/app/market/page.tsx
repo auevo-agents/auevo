@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ConnectButton } from "../connect-button";
+import { FavoriteStar } from "./favorite-star";
 import {
   formatAge,
   formatPercent,
@@ -10,6 +11,7 @@ import {
   formatUsdCompact,
   shortenAddress,
 } from "@/lib/format";
+import { readFavorites } from "@/lib/favorites";
 import type { MarketPool } from "@/lib/geckoterminal";
 
 /**
@@ -27,13 +29,14 @@ import type { MarketPool } from "@/lib/geckoterminal";
  * not a judgment — the "scan" link is how you actually get a verdict.
  */
 
-type Tab = "all" | "gainers" | "losers" | "radar";
+type Tab = "all" | "gainers" | "losers" | "radar" | "favorites";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "ALL" },
   { id: "gainers", label: "GAINERS" },
   { id: "losers", label: "LOSERS" },
   { id: "radar", label: "RADAR · NEW PAIRS" },
+  { id: "favorites", label: "★ FAVORITES" },
 ];
 
 function useMarketPools(kind: "all" | "radar") {
@@ -70,11 +73,110 @@ function useMarketPools(kind: "all" | "radar") {
   return { pools, error };
 }
 
+/** Fetches each favorited pool individually — favorites can be outside the top-100 ALL list. */
+function useFavoritePools(active: boolean) {
+  const [pools, setPools] = useState<MarketPool[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+
+    async function load() {
+      const addresses = readFavorites();
+      if (addresses.length === 0) {
+        if (!cancelled) {
+          setPools([]);
+          setError(null);
+        }
+        return;
+      }
+      try {
+        const results = await Promise.all(
+          addresses.map(async (address) => {
+            const res = await fetch(`/api/market/pool/${address}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.pool as MarketPool;
+          })
+        );
+        if (cancelled) return;
+        setPools(results.filter((p): p is MarketPool => p !== null));
+        setError(null);
+      } catch {
+        if (!cancelled) setError("Network error loading favorites");
+      }
+    }
+
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [active]);
+
+  return { pools, error };
+}
+
+function useSearch(query: string) {
+  const [results, setResults] = useState<MarketPool[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setResults(null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/market/search?q=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        if (!cancelled) setResults(res.ok ? data.pools : []);
+      } catch {
+        if (!cancelled) setResults([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  return { results, loading };
+}
+
 export default function MarketPage() {
   const [tab, setTab] = useState<Tab>("all");
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+
   const { pools: rawPools, error } = useMarketPools(tab === "radar" ? "radar" : "all");
+  const { pools: favoritePools, error: favoritesError } = useFavoritePools(tab === "favorites");
+  const { results: searchResults, loading: searching } = useSearch(query);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   const pools = useMemo(() => {
+    if (tab === "favorites") return favoritePools;
     if (!rawPools) return null;
     if (tab === "gainers") {
       return [...rawPools].sort(
@@ -87,7 +189,9 @@ export default function MarketPage() {
       );
     }
     return rawPools;
-  }, [rawPools, tab]);
+  }, [rawPools, favoritePools, tab]);
+
+  const activeError = tab === "favorites" ? favoritesError : error;
 
   return (
     <>
@@ -98,6 +202,39 @@ export default function MarketPage() {
         </div>
         <ConnectButton />
       </header>
+
+      <div className="desk-search" ref={searchBoxRef}>
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSearchOpen(true);
+          }}
+          onFocus={() => setSearchOpen(true)}
+          placeholder="Search any token by name, symbol or address…"
+          spellCheck={false}
+        />
+        {searchOpen && query.trim() && (
+          <div className="desk-search-results">
+            {searching && <div className="desk-search-empty">Searching…</div>}
+            {!searching && searchResults && searchResults.length === 0 && (
+              <div className="desk-search-empty">No matches on Robinhood Chain.</div>
+            )}
+            {!searching &&
+              searchResults?.map((pool) => (
+                <Link
+                  key={pool.id}
+                  href={pool.poolAddress ? `/app/market/t/${pool.poolAddress}` : "#"}
+                  className="desk-search-result"
+                  onClick={() => setSearchOpen(false)}
+                >
+                  {pool.baseToken.symbol ?? "?"} / {pool.quoteToken.symbol ?? "?"}
+                  <small>{formatPrice(pool.priceUsd)}</small>
+                </Link>
+              ))}
+          </div>
+        )}
+      </div>
 
       <div className="desk-tabs">
         {TABS.map((t) => (
@@ -111,23 +248,28 @@ export default function MarketPage() {
         ))}
       </div>
 
-      {error && (
+      {activeError && (
         <p className="error" style={{ marginTop: 4 }}>
-          {error}
+          {activeError}
         </p>
       )}
 
-      {!pools && !error && <div className="app-empty">Loading market data…</div>}
+      {!pools && !activeError && <div className="app-empty">Loading market data…</div>}
 
       {pools && pools.length === 0 && (
         <div className="app-empty">
-          {tab === "radar" ? "No new pools found yet." : "No pools found yet."}
+          {tab === "radar"
+            ? "No new pools found yet."
+            : tab === "favorites"
+              ? "No favorites yet — star a pair to track it here."
+              : "No pools found yet."}
         </div>
       )}
 
       {pools && pools.length > 0 && (
         <div className="desk-scroll">
           <div className="desk-row desk-head">
+            <span />
             <span>PAIR</span>
             <span className="desk-col-right">PRICE</span>
             <span className="desk-col-right">5M</span>
@@ -191,6 +333,8 @@ function PoolRow({ pool }: { pool: MarketPool }) {
 
   return (
     <div className="desk-row">
+      <span>{pool.poolAddress && <FavoriteStar poolAddress={pool.poolAddress} />}</span>
+
       <Link href={detailHref} className="desk-pair">
         {base.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
