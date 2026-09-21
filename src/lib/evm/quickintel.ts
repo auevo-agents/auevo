@@ -20,6 +20,29 @@ import { decimalOrNull, triState } from "./http";
 
 const DEFAULT_BASE_URL = "https://api.quickintel.io";
 
+/**
+ * Which header carries the key.
+ *
+ * The native API documents one name, while a key issued through the
+ * developer portal's gateway is commonly a bearer token instead — and the
+ * authentication page is not reachable from here to settle it. Rather
+ * than burn a deploy cycle on a guess, the variants are tried in order
+ * against the same vendor host and the one that answers is pinned.
+ * QUICKINTEL_AUTH_HEADER pins it explicitly and skips the probing.
+ */
+const AUTH_HEADER_VARIANTS = ["X-QKNTL-KEY", "apikey", "Authorization"];
+
+function authHeader(name: string, key: string): Record<string, string> {
+  return { [name]: name === "Authorization" ? `Bearer ${key}` : key };
+}
+
+/** Pinned for the process once a variant answers. */
+let pinnedHeader: string | null = null;
+
+export function resolvedQuickIntelHeader(): string | null {
+  return pinnedHeader;
+}
+
 export interface QuickIntelReport {
   isHoneypot: boolean | null;
   contractVerified: boolean | null;
@@ -65,28 +88,44 @@ export async function fetchQuickIntel(
     .replace(/\/+$/, "");
   const chain = process.env.QUICKINTEL_CHAIN?.trim() || "robinhood";
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10_000);
+  const configuredHeader = process.env.QUICKINTEL_AUTH_HEADER?.trim();
+  const variants = configuredHeader
+    ? [configuredHeader]
+    : pinnedHeader
+      ? [pinnedHeader]
+      : AUTH_HEADER_VARIANTS;
 
+  const endpoint = `${base}/v1/getquickiauditfull`;
   let payload: unknown;
-  try {
-    const res = await fetch(`${base}/v1/getquickiauditfull`, {
-      method: "POST",
-      signal: controller.signal,
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        "X-QKNTL-KEY": key,
-      },
-      body: JSON.stringify({ chain, tokenAddress: token }),
-    });
 
-    if (!res.ok) return null;
-    payload = await res.json();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
+  for (const variant of variants) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        signal: controller.signal,
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader(variant, key),
+        },
+        body: JSON.stringify({ chain, tokenAddress: token }),
+      });
+
+      // A rejected key looks like 401/403 — try the next spelling rather
+      // than report the token as unaudited.
+      if (!res.ok) continue;
+
+      payload = await res.json();
+      pinnedHeader = variant;
+      break;
+    } catch {
+      continue;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   if (!payload || typeof payload !== "object") return null;
