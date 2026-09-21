@@ -176,6 +176,9 @@ function Header({ onNavigate }: { onNavigate: (id: string) => void }) {
         >
           Docs
         </a>
+        <a href="/scanner">
+          Token scanner
+        </a>
         <a href="/trade">
           Trade
         </a>
