@@ -20,6 +20,12 @@ export const NAV_ITEMS: {
   { id: "overview", label: "Overview", icon: "", href: "/app" },
   { id: "market", label: "Market", icon: "nav-bots", href: "/app/market" },
   {
+    id: "smart-money",
+    label: "Smart Money",
+    icon: "nav-money",
+    href: "/app/smart-money",
+  },
+  {
     id: "trading",
     label: "Trading",
     icon: "nav-trading",

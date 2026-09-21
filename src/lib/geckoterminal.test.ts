@@ -2,9 +2,11 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  fetchLargeTrades,
   fetchMarketPool,
   fetchMarketPools,
   fetchOhlcv,
+  fetchPoolTrades,
   fetchTokenInfo,
 } from "./geckoterminal";
 
@@ -86,6 +88,38 @@ function routes(path: string): unknown {
   }
   if (path === `/networks/robinhood/pools/${POOL_ADDRESS}`) {
     return { data: poolDoc("robinhood_pool_1"), included: INCLUDED };
+  }
+  if (path === `/networks/robinhood/pools/${POOL_ADDRESS}/trades`) {
+    return {
+      data: [
+        {
+          type: "trade",
+          attributes: {
+            tx_hash: "0xdeadbeef",
+            tx_from_address: "0x1234567890123456789012345678901234567890",
+            kind: "buy",
+            volume_in_usd: "12500.50",
+            from_token_amount: "5000",
+            to_token_amount: "4065.3",
+            price_to_in_usd: "1.23",
+            block_timestamp: new Date(Date.now() - 30_000).toISOString(),
+          },
+        },
+        {
+          type: "trade",
+          attributes: {
+            tx_hash: "0xfeedface",
+            tx_from_address: "0x9876543210987654321098765432109876543210",
+            kind: "sell",
+            volume_in_usd: "8000",
+            from_token_amount: "6500",
+            to_token_amount: "8000",
+            price_to_in_usd: "1.0",
+            block_timestamp: new Date(Date.now() - 120_000).toISOString(),
+          },
+        },
+      ],
+    };
   }
   if (path === `/networks/robinhood/pools/${POOL_ADDRESS}/ohlcv/hour`) {
     return {
@@ -228,5 +262,45 @@ describe("fetchTokenInfo", () => {
   it("returns null rather than a half-filled object when absent", async () => {
     const info = await fetchTokenInfo(QUOTE_TOKEN_ADDRESS);
     expect(info).toBeNull();
+  });
+});
+
+const BASE: import("./geckoterminal").MarketToken = {
+  address: BASE_TOKEN_ADDRESS,
+  symbol: "FOO",
+  name: "Foo Token",
+  imageUrl: null,
+};
+const QUOTE: import("./geckoterminal").MarketToken = {
+  address: QUOTE_TOKEN_ADDRESS,
+  symbol: "WETH",
+  name: "Wrapped ETH",
+  imageUrl: null,
+};
+
+describe("fetchPoolTrades", () => {
+  it("decodes a pool's trades, newest carrying its own trader/size/kind", async () => {
+    const trades = await fetchPoolTrades(POOL_ADDRESS, BASE, QUOTE, 5_000);
+    expect(trades).toHaveLength(2);
+
+    const [first] = trades;
+    expect(first.txHash).toBe("0xdeadbeef");
+    expect(first.traderAddress).toBe("0x1234567890123456789012345678901234567890");
+    expect(first.kind).toBe("buy");
+    expect(first.volumeUsd).toBe(12500.5);
+    expect(first.priceUsd).toBe(1.23);
+    expect(first.poolAddress).toBe(POOL_ADDRESS);
+    expect(first.baseToken.symbol).toBe("FOO");
+    expect(first.ageSeconds).not.toBeNull();
+  });
+});
+
+describe("fetchLargeTrades", () => {
+  it("fans out across top pools and returns trades newest-first", async () => {
+    const trades = await fetchLargeTrades(5_000, 5);
+    expect(trades.length).toBeGreaterThan(0);
+    // The 30s-old buy should sort ahead of the 120s-old sell.
+    expect(trades[0].txHash).toBe("0xdeadbeef");
+    expect(trades[0].ageSeconds).toBeLessThan(trades[1].ageSeconds ?? Infinity);
   });
 });

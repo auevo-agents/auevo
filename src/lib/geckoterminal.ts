@@ -328,3 +328,109 @@ export async function fetchTokenInfo(tokenAddress: string): Promise<TokenInfo | 
     discord: typeof attrs.discord_url === "string" ? attrs.discord_url : null,
   };
 }
+
+export interface Trade {
+  txHash: string | null;
+  traderAddress: string | null;
+  kind: "buy" | "sell" | null;
+  volumeUsd: number | null;
+  fromTokenAmount: number | null;
+  toTokenAmount: number | null;
+  priceUsd: number | null;
+  blockTimestamp: string | null;
+  ageSeconds: number | null;
+  poolAddress: string;
+  baseToken: MarketToken;
+  quoteToken: MarketToken;
+}
+
+interface TradeAttributes {
+  tx_hash?: string;
+  tx_from_address?: string;
+  kind?: string;
+  volume_in_usd?: string;
+  from_token_amount?: string;
+  to_token_amount?: string;
+  price_to_in_usd?: string;
+  block_timestamp?: string;
+}
+
+interface TradesResponse {
+  data?: { attributes?: TradeAttributes }[];
+}
+
+/**
+ * A pool's own recent trades above a USD size floor — the one GeckoTerminal
+ * endpoint that gives individual swaps rather than aggregated stats.
+ * `minUsd` is sent as their own `trade_volume_in_usd_greater_than` filter,
+ * so a "large swaps" feed doesn't have to pull every trade and filter
+ * client-side.
+ */
+export async function fetchPoolTrades(
+  poolAddress: string,
+  baseToken: MarketToken,
+  quoteToken: MarketToken,
+  minUsd = 0
+): Promise<Trade[]> {
+  const url =
+    `${baseUrl()}/networks/${NETWORK}/pools/${poolAddress}/trades` +
+    (minUsd > 0 ? `?trade_volume_in_usd_greater_than=${minUsd}` : "");
+
+  const json = await fetchJson<TradesResponse>(url, 10_000);
+  if (!json || !Array.isArray(json.data)) return [];
+
+  const trades: Trade[] = [];
+  for (const doc of json.data) {
+    const a = doc.attributes;
+    if (!a) continue;
+
+    const blockTimestamp = typeof a.block_timestamp === "string" ? a.block_timestamp : null;
+    const ts = blockTimestamp ? Date.parse(blockTimestamp) : NaN;
+
+    trades.push({
+      txHash: typeof a.tx_hash === "string" ? a.tx_hash : null,
+      traderAddress: typeof a.tx_from_address === "string" ? a.tx_from_address : null,
+      kind: a.kind === "buy" || a.kind === "sell" ? a.kind : null,
+      volumeUsd: toNumber(a.volume_in_usd),
+      fromTokenAmount: toNumber(a.from_token_amount),
+      toTokenAmount: toNumber(a.to_token_amount),
+      priceUsd: toNumber(a.price_to_in_usd),
+      blockTimestamp,
+      ageSeconds: Number.isFinite(ts) ? Math.max(0, (Date.now() - ts) / 1000) : null,
+      poolAddress,
+      baseToken,
+      quoteToken,
+    });
+  }
+  return trades;
+}
+
+/**
+ * Large swaps across the chain's most active pools — the "large trades"
+ * feed. Deliberately not a "smart money" wallet score: nothing here
+ * claims a wallet is skilled, only that it made a trade over `minUsd`.
+ * Fans out across the top `poolLimit` pools by GeckoTerminal's own
+ * ranking (already fetched for the Market page's ALL tab) since there is
+ * no chain-wide trades endpoint on the free API — one call per pool.
+ */
+export async function fetchLargeTrades(minUsd = 5_000, poolLimit = 12): Promise<Trade[]> {
+  const pools = await fetchMarketPools("all");
+  const top = pools.slice(0, poolLimit).filter((p) => p.poolAddress);
+
+  const perPool = await Promise.all(
+    top.map((pool) =>
+      fetchPoolTrades(pool.poolAddress as string, pool.baseToken, pool.quoteToken, minUsd)
+    )
+  );
+
+  const all = perPool.flat();
+  // Newest first; a trade with no parseable timestamp sorts last rather
+  // than dropping it.
+  all.sort((a, b) => {
+    if (a.ageSeconds === null) return 1;
+    if (b.ageSeconds === null) return -1;
+    return a.ageSeconds - b.ageSeconds;
+  });
+
+  return all.slice(0, 60);
+}
