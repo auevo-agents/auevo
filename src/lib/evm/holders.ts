@@ -44,6 +44,9 @@ const MAX_CANDIDATES_WITH_MULTICALL = 150;
 const MAX_CANDIDATES_WITHOUT_MULTICALL = 40;
 const MULTICALL_BATCH = 50;
 const TOP_N = 10;
+/** How many of the largest holders become nodes in the funding graph — wider than TOP_N (which feeds the top10Percent concentration metric) since a readable graph wants more than 10 wallets. */
+const GRAPH_TOP_N = 30;
+const MAX_GRAPH_EDGES = 400;
 
 /** Addresses whose balance is out of circulation, not someone's position. */
 const BURN_ADDRESSES: Address[] = [
@@ -55,6 +58,27 @@ export interface HolderEntry {
   address: Address;
   balance: string;
   percent: number;
+}
+
+export interface FundingEdge {
+  from: Address;
+  to: Address;
+  value: string;
+  blockNumber: string;
+}
+
+export interface GraphNode {
+  address: Address;
+  percent: number;
+  /** "mint" is the zero address — where a token's supply enters circulation, not a holder itself. */
+  kind: "holder" | "mint";
+}
+
+export interface HolderGraph {
+  nodes: GraphNode[];
+  edges: FundingEdge[];
+  /** True if edges among the shown nodes were cut off at MAX_GRAPH_EDGES — the graph may be missing some connections. */
+  truncated: boolean;
 }
 
 export interface HolderDistribution {
@@ -75,6 +99,7 @@ export interface HolderDistribution {
   top10Percent: number;
   burnedPercent: number;
   usedMulticall: boolean;
+  graph: HolderGraph;
 }
 
 async function hasMulticall3(client: RobinhoodClient): Promise<boolean> {
@@ -119,10 +144,14 @@ async function collectCandidates(
   deadline: Deadline
 ): Promise<{
   counts: Map<Address, number>;
+  edges: FundingEdge[];
   scannedRanges: { fromBlock: string; toBlock: string }[];
   partial: boolean;
 }> {
   const counts = new Map<Address, number>();
+  // Every Transfer this scan already reads — the funding graph reuses it
+  // rather than making a second pass over the log history.
+  const edges: FundingEdge[] = [];
   const scannedRanges: { fromBlock: string; toBlock: string }[] = [];
   let chunksUsed = 0;
   let logsSeen = 0;
@@ -157,6 +186,14 @@ async function collectCandidates(
           // only earns half the weight, since it may have sold out since.
           if (to) counts.set(to, (counts.get(to) ?? 0) + 2);
           if (from) counts.set(from, (counts.get(from) ?? 0) + 1);
+          if (from && to && typeof log.args.value === "bigint" && log.blockNumber !== null) {
+            edges.push({
+              from,
+              to,
+              value: log.args.value.toString(),
+              blockNumber: log.blockNumber.toString(),
+            });
+          }
         }
       } catch {
         // Range too wide for this node, or the endpoint rate-limited us.
@@ -177,7 +214,7 @@ async function collectCandidates(
   }
 
   counts.delete(zeroAddress);
-  return { counts, scannedRanges, partial };
+  return { counts, edges, scannedRanges, partial };
 }
 
 async function readBalances(
@@ -252,7 +289,7 @@ export async function analyseHolders(
   if (totalSupply <= 0n || deadline.expired) return null;
 
   const usedMulticall = await hasMulticall3(client);
-  const { counts, scannedRanges, partial } = await collectCandidates(
+  const { counts, edges, scannedRanges, partial } = await collectCandidates(
     client,
     token,
     planWindows(headBlock, deploymentBlock),
@@ -300,6 +337,7 @@ export async function analyseHolders(
 
   holders.sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
   const top = holders.slice(0, TOP_N);
+  const graph = buildGraph(holders.slice(0, GRAPH_TOP_N), edges);
 
   // Completeness has to be demonstrated: one uninterrupted range reaching
   // back to deployment. Without a deployment block we cannot know how much
@@ -328,5 +366,44 @@ export async function analyseHolders(
     top10Percent: top.reduce((sum, holder) => sum + holder.percent, 0),
     burnedPercent: percentOf(burned, totalSupply),
     usedMulticall,
+    graph,
+  };
+}
+
+/**
+ * The funding graph, built from the same Transfer logs the concentration
+ * numbers already came from — restricted to edges between the addresses
+ * that made the cut as graph nodes (the biggest GRAPH_TOP_N holders, plus
+ * the zero address as a "mint" node), so the graph doesn't try to draw
+ * every transfer this token has ever seen.
+ */
+function buildGraph(topHolders: HolderEntry[], edges: FundingEdge[]): HolderGraph {
+  const nodeAddresses = new Set(topHolders.map((h) => getAddress(h.address)));
+  nodeAddresses.add(getAddress(zeroAddress));
+
+  const relevant: FundingEdge[] = [];
+  for (const edge of edges) {
+    const from = getAddress(edge.from);
+    const to = getAddress(edge.to);
+    if (nodeAddresses.has(from) && nodeAddresses.has(to) && from !== to) {
+      relevant.push(edge);
+      if (relevant.length >= MAX_GRAPH_EDGES) break;
+    }
+  }
+
+  const nodes: GraphNode[] = topHolders.map((h) => ({
+    address: h.address,
+    percent: h.percent,
+    kind: "holder",
+  }));
+  // Only worth drawing the mint node if something actually connects to it.
+  if (relevant.some((e) => getAddress(e.from) === getAddress(zeroAddress))) {
+    nodes.push({ address: zeroAddress, percent: 0, kind: "mint" });
+  }
+
+  return {
+    nodes,
+    edges: relevant,
+    truncated: relevant.length >= MAX_GRAPH_EDGES,
   };
 }

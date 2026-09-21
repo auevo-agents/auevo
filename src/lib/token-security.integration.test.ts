@@ -152,8 +152,8 @@ function handle(method: string, params: unknown[]): unknown {
       };
     }
 
-    case "eth_getLogs":
-      return [WHALE, SMALL_HOLDER, OWNER].map((holder, index) => ({
+    case "eth_getLogs": {
+      const mints = [WHALE, SMALL_HOLDER, OWNER].map((holder, index) => ({
         address: TOKEN,
         topics: [
           TRANSFER_TOPIC,
@@ -168,6 +168,21 @@ function handle(method: string, params: unknown[]): unknown {
         transactionIndex: "0x0",
         removed: false,
       }));
+      // One wallet-to-wallet transfer among the top holders — the funding
+      // graph's edges come from exactly this kind of log.
+      const walletTransfer = {
+        address: TOKEN,
+        topics: [TRANSFER_TOPIC, topicFor(WHALE), topicFor(SMALL_HOLDER)],
+        data: word(1_000n * 10n ** 18n),
+        blockNumber: toHex(DEPLOY_BLOCK + 5n),
+        blockHash: pad("0xabc", { size: 32 }),
+        logIndex: toHex(4n),
+        transactionHash: pad("0xdef", { size: 32 }),
+        transactionIndex: "0x0",
+        removed: false,
+      };
+      return [...mints, walletTransfer];
+    }
 
     default:
       throw new Error(`unexpected RPC method: ${method}`);
@@ -246,6 +261,25 @@ describe("scanToken against a scripted node", () => {
     expect(report.findings.map((f) => f.id)).toContain(
       "holder-concentration-extreme"
     );
+  });
+
+  it("builds a funding graph from the same Transfer logs — mints and wallet-to-wallet edges", () => {
+    const graph = report.holders?.graph;
+    expect(graph).toBeDefined();
+
+    const nodeAddresses = graph?.nodes.map((n) => n.address.toLowerCase()) ?? [];
+    expect(nodeAddresses).toContain(WHALE);
+    expect(nodeAddresses).toContain(SMALL_HOLDER);
+    expect(nodeAddresses).toContain(OWNER);
+    // The zero address only becomes a node because a mint edge into it exists.
+    expect(graph?.nodes.some((n) => n.kind === "mint")).toBe(true);
+
+    const edgeAddrs = graph?.edges.map((e) => [e.from.toLowerCase(), e.to.toLowerCase()]);
+    expect(edgeAddrs).toContainEqual([
+      "0x0000000000000000000000000000000000000000",
+      WHALE,
+    ]);
+    expect(edgeAddrs).toContainEqual([WHALE, SMALL_HOLDER]);
   });
 
   it("lands on a risk verdict driven by the findings", () => {

@@ -7190,6 +7190,86 @@ a {
   margin-top: 24px;
 }
 
+/* --- constellation map (holder funding graph) --- */
+
+.constellation-wrap {
+  position: relative;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  background: #0a0e10;
+  overflow: hidden;
+}
+
+.constellation-svg {
+  width: 100%;
+  height: 620px;
+  display: block;
+  cursor: grab;
+}
+
+.constellation-svg:active {
+  cursor: grabbing;
+}
+
+.constellation-tooltip {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #252c30;
+  border-radius: 6px;
+  background: rgba(13,18,20,.92);
+  font-size: 12px;
+  color: #d7dadb;
+  pointer-events: none;
+  max-width: 320px;
+}
+
+.constellation-tooltip code {
+  word-break: break-all;
+  color: #eef0ef;
+}
+
+.constellation-tooltip span {
+  color: #7c8589;
+}
+
+.constellation-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 11px;
+  color: #5a6469;
+  pointer-events: none;
+}
+
+.constellation-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.constellation-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255,52,77,.16);
+  border: 1.4px solid #ff4259;
+}
+
+.constellation-dot-mint {
+  background: #0a0e10;
+  border: 1px dashed #5a6469;
+}
+
 .rank-row {
   display: grid;
   grid-template-columns: 0.4fr 1.6fr 1fr 1fr 0.8fr;
