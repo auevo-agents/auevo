@@ -52,6 +52,17 @@ const DOWNGRADE: Record<Severity, Severity> = {
 
 export type Verdict = "critical" | "high-risk" | "caution" | "low-risk";
 
+/**
+ * How much of the picture we actually got.
+ *
+ * Risk and confidence are separate axes and both have to be shown. The
+ * score answers "how bad is what we found"; confidence answers "how much
+ * did we manage to look at". Collapsing them produces the one output this
+ * tool must never produce — a clean, confident-looking verdict on a token
+ * whose age, distribution and source were all unknown.
+ */
+export type Confidence = "high" | "medium" | "low";
+
 export interface TokenScanReport {
   address: Address;
   chain: { id: number; name: string };
@@ -90,6 +101,9 @@ export interface TokenScanReport {
   findings: Finding[];
   score: number;
   verdict: Verdict;
+  confidence: Confidence;
+  /** The major checks that came back unknown — what caps the confidence. */
+  evidenceGaps: string[];
   /** Checks that could not be completed, in plain language. */
   checksSkipped: string[];
 }
@@ -109,7 +123,16 @@ function scoreFrom(findings: Finding[]): number {
   return Math.max(0, Math.min(100, Math.round(raw)));
 }
 
-function verdictFrom(score: number, findings: Finding[]): Verdict {
+function confidenceFrom(gaps: string[]): Confidence {
+  if (gaps.length === 0) return "high";
+  return gaps.length === 1 ? "medium" : "low";
+}
+
+function verdictFrom(
+  score: number,
+  findings: Finding[],
+  confidence: Confidence
+): Verdict {
   const criticals = findings.filter((f) => f.severity === "critical").length;
 
   // A single critical finding is not something a good score should be able
@@ -117,7 +140,12 @@ function verdictFrom(score: number, findings: Finding[]): Verdict {
   if (criticals >= 2) return "critical";
   if (criticals === 1) return score < 50 ? "critical" : "high-risk";
 
-  if (score >= 80) return "low-risk";
+  if (score >= 80) {
+    // "Low risk" is a claim about the token. Finding nothing while unable
+    // to check the things that catch rugs is a claim about our coverage,
+    // and it must not be reported as the former.
+    return confidence === "high" ? "low-risk" : "caution";
+  }
   if (score >= 55) return "caution";
   if (score >= 30) return "high-risk";
   return "critical";
@@ -196,7 +224,10 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
       holders: null,
       findings,
       score: 0,
+      // Nothing was inconclusive here: an address with no code is a fact.
       verdict: "critical",
+      confidence: "high",
+      evidenceGaps: [],
       checksSkipped,
     };
   }
@@ -249,12 +280,24 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
   findings.push(...ownershipFindings(ownerInfo, renounced, privilegesDefused, detected));
   findings.push(...metadataFindings(metadata));
 
+  const evidenceGaps: string[] = [];
+
   const deployment = await findDeployment(client, address, headBlock, deadline);
-  if (deployment) findings.push(...ageFindings(deployment));
-  else
+  if (deployment) {
+    findings.push(...ageFindings(deployment));
+  } else {
+    evidenceGaps.push("Age unknown");
     checksSkipped.push(
       "Deployment date could not be determined — the RPC does not serve the historical state this needs."
     );
+    findings.push({
+      id: "age-unknown",
+      title: "Deployment date could not be determined",
+      severity: "info",
+      detail:
+        "We could not establish when this contract went live, so the strongest early warning there is — a token deployed hours ago — could not be checked either way.",
+    });
+  }
 
   let holders: HolderDistribution | null = null;
   if (metadata.totalSupply && metadata.totalSupply > 0n) {
@@ -274,6 +317,13 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
       "Holder distribution could not be reconstructed — the RPC returned no usable Transfer history within the scan budget."
     );
 
+  if (!holders || holders.partial) {
+    evidenceGaps.push("Distribution incomplete");
+    checksSkipped.push(
+      "Holder distribution was read from a slice of Transfer history, not all of it, so a wallet holding most of the supply can sit outside what we scanned."
+    );
+  }
+
   if (metadata.totalSupply === 0n) {
     findings.push({
       id: "zero-supply",
@@ -286,6 +336,7 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
 
   const sorted = sortFindings(findings);
   const score = scoreFrom(sorted);
+  const confidence = confidenceFrom(evidenceGaps);
 
   return {
     address,
@@ -324,7 +375,9 @@ export async function scanToken(rawAddress: string): Promise<TokenScanReport> {
     holders,
     findings: sorted,
     score,
-    verdict: verdictFrom(score, sorted),
+    verdict: verdictFrom(score, sorted, confidence),
+    confidence,
+    evidenceGaps,
     checksSkipped,
   };
 }
