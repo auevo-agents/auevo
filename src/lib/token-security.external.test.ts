@@ -94,6 +94,10 @@ function httpRoute(path: string): unknown | undefined {
           is_honeypot: "1",
           can_take_back_ownership: "1",
           is_open_source: "0",
+          owner_change_balance: "1",
+          external_call: "1",
+          creator_address: "0x9999999999999999999999999999999999999999",
+          creator_percent: "0.4",
           // buy_tax / sell_tax deliberately absent: the common case on
           // this chain, and it must stay unknown rather than become 0.
           holder_count: "412",
@@ -270,6 +274,24 @@ describe("second opinion from established scanners", () => {
 
   it("flags unverified source", () => {
     expect(report.findings.map((f) => f.id)).toContain("source-unverified");
+  });
+
+  it("flags the two GoPlus signals with no bytecode equivalent", () => {
+    const ids = report.findings.map((f) => f.id);
+    expect(ids).toContain("owner-change-balance");
+    expect(ids).toContain("external-call");
+  });
+
+  it("uses the creator address as evidence when GoPlus reports one", () => {
+    const finding = report.findings.find((f) => f.id === "creator-holds-supply");
+    expect(finding?.evidence).toBe(
+      "0x9999999999999999999999999999999999999999"
+    );
+  });
+
+  it("carries a numeric score regardless of confidence", () => {
+    expect(typeof report.score).toBe("number");
+    expect(Number.isFinite(report.score)).toBe(true);
   });
 
   it("closes the distribution gap with the explorer's index", () => {

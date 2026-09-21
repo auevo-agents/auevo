@@ -202,16 +202,12 @@ function Report({ report }: { report: TokenScanReport }) {
         </div>
 
         <div className="scan-score">
-          {report.confidence === "low" ? (
-            <>
-              <strong className="scan-score-muted">&mdash;</strong>
-              <span>not enough data to score</span>
-            </>
-          ) : (
-            <>
-              <strong>{report.score}</strong>
-              <span>/ 100</span>
-            </>
+          <div className="scan-score-number">
+            <strong>{report.score}</strong>
+            <span>/ 100</span>
+          </div>
+          {report.confidence !== "high" && (
+            <small className="scan-score-caveat">low confidence</small>
           )}
         </div>
       </div>

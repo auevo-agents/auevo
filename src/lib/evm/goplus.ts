@@ -1,4 +1,4 @@
-import type { Address } from "viem";
+import { getAddress, isAddress, type Address } from "viem";
 import { ROBINHOOD_CHAIN_ID } from "../chains";
 import { decimalOrNull, fetchJson, triState } from "./http";
 
@@ -50,11 +50,19 @@ export interface GoPlusReport {
   isProxy: boolean | null;
   tradingCooldown: boolean | null;
   antiWhaleModifiable: boolean | null;
+  /** Whether an anti-whale limit exists at all — separate from whether it is adjustable. */
+  isAntiWhale: boolean | null;
+  /** Transfers call into another, unverified contract — a place risky logic can hide. */
+  externalCall: boolean | null;
+  /** The owner can rewrite an arbitrary address's balance directly — a step past mint. */
+  ownerChangeBalance: boolean | null;
   /** Fractions, not percentages: 0.05 is a 5% tax. */
   buyTax: number | null;
   sellTax: number | null;
   holderCount: number | null;
+  creatorAddress: Address | null;
   creatorPercent: number | null;
+  ownerAddress: Address | null;
   ownerPercent: number | null;
   lpHolderCount: number | null;
   isInDex: boolean | null;
@@ -124,6 +132,13 @@ function toReportKeys(distribution: {
   };
 }
 
+function addressOrNull(value: unknown): Address | null {
+  if (typeof value !== "string" || !isAddress(value, { strict: false })) {
+    return null;
+  }
+  return getAddress(value);
+}
+
 function intOrNull(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim() !== "") {
@@ -168,10 +183,15 @@ export async function fetchGoPlus(
     isProxy: triState(entry.is_proxy),
     tradingCooldown: triState(entry.trading_cooldown),
     antiWhaleModifiable: triState(entry.anti_whale_modifiable),
+    isAntiWhale: triState(entry.is_anti_whale),
+    externalCall: triState(entry.external_call),
+    ownerChangeBalance: triState(entry.owner_change_balance),
     buyTax: decimalOrNull(entry.buy_tax),
     sellTax: decimalOrNull(entry.sell_tax),
     holderCount: intOrNull(entry.holder_count),
+    creatorAddress: addressOrNull(entry.creator_address),
     creatorPercent: decimalOrNull(entry.creator_percent),
+    ownerAddress: addressOrNull(entry.owner_address),
     ownerPercent: decimalOrNull(entry.owner_percent),
     lpHolderCount: intOrNull(entry.lp_holder_count),
     isInDex: triState(entry.is_in_dex),
