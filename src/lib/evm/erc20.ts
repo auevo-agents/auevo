@@ -73,7 +73,12 @@ function decodeString(raw: Hex): string | null {
  */
 const CONTROL_CHARS = "\\u0000-\\u001f\\u007f-\\u009f";
 const INVISIBLE_CHARS =
-  "\\u200b-\\u200f\\u2028\\u2029\\u202a-\\u202e\\u2060-\\u2064\\ufeff";
+  // \u2060-\u2064: word joiner + invisible math operators.
+  // \u2066-\u2069: the bidi isolates (LRI/RLI/FSI/PDI) — this is the
+  // gap a live scan actually hit: a token used \u2067 (RIGHT-TO-LEFT
+  // ISOLATE) to render its name reversed in the browser, and the old
+  // range stopped one code point short of catching it.
+  "\\u061c\\u200b-\\u200f\\u2028\\u2029\\u202a-\\u202e\\u2060-\\u2069\\ufeff";
 
 // Separate test and replace regexes on purpose: a /g regex carries
 // lastIndex between .test() calls, which makes every other call return

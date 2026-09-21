@@ -136,6 +136,17 @@ describe("token text inspection", () => {
   it("leaves an ordinary symbol alone", () => {
     expect(inspectTokenText("USDC")).toEqual({ display: "USDC", issues: [] });
   });
+
+  it("strips a bidi isolate character, the exact disguise a live scan hit", () => {
+    // U+2067 RIGHT-TO-LEFT ISOLATE + U+2069 POP DIRECTIONAL ISOLATE — a
+    // real token used this to render its name reversed in the browser,
+    // which an earlier range (stopping at U+2064) let through unflagged.
+    const disguised = "IS · ⁧unl roirepuS⁩";
+    const result = inspectTokenText(disguised);
+
+    expect(result?.display).not.toMatch(/[⁦-⁩]/);
+    expect(result?.issues.join(" ")).toContain("invisible");
+  });
 });
 
 describe("proxy detection", () => {
