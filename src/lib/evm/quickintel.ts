@@ -18,30 +18,13 @@ import { decimalOrNull, triState } from "./http";
  * here is worse than no number.
  */
 
-const DEFAULT_BASE_URL = "https://api.quickintel.io";
-
-/**
- * Which header carries the key.
- *
- * The native API documents one name, while a key issued through the
- * developer portal's gateway is commonly a bearer token instead — and the
- * authentication page is not reachable from here to settle it. Rather
- * than burn a deploy cycle on a guess, the variants are tried in order
- * against the same vendor host and the one that answers is pinned.
- * QUICKINTEL_AUTH_HEADER pins it explicitly and skips the probing.
- */
-const AUTH_HEADER_VARIANTS = ["X-QKNTL-KEY", "apikey", "Authorization"];
-
-function authHeader(name: string, key: string): Record<string, string> {
-  return { [name]: name === "Authorization" ? `Bearer ${key}` : key };
-}
-
-/** Pinned for the process once a variant answers. */
-let pinnedHeader: string | null = null;
-
-export function resolvedQuickIntelHeader(): string | null {
-  return pinnedHeader;
-}
+// Confirmed against the vendor's own docs (Getting Started -> Authentication):
+// base https://api.quickintel.io/v1, key on X-QKNTL-KEY. Their docs also
+// flag that a missing or wrong key comes back as a 404 ("No data product
+// found"), not a 401/403 — worth keeping in mind if this source ever
+// starts reporting "unavailable" for what is actually a bad key.
+const DEFAULT_BASE_URL = "https://api.quickintel.io/v1";
+const AUTH_HEADER = "X-QKNTL-KEY";
 
 export interface QuickIntelReport {
   isHoneypot: boolean | null;
@@ -87,45 +70,34 @@ export async function fetchQuickIntel(
   const base = (process.env.QUICKINTEL_API_URL?.trim() || DEFAULT_BASE_URL)
     .replace(/\/+$/, "");
   const chain = process.env.QUICKINTEL_CHAIN?.trim() || "robinhood";
+  const authHeaderName = process.env.QUICKINTEL_AUTH_HEADER?.trim() || AUTH_HEADER;
 
-  const configuredHeader = process.env.QUICKINTEL_AUTH_HEADER?.trim();
-  const variants = configuredHeader
-    ? [configuredHeader]
-    : pinnedHeader
-      ? [pinnedHeader]
-      : AUTH_HEADER_VARIANTS;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
 
-  const endpoint = `${base}/v1/getquickiauditfull`;
   let payload: unknown;
+  try {
+    const res = await fetch(`${base}/getquickiauditfull`, {
+      method: "POST",
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        [authHeaderName]: key,
+      },
+      body: JSON.stringify({ chain, tokenAddress: token }),
+    });
 
-  for (const variant of variants) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10_000);
-
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        signal: controller.signal,
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeader(variant, key),
-        },
-        body: JSON.stringify({ chain, tokenAddress: token }),
-      });
-
-      // A rejected key looks like 401/403 — try the next spelling rather
-      // than report the token as unaudited.
-      if (!res.ok) continue;
-
-      payload = await res.json();
-      pinnedHeader = variant;
-      break;
-    } catch {
-      continue;
-    } finally {
-      clearTimeout(timer);
-    }
+    // Per the vendor's docs, a missing/wrong key surfaces as a 404 here,
+    // not 401/403 — this branch covers that case too, it just cannot
+    // distinguish "bad key" from "token genuinely not found" without
+    // reading the error body, and either way there is nothing to report.
+    if (!res.ok) return null;
+    payload = await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 
   if (!payload || typeof payload !== "object") return null;

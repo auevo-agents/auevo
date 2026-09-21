@@ -191,7 +191,7 @@ beforeAll(async () => {
   process.env.ROBINHOOD_RPC_URL = origin;
   process.env.GOPLUS_API_URL = origin;
   process.env.BLOCKSCOUT_API_URL = origin;
-  process.env.QUICKINTEL_API_URL = origin;
+  process.env.QUICKINTEL_API_URL = `${origin}/v1`; // matches the real base URL shape
   process.env.QUICKINTEL_API_KEY = "test-key";
 
   const { scanToken } = await import("./token-security");
