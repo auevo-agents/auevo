@@ -8,9 +8,18 @@ import { ConnectButton } from "../../connect-button";
 import { robinhoodChain } from "@/lib/chains";
 import { formatAge, shortenAddress } from "@/lib/format";
 import { isWatched, readWatchedWallets, setWalletLabel, watchWallet } from "@/lib/watched-wallets";
+import { computeWalletPnl } from "@/lib/wallet-pnl";
+import { WETH9 } from "@/lib/uniswap";
 
-const ERC20_DECIMALS_ABI = [
+const ERC20_ABI = [
   { type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
 ] as const;
 
 interface PoolMeta {
@@ -106,22 +115,64 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
     return [...set];
   }, [activity]);
 
-  const decimalsQuery = useReadContracts({
+  // decimals() and balanceOf() for every token this wallet's indexed
+  // activity touched — one multicall batch, not two, by interleaving
+  // both calls per token rather than running a second useReadContracts.
+  const tokenReads = useReadContracts({
     allowFailure: true,
-    contracts: tokenAddresses.map(
-      (t) => ({ address: t as Address, abi: ERC20_DECIMALS_ABI, functionName: "decimals" }) as const
+    contracts: tokenAddresses.flatMap(
+      (t) =>
+        [
+          { address: t as Address, abi: ERC20_ABI, functionName: "decimals" } as const,
+          {
+            address: t as Address,
+            abi: ERC20_ABI,
+            functionName: "balanceOf",
+            args: [address ?? "0x0000000000000000000000000000000000000000"],
+          } as const,
+        ] as const
     ),
-    query: { enabled: tokenAddresses.length > 0 },
+    query: { enabled: tokenAddresses.length > 0 && Boolean(address) },
   });
 
   const decimalsByToken = useMemo(() => {
     const map = new Map<string, number>();
     tokenAddresses.forEach((t, i) => {
-      const result = decimalsQuery.data?.[i]?.result;
+      const result = tokenReads.data?.[i * 2]?.result;
       if (typeof result === "number") map.set(t, result);
     });
     return map;
-  }, [tokenAddresses, decimalsQuery.data]);
+  }, [tokenAddresses, tokenReads.data]);
+
+  const balanceByToken = useMemo(() => {
+    const map = new Map<string, bigint>();
+    tokenAddresses.forEach((t, i) => {
+      const result = tokenReads.data?.[i * 2 + 1]?.result;
+      if (typeof result === "bigint") map.set(t, result);
+    });
+    return map;
+  }, [tokenAddresses, tokenReads.data]);
+
+  const symbolByToken = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!activity) return map;
+    for (const pool of Object.values(activity.pools)) {
+      if (pool.token0Symbol) map.set(pool.token0.toLowerCase(), pool.token0Symbol);
+      if (pool.token1Symbol) map.set(pool.token1.toLowerCase(), pool.token1Symbol);
+    }
+    return map;
+  }, [activity]);
+
+  const pnl = useMemo(() => {
+    if (!activity) return null;
+    const inputs = activity.swaps
+      .map((s) => {
+        const pool = activity.pools[s.pool_address];
+        return pool ? { amount0: s.amount0, amount1: s.amount1, token0: pool.token0, token1: pool.token1 } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    return computeWalletPnl(inputs, WETH9);
+  }, [activity]);
 
   if (!address) {
     return (
@@ -218,6 +269,55 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
         </div>
       </div>
 
+      {activity && activity.indexed && pnl && (
+        <div className="token-side-card" style={{ marginTop: 20 }}>
+          <h4>Trading summary</h4>
+          {pnl.tokensTraded === 0 ? (
+            <p className="desk-note">No WETH-paired trades in the indexer&apos;s current window to summarize.</p>
+          ) : (
+            <div className="token-stat-grid">
+              <div className="token-stat">
+                <span>REALIZED PNL</span>
+                <strong
+                  className={
+                    pnl.wins + pnl.losses === 0 ? "" : pnl.realizedPnlEth >= 0 ? "desk-change-pos" : "desk-change-neg"
+                  }
+                >
+                  {pnl.wins + pnl.losses === 0
+                    ? "—"
+                    : `${pnl.realizedPnlEth >= 0 ? "+" : ""}${pnl.realizedPnlEth.toFixed(4)} ETH`}
+                </strong>
+              </div>
+              <div className="token-stat">
+                <span>WIN RATE</span>
+                <strong>{pnl.wins + pnl.losses === 0 ? "—" : `${pnl.wins}/${pnl.wins + pnl.losses}`}</strong>
+              </div>
+              <div className="token-stat">
+                <span>TOKENS TRADED</span>
+                <strong>{pnl.tokensTraded}</strong>
+              </div>
+            </div>
+          )}
+          <p className="desk-note" style={{ marginTop: 12 }}>
+            Realized PnL and win rate only count a token where both a buy and a sell are visible in
+            this window, priced in ETH from the exact WETH leg of each swap — not a USD
+            approximation. Same methodology as <Link href="/app/smart-money">Smart Money</Link>,
+            applied to this one wallet.
+          </p>
+        </div>
+      )}
+
+      {tokenAddresses.length > 0 && (
+        <div className="token-side-card" style={{ marginTop: 20 }}>
+          <h4>Holdings</h4>
+          <p className="desk-note" style={{ marginBottom: 10 }}>
+            Live balances for tokens seen in this wallet&apos;s recent activity — not every token it
+            has ever held, only what this window surfaced.
+          </p>
+          <HoldingsList tokenAddresses={tokenAddresses} symbolByToken={symbolByToken} decimalsByToken={decimalsByToken} balanceByToken={balanceByToken} />
+        </div>
+      )}
+
       <div className="token-side-card" style={{ marginTop: 20 }}>
         <h4>Recent activity</h4>
 
@@ -261,6 +361,46 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
         )}
       </div>
     </>
+  );
+}
+
+function HoldingsList({
+  tokenAddresses,
+  symbolByToken,
+  decimalsByToken,
+  balanceByToken,
+}: {
+  tokenAddresses: string[];
+  symbolByToken: Map<string, string>;
+  decimalsByToken: Map<string, number>;
+  balanceByToken: Map<string, bigint>;
+}) {
+  const held = tokenAddresses
+    .map((t) => ({
+      address: t,
+      symbol: symbolByToken.get(t) ?? shortenAddress(t, 4, 4),
+      decimals: decimalsByToken.get(t) ?? 18,
+      balance: balanceByToken.get(t),
+    }))
+    .filter((h) => h.balance !== undefined && h.balance > 0n)
+    .sort((a, b) => (b.balance! > a.balance! ? 1 : -1));
+
+  if (balanceByToken.size === 0) {
+    return <p className="app-empty">Loading…</p>;
+  }
+  if (held.length === 0) {
+    return <p className="desk-note">No non-zero balances among these tokens right now.</p>;
+  }
+
+  return (
+    <div className="scan-holder-table">
+      {held.map((h) => (
+        <div className="scan-holder-row" key={h.address} style={{ gridTemplateColumns: "1fr auto" }}>
+          <code className="scan-mono">{h.symbol}</code>
+          <span>{Number(formatUnits(h.balance!, h.decimals)).toFixed(4)}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
