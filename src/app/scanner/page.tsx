@@ -359,8 +359,31 @@ function Report({ report }: { report: TokenScanReport }) {
           clean report means we found no dangerous powers in the code — it is
           not a promise that a token is safe to buy.
         </p>
+
+        <div className="scan-sources">
+          <span>SOURCES</span>
+          <Source name="Robinhood Chain RPC" status={report.sources.rpc} />
+          <Source name="GoPlus" status={report.sources.goplus} />
+          <Source name="Blockscout" status={report.sources.blockscout} />
+        </div>
       </div>
     </div>
+  );
+}
+
+function Source({
+  name,
+  status,
+}: {
+  name: string;
+  status: "ok" | "unavailable";
+}) {
+  return (
+    <span className={`scan-source scan-source-${status}`}>
+      <i />
+      {name}
+      {status === "unavailable" && <small>unavailable</small>}
+    </span>
   );
 }
 
