@@ -5598,3 +5598,278 @@ a {
   background: rgba(255, 52, 77, 0.08);
   color: #ff8f9c;
 }
+
+/* ============================================================
+   Token security scanner (/scanner) — Robinhood Chain
+   Reuses the fee scanner's shell (.site, .topbar, .wallet-box,
+   .pill, .loader, .error, .bar-cell); everything below is the
+   report itself.
+   ============================================================ */
+
+.scan-shell {
+  width: min(1100px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 56px 0 120px;
+}
+
+.scan-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.scan-intro h1 {
+  margin: 0;
+  font-size: clamp(38px, 6vw, 64px);
+  line-height: .98;
+  letter-spacing: -.03em;
+  font-weight: 600;
+}
+
+.scan-intro h1 span {
+  color: var(--red);
+}
+
+.scan-lead {
+  margin: 0;
+  max-width: 620px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.scan-report {
+  margin-top: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* --- verdict banner --- */
+
+.scan-verdict {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 28px 32px;
+  border: 1px solid var(--line-2);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.scan-verdict-critical { border-left-color: var(--red); }
+.scan-verdict-high-risk { border-left-color: #ff7a45; }
+.scan-verdict-caution { border-left-color: #fbbf24; }
+.scan-verdict-low-risk { border-left-color: var(--green); }
+
+.scan-verdict-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: .18em;
+  color: var(--faint);
+}
+
+.scan-verdict strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+  letter-spacing: -.01em;
+}
+
+.scan-verdict p {
+  margin: 8px 0 0;
+  max-width: 560px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.scan-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.scan-score strong {
+  font-size: 54px;
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+
+.scan-score span {
+  font-size: 13px;
+  color: var(--faint);
+}
+
+/* --- fact strip --- */
+
+.scan-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.scan-fact {
+  padding: 18px 20px;
+  background: var(--panel-2);
+}
+
+.scan-fact span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .16em;
+  color: var(--faint);
+}
+
+.scan-fact strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.scan-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 15px !important;
+}
+
+/* --- section headings --- */
+
+.scan-section-heading {
+  margin-bottom: 18px;
+}
+
+.scan-section-heading span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .18em;
+  color: var(--faint);
+}
+
+.scan-section-heading strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+/* --- findings --- */
+
+.scan-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scan-finding {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.scan-finding strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.scan-finding p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.scan-severity {
+  font-size: 10px;
+  letter-spacing: .12em;
+  padding-top: 4px;
+  color: var(--faint);
+}
+
+.scan-finding-critical { border-color: rgba(255,52,77,.45); }
+.scan-finding-critical .scan-severity { color: var(--red); }
+.scan-finding-high { border-color: rgba(255,122,69,.35); }
+.scan-finding-high .scan-severity { color: #ff7a45; }
+.scan-finding-medium .scan-severity { color: #fbbf24; }
+.scan-finding-good .scan-severity { color: var(--green); }
+
+.scan-evidence {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--panel-3);
+  color: var(--faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* --- holders --- */
+
+.scan-holder-table {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.scan-holder-row {
+  display: grid;
+  grid-template-columns: 40px 160px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.scan-holder-row:last-child { border-bottom: none; }
+
+.scan-holder-rank {
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.scan-holder-row code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* --- limits --- */
+
+.scan-limits ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.scan-note {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-left: 2px solid var(--line-2);
+  color: var(--faint);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .scan-shell { width: calc(100% - 32px); padding-top: 32px; }
+  .scan-finding { grid-template-columns: 1fr; gap: 8px; }
+  .scan-holder-row { grid-template-columns: 28px 1fr; row-gap: 8px; }
+  .scan-holder-row .bar-cell { grid-column: 1 / -1; }
+}
