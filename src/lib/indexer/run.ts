@@ -1,3 +1,4 @@
+import type { Address } from "viem";
 import { getRobinhoodClient } from "../evm/client";
 import { Deadline } from "../evm/deadline";
 import { getSupabaseServer } from "../supabase";
@@ -5,6 +6,23 @@ import { discoverPools, scanSwaps } from "./scan";
 
 const MAX_CHUNKS_PER_SCAN = Number(process.env.INDEXER_MAX_CHUNKS_PER_RUN) || 30;
 const SCAN_BUDGET_MS = 22_000;
+const START_BLOCK = BigInt(process.env.INDEXER_START_BLOCK || "0");
+// This chain does a block roughly every 100ms — 68M+ blocks at the head
+// already, and climbing by ~860k/day. A once-a-day, 60s-per-run cron
+// (this project's actual plan) can make real, verifiable progress every
+// run, but it can never crawl the *full* history in reasonable time.
+// Rather than let both checkpoints spend months grinding through ancient
+// blocks before reaching anything current, a checkpoint that's fallen
+// more than this many blocks behind head jumps straight to
+// `head - LOOKBACK_BLOCKS` instead of continuing linearly — trading
+// "complete since genesis" for "actually reflects recent activity",
+// which is what a *current* Smart Money leaderboard needs anyway.
+// Already-scanned history is never lost by this, only future runs are
+// redirected; a real deployed run is what surfaced this trade-off, not
+// a guess (see the two commits around 2026-09-21 for what a naive
+// from-genesis crawl and an unfiltered getLogs call both ran into).
+const LOOKBACK_BLOCKS = BigInt(process.env.INDEXER_LOOKBACK_BLOCKS || "2000000");
+const POOL_ADDRESS_FETCH_LIMIT = 5000;
 
 export interface IndexerRunResult {
   status: "ok" | "skipped";
@@ -16,6 +34,17 @@ export interface IndexerRunResult {
 
 function maxBigInt(a: bigint, b: bigint): bigint {
   return a > b ? a : b;
+}
+
+function minBigInt(a: bigint, b: bigint): bigint {
+  return a < b ? a : b;
+}
+
+/** Where a checkpoint resumes from: normal +1, or a jump-ahead to the recent window if it's fallen too far behind. */
+function nextFrom(synced: bigint, headBlock: bigint): bigint {
+  const lookbackFloor = headBlock > LOOKBACK_BLOCKS ? headBlock - LOOKBACK_BLOCKS : 0n;
+  const floor = maxBigInt(START_BLOCK, lookbackFloor);
+  return maxBigInt(synced + 1n, floor);
 }
 
 /**
@@ -31,7 +60,6 @@ export async function runIndexerPass(): Promise<IndexerRunResult> {
     return { status: "skipped", reason: "Supabase not configured" };
   }
 
-  const startBlock = BigInt(process.env.INDEXER_START_BLOCK || "0");
   const client = getRobinhoodClient();
   const headBlock = await client.getBlockNumber();
 
@@ -49,8 +77,7 @@ export async function runIndexerPass(): Promise<IndexerRunResult> {
 
   const poolsSynced = BigInt(state.pools_synced_to_block);
   const swapsSynced = BigInt(state.swaps_synced_to_block);
-  const poolsFrom = maxBigInt(poolsSynced === 0n ? startBlock : poolsSynced + 1n, startBlock);
-  const swapsFrom = maxBigInt(swapsSynced === 0n ? startBlock : swapsSynced + 1n, startBlock);
+  const poolsFrom = nextFrom(poolsSynced, headBlock);
 
   const poolsResult =
     poolsFrom <= headBlock
@@ -71,9 +98,31 @@ export async function runIndexerPass(): Promise<IndexerRunResult> {
     if (error) throw new Error(`indexer_pools upsert failed: ${error.message}`);
   }
 
+  // Swaps can only be attributed to pools we already know about (scan.ts
+  // filters by address), so the swap scan is never allowed to run ahead
+  // of pool discovery — capping its target block at how far pools have
+  // synced, not head, guarantees every pool active in a scanned swap
+  // range was already in this address list.
+  const swapsFrom = nextFrom(swapsSynced, headBlock);
+  const swapsCeiling = minBigInt(headBlock, poolsResult.scannedTo);
+
+  const { data: poolRows, error: poolRowsError } = await supabase
+    .from("indexer_pools")
+    .select("pool_address")
+    .limit(POOL_ADDRESS_FETCH_LIMIT);
+  if (poolRowsError) throw new Error(`could not read indexer_pools: ${poolRowsError.message}`);
+  const poolAddresses = (poolRows ?? []).map((r) => r.pool_address as Address);
+
   const swapsResult =
-    swapsFrom <= headBlock
-      ? await scanSwaps(client, swapsFrom, headBlock, MAX_CHUNKS_PER_SCAN, Deadline.in(SCAN_BUDGET_MS))
+    swapsFrom <= swapsCeiling
+      ? await scanSwaps(
+          client,
+          swapsFrom,
+          swapsCeiling,
+          poolAddresses,
+          MAX_CHUNKS_PER_SCAN,
+          Deadline.in(SCAN_BUDGET_MS)
+        )
       : { items: [], scannedTo: swapsSynced, partial: false };
 
   if (swapsResult.items.length > 0) {
