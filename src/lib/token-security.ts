@@ -564,6 +564,16 @@ function distributionFromExplorer(
     top10Percent: top.reduce((sum, holder) => sum + holder.percent, 0),
     burnedPercent: share(burned),
     usedMulticall: false,
+    // The explorer's holder index has balances, not the transfer history
+    // a funding graph needs — nodes without edges, not a claim that none
+    // of these holders are connected.
+    graph: {
+      nodes: holders
+        .slice(0, 30)
+        .map((holder) => ({ address: holder.address, percent: holder.percent, kind: "holder" as const })),
+      edges: [],
+      truncated: false,
+    },
   };
 }
 
