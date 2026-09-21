@@ -7,3 +7,9 @@ node_modules/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Generated Solidity compiler output — regenerate with `npm run compile`
+# inside contracts/, don't hand-edit or commit (large, derived from src/).
+contracts/build.json
+contracts/standard-input.json
+contracts/out.json

@@ -221,6 +221,14 @@ function PositionsSidebar() {
           </span>
           <b>Trading</b>
         </Link>
+        <Link href="/app/bots" className="app-nav-link">
+          <span className="nav-icon nav-copy">
+            <i />
+            <i />
+            <i />
+          </span>
+          <b>Bots</b>
+        </Link>
         <button className="active">
           <span className="nav-icon nav-position">
             <i />

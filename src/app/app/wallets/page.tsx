@@ -174,6 +174,14 @@ function WalletsSidebar() {
           </span>
           <b>Trading</b>
         </Link>
+        <Link href="/app/bots" className="app-nav-link">
+          <span className="nav-icon nav-copy">
+            <i />
+            <i />
+            <i />
+          </span>
+          <b>Bots</b>
+        </Link>
         <Link href="/app/positions" className="app-nav-link">
           <span className="nav-icon nav-position">
             <i />
