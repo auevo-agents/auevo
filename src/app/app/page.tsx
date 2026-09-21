@@ -26,6 +26,7 @@ const NAV_ITEMS: {
   soon?: boolean;
 }[] = [
   { id: "overview", label: "Overview", icon: "" },
+  { id: "market", label: "Market", icon: "nav-bots", href: "/app/market" },
   { id: "trading", label: "Trading", icon: "nav-trading", href: "/app/trading" },
   { id: "positions", label: "Positions", icon: "nav-position", href: "/app/positions" },
   { id: "wallets", label: "Wallets", icon: "nav-wallet", href: "/app/wallets" },

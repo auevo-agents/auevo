@@ -215,3 +215,77 @@ export async function fetchBlockscoutDeployment(
         : null,
   };
 }
+
+export interface BlockscoutLog {
+  /** Raw event data, decoded by the caller — this module stays ABI-agnostic. */
+  data: string;
+  topics: (string | null)[];
+  blockNumber: string | null;
+  timestamp: number | null;
+  transactionHash: string | null;
+}
+
+/**
+ * Raw event logs for a contract, newest first.
+ *
+ * This is what makes a "new pairs" feed possible at all: the Uniswap V3
+ * Factory has emitted a PoolCreated event for every pool on this chain,
+ * but the chain produces a block roughly every 100ms — scanning that
+ * history back to the factory's deployment with eth_getLogs would mean
+ * tens of millions of blocks, the same problem holder distribution ran
+ * into. Blockscout has already indexed it per-address, so one paginated
+ * call here replaces what would otherwise be thousands of RPC calls.
+ */
+export async function fetchBlockscoutLogs(
+  address: Address,
+  maxItems = 200
+): Promise<BlockscoutLog[]> {
+  if (candidateBases().length === 0) return [];
+
+  const logs: BlockscoutLog[] = [];
+  let path = `/api/v2/addresses/${address}/logs`;
+
+  // Blockscout paginates via a cursor object it hands back, not a page
+  // number — each response's own next_page_params is what the next
+  // request echoes, so a couple of hops is the extent of this loop.
+  for (let page = 0; page < 3 && logs.length < maxItems; page++) {
+    const result = await blockscoutFetch<{
+      items?: unknown[];
+      next_page_params?: Record<string, string | number> | null;
+    }>(path, 8_000);
+
+    if (!result || !Array.isArray(result.items)) break;
+
+    for (const item of result.items) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+      const topics = Array.isArray(row.topics)
+        ? (row.topics as unknown[]).map((t) => (typeof t === "string" ? t : null))
+        : [];
+
+      logs.push({
+        data: typeof row.data === "string" ? row.data : "0x",
+        topics,
+        blockNumber:
+          typeof row.block_number === "number" || typeof row.block_number === "string"
+            ? String(row.block_number)
+            : null,
+        timestamp:
+          typeof row.timestamp === "string"
+            ? Math.floor(Date.parse(row.timestamp) / 1000) || null
+            : null,
+        transactionHash:
+          typeof row.transaction_hash === "string" ? row.transaction_hash : null,
+      });
+    }
+
+    if (!result.next_page_params) break;
+
+    const query = new URLSearchParams(
+      Object.entries(result.next_page_params).map(([k, v]) => [k, String(v)])
+    ).toString();
+    path = `/api/v2/addresses/${address}/logs?${query}`;
+  }
+
+  return logs.slice(0, maxItems);
+}
