@@ -6544,3 +6544,70 @@ a {
 .app-empty-text a {
   color: var(--red);
 }
+
+/* --- market table --- */
+
+.market-table {
+  margin-top: 20px;
+  border: 1px solid #1c2226;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.market-row {
+  display: grid;
+  grid-template-columns: 1.4fr .6fr .5fr 1fr 2fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #1c2226;
+  font-size: 12.5px;
+  color: #d7dadb;
+}
+
+.market-row:last-child {
+  border-bottom: none;
+}
+
+.market-head {
+  background: #0a0e10;
+  color: #5a6469;
+  font-size: 10px;
+  letter-spacing: .1em;
+}
+
+.market-pair {
+  font-weight: 500;
+}
+
+.market-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.market-actions a {
+  color: #7c8589;
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.market-actions a:hover {
+  color: var(--red);
+  text-decoration: underline;
+}
+
+.market-trade-link {
+  color: var(--red) !important;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .market-row {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+  }
+  .market-actions {
+    justify-content: flex-start;
+  }
+}

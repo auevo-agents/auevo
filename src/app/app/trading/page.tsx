@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { formatUnits, isAddress, parseUnits, type Address } from "viem";
 import {
   useAccount,
@@ -142,11 +143,20 @@ function isValidAddress(value: string): value is Address {
 }
 
 export default function TradingPage() {
+  return (
+    <Suspense fallback={null}>
+      <TradingApp />
+    </Suspense>
+  );
+}
+
+function TradingApp() {
+  const searchParams = useSearchParams();
   const { address: account, isConnected } = useAccount();
   const publicClient = usePublicClient();
 
-  const [tokenInAddr, setTokenInAddr] = useState("");
-  const [tokenOutAddr, setTokenOutAddr] = useState("");
+  const [tokenInAddr, setTokenInAddr] = useState(searchParams.get("tokenIn") ?? "");
+  const [tokenOutAddr, setTokenOutAddr] = useState(searchParams.get("tokenOut") ?? "");
   const [amountIn, setAmountIn] = useState("");
   const [slippageBps, setSlippageBps] = useState(100); // 1%
   const [quote, setQuote] = useState<Quote>(null);
@@ -459,6 +469,12 @@ function TradingSidebar() {
             <i />
           </span>
           <b>Overview</b>
+        </Link>
+        <Link href="/app/market" className="app-nav-link">
+          <span className="nav-icon nav-bots">
+            <i />
+          </span>
+          <b>Market</b>
         </Link>
         <button className="active">
           <span className="nav-icon nav-trading">
