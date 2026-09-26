@@ -1,3 +1,7 @@
+"use client";
+
+import { useRef, type MouseEvent } from "react";
+
 /**
  * Decorative hero illustration — a dotted cluster with two rotating
  * elliptical rings (CSS keyframes, see .landing2-orbit-ring-1/2 in
@@ -5,6 +9,10 @@
  * Pure decoration, no data behind it — dot positions are a fixed,
  * deterministic grid (not Math.random(), which would differ between the
  * server render and any client re-render).
+ *
+ * Client-only for one thing beyond the rotation: a subtle mouse-driven
+ * parallax tilt, so the illustration visibly reacts to the cursor
+ * instead of only auto-rotating.
  */
 function dotGrid(): { x: number; y: number; r: number }[] {
   const dots: { x: number; y: number; r: number }[] = [];
@@ -34,8 +42,33 @@ const NODES = [
 ];
 
 export function LandingOrbit() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
+    const node = ref.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    node.style.setProperty("--tiltX", `${(-py * 10).toFixed(2)}deg`);
+    node.style.setProperty("--tiltY", `${(px * 10).toFixed(2)}deg`);
+  }
+
+  function handleMouseLeave() {
+    const node = ref.current;
+    if (!node) return;
+    node.style.setProperty("--tiltX", "0deg");
+    node.style.setProperty("--tiltY", "0deg");
+  }
+
   return (
-    <div className="landing2-orbit" aria-hidden="true">
+    <div
+      className="landing2-orbit"
+      aria-hidden="true"
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       <svg viewBox="0 0 200 200" fill="none">
         {DOTS.map((d, i) => (
           <circle key={i} cx={d.x} cy={d.y} r={d.r} className="landing2-orbit-dots" />

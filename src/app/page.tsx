@@ -5,10 +5,15 @@ import { Disclaimer } from "./disclaimer";
 import { LandingOrbit } from "./landing-orbit";
 import { LandingTicker } from "./landing-ticker";
 import { LandingCards } from "./landing-cards";
+import { LandingNav } from "./landing-nav";
+import { LandingMarquee } from "./landing-marquee";
+import { LandingFlow } from "./landing-flow";
+import { Counter } from "./landing-counter";
 import { Reveal } from "./landing-reveal";
 import { getSupabaseServer } from "@/lib/supabase";
 import { loadTickerTokens } from "@/lib/rwa/scanner-data";
 import { buildPremiumRows, sortByAbsPremium } from "@/lib/rwa/scanner";
+import { LIFI_EVM_CHAINS } from "@/lib/rwa/lifi/chains";
 
 /**
  * RWA_SPEC.md section 6's landing page: "живые топы, сканер-превью (топ
@@ -31,14 +36,28 @@ const LIVE_TOPS_LIMIT = 5;
 
 async function loadLandingData() {
   const supabase = getSupabaseServer();
-  if (!supabase) return { premiumRows: [] as ReturnType<typeof buildPremiumRows> };
+  if (!supabase) return { premiumRows: [] as ReturnType<typeof buildPremiumRows>, issuerNames: [] as string[] };
 
-  try {
-    const { summaries } = await loadTickerTokens(supabase);
-    return { premiumRows: sortByAbsPremium(buildPremiumRows(summaries)) };
-  } catch {
-    return { premiumRows: [] as ReturnType<typeof buildPremiumRows> };
-  }
+  const [premiumRows, issuerNames] = await Promise.all([
+    (async () => {
+      try {
+        const { summaries } = await loadTickerTokens(supabase);
+        return sortByAbsPremium(buildPremiumRows(summaries));
+      } catch {
+        return [] as ReturnType<typeof buildPremiumRows>;
+      }
+    })(),
+    (async () => {
+      try {
+        const { data } = await supabase.from("rwa_issuers").select("name");
+        return (data ?? []).map((i) => i.name);
+      } catch {
+        return [] as string[];
+      }
+    })(),
+  ]);
+
+  return { premiumRows, issuerNames };
 }
 
 function formatUsd(value: number | null): string {
@@ -105,9 +124,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     redirect(`/legacy/fees?wallet=${encodeURIComponent(address)}`);
   }
 
-  const { premiumRows } = await loadLandingData();
+  const { premiumRows, issuerNames } = await loadLandingData();
   const tickerRows = premiumRows.map((r) => ({ ticker: r.ticker, priceUsd: r.priceUsd, premiumBps: r.premiumBps! }));
   const liveTops = premiumRows.slice(0, LIVE_TOPS_LIMIT);
+  const chainNames = LIFI_EVM_CHAINS.map((c) => c.chain.name);
 
   return (
     <main className="landing2">
@@ -115,12 +135,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <Link href="/" className="landing-brand">
           auevo<span>_</span>
         </Link>
-        <Link href="/app" className="landing-cta-ghost">
-          Open workspace →
-        </Link>
+        <LandingNav />
       </header>
 
       <LandingTicker rows={tickerRows} />
+      <LandingMarquee items={issuerNames} />
+      <LandingMarquee items={chainNames} reverse />
 
       <section className="landing2-hero">
         <div className="landing2-hero-grid">
@@ -200,10 +220,45 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </section>
       </Reveal>
 
+      <Reveal>
+        <section className="landing2-section">
+          <p className="landing2-section-label">03 / By the numbers</p>
+          <h2 className="landing2-section-title">Every issuer, every chain, one registry.</h2>
+          <div className="landing2-stats">
+            <div className="landing2-stat">
+              <span className="landing2-stat-value">
+                <Counter value={issuerNames.length} />
+              </span>
+              <span className="landing2-stat-label">Issuers tracked</span>
+            </div>
+            <div className="landing2-stat">
+              <span className="landing2-stat-value">
+                <Counter value={chainNames.length} />
+              </span>
+              <span className="landing2-stat-label">Chains supported</span>
+            </div>
+            <div className="landing2-stat">
+              <span className="landing2-stat-value">
+                <Counter value={1} />
+              </span>
+              <span className="landing2-stat-label">Signature per basket trade</span>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="landing2-section">
+          <p className="landing2-section-label">04 / How it flows</p>
+          <h2 className="landing2-section-title">From issuer to your wallet, in one pass.</h2>
+          <LandingFlow />
+        </section>
+      </Reveal>
+
       {liveTops.length > 0 && (
         <Reveal>
           <section className="landing2-section">
-            <p className="landing2-section-label">03 / Live from the scanner</p>
+            <p className="landing2-section-label">05 / Live from the scanner</p>
             <h2 className="landing2-section-title">Today&apos;s biggest premiums and discounts.</h2>
             <div className="landing2-tops">
               {liveTops.map((row) => {
