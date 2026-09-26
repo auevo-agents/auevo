@@ -17,6 +17,13 @@ export const maxDuration = 10;
  * failure. There is deliberately no "insert on success only" path — a
  * dropped browser tab between building and confirming should still show
  * up as a stuck "pending" row rather than vanish.
+ *
+ * RWA_SPEC.md Phase 4 extends this same table/route to LI.FI swaps and
+ * bridges (any of the six chains in rwa/lifi/chains.ts, not just
+ * Robinhood Chain) — `chainId`/`toChainId`/`bridgeTool` are new, optional
+ * fields for that; omitted, they default to Phase 2's original
+ * single-chain-on-Robinhood-Chain shape so that caller (swap-panel.tsx)
+ * needs no changes.
  */
 export async function POST(req: NextRequest) {
   const supabase = getSupabaseServer();
@@ -25,7 +32,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
 
-  const { account, recipient, srcToken, dstToken, amountIn, route, feeBps } = body;
+  const { account, recipient, srcToken, dstToken, amountIn, route, feeBps, chainId, toChainId, bridgeTool } = body;
   if (!account || !recipient || !srcToken || !dstToken || !amountIn || !route) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
@@ -35,7 +42,9 @@ export async function POST(req: NextRequest) {
     .insert({
       account,
       recipient,
-      chain_id: robinhoodChain.id,
+      chain_id: typeof chainId === "number" ? chainId : robinhoodChain.id,
+      to_chain_id: typeof toChainId === "number" ? toChainId : null,
+      bridge_tool: bridgeTool ?? null,
       src_token: srcToken,
       dst_token: dstToken,
       amount_in: amountIn,

@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@lifi/types": "^18.12.1",
     "@supabase/supabase-js": "^2.116.0",
     "@tanstack/react-query": "^5.103.2",
     "@types/d3-force": "^3.0.10",

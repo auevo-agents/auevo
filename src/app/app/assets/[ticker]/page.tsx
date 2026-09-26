@@ -9,11 +9,10 @@ import { USDG } from "@/lib/rwa/dex/addresses";
 import { robinhoodChain } from "@/lib/chains";
 
 /**
- * RWA_SPEC.md Phase 3's asset detail page. The swap card only appears
- * for the Robinhood Chain listing (Phase 2 built that path); every other
- * chain's row shows a disabled "bridge coming in Phase 4" state instead
- * of a broken trade button, per RWA_SPEC.md section 6's own note on this
- * exact page.
+ * RWA_SPEC.md Phase 3's asset detail page. The swap card only appears for
+ * the Robinhood Chain listing (Phase 2 built that path); every other
+ * chain's row links to /app/swap's Bridge tab instead (Phase 4), prefilled
+ * with that row's chain/token via query params — see swap/page.tsx.
  */
 
 const CHAIN_NAMES: Record<number, string> = {
@@ -191,9 +190,9 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
                 {isRobinhood ? (
                   <a href="#top">trade ↑</a>
                 ) : (
-                  <span style={{ color: "#5a6469" }} title="Cross-chain bridging is Phase 4 — not wired up yet">
-                    bridge · soon
-                  </span>
+                  <Link href={`/app/swap?mode=bridge&toChain=${t.chainId}&toToken=${t.address}`} title={`Bridge into ${chainName(t.chainId)} to buy this`}>
+                    bridge →
+                  </Link>
                 )}
               </span>
             </div>
