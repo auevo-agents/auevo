@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/index-chain",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/rwa-registry",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/rwa-prices",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
