@@ -6,7 +6,7 @@ import { LandingOrbit } from "./landing-orbit";
 import { LandingTicker } from "./landing-ticker";
 import { LandingCards } from "./landing-cards";
 import { LandingNav } from "./landing-nav";
-import { LandingMarquee } from "./landing-marquee";
+import { PartnerRow } from "./landing-partners";
 import { LandingFlow } from "./landing-flow";
 import { Counter } from "./landing-counter";
 import { Reveal } from "./landing-reveal";
@@ -78,6 +78,7 @@ const FEATURE_CARDS = [
     body: "Every tokenized stock and ETF this app's registry has found, across every issuer and chain, with live premium and risk score.",
     tag: "Live · Robinhood Chain",
     href: "/app/assets",
+    mockup: "chips",
   },
   {
     num: "02",
@@ -85,6 +86,7 @@ const FEATURE_CARDS = [
     body: "Premium, arbitrage, contract risk, liquidity depth and new listings — ranked, not just listed.",
     tag: "6 tabs",
     href: "/app/scanner",
+    mockup: "compare",
   },
   {
     num: "03",
@@ -92,6 +94,7 @@ const FEATURE_CARDS = [
     body: "Buy 5–10 stocks in one wallet signature through Uniswap v4 — no N-signature flow.",
     tag: "One signature",
     href: "/app/baskets",
+    mockup: "checklist",
   },
   {
     num: "04",
@@ -99,6 +102,7 @@ const FEATURE_CARDS = [
     body: "v4 RWA/USDG pools on Robinhood Chain — liquidity, 24h volume and fee APR.",
     tag: "Uniswap v4",
     href: "/app/pools",
+    mockup: "apr",
   },
   {
     num: "05",
@@ -106,6 +110,7 @@ const FEATURE_CARDS = [
     body: "Trade on Robinhood Chain, or bridge tokenized assets in from five other chains via LI.FI.",
     tag: "Best route",
     href: "/app/swap",
+    mockup: "compare",
   },
   {
     num: "06",
@@ -113,6 +118,7 @@ const FEATURE_CARDS = [
     body: "Premium above a threshold, a new listing, or a whale trade — delivered to the web or Telegram.",
     tag: "Web + Telegram",
     href: "/app/scanner",
+    mockup: "alert",
   },
 ] as const;
 
@@ -139,8 +145,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </header>
 
       <LandingTicker rows={tickerRows} />
-      <LandingMarquee items={issuerNames} />
-      <LandingMarquee items={chainNames} reverse />
+      <PartnerRow items={[...issuerNames, ...chainNames]} />
 
       <section className="landing2-hero">
         <div className="landing2-hero-grid">
@@ -216,7 +221,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <section className="landing2-section">
           <p className="landing2-section-label">02 / The workspace</p>
           <h2 className="landing2-section-title">Six tools, one wallet.</h2>
-          <LandingCards cards={FEATURE_CARDS} />
+          <LandingCards cards={FEATURE_CARDS} tickers={tickerRows.map((r) => r.ticker)} />
         </section>
       </Reveal>
 
