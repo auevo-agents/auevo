@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Disclaimer } from "../../disclaimer";
 
 interface KaminoReserve {
@@ -54,23 +54,51 @@ export default function LendPage() {
     };
   }, []);
 
+  const totals = useMemo(
+    () =>
+      reserves.reduce(
+        (acc, r) => ({
+          supplied: acc.supplied + (r.totalSupplyUsd ?? 0),
+          borrowed: acc.borrowed + (r.totalBorrowUsd ?? 0),
+        }),
+        { supplied: 0, borrowed: 0 }
+      ),
+    [reserves]
+  );
+
   return (
     <>
-      <header className="product-header">
-        <div>
-          <h3>Lend</h3>
-          <p>Read-only lending rates for tokenized stocks</p>
+      <div className="dash-hero">
+        <p className="dash-eyebrow">Read-only · Kamino xStocks</p>
+        <h1 className="dash-title">Earn on your stocks.</h1>
+        <p className="dash-subtitle">Supply a tokenized stock as collateral, or borrow against it — rates straight from Kamino&apos;s own market.</p>
+      </div>
+
+      {configured === true && !error && reserves.length > 0 && (
+        <div className="dash-stat-strip">
+          <div className="dash-stat">
+            <div className="dash-stat-value">{reserves.length}</div>
+            <div className="dash-stat-label">RESERVES</div>
+          </div>
+          <div className="dash-stat">
+            <div className="dash-stat-value">{formatUsd(totals.supplied)}</div>
+            <div className="dash-stat-label">TOTAL SUPPLIED</div>
+          </div>
+          <div className="dash-stat">
+            <div className="dash-stat-value">{formatUsd(totals.borrowed)}</div>
+            <div className="dash-stat-label">TOTAL BORROWED</div>
+          </div>
         </div>
-      </header>
+      )}
 
       {configured === null && !error && <div className="app-empty">Loading…</div>}
 
       {configured === false && (
-        <div className="app-empty app-empty-text">
-          <p>
-            <strong>Not configured yet.</strong> Kamino Finance added tokenized-stock (xStocks) collateral to a
-            real lending market in 2026, and Kamino does publish a public read API for market/reserve data — but
-            this environment&apos;s network access couldn&apos;t reach{" "}
+        <div className="dash-list-card" style={{ padding: 24 }}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "var(--muted)" }}>
+            <strong style={{ color: "#f2f4f3" }}>Not configured yet.</strong> Kamino Finance added tokenized-stock
+            (xStocks) collateral to a real lending market in 2026, and Kamino does publish a public read API for
+            market/reserve data — but this environment&apos;s network access couldn&apos;t reach{" "}
             <code>api.kamino.finance</code> to confirm that market&apos;s exact on-chain pubkey or double-check the
             API&apos;s field names, and this project doesn&apos;t guess addresses. Once someone opens{" "}
             <code>api.kamino.finance/documentation/</code> directly and confirms it, set{" "}
@@ -92,23 +120,17 @@ export default function LendPage() {
 
       {configured === true && !error && reserves.length > 0 && (
         <>
-          <div className="desk-scroll">
-            <div className="money-row money-row-nopair money-head">
-              <span>RESERVE</span>
-              <span className="desk-col-right">SUPPLY APY</span>
-              <span className="desk-col-right">BORROW APY</span>
-              <span className="desk-col-right">SUPPLIED</span>
-              <span className="desk-col-right">BORROWED</span>
-            </div>
+          <div className="dash-list-card" style={{ marginTop: 8 }}>
             {reserves.map((r) => (
-              <div key={r.reservePubkey} className="money-row money-row-nopair">
-                <span>
-                  <small style={{ color: "#5a6469" }}>{r.liquidityTokenMint}</small>
+              <div key={r.reservePubkey} className="dash-list-row" style={{ gridTemplateColumns: "1fr auto auto auto auto" }}>
+                <span className="dash-list-name">
+                  <b>{r.liquidityTokenMint.slice(0, 4)}…{r.liquidityTokenMint.slice(-4)}</b>
+                  <small>Kamino xStocks market</small>
                 </span>
-                <span className="desk-col-right desk-change-pos">{formatPct(r.supplyApyPct)}</span>
-                <span className="desk-col-right">{formatPct(r.borrowApyPct)}</span>
-                <span className="desk-col-right">{formatUsd(r.totalSupplyUsd)}</span>
-                <span className="desk-col-right">{formatUsd(r.totalBorrowUsd)}</span>
+                <span className="dash-list-col desk-change-pos">{formatPct(r.supplyApyPct)}</span>
+                <span className="dash-list-col dash-list-col-hide-mobile">{formatPct(r.borrowApyPct)}</span>
+                <span className="dash-list-col">{formatUsd(r.totalSupplyUsd)}</span>
+                <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(r.totalBorrowUsd)}</span>
               </div>
             ))}
           </div>
