@@ -1,6 +1,7 @@
 import { getSupabaseServer } from "@/lib/supabase";
 import { fetchTokenPricesUsd } from "./gecko-price";
 import { fetchReferencePrice, computePremiumBps } from "./reference-price";
+import { withFetchRetry } from "./db-retry";
 
 /**
  * RWA_SPEC.md Phase 1's price/liquidity cron — spec wants "каждые 5 мин",
@@ -39,10 +40,9 @@ export async function runPricesPass(): Promise<PricesRunResult> {
     return { status: "skipped", reason: "Supabase not configured" };
   }
 
-  const { data: tokens, error: tokensError } = await supabase
-    .from("rwa_tokens")
-    .select("chain_id, address, underlying_ticker")
-    .eq("verified", true);
+  const { data: tokens, error: tokensError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("chain_id, address, underlying_ticker").eq("verified", true)
+  );
   if (tokensError) {
     throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
   }
@@ -99,7 +99,7 @@ export async function runPricesPass(): Promise<PricesRunResult> {
     .filter((r) => r.price_usd !== null);
 
   if (rows.length > 0) {
-    const { error } = await supabase.from("rwa_prices").insert(rows);
+    const { error } = await withFetchRetry(() => supabase.from("rwa_prices").insert(rows));
     if (error) throw new Error(`rwa_prices insert failed: ${error.message}`);
   }
 

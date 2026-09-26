@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildAssetSummaries, latestPricesByKey, type AssetSummary } from "./catalog";
 import { robinhoodChain } from "@/lib/chains";
+import { withFetchRetry } from "./db-retry";
 
 const PRICE_ROWS_LIMIT = 2000;
 
@@ -16,10 +17,14 @@ export async function loadTickerTokens(supabase: SupabaseClient): Promise<{ erro
     { data: priceRows, error: pricesError },
     { data: riskRows, error: riskError },
   ] = await Promise.all([
-    supabase.from("rwa_underlyings").select("ticker, name, category, exchange"),
-    supabase.from("rwa_tokens").select("chain_id, address, underlying_ticker, issuer_id, symbol, decimals").eq("verified", true),
-    supabase.from("rwa_prices").select("chain_id, token_address, price_usd, premium_bps, ts").order("ts", { ascending: false }).limit(PRICE_ROWS_LIMIT),
-    supabase.from("rwa_risk").select("chain_id, token_address, score"),
+    withFetchRetry(() => supabase.from("rwa_underlyings").select("ticker, name, category, exchange")),
+    withFetchRetry(() =>
+      supabase.from("rwa_tokens").select("chain_id, address, underlying_ticker, issuer_id, symbol, decimals").eq("verified", true)
+    ),
+    withFetchRetry(() =>
+      supabase.from("rwa_prices").select("chain_id, token_address, price_usd, premium_bps, ts").order("ts", { ascending: false }).limit(PRICE_ROWS_LIMIT)
+    ),
+    withFetchRetry(() => supabase.from("rwa_risk").select("chain_id, token_address, score")),
   ]);
 
   if (underlyingsError) return { error: `Could not read rwa_underlyings: ${underlyingsError.message}`, summaries: [] };

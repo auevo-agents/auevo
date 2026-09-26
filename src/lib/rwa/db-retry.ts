@@ -18,14 +18,17 @@
  * does not retry indefinitely or mask a persistent outage — see each
  * caller's own handling of a retry that still fails.
  */
-export async function withFetchRetry<T>(
+export async function withFetchRetry<T, E extends { message: string } = { message: string }>(
   // Supabase's query builders are thenable but not nominally `Promise`
   // (structurally missing .catch/.finally), so this accepts anything
   // `await`-able with the right resolved shape rather than a strict Promise.
-  fn: () => PromiseLike<{ data: T; error: { message: string } | null }>,
+  // The error type is generic (not fixed to `{message}`) so a caller that
+  // inspects other PostgrestError fields (e.g. `.code` for a unique-
+  // violation) keeps that field typed, rather than losing it to widening.
+  fn: () => PromiseLike<{ data: T; error: E | null }>,
   retries = 1,
   delayMs = 300
-): Promise<{ data: T; error: { message: string } | null }> {
+): Promise<{ data: T; error: E | null }> {
   let result = await fn();
   let attempt = 0;
   while (result.error && /fetch failed/i.test(result.error.message) && attempt < retries) {

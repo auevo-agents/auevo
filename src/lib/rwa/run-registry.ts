@@ -50,6 +50,7 @@ export interface RegistryRunResult {
   robinhood?: { discovered: number; syncedTo: string; partial: boolean };
   xstocks?: { discovered: number; available: boolean };
   pools?: { refreshed: number; error?: string | null };
+  checkpointError?: string | null;
 }
 
 export async function runRegistryPass(): Promise<RegistryRunResult> {
@@ -58,9 +59,9 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
     return { status: "skipped", reason: "Supabase not configured" };
   }
 
-  const { data: underlyingRows, error: underlyingsError } = await supabase
-    .from("rwa_underlyings")
-    .select("ticker");
+  const { data: underlyingRows, error: underlyingsError } = await withFetchRetry(() =>
+    supabase.from("rwa_underlyings").select("ticker")
+  );
   if (underlyingsError) {
     throw new Error(`Could not read rwa_underlyings: ${underlyingsError.message}`);
   }
@@ -69,11 +70,9 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
   const client = getRobinhoodClient();
   const headBlock = await client.getBlockNumber();
 
-  const { data: state, error: stateError } = await supabase
-    .from("rwa_registry_state")
-    .select("synced_to_block")
-    .eq("id", 1)
-    .single();
+  const { data: state, error: stateError } = await withFetchRetry(() =>
+    supabase.from("rwa_registry_state").select("synced_to_block").eq("id", 1).single()
+  );
   if (stateError || !state) {
     throw new Error(
       `Could not read rwa_registry_state — has 0005_rwa_registry_state.sql been applied? (${stateError?.message ?? "no row"})`
@@ -114,18 +113,20 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
     );
 
     if (matched.length > 0) {
-      const { error } = await supabase.from("rwa_tokens").upsert(
-        matched.map((c) => ({
-          chain_id: robinhoodChain.id,
-          address: c.address,
-          underlying_ticker: c.symbol,
-          issuer_id: "robinhood",
-          symbol: c.symbol,
-          decimals: c.decimals,
-          verified: true,
-          first_seen_block: c.firstSeenBlock,
-        })),
-        { onConflict: "chain_id,address" }
+      const { error } = await withFetchRetry(() =>
+        supabase.from("rwa_tokens").upsert(
+          matched.map((c) => ({
+            chain_id: robinhoodChain.id,
+            address: c.address,
+            underlying_ticker: c.symbol,
+            issuer_id: "robinhood",
+            symbol: c.symbol,
+            decimals: c.decimals,
+            verified: true,
+            first_seen_block: c.firstSeenBlock,
+          })),
+          { onConflict: "chain_id,address" }
+        )
       );
       if (error) throw new Error(`rwa_tokens upsert (robinhood) failed: ${error.message}`);
       robinhoodDiscovered = matched.length;
@@ -174,10 +175,17 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
     }
   }
 
-  await supabase
-    .from("rwa_registry_state")
-    .update({ synced_to_block: scanResult.scannedTo.toString(), updated_at: new Date().toISOString() })
-    .eq("id", 1);
+  let checkpointError: string | null = null;
+  const { error: checkpointUpdateError } = await withFetchRetry(() =>
+    supabase
+      .from("rwa_registry_state")
+      .update({ synced_to_block: scanResult.scannedTo.toString(), updated_at: new Date().toISOString() })
+      .eq("id", 1)
+  );
+  // Never throws even after the retry: token discovery above already
+  // succeeded and is worth keeping regardless, and a stuck checkpoint
+  // just means the next run rescans a slightly wider range, not data loss.
+  if (checkpointUpdateError) checkpointError = `rwa_registry_state checkpoint update failed: ${checkpointUpdateError.message}`;
 
   // xStocks: a fresh full fetch every run, not a checkpointed scan — it's
   // one HTTP request against a token list that changes rarely, not a
@@ -191,17 +199,19 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       .filter((t): t is typeof t & { ticker: string } => t.ticker !== null && knownTickers.has(t.ticker));
 
     if (matched.length > 0) {
-      const { error } = await supabase.from("rwa_tokens").upsert(
-        matched.map((t) => ({
-          chain_id: t.chainId,
-          address: t.address,
-          underlying_ticker: t.ticker,
-          issuer_id: "xstocks",
-          symbol: t.symbol,
-          decimals: t.decimals,
-          verified: true,
-        })),
-        { onConflict: "chain_id,address" }
+      const { error } = await withFetchRetry(() =>
+        supabase.from("rwa_tokens").upsert(
+          matched.map((t) => ({
+            chain_id: t.chainId,
+            address: t.address,
+            underlying_ticker: t.ticker,
+            issuer_id: "xstocks",
+            symbol: t.symbol,
+            decimals: t.decimals,
+            verified: true,
+          })),
+          { onConflict: "chain_id,address" }
+        )
       );
       if (error) throw new Error(`rwa_tokens upsert (xstocks) failed: ${error.message}`);
       xstocksDiscovered = matched.length;
@@ -218,6 +228,7 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
     },
     xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null },
     pools: { refreshed: poolsRefreshed, error: poolsError },
+    checkpointError,
   };
 }
 

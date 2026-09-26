@@ -1,6 +1,7 @@
 import type { Address } from "viem";
 import { getSupabaseServer } from "@/lib/supabase";
 import { scanTokenRiskByChain } from "./risk";
+import { withFetchRetry } from "./db-retry";
 
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000; // rescan a token at most once a day
 const MAX_SCANS_PER_RUN = 15; // each scan is several sequential RPC calls across up to two addresses (proxy + implementation) — bounded to stay well inside a cron route's own time budget
@@ -31,11 +32,15 @@ export async function runRiskPass(): Promise<RiskRunResult> {
   const supabase = getSupabaseServer();
   if (!supabase) return { status: "skipped", reason: "Supabase not configured" };
 
-  const { data: tokens, error: tokensError } = await supabase.from("rwa_tokens").select("chain_id, address").eq("verified", true);
+  const { data: tokens, error: tokensError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("chain_id, address").eq("verified", true)
+  );
   if (tokensError) throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
   if (!tokens || tokens.length === 0) return { status: "ok", due: 0, scanned: 0, failed: 0 };
 
-  const { data: existing, error: riskError } = await supabase.from("rwa_risk").select("chain_id, token_address, checked_at");
+  const { data: existing, error: riskError } = await withFetchRetry(() =>
+    supabase.from("rwa_risk").select("chain_id, token_address, checked_at")
+  );
   if (riskError) throw new Error(`Could not read rwa_risk: ${riskError.message}`);
 
   const checkedAtByKey = new Map((existing ?? []).map((r) => [`${r.chain_id}:${r.token_address.toLowerCase()}`, Date.parse(r.checked_at)]));
@@ -53,22 +58,24 @@ export async function runRiskPass(): Promise<RiskRunResult> {
   for (const token of due) {
     try {
       const result = await scanTokenRiskByChain(token.chain_id, token.address as Address);
-      const { error } = await supabase.from("rwa_risk").upsert(
-        {
-          chain_id: token.chain_id,
-          token_address: token.address,
-          admin_address: result.adminAddress,
-          upgradeable: result.upgradeable,
-          can_pause: result.canPause,
-          can_blacklist: result.canBlacklist,
-          can_force_transfer: result.canForceTransfer,
-          can_burn_others: result.canBurnOthers,
-          mint_role_holders: result.mintRoleHolders,
-          score: result.isContract ? result.score : null,
-          checked_at: result.checkedAt,
-          raw: result,
-        },
-        { onConflict: "chain_id,token_address" }
+      const { error } = await withFetchRetry(() =>
+        supabase.from("rwa_risk").upsert(
+          {
+            chain_id: token.chain_id,
+            token_address: token.address,
+            admin_address: result.adminAddress,
+            upgradeable: result.upgradeable,
+            can_pause: result.canPause,
+            can_blacklist: result.canBlacklist,
+            can_force_transfer: result.canForceTransfer,
+            can_burn_others: result.canBurnOthers,
+            mint_role_holders: result.mintRoleHolders,
+            score: result.isContract ? result.score : null,
+            checked_at: result.checkedAt,
+            raw: result,
+          },
+          { onConflict: "chain_id,token_address" }
+        )
       );
       if (error) throw new Error(`rwa_risk upsert failed for ${token.chain_id}:${token.address}: ${error.message}`);
       scanned++;
