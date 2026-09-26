@@ -7803,3 +7803,57 @@ a {
   max-width: 720px;
   margin: 0 auto;
 }
+
+/* --- RWA Assets/Issuers (Phase 3) --- */
+
+.money-row-link {
+  color: inherit;
+  text-decoration: none;
+  transition: background-color .1s ease;
+}
+
+.money-row-link:hover {
+  background: rgba(255,255,255,.02);
+}
+
+.issuer-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.issuer-card {
+  padding: 16px;
+  border: 1px solid #1c2226;
+  border-radius: 10px;
+  background: #0b0f12;
+}
+
+.issuer-card h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #f2f4f3;
+}
+
+.issuer-card p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9aa3a8;
+}
+
+.issuer-card-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: #5a6469;
+}
+
+.asset-token-matrix {
+  margin-top: 12px;
+}
+
+.asset-chart-wrap {
+  margin: 16px 0;
+}

@@ -31,7 +31,7 @@ export const NAV_ITEMS: {
   soon?: boolean;
 }[] = [
   { id: "overview", label: "Overview", href: "/app" },
-  { id: "assets", label: "Assets", href: "/app/assets", soon: true },
+  { id: "assets", label: "Assets", href: "/app/assets" },
   { id: "market", label: "Market", href: "/app/market" },
   { id: "smart-money", label: "Smart Money", href: "/app/smart-money" },
   { id: "dex", label: "DEX", href: "/app/trading" },
@@ -39,7 +39,7 @@ export const NAV_ITEMS: {
   { id: "baskets", label: "Baskets", href: "/app/baskets", soon: true },
   { id: "pools", label: "Pools", href: "/app/pools", soon: true },
   { id: "lend", label: "Lend", href: "/app/lend", soon: true },
-  { id: "issuers", label: "Issuers", href: "/app/issuers", soon: true },
+  { id: "issuers", label: "Issuers", href: "/app/issuers" },
   { id: "scanner", label: "Scanner", href: "/app/scanner", soon: true },
   { id: "explorer", label: "Explorer", href: "/app/explorer", soon: true },
   { id: "portfolio", label: "Portfolio", href: "/app/portfolio" },
