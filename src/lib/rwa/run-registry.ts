@@ -9,6 +9,7 @@ import { fetchXstocksTokenList, tickerFromXstocksSymbol } from "./xstocks";
 import { STATE_VIEW, USDG } from "./dex/addresses";
 import { buildPoolKey } from "./dex/pool-key";
 import { computeLiquidityUsd, computeVolume24hUsd } from "./pools";
+import { withFetchRetry } from "./db-retry";
 
 /**
  * One incremental registry pass — RWA_SPEC.md Phase 1's
@@ -153,7 +154,9 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
               hooks: p.hooks,
             };
           });
-          const { error: upsertError } = await supabase.from("rwa_pools").upsert(poolRows, { onConflict: "chain_id,pool_id" });
+          const { error: upsertError } = await withFetchRetry(() =>
+            supabase.from("rwa_pools").upsert(poolRows, { onConflict: "chain_id,pool_id" })
+          );
           if (upsertError) throw new Error(`rwa_pools upsert failed: ${upsertError.message}`);
         }
       } catch (err) {
@@ -253,22 +256,22 @@ const VOLUME_WINDOW_MS = 24 * 60 * 60 * 1000;
  * this cron's existing budget.
  */
 async function refreshPoolMetrics(client: RobinhoodClient, supabase: SupabaseClient): Promise<{ refreshed: number }> {
-  const { data: pools, error: poolsError } = await supabase
-    .from("rwa_pools")
-    .select("pool_id, token0, token1, fee")
-    .eq("chain_id", robinhoodChain.id)
-    .eq("dex", "uniswap_v4");
+  const { data: pools, error: poolsError } = await withFetchRetry(() =>
+    supabase.from("rwa_pools").select("pool_id, token0, token1, fee").eq("chain_id", robinhoodChain.id).eq("dex", "uniswap_v4")
+  );
   if (poolsError) throw new Error(`Could not read rwa_pools: ${poolsError.message}`);
   if (!pools || pools.length === 0) return { refreshed: 0 };
 
   const nonUsdgAddresses = pools.map((p) => (p.token0.toLowerCase() === USDG.toLowerCase() ? p.token1 : p.token0));
-  const { data: priceRows, error: pricesError } = await supabase
-    .from("rwa_prices")
-    .select("token_address, price_usd, ts")
-    .eq("chain_id", robinhoodChain.id)
-    .in("token_address", nonUsdgAddresses)
-    .order("ts", { ascending: false })
-    .limit(2000);
+  const { data: priceRows, error: pricesError } = await withFetchRetry(() =>
+    supabase
+      .from("rwa_prices")
+      .select("token_address, price_usd, ts")
+      .eq("chain_id", robinhoodChain.id)
+      .in("token_address", nonUsdgAddresses)
+      .order("ts", { ascending: false })
+      .limit(2000)
+  );
   if (pricesError) throw new Error(`Could not read rwa_prices: ${pricesError.message}`);
   const priceByAddress = new Map<string, number | null>();
   for (const row of priceRows ?? []) {
@@ -277,15 +280,17 @@ async function refreshPoolMetrics(client: RobinhoodClient, supabase: SupabaseCli
   }
 
   const since = new Date(Date.now() - VOLUME_WINDOW_MS).toISOString();
-  const { data: swapRows, error: swapsError } = await supabase
-    .from("indexer_swaps")
-    .select("pool_id, amount0, amount1")
-    .eq("dex", "uniswap_v4")
-    .in(
-      "pool_id",
-      pools.map((p) => p.pool_id)
-    )
-    .gte("block_timestamp", since);
+  const { data: swapRows, error: swapsError } = await withFetchRetry(() =>
+    supabase
+      .from("indexer_swaps")
+      .select("pool_id, amount0, amount1")
+      .eq("dex", "uniswap_v4")
+      .in(
+        "pool_id",
+        pools.map((p) => p.pool_id)
+      )
+      .gte("block_timestamp", since)
+  );
   if (swapsError) throw new Error(`Could not read indexer_swaps: ${swapsError.message}`);
   const swapsByPoolId = new Map<string, { amount0: number; amount1: number }[]>();
   for (const row of swapRows ?? []) {
@@ -316,12 +321,9 @@ async function refreshPoolMetrics(client: RobinhoodClient, supabase: SupabaseCli
     // the other side's decimals come from rwa_tokens (already required to
     // exist there, since a pool is only ever persisted for a matched,
     // already-verified token).
-    const { data: tokenRow } = await supabase
-      .from("rwa_tokens")
-      .select("decimals")
-      .eq("chain_id", robinhoodChain.id)
-      .eq("address", nonUsdgAddress)
-      .maybeSingle();
+    const { data: tokenRow } = await withFetchRetry(() =>
+      supabase.from("rwa_tokens").select("decimals").eq("chain_id", robinhoodChain.id).eq("address", nonUsdgAddress).maybeSingle()
+    );
     const nonUsdgDecimals = tokenRow?.decimals ?? null;
     if (nonUsdgDecimals === null) continue;
 
@@ -339,11 +341,13 @@ async function refreshPoolMetrics(client: RobinhoodClient, supabase: SupabaseCli
     const usdgSideAmounts = swaps.map((s) => (usdgIsToken0 ? s.amount0 : s.amount1));
     const volume24hUsd = computeVolume24hUsd(usdgSideAmounts);
 
-    const { error: updateError } = await supabase
-      .from("rwa_pools")
-      .update({ liquidity_usd: liquidityUsd, volume_24h_usd: volume24hUsd, updated_at: new Date().toISOString() })
-      .eq("chain_id", robinhoodChain.id)
-      .eq("pool_id", pool.pool_id);
+    const { error: updateError } = await withFetchRetry(() =>
+      supabase
+        .from("rwa_pools")
+        .update({ liquidity_usd: liquidityUsd, volume_24h_usd: volume24hUsd, updated_at: new Date().toISOString() })
+        .eq("chain_id", robinhoodChain.id)
+        .eq("pool_id", pool.pool_id)
+    );
     if (updateError) throw new Error(`rwa_pools update failed: ${updateError.message}`);
     refreshed++;
   }
