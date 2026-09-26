@@ -361,7 +361,6 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                       Run Token Scanner →
                     </Link>
                   )}
-                  <Link href={`/app/market/t/${address}/map`}>Constellation Map →</Link>
                   <a
                     href={`https://robinhoodchain.blockscout.com/address/${
                       pool.baseToken.address ?? pool.poolAddress ?? ""

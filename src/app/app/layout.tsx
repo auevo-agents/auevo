@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppProviders } from "./providers";
 import { Sidebar } from "./sidebar";
+import { GeoBanner } from "../geo-banner";
 
 /**
  * Internal workspace — not the public marketing site. Kept out of the
@@ -15,11 +16,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AppSectionLayout({ children }: LayoutProps<"/app">) {
+export default async function AppSectionLayout({ children }: LayoutProps<"/app">) {
   return (
     <AppProviders>
       <main className="app-shell">
         <Sidebar />
+        <GeoBanner />
         <div className="product-main app-main">{children}</div>
       </main>
     </AppProviders>

@@ -91,8 +91,8 @@ export default function AppOverviewPage() {
               blacklist, proxy, liquidity.
             </p>
           </Link>
-          <Link href="/fees" className="app-tool-card">
-            <strong>Fee Scanner</strong>
+          <Link href="/legacy/fees" className="app-tool-card">
+            <strong>Fee Scanner (legacy)</strong>
             <p>How much a Solana wallet has paid trading bots in fees.</p>
           </Link>
         </div>
