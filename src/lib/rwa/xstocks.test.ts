@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchXstocksTokenList, tickerFromXstocksSymbol } from "./xstocks";
+import { fetchXstocksTokenList, fetchXstocksTokenListWithDiagnostics, tickerFromXstocksSymbol } from "./xstocks";
 
 const originalFetch = global.fetch;
 
@@ -82,5 +82,40 @@ describe("fetchXstocksTokenList", () => {
       throw new Error("network error");
     }) as typeof fetch;
     expect(await fetchXstocksTokenList()).toBeNull();
+  });
+
+  it("retries once after a failed attempt and succeeds on the second", async () => {
+    let calls = 0;
+    global.fetch = vi.fn(async () => {
+      calls++;
+      if (calls === 1) throw new Error("fetch failed");
+      return new Response(
+        JSON.stringify({ tokens: [{ chainId: 1, address: "0xaaa", name: "NVIDIA xStock", symbol: "NVDAx", decimals: 18 }] }),
+        { status: 200 }
+      );
+    }) as typeof fetch;
+
+    const result = await fetchXstocksTokenListWithDiagnostics();
+    expect(result.tokens).toHaveLength(1);
+    expect(result.error).toBeNull();
+    expect(calls).toBe(2);
+  });
+});
+
+describe("fetchXstocksTokenListWithDiagnostics", () => {
+  it("reports the HTTP status when the response isn't ok", async () => {
+    global.fetch = vi.fn(async () => new Response("", { status: 503 })) as typeof fetch;
+    const result = await fetchXstocksTokenListWithDiagnostics();
+    expect(result.tokens).toBeNull();
+    expect(result.error).toBe("HTTP 503");
+  });
+
+  it("reports the thrown error's message after both attempts fail", async () => {
+    global.fetch = vi.fn(async () => {
+      throw new Error("getaddrinfo ENOTFOUND raw.githubusercontent.com");
+    }) as typeof fetch;
+    const result = await fetchXstocksTokenListWithDiagnostics();
+    expect(result.tokens).toBeNull();
+    expect(result.error).toBe("getaddrinfo ENOTFOUND raw.githubusercontent.com");
   });
 });

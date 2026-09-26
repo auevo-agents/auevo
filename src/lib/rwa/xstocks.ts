@@ -44,19 +44,25 @@ interface TokenListResponse {
   }[];
 }
 
-export async function fetchXstocksTokenList(): Promise<XstocksToken[] | null> {
+export interface XstocksFetchResult {
+  tokens: XstocksToken[] | null;
+  /** Why `tokens` is null — production has shown `xstocks.available: false` with no way to tell a network blip from a real outage apart, so the registry cron surfaces this instead of a bare boolean. */
+  error: string | null;
+}
+
+async function fetchOnce(): Promise<XstocksFetchResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15_000);
+  const timer = setTimeout(() => controller.abort(), 7_000);
 
   try {
     const res = await fetch(tokenListUrl(), {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { tokens: null, error: `HTTP ${res.status}` };
 
     const data = (await res.json()) as TokenListResponse;
-    if (!Array.isArray(data.tokens)) return null;
+    if (!Array.isArray(data.tokens)) return { tokens: null, error: "response missing tokens[]" };
 
     const tokens: XstocksToken[] = [];
     for (const t of data.tokens) {
@@ -70,12 +76,37 @@ export async function fetchXstocksTokenList(): Promise<XstocksToken[] | null> {
         tokens.push({ chainId: t.chainId, address: t.address, name: t.name, symbol: t.symbol, decimals: t.decimals });
       }
     }
-    return tokens;
-  } catch {
-    return null;
+    return { tokens, error: null };
+  } catch (err) {
+    return { tokens: null, error: err instanceof Error ? err.message : String(err) };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * One bounded retry on top of `fetchOnce` — the same transient-network
+ * reasoning as `db-retry.ts`'s `withFetchRetry`, applied to a plain
+ * external fetch instead of a Supabase call, after production showed
+ * `xstocks.available: false` on a run where this same
+ * raw.githubusercontent.com URL had been fetched successfully during
+ * this feature's own research. Each attempt gets a shorter 7s timeout
+ * (down from the old single 15s one) so worst case (two failed
+ * attempts) still fits inside the registry cron's 30s budget alongside
+ * the chain scan it runs next to.
+ */
+export async function fetchXstocksTokenListWithDiagnostics(): Promise<XstocksFetchResult> {
+  let result = await fetchOnce();
+  if (!result.tokens) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    result = await fetchOnce();
+  }
+  return result;
+}
+
+/** Thin wrapper over `fetchXstocksTokenListWithDiagnostics` for callers that only care whether the list came back, not why it didn't. */
+export async function fetchXstocksTokenList(): Promise<XstocksToken[] | null> {
+  return (await fetchXstocksTokenListWithDiagnostics()).tokens;
 }
 
 /**
