@@ -7,11 +7,12 @@ import { Disclaimer } from "../../disclaimer";
 
 /**
  * RWA_SPEC.md section 6's /app/scanner — Premium / Arbitrage / Risk /
- * Liquidity / New tabs on live data (see the /api/rwa/scanner/* routes
- * this reads). Smart Money is a documented "soon" tab: RWA_SPEC.md's own
- * phase breakdown (section 7) assigns the smart-money indexer generalization
- * work to Phase 6, not this one — showing a working-looking tab with no
- * real wallet-accumulation data behind it would be worse than saying so.
+ * Liquidity / New / Smart Money tabs on live data (see the
+ * /api/rwa/scanner/* routes this reads). Smart Money reads from Phase 6's
+ * own indexer (indexer_swaps, generalized in lib/indexed-smart-money.ts to
+ * price any recognized quote asset in USD, not just WETH) — only wallets
+ * that have traded a *verified RWA token* count, not the generic
+ * any-token leaderboard the memecoin-era Smart Money page already has.
  *
  * Each tab fetches its own data lazily, on first view, rather than all six
  * on page load — Liquidity's tab in particular runs live on-chain quotes
@@ -321,6 +322,67 @@ function NewTab({ active }: { active: Tab }) {
   );
 }
 
+interface SmartMoneyRow {
+  wallet: string;
+  realizedPnlUsd: number;
+  wins: number;
+  losses: number;
+  netFlowUsd: number;
+  tokensTraded: number;
+  trades: number;
+  tickers: string[];
+}
+
+function shortWallet(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+function SmartMoneyTab({ active }: { active: Tab }) {
+  const { data, error, loading } = useTabData<{ rows: SmartMoneyRow[] }>("smart-money", active, "/api/rwa/scanner/smart-money");
+  if (error) return <p className="error">{error}</p>;
+  if (loading || !data) return <div className="app-empty">Loading…</div>;
+  if (data.rows.length === 0) {
+    return (
+      <div className="app-empty">
+        No wallets found yet — the chain indexer (docs/RWA_SPEC.md phase 6) hasn&apos;t caught any RWA-token trades in its scanned window yet.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <p style={{ color: "#7c8589", fontSize: 12, marginBottom: 8 }}>
+        Realized PnL from Auevo&apos;s own indexer, USD-priced from each trade&apos;s USDG or WETH leg — only wallets that have traded a verified
+        tokenized stock. Only covers what the indexer has scanned so far, not full history.
+      </p>
+      <div className="desk-scroll">
+        <div className="money-row money-row-nopair money-head">
+          <span>WALLET</span>
+          <span>TRADED</span>
+          <span className="desk-col-right">REALIZED PNL</span>
+          <span className="desk-col-right">WIN RATE</span>
+          <span className="desk-col-right">TRADES</span>
+        </div>
+        {data.rows.map((r) => {
+          const winRate = r.wins + r.losses > 0 ? (r.wins / (r.wins + r.losses)) * 100 : null;
+          return (
+            <Link key={r.wallet} href={`/app/wallets/${r.wallet}`} className="money-row money-row-nopair money-row-link">
+              <span>{shortWallet(r.wallet)}</span>
+              <span>{r.tickers.join(", ") || "—"}</span>
+              <span className={`desk-col-right ${r.realizedPnlUsd >= 0 ? "desk-change-pos" : "desk-change-neg"}`}>
+                {r.realizedPnlUsd >= 0 ? "+" : ""}
+                {r.realizedPnlUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
+              </span>
+              <span className="desk-col-right">{winRate !== null ? `${winRate.toFixed(0)}%` : "—"}</span>
+              <span className="desk-col-right">{r.trades}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 export default function ScannerPage() {
   const [tab, setTab] = useState<Tab>("premium");
 
@@ -346,12 +408,7 @@ export default function ScannerPage() {
       {tab === "risk" && <RiskTab active={tab} />}
       {tab === "liquidity" && <LiquidityTab active={tab} />}
       {tab === "new" && <NewTab active={tab} />}
-      {tab === "smart-money" && (
-        <div className="app-empty">
-          Smart Money — wallets accumulating stock tokens, and their biggest trades. Needs Phase 6&apos;s indexer (v4 Swap-event attribution
-          generalized from memecoins to tokenized stocks) before this shows anything real; see docs/RWA_SPEC.md phase 6.
-        </div>
-      )}
+      {tab === "smart-money" && <SmartMoneyTab active={tab} />}
 
       <Disclaimer compact />
     </>

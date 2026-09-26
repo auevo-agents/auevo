@@ -207,6 +207,8 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
         })}
       </div>
 
+      <SmartMoneyBlock ticker={asset.ticker} />
+
       {asset.issuers.length > 0 && (
         <>
           <h4 style={{ marginTop: 24 }}>Issuers</h4>
@@ -227,6 +229,65 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
       )}
 
       <Disclaimer />
+    </>
+  );
+}
+
+interface SmartMoneyRow {
+  wallet: string;
+  realizedPnlUsd: number;
+  trades: number;
+}
+
+function shortWallet(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+/**
+ * RWA_SPEC.md Phase 6's "блок на странице актива" — the same
+ * /api/rwa/scanner/smart-money leaderboard the Scanner's own Smart Money
+ * tab uses, narrowed to this one ticker via `?ticker=`, top 5 only.
+ */
+function SmartMoneyBlock({ ticker }: { ticker: string }) {
+  const [rows, setRows] = useState<SmartMoneyRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/rwa/scanner/smart-money?ticker=${encodeURIComponent(ticker)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.rows)) setRows(data.rows.slice(0, 5));
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker]);
+
+  if (!rows || rows.length === 0) return null; // no indexed activity for this ticker yet — say nothing rather than an empty-looking block
+
+  return (
+    <>
+      <h4 style={{ marginTop: 24 }}>Smart Money in {ticker}</h4>
+      <div className="desk-scroll">
+        <div className="money-row money-row-nopair money-head">
+          <span>WALLET</span>
+          <span className="desk-col-right">REALIZED PNL</span>
+          <span className="desk-col-right">TRADES</span>
+        </div>
+        {rows.map((r) => (
+          <Link key={r.wallet} href={`/app/wallets/${r.wallet}`} className="money-row money-row-nopair money-row-link">
+            <span>{shortWallet(r.wallet)}</span>
+            <span className={`desk-col-right ${r.realizedPnlUsd >= 0 ? "desk-change-pos" : "desk-change-neg"}`}>
+              {r.realizedPnlUsd >= 0 ? "+" : ""}
+              {r.realizedPnlUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
+            </span>
+            <span className="desk-col-right">{r.trades}</span>
+          </Link>
+        ))}
+      </div>
     </>
   );
 }

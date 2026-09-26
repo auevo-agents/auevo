@@ -30,27 +30,64 @@ export async function GET(
     return NextResponse.json({ swaps: [], pools: {}, indexed: false });
   }
 
-  const { data: swaps, error } = await supabase
+  const { data: v3Swaps, error: v3Error } = await supabase
     .from("indexer_swaps")
     .select("pool_address, sender, recipient, amount0, amount1, tick, block_number, block_timestamp, tx_hash")
+    .eq("dex", "uniswap_v3")
     .or(`sender.eq.${address},recipient.eq.${address}`)
     .order("block_number", { ascending: false })
     .limit(ACTIVITY_LIMIT);
-
-  if (error) {
-    return NextResponse.json({ error: `Could not read activity: ${error.message}` }, { status: 500 });
+  if (v3Error) {
+    return NextResponse.json({ error: `Could not read activity: ${v3Error.message}` }, { status: 500 });
   }
 
-  const poolAddresses = [...new Set((swaps ?? []).map((s) => s.pool_address as string))];
+  // v4 (RWA_SPEC.md Phase 6): attribution is always via `recipient` (see
+  // indexer/scan-v4.ts — for a v4 row this is the enclosing tx's `from`,
+  // since the Swap event itself has no recipient field), so `sender.eq`
+  // is skipped here — it would only ever match the router, never a wallet.
+  const { data: v4Swaps, error: v4Error } = await supabase
+    .from("indexer_swaps")
+    .select("pool_id, sender, recipient, amount0, amount1, tick, block_number, block_timestamp, tx_hash")
+    .eq("dex", "uniswap_v4")
+    .eq("recipient", address)
+    .order("block_number", { ascending: false })
+    .limit(ACTIVITY_LIMIT);
+  if (v4Error) {
+    return NextResponse.json({ error: `Could not read v4 activity: ${v4Error.message}` }, { status: 500 });
+  }
 
-  const { data: poolRows } = poolAddresses.length
-    ? await supabase.from("indexer_pools").select("pool_address, token0, token1").in("pool_address", poolAddresses)
-    : { data: [] as { pool_address: string; token0: string; token1: string }[] };
+  // Normalized to the same `pool_address`-keyed shape the client already
+  // uses for everything downstream (PnL, positions) — a v4 row's `pool_id`
+  // stands in for `pool_address` here, since both are just opaque map keys
+  // to that code, never actually dereferenced as an EVM address.
+  const swaps = [...(v3Swaps ?? []), ...(v4Swaps ?? []).map((s) => ({ ...s, pool_address: s.pool_id as string }))]
+    .sort((a, b) => b.block_number - a.block_number)
+    .slice(0, ACTIVITY_LIMIT);
+
+  const v3PoolAddresses = [...new Set((v3Swaps ?? []).map((s) => s.pool_address as string))];
+  const v4PoolIds = [...new Set((v4Swaps ?? []).map((s) => s.pool_id as string))];
+
+  const [{ data: v3PoolRows }, { data: v4PoolRows }] = await Promise.all([
+    v3PoolAddresses.length
+      ? supabase.from("indexer_pools").select("pool_address, token0, token1").in("pool_address", v3PoolAddresses)
+      : Promise.resolve({ data: [] as { pool_address: string; token0: string; token1: string }[] }),
+    v4PoolIds.length
+      ? supabase.from("indexer_pools").select("pool_id, token0, token1").in("pool_id", v4PoolIds)
+      : Promise.resolve({ data: [] as { pool_id: string; token0: string; token1: string }[] }),
+  ]);
+  const poolRows = [
+    ...(v3PoolRows ?? []),
+    // Same pool_id -> pool_address normalization as the swaps above.
+    ...(v4PoolRows ?? []).map((p) => ({ pool_address: p.pool_id, token0: p.token0, token1: p.token1 })),
+  ];
 
   // Best-effort symbol/name lookup via the same GeckoTerminal client
   // Market already uses — indexer_pools only has raw addresses, and a
   // wallet's activity page is exactly the kind of occasional lookup that
-  // fetchMarketPool's own cache (see geckoterminal.ts) is meant for.
+  // fetchMarketPool's own cache (see geckoterminal.ts) is meant for. For a
+  // v4 row this passes a pool_id (not a real contract address) — GeckoTerminal
+  // has nothing to match, fetchMarketPool fails, and this degrades to null
+  // symbols for that pool exactly like an unlisted v3 pool already does.
   const pools: Record<
     string,
     { token0: string; token1: string; token0Symbol: string | null; token1Symbol: string | null }
