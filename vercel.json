@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/rwa-prices",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/rwa-risk",

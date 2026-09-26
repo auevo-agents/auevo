@@ -3,13 +3,19 @@ import { fetchTokenPricesUsd } from "./gecko-price";
 import { fetchReferencePrice, computePremiumBps } from "./reference-price";
 
 /**
- * RWA_SPEC.md Phase 1's price/liquidity cron — "каждые 5 мин". Vercel's
- * Hobby plan (this project's actual plan — see the same note on
- * api/cron/index-chain) only fires cron jobs once a day regardless of the
- * schedule string, so vercel.json's entry for this route is aspirational
- * until the plan changes; it can also be triggered manually or from an
- * external scheduler in the meantime, same workaround already in use for
- * the chain indexer.
+ * RWA_SPEC.md Phase 1's price/liquidity cron — spec wants "каждые 5 мин",
+ * but Vercel's Hobby plan (this project's actual plan) doesn't just
+ * silently downgrade a sub-daily cron schedule to once a day — it REJECTS
+ * the whole deployment outright at build time ("Hobby accounts are
+ * limited to daily cron jobs"). An earlier version of this comment
+ * assumed the former (harmless silent downgrade) and was wrong: that
+ * assumption is exactly what silently broke every deploy of this project
+ * from the commit that first added an every-5-minutes cron entry to
+ * vercel.json onward, discovered 2026-09-26 only once a manual `vercel --prod`
+ * surfaced the real build error. vercel.json's entry for this route is
+ * once-daily like the other crons here; running more often needs either
+ * the Pro plan or an external scheduler hitting this route directly
+ * (same workaround already in use for the chain indexer).
  *
  * `liquidity_usd`/`volume_24h_usd` are deliberately left null here, not
  * guessed: Robinhood Chain's own RWA pools are all Uniswap v4
