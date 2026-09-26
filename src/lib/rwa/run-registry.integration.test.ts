@@ -157,6 +157,25 @@ beforeAll(async () => {
       });
       return;
     }
+    // Pool discovery (run-registry.ts's own rwa_pools upsert) and the
+    // metrics refresh that follows it (refreshPoolMetrics) — not this
+    // test's concern (see run-registry-pools.integration.test.ts for
+    // that), so an empty rwa_pools table here just makes
+    // refreshPoolMetrics return immediately without needing
+    // rwa_prices/indexer_swaps/rwa_tokens GET handlers at all.
+    if (req.method === "POST" && table === "rwa_pools") {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        res.statusCode = 201;
+        res.end("[]");
+      });
+      return;
+    }
+    if (req.method === "GET" && table === "rwa_pools") {
+      res.end(JSON.stringify([]));
+      return;
+    }
 
     res.statusCode = 404;
     res.end("{}");

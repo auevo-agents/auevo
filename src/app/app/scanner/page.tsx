@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAccount } from "wagmi";
 import { chainNameFor } from "@/lib/rwa/lifi/chains";
 import { Disclaimer } from "../../disclaimer";
 
@@ -19,7 +20,7 @@ import { Disclaimer } from "../../disclaimer";
  * per token and is meaningfully slower than the others.
  */
 
-type Tab = "premium" | "arbitrage" | "risk" | "liquidity" | "new" | "smart-money";
+type Tab = "premium" | "arbitrage" | "risk" | "liquidity" | "new" | "smart-money" | "alerts";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "premium", label: "Premium" },
@@ -28,6 +29,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "liquidity", label: "Liquidity" },
   { id: "new", label: "New" },
   { id: "smart-money", label: "Smart Money" },
+  { id: "alerts", label: "Alerts" },
 ];
 
 function useTabData<T>(tab: Tab, active: Tab, url: string) {
@@ -383,6 +385,234 @@ function SmartMoneyTab({ active }: { active: Tab }) {
   );
 }
 
+interface AlertRow {
+  id: number;
+  type: "premium" | "listing" | "whale" | "price";
+  params: { ticker?: string; thresholdBps?: number; minUsd?: number };
+  channel: "web" | "telegram";
+  created_at: string;
+}
+
+interface NotificationRow {
+  id: number;
+  alert_id: number;
+  message: string;
+  delivered_telegram: boolean;
+  fired_at: string;
+}
+
+/**
+ * RWA_SPEC.md section 6's "Алерты: подписка на премию > X, новый листинг
+ * тикера, крупная сделка" — a subscribe form + list + fired-notifications
+ * feed, scoped under Scanner (the spec lists alerts as part of that
+ * section, not as its own top-level route). Evaluated once daily by
+ * /api/cron/rwa-alerts (run-alerts.ts) — see that file's own note on why
+ * "once daily" rather than real-time (Vercel Hobby plan's cron-frequency
+ * ceiling, the same constraint documented throughout this app's other
+ * crons).
+ */
+function AlertsTab() {
+  const { address: account, isConnected } = useAccount();
+  const [alerts, setAlerts] = useState<AlertRow[] | null>(null);
+  const [notifications, setNotifications] = useState<NotificationRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [type, setType] = useState<"premium" | "listing" | "whale">("premium");
+  const [ticker, setTicker] = useState("");
+  const [thresholdPct, setThresholdPct] = useState("5");
+  const [minUsd, setMinUsd] = useState("50000");
+  const [channel, setChannel] = useState<"web" | "telegram">("web");
+  const [submitting, setSubmitting] = useState(false);
+
+  const [linkCode, setLinkCode] = useState<{ code: string; botUsername: string | null } | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  function reload() {
+    if (!account) return;
+    fetch(`/api/rwa/alerts?account=${account}`)
+      .then((r) => r.json())
+      .then((d) => setAlerts(d.alerts ?? []))
+      .catch(() => setError("Network error loading alerts"));
+    fetch(`/api/rwa/alerts/notifications?account=${account}`)
+      .then((r) => r.json())
+      .then((d) => setNotifications(d.notifications ?? []))
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    if (isConnected) reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, isConnected]);
+
+  async function handleCreate() {
+    if (!account) return;
+    setSubmitting(true);
+    setError(null);
+    const params =
+      type === "premium"
+        ? { ticker: ticker.toUpperCase(), thresholdBps: Math.round(Number(thresholdPct) * 100) }
+        : type === "whale"
+          ? { ticker: ticker.toUpperCase(), minUsd: Number(minUsd) }
+          : ticker
+            ? { ticker: ticker.toUpperCase() }
+            : {};
+    try {
+      const res = await fetch("/api/rwa/alerts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ account, type, params, channel }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not create alert");
+        return;
+      }
+      setTicker("");
+      reload();
+    } catch {
+      setError("Network error creating alert");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!account) return;
+    await fetch(`/api/rwa/alerts/${id}?account=${account}`, { method: "DELETE" });
+    reload();
+  }
+
+  async function handleLinkTelegram() {
+    if (!account) return;
+    setLinkError(null);
+    try {
+      const res = await fetch("/api/rwa/alerts/telegram-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ account }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLinkError(data.error ?? "Could not generate a Telegram link code");
+        return;
+      }
+      setLinkCode({ code: data.code, botUsername: data.botUsername });
+    } catch {
+      setLinkError("Network error generating a Telegram link code");
+    }
+  }
+
+  if (!isConnected) return <div className="app-empty">Connect a wallet above to manage alerts.</div>;
+
+  return (
+    <div className="trade-form">
+      <h4>New alert</h4>
+      <div className="desk-tabs">
+        <button className={type === "premium" ? "desk-tab active" : "desk-tab"} onClick={() => setType("premium")}>
+          PREMIUM
+        </button>
+        <button className={type === "listing" ? "desk-tab active" : "desk-tab"} onClick={() => setType("listing")}>
+          NEW LISTING
+        </button>
+        <button className={type === "whale" ? "desk-tab active" : "desk-tab"} onClick={() => setType("whale")}>
+          WHALE TRADE
+        </button>
+      </div>
+
+      {type !== "listing" && (
+        <label>
+          Ticker
+          <input type="text" value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="NVDA" />
+        </label>
+      )}
+      {type === "listing" && (
+        <label>
+          Ticker (optional — leave blank for any new listing)
+          <input type="text" value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="NVDA" />
+        </label>
+      )}
+      {type === "premium" && (
+        <label>
+          Premium threshold (%)
+          <input type="number" min={0} step={0.1} value={thresholdPct} onChange={(e) => setThresholdPct(e.target.value)} />
+        </label>
+      )}
+      {type === "whale" && (
+        <label>
+          Minimum trade size (USD)
+          <input type="number" min={0} step={1000} value={minUsd} onChange={(e) => setMinUsd(e.target.value)} />
+        </label>
+      )}
+
+      <label>
+        Deliver via
+        <select value={channel} onChange={(e) => setChannel(e.target.value as "web" | "telegram")}>
+          <option value="web">Web only</option>
+          <option value="telegram">Web + Telegram</option>
+        </select>
+      </label>
+
+      {channel === "telegram" && (
+        <div className="desk-note">
+          <p>Link a Telegram chat once, then any alert you create with Telegram delivery will message it.</p>
+          <button onClick={handleLinkTelegram}>Link Telegram</button>
+          {linkError && <p className="error">{linkError}</p>}
+          {linkCode && (
+            <p>
+              Send <code>/start {linkCode.code}</code> to{" "}
+              {linkCode.botUsername ? <>@{linkCode.botUsername}</> : "the Auevo bot"} within 15 minutes.
+            </p>
+          )}
+        </div>
+      )}
+
+      <button onClick={handleCreate} disabled={submitting || (type !== "listing" && !ticker)}>
+        {submitting ? "Creating…" : "Create alert"}
+      </button>
+      {error && <p className="error">{error}</p>}
+
+      <h4>Your alerts</h4>
+      {!alerts && <div className="app-empty">Loading…</div>}
+      {alerts && alerts.length === 0 && <div className="app-empty">No alerts yet.</div>}
+      {alerts && alerts.length > 0 && (
+        <div className="desk-scroll">
+          {alerts.map((a) => (
+            <div key={a.id} className="money-row money-row-nopair">
+              <span>
+                <b>{a.type}</b>
+                {a.params.ticker ? ` · ${a.params.ticker}` : ""}
+                {a.type === "premium" && a.params.thresholdBps ? ` > +${(a.params.thresholdBps / 100).toFixed(1)}%` : ""}
+                {a.type === "whale" && a.params.minUsd ? ` ≥ $${a.params.minUsd.toLocaleString("en-US")}` : ""}
+              </span>
+              <span className="desk-col-right">{a.channel}</span>
+              <span className="desk-actions">
+                <button onClick={() => handleDelete(a.id)}>remove</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h4>Notifications</h4>
+      {!notifications && <div className="app-empty">Loading…</div>}
+      {notifications && notifications.length === 0 && <div className="app-empty">Nothing fired yet.</div>}
+      {notifications && notifications.length > 0 && (
+        <div className="desk-scroll">
+          {notifications.map((n) => (
+            <div key={n.id} className="money-row money-row-nopair">
+              <span>{n.message}</span>
+              <span className="desk-col-right">{new Date(n.fired_at).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="desk-note">
+        Checked once a day (Vercel&apos;s Hobby plan won&apos;t run a cron more often) — not real-time.
+      </p>
+    </div>
+  );
+}
+
 export default function ScannerPage() {
   const [tab, setTab] = useState<Tab>("premium");
 
@@ -409,6 +639,7 @@ export default function ScannerPage() {
       {tab === "liquidity" && <LiquidityTab active={tab} />}
       {tab === "new" && <NewTab active={tab} />}
       {tab === "smart-money" && <SmartMoneyTab active={tab} />}
+      {tab === "alerts" && <AlertsTab />}
 
       <Disclaimer compact />
     </>

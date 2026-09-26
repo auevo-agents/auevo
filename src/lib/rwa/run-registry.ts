@@ -1,9 +1,14 @@
-import { getRobinhoodClient } from "@/lib/evm/client";
+import type { Address } from "viem";
+import { getRobinhoodClient, type RobinhoodClient } from "@/lib/evm/client";
 import { Deadline } from "@/lib/evm/deadline";
 import { getSupabaseServer } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { robinhoodChain } from "@/lib/chains";
 import { discoverUsdgPools, resolveCandidateTokens } from "./registry";
 import { fetchXstocksTokenList, tickerFromXstocksSymbol } from "./xstocks";
+import { STATE_VIEW, USDG } from "./dex/addresses";
+import { buildPoolKey } from "./dex/pool-key";
+import { computeLiquidityUsd, computeVolume24hUsd } from "./pools";
 
 /**
  * One incremental registry pass — RWA_SPEC.md Phase 1's
@@ -43,6 +48,7 @@ export interface RegistryRunResult {
   headBlock?: string;
   robinhood?: { discovered: number; syncedTo: string; partial: boolean };
   xstocks?: { discovered: number; available: boolean };
+  pools?: { refreshed: number };
 }
 
 export async function runRegistryPass(): Promise<RegistryRunResult> {
@@ -109,8 +115,37 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       );
       if (error) throw new Error(`rwa_tokens upsert (robinhood) failed: ${error.message}`);
       robinhoodDiscovered = matched.length;
+
+      // rwa_pools rows for every discovered pool whose token matched a
+      // known ticker — not deduped by token the way `matched` is: a
+      // token can legitimately have more than one v4 pool (different fee
+      // tiers), and each is its own row. Only pools resolveCandidateTokens
+      // dedup already discarded as duplicates of a *later* sighting of the
+      // same pool_id are missing here, which is fine — pool_id is the
+      // upsert key, so a later sighting just re-upserts the same row.
+      const matchedAddresses = new Set(matched.map((c) => c.address.toLowerCase()));
+      const matchedPools = scanResult.pools.filter((p) => matchedAddresses.has(p.token.toLowerCase()));
+      if (matchedPools.length > 0) {
+        const poolRows = matchedPools.map((p) => {
+          const key = buildPoolKey(USDG, p.token, p.fee, p.tickSpacing, p.hooks);
+          return {
+            chain_id: robinhoodChain.id,
+            pool_id: p.poolId,
+            dex: "uniswap_v4" as const,
+            token0: key.currency0,
+            token1: key.currency1,
+            fee: p.fee,
+            tick_spacing: p.tickSpacing,
+            hooks: p.hooks,
+          };
+        });
+        const { error: poolsError } = await supabase.from("rwa_pools").upsert(poolRows, { onConflict: "chain_id,pool_id" });
+        if (poolsError) throw new Error(`rwa_pools upsert failed: ${poolsError.message}`);
+      }
     }
   }
+
+  const poolsRefreshed = await refreshPoolMetrics(client, supabase);
 
   await supabase
     .from("rwa_registry_state")
@@ -155,5 +190,139 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       partial: scanResult.partial,
     },
     xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null },
+    pools: poolsRefreshed,
   };
+}
+
+const STATE_VIEW_ABI = [
+  {
+    type: "function",
+    name: "getSlot0",
+    stateMutability: "view",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "protocolFee", type: "uint24" },
+      { name: "lpFee", type: "uint24" },
+    ],
+  },
+  {
+    type: "function",
+    name: "getLiquidity",
+    stateMutability: "view",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [{ name: "liquidity", type: "uint128" }],
+  },
+] as const;
+
+const VOLUME_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Refreshes liquidity_usd/volume_24h_usd for every rwa_pools row on this
+ * chain — every run, not just newly discovered pools, since both numbers
+ * are live state that changes independently of new pools ever being
+ * found. Cheap: this app's own catalog only ever has a handful of RWA
+ * pools (RWA_SPEC.md's own HyperDex research found ~199 total across two
+ * chains, and this app only tracks Robinhood Chain's share of that), not
+ * thousands, so one StateView read pair per pool per run is fine inside
+ * this cron's existing budget.
+ */
+async function refreshPoolMetrics(client: RobinhoodClient, supabase: SupabaseClient): Promise<{ refreshed: number }> {
+  const { data: pools, error: poolsError } = await supabase
+    .from("rwa_pools")
+    .select("pool_id, token0, token1, fee")
+    .eq("chain_id", robinhoodChain.id)
+    .eq("dex", "uniswap_v4");
+  if (poolsError) throw new Error(`Could not read rwa_pools: ${poolsError.message}`);
+  if (!pools || pools.length === 0) return { refreshed: 0 };
+
+  const nonUsdgAddresses = pools.map((p) => (p.token0.toLowerCase() === USDG.toLowerCase() ? p.token1 : p.token0));
+  const { data: priceRows, error: pricesError } = await supabase
+    .from("rwa_prices")
+    .select("token_address, price_usd, ts")
+    .eq("chain_id", robinhoodChain.id)
+    .in("token_address", nonUsdgAddresses)
+    .order("ts", { ascending: false })
+    .limit(2000);
+  if (pricesError) throw new Error(`Could not read rwa_prices: ${pricesError.message}`);
+  const priceByAddress = new Map<string, number | null>();
+  for (const row of priceRows ?? []) {
+    const key = row.token_address.toLowerCase();
+    if (!priceByAddress.has(key)) priceByAddress.set(key, row.price_usd);
+  }
+
+  const since = new Date(Date.now() - VOLUME_WINDOW_MS).toISOString();
+  const { data: swapRows, error: swapsError } = await supabase
+    .from("indexer_swaps")
+    .select("pool_id, amount0, amount1")
+    .eq("dex", "uniswap_v4")
+    .in(
+      "pool_id",
+      pools.map((p) => p.pool_id)
+    )
+    .gte("block_timestamp", since);
+  if (swapsError) throw new Error(`Could not read indexer_swaps: ${swapsError.message}`);
+  const swapsByPoolId = new Map<string, { amount0: number; amount1: number }[]>();
+  for (const row of swapRows ?? []) {
+    const list = swapsByPoolId.get(row.pool_id) ?? [];
+    list.push({ amount0: Number(row.amount0), amount1: Number(row.amount1) });
+    swapsByPoolId.set(row.pool_id, list);
+  }
+
+  let refreshed = 0;
+  for (const pool of pools) {
+    const usdgIsToken0 = pool.token0.toLowerCase() === USDG.toLowerCase();
+    const nonUsdgAddress = (usdgIsToken0 ? pool.token1 : pool.token0) as Address;
+
+    let sqrtPriceX96 = 0n;
+    let liquidity = 0n;
+    try {
+      const [slot0, liquidityResult] = await Promise.all([
+        client.readContract({ address: STATE_VIEW, abi: STATE_VIEW_ABI, functionName: "getSlot0", args: [pool.pool_id as `0x${string}`] }),
+        client.readContract({ address: STATE_VIEW, abi: STATE_VIEW_ABI, functionName: "getLiquidity", args: [pool.pool_id as `0x${string}`] }),
+      ]);
+      sqrtPriceX96 = slot0[0];
+      liquidity = liquidityResult;
+    } catch {
+      continue; // an RPC hiccup on one pool shouldn't drop every other pool's refresh this run
+    }
+
+    // decimals aren't stored on rwa_pools — USDG's are known statically;
+    // the other side's decimals come from rwa_tokens (already required to
+    // exist there, since a pool is only ever persisted for a matched,
+    // already-verified token).
+    const { data: tokenRow } = await supabase
+      .from("rwa_tokens")
+      .select("decimals")
+      .eq("chain_id", robinhoodChain.id)
+      .eq("address", nonUsdgAddress)
+      .maybeSingle();
+    const nonUsdgDecimals = tokenRow?.decimals ?? null;
+    if (nonUsdgDecimals === null) continue;
+
+    const nonUsdgPriceUsd = priceByAddress.get(nonUsdgAddress.toLowerCase()) ?? null;
+    const liquidityUsd = computeLiquidityUsd({
+      sqrtPriceX96,
+      liquidity,
+      currency0Decimals: usdgIsToken0 ? 6 : nonUsdgDecimals,
+      currency1Decimals: usdgIsToken0 ? nonUsdgDecimals : 6,
+      currency0PriceUsd: usdgIsToken0 ? 1 : nonUsdgPriceUsd,
+      currency1PriceUsd: usdgIsToken0 ? nonUsdgPriceUsd : 1,
+    });
+
+    const swaps = swapsByPoolId.get(pool.pool_id) ?? [];
+    const usdgSideAmounts = swaps.map((s) => (usdgIsToken0 ? s.amount0 : s.amount1));
+    const volume24hUsd = computeVolume24hUsd(usdgSideAmounts);
+
+    const { error: updateError } = await supabase
+      .from("rwa_pools")
+      .update({ liquidity_usd: liquidityUsd, volume_24h_usd: volume24hUsd, updated_at: new Date().toISOString() })
+      .eq("chain_id", robinhoodChain.id)
+      .eq("pool_id", pool.pool_id);
+    if (updateError) throw new Error(`rwa_pools update failed: ${updateError.message}`);
+    refreshed++;
+  }
+
+  return { refreshed };
 }
