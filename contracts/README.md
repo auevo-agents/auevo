@@ -70,6 +70,86 @@ else here. Short version:
   would catch anything about the *real* router/factory's actual
   behaviour these mocks don't capture.
 
+## DcaVaultV4 — status: written, tested, statically analysed. **Not deployed.**
+
+RWA_SPEC.md Phase 7's v4/USDG port of DcaVault.sol — `src/DcaVaultV4.sol`.
+Read that contract's own doc comment before anything else here; it is
+long on purpose because the security posture genuinely differs from the
+V3 vault, not just the plumbing. Short version:
+
+- Same custody/pause guarantees as DcaVault.sol: only a position's own
+  owner can ever withdraw its principal, no admin path, not upgradeable,
+  pausing never blocks withdrawal.
+- Executes swaps directly against Uniswap v4's PoolManager via the
+  unlock/callback pattern (`IUnlockCallback`) — not UniversalRouter, not
+  Permit2. The vault already custodies its own principal, so it can call
+  PoolManager the same way Uniswap's own periphery routers do; no
+  signature of any kind is involved in `executeBuy()`.
+- **The price floor is weaker than DcaVault.sol's by construction, not by
+  oversight.** Uniswap v4 core has no built-in historical-price oracle
+  the way every v3 pool does (v4 moved that entirely into optional
+  hooks, and no RWA/USDG pool on Robinhood Chain is confirmed to use an
+  oracle-providing hook). Each position can optionally name an
+  `IPriceOracle` (this project's own minimal interface — not a Uniswap
+  type) for a real on-chain floor; when none is set (the default),
+  `executeBuy()` falls back to trusting the caller's own `minAmountOut`
+  outright, only rejecting a literal zero. That fallback mode is a real,
+  material weakening of the anti-sandwich guarantee for a permissionless
+  keeper function — exactly the kind of gap an external audit exists to
+  catch, and exactly why this contract stays gated the same way
+  DcaVault.sol does (see below).
+
+### What's been done
+
+- Compiles cleanly with solc 0.8.24 against `@uniswap/v4-core` 1.0.2,
+  zero warnings.
+- 15 integration tests against a local Ganache node (`test/run-v4.mjs`,
+  kept separate from `test/run.mjs`'s V3 suite) covering: deposit and
+  position accounting, the no-oracle path's mandatory-nonzero-
+  minAmountOut guard, a bad fill reverting against both a caller-supplied
+  floor and (separately) an oracle-configured floor, a fair fill
+  succeeding through the full unlock/swap/sync/settle/take sequence, the
+  interval lock, owner-only withdrawal, pause blocking new activity while
+  never blocking withdrawal, and reentrancy via a malicious tokenIn's
+  `transfer()` called from `unlockCallback`'s settle-push (the v4
+  equivalent of the V3 suite's `transferFrom()` case — this version
+  pushes funds to PoolManager instead of having a router pull them, so
+  the reentrancy-sensitive call site moved from `transferFrom()` to
+  `transfer()`; see DcaVaultV4.sol's own note on this). Run with
+  `npm test` (runs both suites) or `node test/run-v4.mjs` alone.
+- Slither static analysis (via `standard-input.json` + the solc-json
+  platform — the same solc-js CLI quirks noted below applied here too).
+  Two findings, both already-documented-intentional in the same spirit
+  as DcaVault.sol's own harmonic-mean-liquidity note: an unused return
+  value from `PoolManager.settle()` (the contract already knows the
+  exact amount it paid; PoolManager's own echo of it back has no use
+  here) and a `block.timestamp` comparison for the interval lock (same
+  DCA-time-granularity reasoning as the V3 vault).
+- Uses a real (if minimal) mock PoolManager (`test/mocks/
+  MockPoolManagerV4.sol`) rather than the actual Uniswap v4-core
+  PoolManager — deliberately: that contract's own correctness is
+  Uniswap's to test, not this project's, and the mock's job is only to
+  exercise DcaVaultV4's own logic deterministically (same philosophy as
+  `test/mocks/MockUniswap.sol` for the V3 vault).
+
+### What has NOT been done
+
+- **No independent, paid, professional audit.** Same posture as
+  DcaVault.sol — doubly true here given the documented price-floor
+  weakening above.
+- **No mainnet deployment**, and no deploy script has even been written
+  for this contract yet — deploying is the same "your own key, your own
+  decision" action described for DcaVault.sol, and this contract needs
+  an audit first regardless.
+- **No fork test against the real, live PoolManager on Robinhood
+  Chain.** The integration tests use a mock PoolManager (see above), so
+  the real contract's accounting invariants (`CurrencyNotSettled`,
+  transient-storage deltas, hook interactions) are untested here.
+- **No feature-flagged UI wired up yet.** `/app/bots` (the existing DCA
+  page) still only speaks to the V3 vault; a v4/USDG section there would
+  follow the same "show the honest not-deployed status, no placeholder
+  address" pattern once this contract has an audit and a deployment.
+
 ## Setup
 
 ```bash

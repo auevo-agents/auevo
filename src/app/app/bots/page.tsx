@@ -100,6 +100,21 @@ export default function BotsPage() {
       ) : (
         <BotsApp vaultAddress={VAULT_ADDRESS} />
       )}
+
+      <div className="app-notice">
+        <strong>RWA_SPEC.md Phase 7 — recurring buy of stocks/baskets (v4/USDG).</strong>{" "}
+        A second vault, <code>contracts/src/DcaVaultV4.sol</code>, ports this same
+        design to Uniswap v4 + USDG for tokenized-stock/basket positions —
+        written, tested (15 checks) and statically analysed, same as the vault
+        above, but with one documented difference: v4 has no built-in
+        historical-price oracle the way v3 does, so its anti-sandwich floor is
+        weaker unless a position names a trusted on-chain price oracle (see
+        that contract&apos;s own doc comment). Not deployed, and — per
+        RWA_SPEC.md&apos;s own gate — not going to mainnet before an
+        independent audit; this page will get its own v4 section, behind its
+        own <code>NEXT_PUBLIC_DCA_VAULT_V4_ADDRESS</code> flag, once that
+        happens.
+      </div>
     </>
   );
 }

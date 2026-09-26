@@ -15,8 +15,11 @@ function findImports(importPath) {
 
 const targets = [
   "src/DcaVault.sol",
+  "src/DcaVaultV4.sol",
   "test/mocks/MockERC20.sol",
   "test/mocks/MockUniswap.sol",
+  "test/mocks/MockPoolManagerV4.sol",
+  "test/mocks/MockPriceOracle.sol",
 ];
 
 const sources = {};
