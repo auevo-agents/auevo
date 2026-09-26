@@ -1,9 +1,15 @@
+import { arbitrum, base, bsc, hyperEvm, mainnet } from "wagmi/chains";
 import { createConfig, http, type Config } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 import { robinhoodChain, robinhoodRpcUrls } from "./chains";
+import { LIFI_EVM_CHAIN_LIST } from "./rwa/lifi/chains";
 
 /**
- * Wallet connection for the internal app (/app) — Robinhood Chain only.
+ * Wallet connection for the internal app (/app) — Robinhood Chain plus,
+ * as of RWA_SPEC.md Phase 4, the five other EVM chains LI.FI bridges
+ * to/from (Ethereum, Base, BNB, Arbitrum, HyperEVM — see rwa/lifi/chains.ts).
+ * Solana is deferred per the spec's own note and needs a separate,
+ * non-EVM wallet-adapter integration this phase does not add.
  *
  * This is deliberately just wallet connection: a connected wallet signs
  * its own transactions, we never hold a key or a balance. That is what
@@ -48,7 +54,7 @@ let cached: Config | undefined;
 export function getWagmiConfig(): Config {
   if (!cached) {
     cached = createConfig({
-      chains: [robinhoodChain],
+      chains: LIFI_EVM_CHAIN_LIST,
       connectors: connectors(),
       transports: {
         // robinhoodRpcUrls() reads ROBINHOOD_RPC_URL, which is NOT
@@ -60,6 +66,18 @@ export function getWagmiConfig(): Config {
         // NEXT_PUBLIC_ one to "fix" this — that would ship the key to
         // every visitor.
         [robinhoodChain.id]: http(robinhoodRpcUrls()[0]),
+        // The other five chains use each wagmi chain object's own bundled
+        // public RPC (mainnet/base/bsc/arbitrum/hyperEvm from wagmi/chains,
+        // passed to http() with no URL) — this app never needs heavy read
+        // volume on them itself (LI.FI's own backend does all
+        // quoting/routing off-chain), only the occasional balance/allowance
+        // read and a wallet-signed send, so a dedicated provider isn't
+        // worth the added config surface yet.
+        [mainnet.id]: http(),
+        [base.id]: http(),
+        [bsc.id]: http(),
+        [arbitrum.id]: http(),
+        [hyperEvm.id]: http(),
       },
       ssr: true,
     });

@@ -29,6 +29,7 @@ import {
   WETH9,
 } from "@/lib/uniswap";
 import { PERMIT2, UNIVERSAL_ROUTER } from "@/lib/rwa/dex/addresses";
+import { ERC20_ABI } from "@/lib/erc20-abi";
 import { robinhoodChain } from "@/lib/chains";
 import { shortenAddress } from "@/lib/format";
 import {
@@ -79,44 +80,6 @@ import {
  * once ever per token, then the swap itself) — see handleApproveToPermit2
  * / handleSignPermit / handleV4Swap below.
  */
-
-const ERC20_ABI = [
-  {
-    type: "function",
-    name: "decimals",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint8" }],
-  },
-  {
-    type: "function",
-    name: "symbol",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "string" }],
-  },
-  {
-    type: "function",
-    name: "balanceOf",
-    stateMutability: "view",
-    inputs: [{ type: "address" }],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "allowance",
-    stateMutability: "view",
-    inputs: [{ type: "address" }, { type: "address" }],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "approve",
-    stateMutability: "nonpayable",
-    inputs: [{ type: "address" }, { type: "uint256" }],
-    outputs: [{ type: "bool" }],
-  },
-] as const;
 
 const FACTORY_ABI = [
   {

@@ -6894,6 +6894,33 @@ a {
   color: #5a6469;
 }
 
+/* Status pills — RWA_SPEC.md Phase 4's /app/explorer transfer statuses. */
+.desk-badge-pos,
+.desk-badge-neg,
+.desk-badge-neutral {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.desk-badge-pos {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.desk-badge-neg {
+  color: #ff4259;
+  background: rgba(255, 66, 89, 0.12);
+}
+
+.desk-badge-neutral {
+  color: #7c8589;
+  background: rgba(124, 133, 137, 0.12);
+}
+
 .desk-actions {
   display: flex;
   gap: 12px;
