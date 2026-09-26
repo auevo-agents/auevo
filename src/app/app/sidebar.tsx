@@ -41,7 +41,7 @@ export const NAV_ITEMS: {
   { id: "pools", label: "Pools", href: "/app/pools", soon: true },
   { id: "lend", label: "Lend", href: "/app/lend", soon: true },
   { id: "issuers", label: "Issuers", href: "/app/issuers" },
-  { id: "scanner", label: "Scanner", href: "/app/scanner", soon: true },
+  { id: "scanner", label: "Scanner", href: "/app/scanner" },
   { id: "explorer", label: "Explorer", href: "/app/explorer" },
   { id: "portfolio", label: "Portfolio", href: "/app/portfolio" },
   { id: "wallets", label: "Wallets", href: "/app/wallets" },

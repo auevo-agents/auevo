@@ -45,6 +45,20 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/rwa/assets/[tic
     return NextResponse.json({ error: `Could not read rwa_tokens: ${tokensError.message}` }, { status: 500 });
   }
 
+  const { data: riskRows, error: riskError } = tokens?.length
+    ? await supabase
+        .from("rwa_risk")
+        .select("chain_id, token_address, score")
+        .in(
+          "token_address",
+          tokens.map((t) => t.address)
+        )
+    : { data: [], error: null };
+  if (riskError) {
+    return NextResponse.json({ error: `Could not read rwa_risk: ${riskError.message}` }, { status: 500 });
+  }
+  const riskByKey = new Map((riskRows ?? []).map((r) => [`${r.chain_id}:${r.token_address.toLowerCase()}`, r.score]));
+
   const tokenKeys = (tokens ?? []).map((t) => `${t.chain_id}:${t.address.toLowerCase()}`);
   const { data: latestPriceRows, error: pricesError } = tokenKeys.length
     ? await supabase
@@ -68,7 +82,8 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/rwa/assets/[tic
   }
 
   const tokenRows = (tokens ?? []).map((t) => {
-    const latest = latestByKey.get(`${t.chain_id}:${t.address.toLowerCase()}`);
+    const key = `${t.chain_id}:${t.address.toLowerCase()}`;
+    const latest = latestByKey.get(key);
     return {
       chainId: t.chain_id,
       address: t.address,
@@ -78,6 +93,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/rwa/assets/[tic
       priceUsd: latest?.priceUsd ?? null,
       premiumBps: latest?.premiumBps ?? null,
       priceAsOf: latest?.ts ?? null,
+      riskScore: riskByKey.get(key) ?? null,
     };
   });
 

@@ -9,7 +9,7 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import type { RobinhoodClient } from "./client";
+import type { EvmReadClient } from "./client";
 
 /**
  * ERC-20 reads that tolerate tokens which do not quite follow the standard.
@@ -32,7 +32,7 @@ const SELECTOR = {
 } as const;
 
 async function rawCall(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   to: Address,
   data: Hex
 ): Promise<Hex | null> {
@@ -119,7 +119,7 @@ export interface TokenMetadata {
 }
 
 export async function readTokenMetadata(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   token: Address
 ): Promise<TokenMetadata> {
   const [nameRaw, symbolRaw, decimalsRaw, supplyRaw] = await Promise.all([
@@ -152,7 +152,7 @@ export interface OwnerInfo {
 }
 
 export async function readOwner(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   token: Address
 ): Promise<OwnerInfo | null> {
   const attempts = [
@@ -182,7 +182,7 @@ export function balanceOfCalldata(holder: Address): Hex {
 }
 
 export async function readBalanceOf(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   token: Address,
   holder: Address
 ): Promise<bigint | null> {

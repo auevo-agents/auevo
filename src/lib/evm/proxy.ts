@@ -8,7 +8,7 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import type { RobinhoodClient } from "./client";
+import type { EvmReadClient } from "./client";
 
 /**
  * Proxy detection.
@@ -77,7 +77,7 @@ function addressFromWord(word: Hex | undefined | null): Address | null {
 }
 
 async function readAddressSlot(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   address: Address,
   slot: Hex
 ): Promise<Address | null> {
@@ -90,7 +90,7 @@ async function readAddressSlot(
 
 /** Resolve the current implementation a beacon points at. */
 async function readBeaconImplementation(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   beacon: Address
 ): Promise<Address | null> {
   try {
@@ -106,7 +106,7 @@ async function readBeaconImplementation(
 }
 
 export async function detectProxy(
-  client: RobinhoodClient,
+  client: EvmReadClient,
   address: Address,
   code: Hex
 ): Promise<ProxyInfo | null> {
