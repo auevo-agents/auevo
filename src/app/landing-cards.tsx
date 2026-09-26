@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type MouseEvent } from "react";
+import { CardMockup, type MockupKind } from "./landing-card-mockup";
 
 interface FeatureCard {
   num: string;
@@ -9,6 +10,7 @@ interface FeatureCard {
   body: string;
   tag: string;
   href: string;
+  mockup: MockupKind;
 }
 
 /**
@@ -24,7 +26,7 @@ function handleMouseMove(event: MouseEvent<HTMLAnchorElement>) {
   card.style.setProperty("--my", `${event.clientY - rect.top}px`);
 }
 
-export function LandingCards({ cards }: { cards: readonly FeatureCard[] }) {
+export function LandingCards({ cards, tickers }: { cards: readonly FeatureCard[]; tickers?: string[] }) {
   return (
     <div className="landing2-cards">
       {cards.map((card) => (
@@ -34,6 +36,7 @@ export function LandingCards({ cards }: { cards: readonly FeatureCard[] }) {
           className="landing2-card"
           onMouseMove={handleMouseMove}
         >
+          <CardMockup kind={card.mockup} tickers={tickers} />
           <span className="landing2-card-badge">{card.num}</span>
           <h4>{card.title}</h4>
           <p>{card.body}</p>

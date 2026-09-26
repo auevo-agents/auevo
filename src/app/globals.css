@@ -8086,66 +8086,49 @@ a {
   .landing2-ticker-track { animation: none; }
 }
 
-/* Issuer / chain marquees — a second and third running line, real
-   names (rwa_issuers, lifi/chains.ts), not decoration text. */
+/* Partners row — a clean wrapped row of real names (issuers, chains),
+   not a scrolling marquee: reads as a deliberate, credible list rather
+   than filler motion once the name list is short. */
 
-.landing2-marquee {
-  overflow: hidden;
-  white-space: nowrap;
-  position: relative;
-  padding: 14px 0;
+.landing2-partners {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 28px 28px 0;
 }
 
-.landing2-marquee::before,
-.landing2-marquee::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 64px;
-  z-index: 2;
-  pointer-events: none;
-}
-.landing2-marquee::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
-.landing2-marquee::after { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
-
-.landing2-marquee-track {
-  display: inline-flex;
-  animation: landing2-scroll 46s linear infinite;
-}
-
-.landing2-marquee-reverse {
-  animation-direction: reverse;
-  animation-duration: 58s;
-}
-
-.landing2-marquee-set {
+.landing2-partner-chip {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font: 600 13px Arial, Helvetica, sans-serif;
+  color: #d7dadb;
+  transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
 }
 
-.landing2-marquee-item {
+.landing2-partner-chip:hover {
+  border-color: var(--line-2);
+  background: var(--panel-2);
+  transform: translateY(-1px);
+}
+
+.landing2-partner-avatar {
   display: inline-flex;
   align-items: center;
-  gap: 20px;
-  padding: 0 20px;
-  font: 700 15px/1 Arial, Helvetica, sans-serif;
-  color: var(--faint);
-  letter-spacing: -.01em;
-  transition: color .2s ease;
-}
-
-.landing2-marquee-item:hover {
-  color: #f2f4f3;
-}
-
-.landing2-marquee-dot {
-  font-size: 8px;
-  color: var(--line-2);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing2-marquee-track { animation: none; }
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #0a0e10;
+  font: 800 11px Arial, Helvetica, sans-serif;
+  flex-shrink: 0;
 }
 
 /* Hero */
@@ -8156,8 +8139,9 @@ a {
   background:
     linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px),
-    radial-gradient(circle at 82% 8%, rgba(255,52,77,.10), transparent 40%);
-  background-size: 64px 64px, 64px 64px, auto;
+    radial-gradient(circle at 82% 8%, rgba(255,52,77,.16), transparent 45%),
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255,52,77,.08), transparent 60%);
+  background-size: 64px 64px, 64px 64px, auto, auto;
 }
 
 .landing2-eyebrow {
@@ -8337,14 +8321,20 @@ a {
 .landing2-steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
+  gap: 16px;
 }
 
 .landing2-step {
-  padding: 32px 28px 40px;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  padding: 32px 28px 36px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: radial-gradient(120% 100% at 0% 0%, rgba(255,52,77,.05), transparent 60%), var(--panel);
+  transition: border-color .2s ease, transform .2s ease;
+}
+
+.landing2-step:hover {
+  border-color: var(--line-2);
+  transform: translateY(-2px);
 }
 
 .landing2-step-num {
@@ -8385,14 +8375,14 @@ a {
   .landing2-steps { grid-template-columns: 1fr; }
 }
 
-/* Feature cards */
+/* Feature cards — discrete rounded panels with a soft vignette, not a
+   hairline industrial grid: closer to how HyperDex (and Linear/Vercel)
+   present a feature as its own floating card. */
 
 .landing2-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  gap: 16px;
 }
 
 @media (max-width: 960px) {
@@ -8404,28 +8394,36 @@ a {
 
 .landing2-card {
   position: relative;
-  background: var(--bg);
-  padding: 26px 22px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(255,52,77,.07), transparent 60%),
+    var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
   overflow: hidden;
-  transition: background-color .2s ease, transform .2s ease;
+  transition: background-color .2s ease, transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 
 .landing2-card::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(140px circle at var(--mx, 50%) var(--my, 0%), rgba(255,52,77,.14), transparent 60%);
+  background: radial-gradient(160px circle at var(--mx, 50%) var(--my, 0%), rgba(255,52,77,.16), transparent 60%);
   opacity: 0;
   transition: opacity .25s ease;
   pointer-events: none;
 }
 
 .landing2-card:hover {
-  background: var(--panel);
-  transform: translateY(-2px);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(255,52,77,.1), transparent 60%),
+    var(--panel-2);
+  border-color: var(--line-2);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(0,0,0,.35);
 }
 
 .landing2-card:hover::before {
@@ -8489,13 +8487,108 @@ a {
   100% { box-shadow: 0 0 0 0 rgba(90,224,157,0); }
 }
 
+/* Mini product mockups embedded in each feature card — real chrome, not
+   just a text description, the same "show it working" move HyperDex's
+   own cards make. Purely decorative UI (no fabricated numbers). */
+
+.landing2-mockup {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  padding: 14px;
+  min-height: 108px;
+}
+
+.landing2-mockup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.landing2-mockup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #d7dadb;
+}
+
+.landing2-mockup-chip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+.landing2-mockup-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.landing2-mockup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.landing2-mockup-row-best {
+  background: rgba(255,52,77,.1);
+  border-color: rgba(255,52,77,.3);
+  color: #f2f4f3;
+}
+
+.landing2-mockup-row b {
+  color: #f2f4f3;
+  font-weight: 600;
+}
+
+.landing2-mockup-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.landing2-mockup-check + .landing2-mockup-check {
+  margin-top: 8px;
+}
+
+.landing2-mockup-check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(90,224,157,.15);
+  color: var(--green);
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
 /* Live tops preview */
 
 .landing2-tops {
-  display: grid;
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .landing2-tops-row {
@@ -8503,14 +8596,17 @@ a {
   grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 16px;
-  background: var(--bg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
   padding: 14px 18px;
   font-size: 13px;
-  transition: background-color .15s ease, padding-left .15s ease;
+  transition: background-color .15s ease, border-color .15s ease, padding-left .15s ease;
 }
 
 .landing2-tops-row:hover {
-  background: var(--panel);
+  background: var(--panel-2);
+  border-color: var(--line-2);
   padding-left: 22px;
 }
 
@@ -8543,15 +8639,20 @@ a {
 .landing2-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--line);
   border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  overflow: hidden;
 }
 
 .landing2-stat {
-  background: var(--bg);
   padding: 36px 24px;
   text-align: center;
+  border-left: 1px solid var(--line);
+}
+
+.landing2-stat:first-child {
+  border-left: none;
 }
 
 .landing2-stat-value {
@@ -8570,6 +8671,8 @@ a {
 
 @media (max-width: 620px) {
   .landing2-stats { grid-template-columns: 1fr; }
+  .landing2-stat { border-left: none; border-top: 1px solid var(--line); }
+  .landing2-stat:first-child { border-top: none; }
 }
 
 /* Flow diagram — decorative pipeline (issuer → token → pool → scanner →
@@ -8602,12 +8705,12 @@ a {
 }
 
 .landing2-flow-node-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--panel-3);
   border: 2px solid var(--red);
-  box-shadow: 0 0 0 4px rgba(255,52,77,.12);
+  box-shadow: 0 0 0 5px rgba(255,52,77,.14), 0 0 18px rgba(255,52,77,.35);
 }
 
 .landing2-flow-node-label {
@@ -8668,11 +8771,18 @@ a {
 /* Closing band */
 
 .landing2-band {
+  margin: 0 28px 72px;
   padding: 96px 28px;
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse 70% 100% at 50% 100%, rgba(255,52,77,.12), transparent 65%),
+    var(--panel);
+  border: 1px solid var(--line);
   text-align: center;
+}
+
+@media (max-width: 620px) {
+  .landing2-band { margin: 0 16px 56px; padding: 64px 20px; }
 }
 
 .landing2-band h2 {
