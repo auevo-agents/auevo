@@ -57,39 +57,50 @@ export default function BasketsPage() {
 
   return (
     <>
-      <header className="product-header">
-        <div>
-          <h3>Baskets</h3>
-          <p>Weighted baskets of tokenized stocks — bought or sold in one wallet signature</p>
-        </div>
-      </header>
+      <div className="dash-hero">
+        <p className="dash-eyebrow">Strategy baskets · One signature</p>
+        <h1 className="dash-title">Invest in a theme.</h1>
+        <p className="dash-subtitle">
+          {baskets ? (
+            <>
+              <b>{baskets.length}</b> {baskets.length === 1 ? "basket" : "baskets"} of tokenized stocks, bought or
+              sold in one wallet signature through Uniswap v4.
+            </>
+          ) : (
+            "Weighted baskets of tokenized stocks — bought or sold in one wallet signature."
+          )}
+        </p>
+      </div>
 
-      {error && <p className="error" style={{ marginTop: 4 }}>{error}</p>}
+      {error && <p className="error" style={{ marginTop: 16 }}>{error}</p>}
       {!baskets && !error && <div className="app-empty">Loading…</div>}
       {baskets && !indexed && <div className="app-empty">Baskets aren&apos;t connected yet.</div>}
       {baskets && indexed && baskets.length === 0 && <div className="app-empty">No baskets seeded yet.</div>}
 
       {baskets && indexed && baskets.length > 0 && (
         <>
-          <div className="desk-scroll">
-            <div className="money-row money-row-nopair money-head">
-              <span>BASKET</span>
-              <span className="desk-col-right">HOLDINGS</span>
-              <span className="desk-col-right">KIND</span>
-              <span />
-            </div>
+          <div className="dash-basket-grid" style={{ marginTop: 8 }}>
             {baskets.map((basket) => (
-              <Link key={basket.id} href={`/app/baskets/${basket.id}`} className="money-row money-row-nopair money-row-link">
-                <span>
-                  <b>{basket.name}</b>
-                  <br />
-                  <small style={{ color: "#5a6469" }}>{basket.description}</small>
-                </span>
-                <span className="desk-col-right">{basket.holdings.map((h) => h.ticker).join(", ")}</span>
-                <span className="desk-col-right">{basket.kind}</span>
-                <span className="desk-actions">
-                  <span>view →</span>
-                </span>
+              <Link key={basket.id} href={`/app/baskets/${basket.id}`} className="dash-basket-card">
+                <div className="dash-basket-card-head">
+                  <div>
+                    <h4>{basket.name}</h4>
+                    <p>{basket.description}</p>
+                  </div>
+                  <span className="dash-basket-kind">{basket.kind}</span>
+                </div>
+                <div className="landing2-mockup-chips">
+                  {basket.holdings.map((h) => (
+                    <span className="landing2-mockup-chip" key={h.ticker}>
+                      <span className="landing2-mockup-chip-dot" />
+                      {h.ticker}
+                    </span>
+                  ))}
+                </div>
+                <div className="dash-basket-foot">
+                  <span>{basket.holdings.length} holdings</span>
+                  <span>View →</span>
+                </div>
               </Link>
             ))}
           </div>
