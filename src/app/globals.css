@@ -6190,12 +6190,11 @@ a {
   align-items: center;
   gap: 2px;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.app-topnav-links::-webkit-scrollbar {
-  display: none;
+  /* No overflow-x here on purpose: with only 4 top-level items (Overview
+     + 3 grouped dropdowns) there's nothing to scroll, and overflow-x set
+     to anything but visible implies overflow-y: auto, which would clip
+     the dropdown panels below (same bug the landing page's sticky header
+     hit — see .landing2's own comment). */
 }
 
 .app-nav-link {
@@ -6249,6 +6248,67 @@ a {
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
+}
+
+/* Grouped app-nav dropdowns (Trade / Build / Track) */
+
+.app-nav-group {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.app-nav-group-trigger {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.app-nav-caret {
+  font-size: 9px;
+  color: #4b5257;
+  transition: transform .15s ease;
+}
+
+.app-nav-caret-open {
+  transform: rotate(180deg);
+}
+
+.app-nav-group-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid #252c30;
+  background: #0e1317;
+  box-shadow: 0 16px 40px rgba(0,0,0,.5);
+  z-index: 10;
+  animation: landing2-nav-in .14s ease;
+}
+
+.app-nav-group-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  color: #9aa3a8;
+  font: 500 12.5px Arial, Helvetica, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-nav-group-link:hover {
+  color: #d7dadb;
+  background: rgba(255,255,255,.05);
+}
+
+.app-nav-group-link.active {
+  color: #ff4259;
+  background: rgba(255,52,77,.1);
 }
 
 .product-nav button:disabled {
@@ -7771,6 +7831,113 @@ a {
   color: var(--red);
 }
 
+/* Mega-menu nav */
+
+.landing-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landing-nav-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: #d7dadb;
+  font: 600 13.5px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.landing-nav-trigger:hover,
+.landing-nav-trigger[aria-expanded="true"] {
+  background: rgba(255,255,255,.04);
+  border-color: #252c30;
+}
+
+.landing-nav-caret {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--faint);
+  transition: transform .18s ease;
+}
+
+.landing-nav-caret-open {
+  transform: rotate(180deg);
+}
+
+.landing-nav-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(0,0,0,.5);
+  animation: landing2-nav-in .16s ease;
+  z-index: 50;
+}
+
+@keyframes landing2-nav-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.landing-nav-group {
+  background: #0b0f12;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+}
+
+.landing-nav-group-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0 0 8px;
+}
+
+.landing-nav-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  margin: 0 -8px;
+  border-radius: 6px;
+  transition: background-color .12s ease;
+}
+
+.landing-nav-link:hover {
+  background: rgba(255,255,255,.05);
+}
+
+.landing-nav-link-title {
+  font: 700 13.5px Arial, Helvetica, sans-serif;
+  color: #f2f4f3;
+}
+
+.landing-nav-link-body {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 620px) {
+  .landing-nav-panel { grid-template-columns: 1fr; }
+}
+
 .landing-hero {
   flex: 1;
   max-width: 720px;
@@ -7919,6 +8086,68 @@ a {
   .landing2-ticker-track { animation: none; }
 }
 
+/* Issuer / chain marquees — a second and third running line, real
+   names (rwa_issuers, lifi/chains.ts), not decoration text. */
+
+.landing2-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+  padding: 14px 0;
+}
+
+.landing2-marquee::before,
+.landing2-marquee::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 64px;
+  z-index: 2;
+  pointer-events: none;
+}
+.landing2-marquee::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+.landing2-marquee::after { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
+
+.landing2-marquee-track {
+  display: inline-flex;
+  animation: landing2-scroll 46s linear infinite;
+}
+
+.landing2-marquee-reverse {
+  animation-direction: reverse;
+  animation-duration: 58s;
+}
+
+.landing2-marquee-set {
+  display: inline-flex;
+  align-items: center;
+}
+
+.landing2-marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  font: 700 15px/1 Arial, Helvetica, sans-serif;
+  color: var(--faint);
+  letter-spacing: -.01em;
+  transition: color .2s ease;
+}
+
+.landing2-marquee-item:hover {
+  color: #f2f4f3;
+}
+
+.landing2-marquee-dot {
+  font-size: 8px;
+  color: var(--line-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing2-marquee-track { animation: none; }
+}
+
 /* Hero */
 
 .landing2-hero {
@@ -8033,6 +8262,12 @@ a {
   aspect-ratio: 1;
   max-width: 420px;
   justify-self: center;
+  perspective: 700px;
+}
+
+.landing2-orbit svg {
+  transform: rotateX(var(--tiltX, 0deg)) rotateY(var(--tiltY, 0deg));
+  transition: transform .25s ease-out;
 }
 
 .landing2-orbit svg {
@@ -8065,6 +8300,7 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .landing2-orbit-ring-1, .landing2-orbit-ring-2 { animation: none; }
+  .landing2-orbit svg { transform: none !important; transition: none; }
 }
 
 @media (max-width: 860px) {
@@ -8300,6 +8536,133 @@ a {
   font-weight: 600;
   min-width: 64px;
   text-align: right;
+}
+
+/* Stats strip — real counts (issuers, chains, tools), animated on scroll */
+
+.landing2-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.landing2-stat {
+  background: var(--bg);
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.landing2-stat-value {
+  display: block;
+  font: 800 clamp(32px, 4.5vw, 56px)/1 Arial, Helvetica, sans-serif;
+  color: var(--red);
+  letter-spacing: -.02em;
+  margin-bottom: 10px;
+}
+
+.landing2-stat-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 620px) {
+  .landing2-stats { grid-template-columns: 1fr; }
+}
+
+/* Flow diagram — decorative pipeline (issuer → token → pool → scanner →
+   wallet), a pulse travels each segment left to right on a stagger. */
+
+.landing2-flow {
+  display: flex;
+  align-items: flex-start;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
+  overflow-x: auto;
+}
+
+.landing2-flow-item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.landing2-flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  min-width: 148px;
+  flex-shrink: 0;
+}
+
+.landing2-flow-node-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--panel-3);
+  border: 2px solid var(--red);
+  box-shadow: 0 0 0 4px rgba(255,52,77,.12);
+}
+
+.landing2-flow-node-label {
+  font: 700 14px Arial, Helvetica, sans-serif;
+  color: #f2f4f3;
+}
+
+.landing2-flow-node-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--faint);
+  max-width: 140px;
+}
+
+.landing2-flow-line {
+  position: relative;
+  flex: 1;
+  min-width: 32px;
+  height: 2px;
+  background: var(--line-2);
+  margin: 0 8px;
+  top: -22px;
+  overflow: hidden;
+}
+
+.landing2-flow-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  animation: landing2-flow-travel 2.6s ease-in-out infinite;
+}
+
+@keyframes landing2-flow-travel {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing2-flow-pulse { animation: none; opacity: .5; }
+}
+
+@media (max-width: 860px) {
+  .landing2-flow { flex-direction: column; align-items: stretch; gap: 0; }
+  .landing2-flow-item { flex-direction: column; align-items: flex-start; }
+  .landing2-flow-node { flex-direction: row; min-width: 0; text-align: left; }
+  .landing2-flow-node-tag { max-width: none; }
+  .landing2-flow-line { width: 2px; height: 32px; top: 0; margin: 0 0 0 6px; }
+  .landing2-flow-pulse { width: 100%; height: 40%; background: linear-gradient(180deg, transparent, var(--red), transparent); }
+  @keyframes landing2-flow-travel {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(350%); }
+  }
 }
 
 /* Closing band */
