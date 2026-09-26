@@ -123,12 +123,12 @@ function ScannerApp() {
   return (
     <main className="site">
       <header className="topbar">
-        <Link href="/fees" className="brand">
+        <Link href="/" className="brand">
           auevo<span>_</span>
         </Link>
 
         <nav>
-          <Link href="/fees">Fee scanner</Link>
+          <Link href="/legacy/fees">Fee scanner</Link>
           <span className="trade-nav-active">Token scanner</span>
           <Link href="/trade">Trade</Link>
         </nav>

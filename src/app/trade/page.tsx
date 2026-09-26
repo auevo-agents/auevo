@@ -140,9 +140,9 @@ export default function TradePage() {
 
           <nav>
             <Link href="/">Home</Link>
-            <Link href="/fees">Fee scanner</Link>
-            <Link href="/fees#bots">Bots</Link>
-            <Link href="/fees#docs">Docs</Link>
+            <Link href="/legacy/fees">Fee scanner</Link>
+            <Link href="/legacy/fees#bots">Bots</Link>
+            <Link href="/legacy/fees#docs">Docs</Link>
             <Link href="/scanner">Token scanner</Link>
             <span className="trade-nav-active">Trade</span>
           </nav>

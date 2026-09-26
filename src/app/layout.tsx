@@ -1,24 +1,29 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+// Auevo is repositioning from a Solana fee-bot scanner into a
+// marketplace + scanner for tokenized real-world assets (see
+// docs/RWA_SPEC.md) — this metadata described the old positioning and is
+// now stale/misleading for what "/" actually shows. The old scanner
+// lives on at /legacy/fees and keeps its own page-level copy.
 export const metadata: Metadata = {
   metadataBase: new URL("https://auevo.io"),
-  title: "Auevo — How much have you paid trading bots?",
+  title: "Auevo — Every tokenized stock. Every issuer. Scanned.",
   description:
-    "Paste any Solana wallet address and see exactly how much you've paid Axiom, BullX, Trojan, BonkBot and other trading bots in fees.",
+    "A marketplace for tokenized real-world assets — stocks, ETFs, treasuries, private credit — across issuers and chains, plus a scanner for premium/discount, arbitrage, risk and liquidity that a plain marketplace doesn't show you.",
   openGraph: {
-    title: "Auevo — Stop paying for their wins.",
+    title: "Auevo — Every tokenized stock. Every issuer. Scanned.",
     description:
-      "Paste any Solana wallet address and see exactly how much you've paid Axiom, BullX, Trojan, BonkBot and other trading bots in fees. Free, no wallet connection.",
+      "Tokenized real-world assets across issuers and chains, with the premium/discount, arbitrage, risk and liquidity data a plain marketplace doesn't show you.",
     url: "https://auevo.io",
     siteName: "Auevo",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Auevo — Stop paying for their wins.",
+    title: "Auevo — Every tokenized stock. Every issuer. Scanned.",
     description:
-      "Paste any Solana wallet address and see exactly how much you've paid trading bots in fees. Free, no wallet connection.",
+      "Tokenized real-world assets across issuers and chains, with the premium/discount, arbitrage, risk and liquidity data a plain marketplace doesn't show you.",
   },
   verification: {
     google: "-qVb443obwXraFs4OWaGDR9l8lFDZcl5fDKT6fMVN-c",

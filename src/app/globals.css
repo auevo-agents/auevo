@@ -6240,6 +6240,17 @@ a {
   text-transform: uppercase;
 }
 
+.app-nav-badge {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255,255,255,.06);
+  color: #5a6469;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 .product-nav button:disabled {
   cursor: default;
   opacity: .55;
@@ -7668,4 +7679,127 @@ a {
   color: #5a6469;
   font-size: 10px;
   letter-spacing: .08em;
+}
+
+/* --- RWA geo-gate banner + standing disclaimer (RWA_SPEC.md section 4) --- */
+
+.geo-banner {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid rgba(251,191,36,.4);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: rgba(251,191,36,.06);
+  color: #d7dadb;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.rwa-disclaimer {
+  margin: 16px 0 0;
+  padding: 0;
+  max-width: 720px;
+  color: #5a6469;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.rwa-disclaimer-compact {
+  font-size: 10.5px;
+  max-width: none;
+}
+
+/* --- temporary "/" landing (RWA_SPEC.md phase 0) --- */
+
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: #d7dadb;
+}
+
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 28px;
+}
+
+.landing-brand {
+  color: #f2f4f3;
+  font: 700 20px/1 Arial, Helvetica, sans-serif;
+  letter-spacing: -.055em;
+  text-decoration: none;
+}
+
+.landing-brand span {
+  color: var(--red);
+}
+
+.landing-hero {
+  flex: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 60px 24px 40px;
+  text-align: center;
+}
+
+.landing-hero h1 {
+  margin: 0 0 18px;
+  font-size: 34px;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  color: #f2f4f3;
+}
+
+.landing-hero > p {
+  margin: 0 auto 30px;
+  max-width: 560px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #9aa3a8;
+}
+
+.landing-cta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.landing-cta {
+  padding: 11px 20px;
+  border-radius: 8px;
+  background: var(--red);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+
+.landing-cta-ghost {
+  padding: 11px 20px;
+  border-radius: 8px;
+  border: 1px solid #252c30;
+  color: #d7dadb;
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+
+.landing-status {
+  font-size: 12px;
+  color: #5a6469;
+}
+
+.landing-status a {
+  color: var(--red);
+}
+
+.landing-footer {
+  padding: 24px 28px 40px;
+  max-width: 720px;
+  margin: 0 auto;
 }

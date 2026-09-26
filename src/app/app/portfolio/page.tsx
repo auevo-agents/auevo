@@ -6,15 +6,18 @@ import { useAccount } from "wagmi";
 import { ConnectButton } from "../connect-button";
 
 /**
- * "Positions" is the connected wallet's own profile — the same balance,
- * open-positions-with-unrealized-PnL, and activity feed view any other
- * followed wallet gets at /app/wallets/[address] (see wallet-positions.ts
- * for the cost-basis/mark-price math). This used to be a separate, much
- * thinner page (native balance + a manually-entered ERC-20 list, no PnL,
- * no activity) — duplicating the same "what does this wallet hold" idea
- * with less in it. Redirecting instead of maintaining two versions.
+ * "Portfolio" (RWA_SPEC.md section 6: /app/portfolio) is the connected
+ * wallet's own profile — the same balance, open-positions-with-
+ * unrealized-PnL, and activity feed view any other followed wallet gets
+ * at /app/wallets/[address] (see wallet-positions.ts for the cost-basis/
+ * mark-price math). Was at /app/positions and just did this same
+ * redirect; renamed to match the RWA_SPEC.md route rather than keep a
+ * second name for the same page. Section 6 calls this "RWA-портфель
+ * кошелька в USD" — the USD rollup across chains is Phase 6 work, once
+ * the indexer has USD pricing; this already covers the ETH-denominated
+ * single-chain case Phase 6 will extend.
  */
-export default function PositionsPage() {
+export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
   const router = useRouter();
 
@@ -28,7 +31,7 @@ export default function PositionsPage() {
     <>
       <header className="product-header">
         <div>
-          <h3>Positions</h3>
+          <h3>Portfolio</h3>
           <p>Your own wallet&apos;s profile — balance, positions, activity</p>
         </div>
         <ConnectButton />
@@ -36,7 +39,7 @@ export default function PositionsPage() {
 
       {!isConnected && (
         <div className="app-empty" style={{ marginTop: 20 }}>
-          Connect a wallet above to see your positions.
+          Connect a wallet above to see your portfolio.
         </div>
       )}
 
