@@ -5,6 +5,7 @@ import { loadTickerTokens } from "./scanner-data";
 import { USDG } from "./dex/addresses";
 import { sendTelegramMessage } from "./telegram";
 import { checkPremiumAlerts, checkListingAlerts, checkWhaleAlerts, type AlertRow, type FiredAlert } from "./alerts";
+import { withFetchRetry } from "./db-retry";
 
 /**
  * RWA_SPEC.md Phase 8's alert-evaluation pass. Runs once per
@@ -32,27 +33,23 @@ export interface AlertsRunResult {
 }
 
 async function loadAlerts(supabase: SupabaseClient): Promise<AlertRow[]> {
-  const { data, error } = await supabase.from("alerts").select("id, account, type, params, channel");
+  const { data, error } = await withFetchRetry(() => supabase.from("alerts").select("id, account, type, params, channel"));
   if (error) throw new Error(`Could not read alerts: ${error.message}`);
   return (data ?? []) as AlertRow[];
 }
 
 async function loadRecentTrades(supabase: SupabaseClient, since: string): Promise<import("./alerts").RwaTrade[]> {
-  const { data: pools, error: poolsError } = await supabase
-    .from("rwa_pools")
-    .select("pool_id, token0, token1")
-    .eq("chain_id", robinhoodChain.id)
-    .eq("dex", "uniswap_v4");
+  const { data: pools, error: poolsError } = await withFetchRetry(() =>
+    supabase.from("rwa_pools").select("pool_id, token0, token1").eq("chain_id", robinhoodChain.id).eq("dex", "uniswap_v4")
+  );
   if (poolsError) throw new Error(`Could not read rwa_pools: ${poolsError.message}`);
   if (!pools || pools.length === 0) return [];
 
   const tickerByPoolId = new Map<string, { ticker: string; usdgIsToken0: boolean; nonUsdgAddress: string }>();
   const nonUsdgAddresses = pools.map((p) => (p.token0.toLowerCase() === USDG.toLowerCase() ? p.token1 : p.token0));
-  const { data: tokenRows, error: tokensError } = await supabase
-    .from("rwa_tokens")
-    .select("address, underlying_ticker")
-    .eq("chain_id", robinhoodChain.id)
-    .in("address", nonUsdgAddresses);
+  const { data: tokenRows, error: tokensError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("address, underlying_ticker").eq("chain_id", robinhoodChain.id).in("address", nonUsdgAddresses)
+  );
   if (tokensError) throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
   const tickerByAddress = new Map((tokenRows ?? []).map((t) => [t.address.toLowerCase(), t.underlying_ticker]));
 
@@ -64,12 +61,14 @@ async function loadRecentTrades(supabase: SupabaseClient, since: string): Promis
   }
   if (tickerByPoolId.size === 0) return [];
 
-  const { data: swaps, error: swapsError } = await supabase
-    .from("indexer_swaps")
-    .select("pool_id, amount0, amount1, tx_hash")
-    .eq("dex", "uniswap_v4")
-    .in("pool_id", [...tickerByPoolId.keys()])
-    .gte("block_timestamp", since);
+  const { data: swaps, error: swapsError } = await withFetchRetry(() =>
+    supabase
+      .from("indexer_swaps")
+      .select("pool_id, amount0, amount1, tx_hash")
+      .eq("dex", "uniswap_v4")
+      .in("pool_id", [...tickerByPoolId.keys()])
+      .gte("block_timestamp", since)
+  );
   if (swapsError) throw new Error(`Could not read indexer_swaps: ${swapsError.message}`);
 
   return (swaps ?? []).flatMap((s) => {
@@ -81,11 +80,9 @@ async function loadRecentTrades(supabase: SupabaseClient, since: string): Promis
 }
 
 async function loadNewListings(supabase: SupabaseClient, since: string): Promise<import("./alerts").NewListing[]> {
-  const { data, error } = await supabase
-    .from("rwa_tokens")
-    .select("address, underlying_ticker, issuer_id, discovered_at")
-    .eq("verified", true)
-    .gte("discovered_at", since);
+  const { data, error } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("address, underlying_ticker, issuer_id, discovered_at").eq("verified", true).gte("discovered_at", since)
+  );
   if (error) throw new Error(`Could not read rwa_tokens: ${error.message}`);
   return (data ?? []).map((t) => ({ ticker: t.underlying_ticker, address: t.address, issuerId: t.issuer_id, discoveredAt: t.discovered_at }));
 }
@@ -104,19 +101,23 @@ async function deliverAndRecord(
 
     let delivered_telegram = false;
     if (alert.channel === "telegram") {
-      const { data: link } = await supabase.from("telegram_links").select("chat_id").eq("account", alert.account).maybeSingle();
+      const { data: link } = await withFetchRetry(() =>
+        supabase.from("telegram_links").select("chat_id").eq("account", alert.account).maybeSingle()
+      );
       if (link?.chat_id) {
         delivered_telegram = await sendTelegramMessage(link.chat_id, event.message);
       }
     }
 
-    const { error } = await supabase.from("alert_notifications").insert({
-      alert_id: event.alertId,
-      message: event.message,
-      dedupe_key: event.dedupeKey,
-      delivered_web: true, // "web" delivery is just existing in this table for the UI to read — always true once inserted
-      delivered_telegram,
-    });
+    const { error } = await withFetchRetry(() =>
+      supabase.from("alert_notifications").insert({
+        alert_id: event.alertId,
+        message: event.message,
+        dedupe_key: event.dedupeKey,
+        delivered_web: true, // "web" delivery is just existing in this table for the UI to read — always true once inserted
+        delivered_telegram,
+      })
+    );
     // A unique-violation here means this exact (alert, dedupeKey) already
     // fired on a previous pass — not an error, just nothing new to count.
     if (error) {
