@@ -7747,10 +7747,17 @@ a {
 }
 
 .landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 22px 28px;
+  background: rgba(8, 11, 13, .72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.05);
 }
 
 .landing-brand {
@@ -7814,6 +7821,13 @@ a {
   font-weight: 600;
   font-size: 13.5px;
   text-decoration: none;
+  transition: border-color .18s ease, color .18s ease, background-color .18s ease;
+}
+
+.landing-cta-ghost:hover {
+  border-color: var(--red);
+  color: #fff;
+  background: rgba(255,52,77,.08);
 }
 
 .landing-status {
@@ -7839,7 +7853,10 @@ a {
   flex-direction: column;
   background: var(--bg);
   color: #d7dadb;
-  overflow-x: hidden;
+  /* clip, not hidden — "overflow-x: hidden" implies "overflow-y: auto",
+     which makes this the nearest scrolling ancestor and breaks the
+     sticky header below. */
+  overflow-x: clip;
 }
 
 .landing2-ticker {
@@ -7979,6 +7996,19 @@ a {
   color: #fff;
   font-weight: 700;
   font-size: 14px;
+  display: inline-block;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+
+.landing2-cta:hover {
+  background: var(--red-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(255,52,77,.28);
+}
+
+.landing2-cta:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(255,52,77,.22);
 }
 
 .landing2-cta-link {
@@ -8240,6 +8270,12 @@ a {
   background: var(--bg);
   padding: 14px 18px;
   font-size: 13px;
+  transition: background-color .15s ease, padding-left .15s ease;
+}
+
+.landing2-tops-row:hover {
+  background: var(--panel);
+  padding-left: 22px;
 }
 
 .landing2-tops-row b {
