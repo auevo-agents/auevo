@@ -61,6 +61,8 @@ let dbServer: Server;
 let xstocksServer: Server;
 const upsertedPools: Record<string, unknown>[] = [];
 const poolUpdates: Record<string, unknown>[] = [];
+const registryStateUpdates: Record<string, unknown>[] = [];
+let failPoolsUpsert = false;
 
 beforeAll(async () => {
   rpcServer = createServer((req, res) => {
@@ -145,7 +147,10 @@ beforeAll(async () => {
     if (req.method === "PATCH" && table === "rwa_registry_state") {
       let b = "";
       req.on("data", (c) => (b += c));
-      req.on("end", () => res.end("[]"));
+      req.on("end", () => {
+        registryStateUpdates.push(JSON.parse(b));
+        res.end("[]");
+      });
       return;
     }
     if (req.method === "POST" && table === "rwa_tokens") {
@@ -163,6 +168,14 @@ beforeAll(async () => {
       return;
     }
     if (req.method === "POST" && table === "rwa_pools") {
+      if (failPoolsUpsert) {
+        // Simulates the real production failure this test guards against:
+        // a raw network-level fetch failure, not a structured PostgREST
+        // error — a dropped connection is the closest a test server can
+        // get to that without a real network layer.
+        req.socket.destroy();
+        return;
+      }
       let b = "";
       req.on("data", (c) => (b += c));
       req.on("end", () => {
@@ -253,5 +266,27 @@ describe("runRegistryPass — rwa_pools discovery and metrics refresh", () => {
     expect(poolUpdates[0].liquidity_usd).toBeCloseTo(1000, 2);
     // |500 USDG| + |-300 USDG| across the two mocked swaps.
     expect(poolUpdates[0].volume_24h_usd).toBeCloseTo(800, 5);
+  });
+
+  it("still checkpoints synced_to_block and finishes the pass when the rwa_pools upsert fails", async () => {
+    // Regression test for a real production incident: a run found and
+    // saved real tokens (rwa_tokens succeeded), then hit a transient
+    // network failure on the very next call (rwa_pools, a fresh table)
+    // and the whole pass died before ever reaching the checkpoint
+    // update below — meaning the same block range would be rescanned
+    // forever, even after tokens were already safely saved.
+    failPoolsUpsert = true;
+    try {
+      const { runRegistryPass } = await import("./run-registry");
+      const result = await runRegistryPass();
+
+      expect(result.status).toBe("ok");
+      expect(result.robinhood?.discovered).toBe(1); // token discovery still succeeded
+      expect(result.pools?.error).toContain("rwa_pools upsert failed");
+      expect(registryStateUpdates.length).toBeGreaterThan(0); // the checkpoint update still ran
+      expect(registryStateUpdates.at(-1)?.synced_to_block).toBe(HEAD_BLOCK.toString());
+    } finally {
+      failPoolsUpsert = false;
+    }
   });
 });

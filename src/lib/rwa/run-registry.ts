@@ -48,7 +48,7 @@ export interface RegistryRunResult {
   headBlock?: string;
   robinhood?: { discovered: number; syncedTo: string; partial: boolean };
   xstocks?: { discovered: number; available: boolean };
-  pools?: { refreshed: number };
+  pools?: { refreshed: number; error?: string | null };
 }
 
 export async function runRegistryPass(): Promise<RegistryRunResult> {
@@ -88,6 +88,19 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       : { pools: [], scannedTo: synced, partial: false };
 
   let robinhoodDiscovered = 0;
+  // Pool discovery/metrics is genuinely separate work from token
+  // discovery (a different table, a different failure mode — see below)
+  // and must never be allowed to take down the rest of this pass: a
+  // thrown error here previously aborted before reaching the
+  // rwa_registry_state checkpoint update, which meant `synced_to_block`
+  // could get stuck forever re-scanning the same range on every future
+  // run even after tokens were already found and saved successfully.
+  // Discovered the hard way: a real production run found and saved two
+  // real tokens (NVDA, SPY) into rwa_tokens, then hit a transient
+  // `TypeError: fetch failed` on the very next call (rwa_pools, a fresh
+  // table with no prior traffic) and the whole pass died right there,
+  // never reaching the checkpoint update below.
+  let poolsError: string | null = null;
   if (scanResult.pools.length > 0) {
     const candidates = await resolveCandidateTokens(client, scanResult.pools);
     // Never guess a decimals value (`decimals` is not-null in the schema
@@ -123,29 +136,40 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       // dedup already discarded as duplicates of a *later* sighting of the
       // same pool_id are missing here, which is fine — pool_id is the
       // upsert key, so a later sighting just re-upserts the same row.
-      const matchedAddresses = new Set(matched.map((c) => c.address.toLowerCase()));
-      const matchedPools = scanResult.pools.filter((p) => matchedAddresses.has(p.token.toLowerCase()));
-      if (matchedPools.length > 0) {
-        const poolRows = matchedPools.map((p) => {
-          const key = buildPoolKey(USDG, p.token, p.fee, p.tickSpacing, p.hooks);
-          return {
-            chain_id: robinhoodChain.id,
-            pool_id: p.poolId,
-            dex: "uniswap_v4" as const,
-            token0: key.currency0,
-            token1: key.currency1,
-            fee: p.fee,
-            tick_spacing: p.tickSpacing,
-            hooks: p.hooks,
-          };
-        });
-        const { error: poolsError } = await supabase.from("rwa_pools").upsert(poolRows, { onConflict: "chain_id,pool_id" });
-        if (poolsError) throw new Error(`rwa_pools upsert failed: ${poolsError.message}`);
+      try {
+        const matchedAddresses = new Set(matched.map((c) => c.address.toLowerCase()));
+        const matchedPools = scanResult.pools.filter((p) => matchedAddresses.has(p.token.toLowerCase()));
+        if (matchedPools.length > 0) {
+          const poolRows = matchedPools.map((p) => {
+            const key = buildPoolKey(USDG, p.token, p.fee, p.tickSpacing, p.hooks);
+            return {
+              chain_id: robinhoodChain.id,
+              pool_id: p.poolId,
+              dex: "uniswap_v4" as const,
+              token0: key.currency0,
+              token1: key.currency1,
+              fee: p.fee,
+              tick_spacing: p.tickSpacing,
+              hooks: p.hooks,
+            };
+          });
+          const { error: upsertError } = await supabase.from("rwa_pools").upsert(poolRows, { onConflict: "chain_id,pool_id" });
+          if (upsertError) throw new Error(`rwa_pools upsert failed: ${upsertError.message}`);
+        }
+      } catch (err) {
+        poolsError = err instanceof Error ? err.message : String(err);
       }
     }
   }
 
-  const poolsRefreshed = await refreshPoolMetrics(client, supabase);
+  let poolsRefreshed = 0;
+  if (!poolsError) {
+    try {
+      poolsRefreshed = (await refreshPoolMetrics(client, supabase)).refreshed;
+    } catch (err) {
+      poolsError = err instanceof Error ? err.message : String(err);
+    }
+  }
 
   await supabase
     .from("rwa_registry_state")
@@ -190,7 +214,7 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       partial: scanResult.partial,
     },
     xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null },
-    pools: poolsRefreshed,
+    pools: { refreshed: poolsRefreshed, error: poolsError },
   };
 }
 
