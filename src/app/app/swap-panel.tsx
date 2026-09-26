@@ -5,6 +5,7 @@ import {
   encodeFunctionData,
   formatUnits,
   isAddress,
+  maxUint256,
   parseUnits,
   type Address,
 } from "viem";
@@ -12,7 +13,10 @@ import {
   useAccount,
   useBalance,
   usePublicClient,
+  useReadContract,
   useReadContracts,
+  useSendTransaction,
+  useSignTypedData,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
@@ -24,6 +28,7 @@ import {
   UNISWAP_V3_FACTORY,
   WETH9,
 } from "@/lib/uniswap";
+import { PERMIT2, UNIVERSAL_ROUTER } from "@/lib/rwa/dex/addresses";
 import { robinhoodChain } from "@/lib/chains";
 import { shortenAddress } from "@/lib/format";
 import {
@@ -60,6 +65,19 @@ import {
  * Chain with zero-gas limit orders via its filler network), it just
  * isn't wired up yet; showing a working-looking tab that silently does
  * nothing would be worse than showing none.
+ *
+ * RWA_SPEC.md Phase 2 adds a second, better route this panel can take:
+ * Uniswap v4 (single-hop, or a 2-hop through USDG mixing v3 and v4) via
+ * UniversalRouter + Permit2, quoted and built server-side
+ * (src/lib/rwa/dex/*, /api/dex/*) since the encoding needs the official
+ * Uniswap SDKs rather than the hand-rolled ABI calls above — see
+ * dex/build.ts for why. The v3 path above is untouched and still runs on
+ * every keystroke; the v4/mixed quote is fetched in parallel and only
+ * used when it quotes a strictly better output. Executing a v4/mixed
+ * route needs its own approve+sign+send sequence (ERC-20 -> Permit2
+ * approval once ever per token, an EIP-712 Permit2 signature roughly
+ * once ever per token, then the swap itself) — see handleApproveToPermit2
+ * / handleSignPermit / handleV4Swap below.
  */
 
 const ERC20_ABI = [
@@ -181,10 +199,37 @@ const SWAP_ROUTER_ABI = [
   },
 ] as const;
 
+/** IAllowanceTransfer.allowance (Permit2) — confirmed against Uniswap's own permit2 repo, src/interfaces/IAllowanceTransfer.sol. */
+const PERMIT2_ALLOWANCE_ABI = [
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [{ type: "address" }, { type: "address" }, { type: "address" }],
+    outputs: [
+      { name: "amount", type: "uint160" },
+      { name: "expiration", type: "uint48" },
+      { name: "nonce", type: "uint48" },
+    ],
+  },
+] as const;
+
 type Quote = {
   fee: number;
   amountOut: bigint;
 } | null;
+
+interface V4RouteQuote {
+  amountOut: bigint;
+  legs: string[]; // protocol per leg, display-only ("v3" | "v4")
+}
+
+interface SignedPermit {
+  details: { token: Address; amount: string; expiration: number; nonce: number };
+  spender: Address;
+  sigDeadline: number;
+  signature: `0x${string}`;
+}
 
 type GasTier = "low" | "med" | "high";
 
@@ -246,6 +291,20 @@ export function SwapPanel({
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
+  // RWA_SPEC.md Phase 2's v4/mixed route — quoted in parallel with v3
+  // above, used only when it wins. See the doc comment at the top of this
+  // file for the full approve/sign/send sequence this route needs.
+  const [v4Route, setV4Route] = useState<V4RouteQuote | null>(null);
+  const [v4Quoting, setV4Quoting] = useState(false);
+  const [permit, setPermit] = useState<SignedPermit | null>(null);
+  const [pendingPermit, setPendingPermit] = useState<{
+    details: { token: Address; amount: string; expiration: number; nonce: number };
+    spender: Address;
+    sigDeadline: number;
+  } | null>(null);
+  const [permitFetchError, setPermitFetchError] = useState<string | null>(null);
+  const [buildError, setBuildError] = useState<string | null>(null);
+
   // Lazy-initialized from localStorage — fine to differ from the SSR
   // markup for one paint, same reasoning as FavoriteStar.
   const [quickBuyPresets, setQuickBuyPresets] = useState<string[]>(() =>
@@ -300,6 +359,13 @@ export function SwapPanel({
           functionName: "allowance",
           args: [account, UNISWAP_SWAP_ROUTER_02],
         },
+      tokenIn &&
+        account && {
+          address: tokenIn,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [account, PERMIT2],
+        },
     ].filter(Boolean) as never[],
     query: { enabled: Boolean(tokenIn && tokenOut) },
   });
@@ -308,7 +374,7 @@ export function SwapPanel({
     () => tokenMeta.data?.map((r) => r.result) ?? [],
     [tokenMeta.data]
   );
-  const [inDecimals, inSymbol, outDecimals, outSymbol, erc20InBalance, allowance] =
+  const [inDecimals, inSymbol, outDecimals, outSymbol, erc20InBalance, allowance, allowanceToPermit2] =
     tokenMetaResults;
 
   // Display-only: the underlying pool/quote always trades WETH9, but a
@@ -399,16 +465,108 @@ export function SwapPanel({
     };
   }, [publicClient, tokenIn, tokenOut, parsedAmountIn]);
 
+  // The v4/mixed route, quoted server-side (/api/dex/quote) in parallel
+  // with the v3 probe above — see this file's top doc comment. Same
+  // debounce, same "drop a stale slower response" guard.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      setV4Route(null);
+
+      if (!tokenIn || !tokenOut || !parsedAmountIn || parsedAmountIn <= 0n) return;
+      if (tokenIn.toLowerCase() === tokenOut.toLowerCase()) return;
+
+      setV4Quoting(true);
+      try {
+        const res = await fetch(
+          `/api/dex/quote?tokenIn=${tokenIn}&tokenOut=${tokenOut}&amountIn=${parsedAmountIn.toString()}`
+        );
+        const data = await res.json();
+        if (cancelled || !res.ok || !data.found) return;
+        setV4Route({ amountOut: BigInt(data.amountOut), legs: data.legs.map((l: { protocol: string }) => l.protocol) });
+      } catch {
+        // A v4/mixed route is an optimization, not a requirement — the v3
+        // probe above still runs independently, so a failure here just
+        // means this panel falls back to whatever v3 already found.
+      } finally {
+        if (!cancelled) setV4Quoting(false);
+      }
+    }
+
+    const timer = setTimeout(run, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tokenIn, tokenOut, parsedAmountIn]);
+
+  // A permit signed for one token/amount stops being valid the moment
+  // either changes (a new signature would be needed for a different
+  // nonce/amount) — clearing it here rather than leaving a stale
+  // signature around for the build step to reject at the last step.
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setPermit(null);
+    setPendingPermit(null);
+    setPermitFetchError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [tokenIn, account]);
+
+  // Best of the two engines: v3's own in-browser probe, or the v4/mixed
+  // route from the server — never both, whichever quotes more output.
+  const useV4Route = Boolean(v4Route && (!quote || v4Route.amountOut > quote.amountOut));
+
+  const permit2Allowance = useReadContract({
+    address: PERMIT2,
+    abi: PERMIT2_ALLOWANCE_ABI,
+    functionName: "allowance",
+    args: tokenIn && account ? [account, tokenIn, UNIVERSAL_ROUTER] : undefined,
+    query: { enabled: Boolean(useV4Route && tokenIn && account && !isNativeIn) },
+  });
+
+  // `Date.now()` can't be called during render (react-hooks/purity) — a
+  // permit's expiry is instead checked inside an effect, once per fetch of
+  // the allowance data, rather than freshly on every render.
+  const [permitExpired, setPermitExpired] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPermitExpired(
+      permit2Allowance.data ? permit2Allowance.data[1] < Math.floor(Date.now() / 1000) : false
+    );
+  }, [permit2Allowance.data]);
+
   const amountOutMinimum = useMemo(() => {
     if (!quote) return null;
     return (quote.amountOut * BigInt(10_000 - slippageBps)) / 10_000n;
   }, [quote, slippageBps]);
+
+  const v4AmountOutMinimum = useMemo(() => {
+    if (!v4Route) return null;
+    return (v4Route.amountOut * BigInt(10_000 - slippageBps)) / 10_000n;
+  }, [v4Route, slippageBps]);
 
   const needsApproval = isNativeIn
     ? false
     : typeof allowance === "bigint" && parsedAmountIn !== null
       ? allowance < parsedAmountIn
       : null;
+
+  const needsPermit2Erc20Approval =
+    useV4Route && !isNativeIn
+      ? typeof allowanceToPermit2 === "bigint" && parsedAmountIn !== null
+        ? allowanceToPermit2 < parsedAmountIn
+        : null
+      : false;
+
+  const needsPermitSignature =
+    useV4Route && !isNativeIn && !needsPermit2Erc20Approval
+      ? permit
+        ? false
+        : permit2Allowance.data
+          ? permit2Allowance.data[0] < (parsedAmountIn ?? 0n) || permitExpired
+          : true
+      : false;
 
   const approve = useWriteContract();
   const approveReceipt = useWaitForTransactionReceipt({ hash: approve.data });
@@ -485,6 +643,151 @@ export function SwapPanel({
       ...overrides,
     });
   }
+
+  // --- v4/mixed route: ERC-20 -> Permit2 approval, Permit2 signature, swap ---
+
+  const approveToPermit2 = useWriteContract();
+  const approveToPermit2Receipt = useWaitForTransactionReceipt({ hash: approveToPermit2.data });
+  const signPermit = useSignTypedData();
+  const sendV4Tx = useSendTransaction();
+  const sendV4TxReceipt = useWaitForTransactionReceipt({ hash: sendV4Tx.data });
+  const [v4RecordId, setV4RecordId] = useState<number | null>(null);
+
+  async function handleApproveToPermit2() {
+    if (!tokenIn) return;
+    const overrides = await gasOverridesFor(publicClient, gasTier);
+    approveToPermit2.writeContract({
+      address: tokenIn,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [PERMIT2, maxUint256],
+      ...overrides,
+    });
+  }
+
+  async function handleSignPermit() {
+    if (!tokenIn || !account) return;
+    setPermitFetchError(null);
+    try {
+      const res = await fetch(`/api/dex/permit-typed-data?owner=${account}&token=${tokenIn}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setPermitFetchError(data.error ?? "Could not prepare the Permit2 signature");
+        return;
+      }
+      setPendingPermit({
+        details: data.message.details,
+        spender: data.message.spender,
+        sigDeadline: data.message.sigDeadline,
+      });
+      signPermit.signTypedData({
+        domain: data.domain,
+        types: data.types,
+        primaryType: data.primaryType,
+        message: data.message,
+      });
+    } catch {
+      setPermitFetchError("Network error preparing the Permit2 signature");
+    }
+  }
+
+  // Pairs the just-returned signature with the request it was signed for
+  // — signTypedData itself only ever hands back the raw signature bytes.
+  useEffect(() => {
+    if (signPermit.data && pendingPermit) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setPermit({ ...pendingPermit, signature: signPermit.data });
+      setPendingPermit(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [signPermit.data, pendingPermit]);
+
+  async function handleV4Swap() {
+    if (!tokenIn || !tokenOut || !account || !parsedAmountIn) return;
+    if (typeof inDecimals !== "number" || typeof outDecimals !== "number") return;
+    setBuildError(null);
+
+    try {
+      const res = await fetch("/api/dex/build", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tokenIn,
+          tokenOut,
+          decimalsIn: inDecimals,
+          decimalsOut: outDecimals,
+          symbolIn: inSymbol,
+          symbolOut: outSymbol,
+          amountIn: parsedAmountIn.toString(),
+          nativeIn: isNativeIn,
+          nativeOut: isNativeOut,
+          slippageBps,
+          recipient: account,
+          permit: permit ?? undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBuildError(data.error ?? "Could not build the swap");
+        return;
+      }
+
+      // Best-effort — a failed record write should never block the trade
+      // itself; app_transfers is Auevo's own log, not part of the swap.
+      fetch("/api/dex/record", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          account,
+          recipient: account,
+          srcToken: tokenIn,
+          dstToken: tokenOut,
+          amountIn: parsedAmountIn.toString(),
+          route: data.route.join("+"),
+          feeBps: 30,
+        }),
+      })
+        .then((r) => r.json())
+        .then((r) => {
+          if (r.recorded && typeof r.id === "number") setV4RecordId(r.id);
+        })
+        .catch(() => {});
+
+      const overrides = await gasOverridesFor(publicClient, gasTier);
+      sendV4Tx.sendTransaction({
+        to: data.to,
+        data: data.data,
+        value: BigInt(data.value),
+        ...overrides,
+      });
+    } catch {
+      setBuildError("Network error building the swap");
+    }
+  }
+
+  // Follows up the pending app_transfers row once the swap either confirms
+  // or the wallet/chain reports a failure — see handleV4Swap for the
+  // initial "pending" write this updates.
+  useEffect(() => {
+    if (!v4RecordId) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (sendV4TxReceipt.isSuccess) {
+      fetch("/api/dex/record", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: v4RecordId, txHash: sendV4Tx.data, status: "done" }),
+      }).catch(() => {});
+      setV4RecordId(null);
+    } else if (sendV4TxReceipt.isError || sendV4Tx.isError) {
+      fetch("/api/dex/record", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: v4RecordId, txHash: sendV4Tx.data, status: "failed" }),
+      }).catch(() => {});
+      setV4RecordId(null);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [v4RecordId, sendV4TxReceipt.isSuccess, sendV4TxReceipt.isError, sendV4Tx.isError, sendV4Tx.data]);
 
   function fillFraction(fraction: number) {
     if (typeof inBalance !== "bigint" || typeof inDecimals !== "number") return;
@@ -676,9 +979,23 @@ export function SwapPanel({
       </label>
 
       <div className="trade-quote">
-        {quoting && <span>Finding the best available pool…</span>}
-        {quoteError && <span className="trade-quote-error">{quoteError}</span>}
-        {quote && typeof outDecimals === "number" && (
+        {(quoting || v4Quoting) && <span>Finding the best available pool…</span>}
+        {quoteError && !useV4Route && <span className="trade-quote-error">{quoteError}</span>}
+        {useV4Route && v4Route && typeof outDecimals === "number" && (
+          <>
+            <span>
+              ≈ {Number(formatUnits(v4Route.amountOut, outDecimals)).toFixed(6)}{" "}
+              {displayOutSymbol ?? "tokens"}
+            </span>
+            <small>
+              via {v4Route.legs.join(" + ")} · min received{" "}
+              {v4AmountOutMinimum !== null
+                ? Number(formatUnits(v4AmountOutMinimum, outDecimals)).toFixed(6)
+                : "—"}
+            </small>
+          </>
+        )}
+        {!useV4Route && quote && typeof outDecimals === "number" && (
           <>
             <span>
               ≈ {Number(formatUnits(quote.amountOut, outDecimals)).toFixed(6)}{" "}
@@ -694,7 +1011,39 @@ export function SwapPanel({
         )}
       </div>
 
-      {needsApproval ? (
+      {useV4Route ? (
+        needsPermit2Erc20Approval ? (
+          <button
+            className="app-connect-button"
+            disabled={approveToPermit2.isPending || approveToPermit2Receipt.isLoading}
+            onClick={handleApproveToPermit2}
+          >
+            {approveToPermit2.isPending || approveToPermit2Receipt.isLoading
+              ? "Approving…"
+              : `Approve ${displayInSymbol ?? "token"} for Permit2`}
+          </button>
+        ) : needsPermitSignature ? (
+          <button
+            className="app-connect-button"
+            disabled={signPermit.isPending}
+            onClick={handleSignPermit}
+          >
+            {signPermit.isPending ? "Sign in wallet…" : `Sign to allow trading ${displayInSymbol ?? "this token"}`}
+          </button>
+        ) : (
+          <button
+            className="app-connect-button"
+            disabled={!v4Route || sendV4Tx.isPending || sendV4TxReceipt.isLoading}
+            onClick={handleV4Swap}
+          >
+            {sendV4Tx.isPending || sendV4TxReceipt.isLoading
+              ? "Swapping…"
+              : lockPair
+                ? `${side === "buy" ? "Buy" : "Sell"} ${(side === "buy" ? displayOutSymbol : displayInSymbol) ?? "token"}`
+                : "Swap"}
+          </button>
+        )
+      ) : needsApproval ? (
         <button
           className="app-connect-button"
           disabled={approve.isPending || approveReceipt.isLoading}
@@ -716,9 +1065,22 @@ export function SwapPanel({
         </button>
       )}
 
-      {approve.error && <p className="error">{approve.error.message}</p>}
-      {swap.error && <p className="error">{swap.error.message}</p>}
-      {swapReceipt.isSuccess && <p className="trade-success">Swap confirmed on-chain.</p>}
+      {useV4Route ? (
+        <>
+          {permitFetchError && <p className="error">{permitFetchError}</p>}
+          {approveToPermit2.error && <p className="error">{approveToPermit2.error.message}</p>}
+          {signPermit.error && <p className="error">{signPermit.error.message}</p>}
+          {buildError && <p className="error">{buildError}</p>}
+          {sendV4Tx.error && <p className="error">{sendV4Tx.error.message}</p>}
+          {sendV4TxReceipt.isSuccess && <p className="trade-success">Swap confirmed on-chain.</p>}
+        </>
+      ) : (
+        <>
+          {approve.error && <p className="error">{approve.error.message}</p>}
+          {swap.error && <p className="error">{swap.error.message}</p>}
+          {swapReceipt.isSuccess && <p className="trade-success">Swap confirmed on-chain.</p>}
+        </>
+      )}
     </div>
   );
 }
