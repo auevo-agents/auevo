@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Disclaimer } from "../../disclaimer";
 
 interface PoolRow {
@@ -65,16 +65,52 @@ export default function RwaPoolsPage() {
     };
   }, []);
 
+  const totals = useMemo(() => {
+    if (!pools) return null;
+    return pools.reduce(
+      (acc, p) => ({
+        liquidity: acc.liquidity + (p.liquidityUsd ?? 0),
+        volume: acc.volume + (p.volume24hUsd ?? 0),
+      }),
+      { liquidity: 0, volume: 0 }
+    );
+  }, [pools]);
+
   return (
     <>
-      <header className="product-header">
-        <div>
-          <h3>Pools</h3>
-          <p>Tokenized-stock ↔ USDG pools on Robinhood Chain</p>
-        </div>
-      </header>
+      <div className="dash-hero">
+        <p className="dash-eyebrow">Tokenized pools · Robinhood Chain</p>
+        <h1 className="dash-title">Every pool. One chain.</h1>
+        <p className="dash-subtitle">
+          {pools ? (
+            <>
+              <b>{pools.length}</b> {pools.length === 1 ? "pool" : "pools"} where tokenized stocks trade against
+              USDG. Deposits take one transaction.
+            </>
+          ) : (
+            "Tokenized-stock ↔ USDG pools on Robinhood Chain."
+          )}
+        </p>
+      </div>
 
-      {error && <p className="error" style={{ marginTop: 4 }}>{error}</p>}
+      {pools && totals && pools.length > 0 && (
+        <div className="dash-stat-strip">
+          <div className="dash-stat">
+            <div className="dash-stat-value">{pools.length}</div>
+            <div className="dash-stat-label">POOLS</div>
+          </div>
+          <div className="dash-stat">
+            <div className="dash-stat-value">{formatUsd(totals.liquidity)}</div>
+            <div className="dash-stat-label">LIQUIDITY (AT PRICE)</div>
+          </div>
+          <div className="dash-stat">
+            <div className="dash-stat-value">{formatUsd(totals.volume)}</div>
+            <div className="dash-stat-label">24H VOLUME</div>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="error" style={{ marginTop: 16 }}>{error}</p>}
       {!pools && !error && <div className="app-empty">Loading…</div>}
       {pools && !indexed && <div className="app-empty">The pool registry isn&apos;t connected yet.</div>}
       {pools && indexed && pools.length === 0 && (
@@ -86,25 +122,20 @@ export default function RwaPoolsPage() {
 
       {pools && indexed && pools.length > 0 && (
         <>
-          <div className="desk-scroll">
-            <div className="money-row money-row-nopair money-head">
-              <span>PAIR</span>
-              <span className="desk-col-right">FEE TIER</span>
-              <span className="desk-col-right">LIQUIDITY (AT PRICE)</span>
-              <span className="desk-col-right">VOLUME 24H</span>
-              <span className="desk-col-right">FEE APR</span>
-            </div>
+          <div className="dash-list-card" style={{ marginTop: 8 }}>
             {pools.map((p) => (
-              <div key={p.poolId ?? p.poolAddress} className="money-row money-row-nopair">
-                <span>
-                  <b>{p.ticker ?? p.symbol ?? "?"}</b> / USDG
-                  <br />
-                  <small style={{ color: "#5a6469" }}>{p.dex === "uniswap_v4" ? "v4" : "v3"}</small>
+              <div key={p.poolId ?? p.poolAddress} className="dash-list-row" style={{ gridTemplateColumns: "auto 1fr auto auto auto auto" }}>
+                <span className="dash-list-avatar" style={{ background: "var(--panel-3)", color: "#f2f4f3", fontSize: 11 }}>
+                  {p.dex === "uniswap_v4" ? "v4" : "v3"}
                 </span>
-                <span className="desk-col-right">{(p.feeTier / 10_000).toFixed(2)}%</span>
-                <span className="desk-col-right">{formatUsd(p.liquidityUsd)}</span>
-                <span className="desk-col-right">{formatUsd(p.volume24hUsd)}</span>
-                <span className="desk-col-right">{formatPct(p.feeAprPct)}</span>
+                <span className="dash-list-name">
+                  <b>{p.ticker ?? p.symbol ?? "?"} / USDG</b>
+                  <small>{(p.feeTier / 10_000).toFixed(2)}% fee tier</small>
+                </span>
+                <span className="dash-list-col dash-list-col-hide-mobile">Uniswap {p.dex === "uniswap_v4" ? "v4" : "v3"}</span>
+                <span className="dash-list-col">{formatUsd(p.liquidityUsd)}</span>
+                <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(p.volume24hUsd)}</span>
+                <span className="dash-list-col">{formatPct(p.feeAprPct)}</span>
               </div>
             ))}
           </div>
