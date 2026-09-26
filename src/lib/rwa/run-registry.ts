@@ -5,7 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { robinhoodChain } from "@/lib/chains";
 import { discoverUsdgPools, resolveCandidateTokens } from "./registry";
-import { fetchXstocksTokenList, tickerFromXstocksSymbol } from "./xstocks";
+import { fetchXstocksTokenListWithDiagnostics, tickerFromXstocksSymbol } from "./xstocks";
 import { STATE_VIEW, USDG } from "./dex/addresses";
 import { buildPoolKey } from "./dex/pool-key";
 import { computeLiquidityUsd, computeVolume24hUsd } from "./pools";
@@ -48,7 +48,7 @@ export interface RegistryRunResult {
   reason?: string;
   headBlock?: string;
   robinhood?: { discovered: number; syncedTo: string; partial: boolean };
-  xstocks?: { discovered: number; available: boolean };
+  xstocks?: { discovered: number; available: boolean; error?: string | null };
   pools?: { refreshed: number; error?: string | null };
   checkpointError?: string | null;
 }
@@ -190,7 +190,7 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
   // xStocks: a fresh full fetch every run, not a checkpointed scan — it's
   // one HTTP request against a token list that changes rarely, not a
   // chain to crawl incrementally.
-  const xstocksTokens = await fetchXstocksTokenList();
+  const { tokens: xstocksTokens, error: xstocksError } = await fetchXstocksTokenListWithDiagnostics();
   let xstocksDiscovered = 0;
 
   if (xstocksTokens) {
@@ -226,7 +226,7 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       syncedTo: scanResult.scannedTo.toString(),
       partial: scanResult.partial,
     },
-    xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null },
+    xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null, error: xstocksError },
     pools: { refreshed: poolsRefreshed, error: poolsError },
     checkpointError,
   };
