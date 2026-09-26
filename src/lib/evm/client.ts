@@ -32,6 +32,17 @@ function createClient() {
 
 export type RobinhoodClient = ReturnType<typeof createClient>;
 
+/**
+ * The minimal surface proxy.ts/erc20.ts actually call — narrower than
+ * RobinhoodClient so those checks work against a client for ANY chain, not
+ * just Robinhood Chain. RWA_SPEC.md Phase 5's risk scoring needs exactly
+ * that: rwa_tokens now spans six chains (see rwa/lifi/chains.ts), and proxy
+ * detection / owner reads are plain EVM state reads with nothing
+ * Robinhood-specific about them. RobinhoodClient satisfies this structurally
+ * with no changes needed at its own call sites.
+ */
+export type EvmReadClient = Pick<RobinhoodClient, "call" | "getStorageAt" | "getCode">;
+
 let cached: RobinhoodClient | undefined;
 
 export function getRobinhoodClient(): RobinhoodClient {

@@ -41,6 +41,7 @@ interface AssetToken {
   priceUsd: number | null;
   premiumBps: number | null;
   priceAsOf: string | null;
+  riskScore: number | null;
 }
 
 interface Issuer {
@@ -171,6 +172,7 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
           <span className="desk-col-right">SYMBOL</span>
           <span className="desk-col-right">PRICE</span>
           <span className="desk-col-right">PREMIUM</span>
+          <span className="desk-col-right">RISK</span>
           <span />
         </div>
         {asset.tokens.map((t) => {
@@ -186,6 +188,11 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
               <span className="desk-col-right">{t.symbol}</span>
               <span className="desk-col-right">{formatUsd(t.priceUsd)}</span>
               <span className={`desk-col-right ${premium.className}`}>{premium.text}</span>
+              <span
+                className={`desk-col-right ${t.riskScore === null ? "" : t.riskScore >= 70 ? "desk-change-pos" : t.riskScore >= 40 ? "" : "desk-change-neg"}`}
+              >
+                {t.riskScore ?? "—"}
+              </span>
               <span className="desk-actions">
                 {isRobinhood ? (
                   <a href="#top">trade ↑</a>

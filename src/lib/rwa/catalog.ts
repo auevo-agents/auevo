@@ -24,6 +24,8 @@ export interface AssetTokenRow {
   priceUsd: number | null;
   premiumBps: number | null;
   priceAsOf: string | null;
+  /** RWA_SPEC.md Phase 5's risk score (rwa/risk.ts) — null when the risk cron hasn't scanned this token yet, never guessed. */
+  riskScore: number | null;
 }
 
 export interface AssetSummary {
@@ -37,6 +39,8 @@ export interface AssetSummary {
   /** The primary chain's own price if it has one, else the first token with a price, else null — never averaged or invented. */
   primaryPriceUsd: number | null;
   primaryPremiumBps: number | null;
+  /** Same "primary chain, else first available" preference as price — the lowest score isn't used here, since this is a headline figure for one specific listing, not a worst-case across every issuer. */
+  primaryRiskScore: number | null;
   tokens: AssetTokenRow[];
 }
 
@@ -80,7 +84,8 @@ export function buildAssetSummaries(
   underlyings: UnderlyingInput[],
   tokens: TokenInput[],
   latestPrices: Map<string, LatestPrice>,
-  primaryChainId: number
+  primaryChainId: number,
+  riskScores: Map<string, number | null> = new Map()
 ): AssetSummary[] {
   const tokensByTicker = new Map<string, TokenInput[]>();
   for (const t of tokens) {
@@ -91,7 +96,8 @@ export function buildAssetSummaries(
 
   return underlyings.map((u) => {
     const tokenRows: AssetTokenRow[] = (tokensByTicker.get(u.ticker) ?? []).map((t) => {
-      const price = latestPrices.get(`${t.chainId}:${t.address.toLowerCase()}`);
+      const key = `${t.chainId}:${t.address.toLowerCase()}`;
+      const price = latestPrices.get(key);
       return {
         chainId: t.chainId,
         address: t.address,
@@ -101,12 +107,17 @@ export function buildAssetSummaries(
         priceUsd: price?.priceUsd ?? null,
         premiumBps: price?.premiumBps ?? null,
         priceAsOf: price?.ts ?? null,
+        riskScore: riskScores.get(key) ?? null,
       };
     });
 
     const primary =
       tokenRows.find((t) => t.chainId === primaryChainId && t.priceUsd !== null) ??
       tokenRows.find((t) => t.priceUsd !== null) ??
+      null;
+    const primaryRisk =
+      tokenRows.find((t) => t.chainId === primaryChainId && t.riskScore !== null) ??
+      tokenRows.find((t) => t.riskScore !== null) ??
       null;
 
     return {
@@ -119,6 +130,7 @@ export function buildAssetSummaries(
       tokenCount: tokenRows.length,
       primaryPriceUsd: primary?.priceUsd ?? null,
       primaryPremiumBps: primary?.premiumBps ?? null,
+      primaryRiskScore: primaryRisk?.riskScore ?? null,
       tokens: tokenRows,
     };
   });

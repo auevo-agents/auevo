@@ -97,10 +97,12 @@ export default function AssetsPage() {
               <span className="desk-col-right">CHAINS</span>
               <span className="desk-col-right">PRICE</span>
               <span className="desk-col-right">PREMIUM</span>
+              <span className="desk-col-right">RISK</span>
               <span />
             </div>
             {assets.map((asset) => {
               const premium = formatPremium(asset.primaryPremiumBps);
+              const risk = asset.primaryRiskScore;
               return (
                 <Link
                   key={asset.ticker}
@@ -116,6 +118,9 @@ export default function AssetsPage() {
                   <span className="desk-col-right">{asset.chainCount || "—"}</span>
                   <span className="desk-col-right">{formatUsd(asset.primaryPriceUsd)}</span>
                   <span className={`desk-col-right ${premium.className}`}>{premium.text}</span>
+                  <span className={`desk-col-right ${risk === null ? "" : risk >= 70 ? "desk-change-pos" : risk >= 40 ? "" : "desk-change-neg"}`}>
+                    {risk ?? "—"}
+                  </span>
                   <span className="desk-actions">
                     <span>view →</span>
                   </span>
