@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/rwa-risk",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/rwa-alerts",
+      "schedule": "0 7 * * *"
     }
   ]
 }
