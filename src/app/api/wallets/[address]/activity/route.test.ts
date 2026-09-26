@@ -15,6 +15,7 @@ const WALLET = "0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa";
 const POOL_ADDRESS = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const TOKEN_A = "0xcccccccccccccccccccccccccccccccccccccc"; // pool's token0
 const TOKEN_B = "0xdddddddddddddddddddddddddddddddddddddd"; // pool's token1
+const V4_POOL_ID = "0xv4pool00000000000000000000000000000000000000000000000000000001";
 
 let dbServer: Server;
 let geckoServer: Server;
@@ -26,27 +27,55 @@ beforeAll(async () => {
     res.setHeader("Content-Type", "application/json");
 
     if (table === "indexer_swaps") {
+      // Only the v3 leg of the route's two queries (dex=eq.uniswap_v3 vs
+      // dex=eq.uniswap_v4) has a fixture here — v4 gets an empty result,
+      // same as a real Postgres row-filter would for a wallet with no v4
+      // activity. Phase 6's own dedicated v4 coverage lives in
+      // indexer/run-v4.integration.test.ts and this route's own reliance
+      // on the normalization is exercised by the "no v4 rows" path here.
+      const isV4Query = url.searchParams.get("dex") === "eq.uniswap_v4";
       res.end(
-        JSON.stringify([
-          {
-            pool_address: POOL_ADDRESS,
-            sender: "0x1111111111111111111111111111111111111111",
-            recipient: WALLET,
-            // Trader paid TOKEN_A (pool received it, positive) and
-            // received TOKEN_B (pool paid it out, negative).
-            amount0: "1000000000000000000",
-            amount1: "-2000000",
-            tick: -100,
-            block_number: 500,
-            block_timestamp: new Date(Date.now() - 60_000).toISOString(),
-            tx_hash: "0xdeadbeef",
-          },
-        ])
+        JSON.stringify(
+          isV4Query
+            ? [
+                {
+                  pool_id: V4_POOL_ID,
+                  sender: "0x2222222222222222222222222222222222222222", // the router, per v4's own Swap event
+                  recipient: WALLET, // tx.from, per indexer/scan-v4.ts
+                  amount0: "500000",
+                  amount1: "-1000000000000000000",
+                  tick: 50,
+                  block_number: 600,
+                  block_timestamp: new Date(Date.now() - 30_000).toISOString(),
+                  tx_hash: "0xv4swap",
+                },
+              ]
+            : [
+                {
+                  pool_address: POOL_ADDRESS,
+                  sender: "0x1111111111111111111111111111111111111111",
+                  recipient: WALLET,
+                  // Trader paid TOKEN_A (pool received it, positive) and
+                  // received TOKEN_B (pool paid it out, negative).
+                  amount0: "1000000000000000000",
+                  amount1: "-2000000",
+                  tick: -100,
+                  block_number: 500,
+                  block_timestamp: new Date(Date.now() - 60_000).toISOString(),
+                  tx_hash: "0xdeadbeef",
+                },
+              ]
+        )
       );
       return;
     }
     if (table === "indexer_pools") {
-      res.end(JSON.stringify([{ pool_address: POOL_ADDRESS, token0: TOKEN_A, token1: TOKEN_B }]));
+      const isV4Query = url.searchParams.get("pool_id") !== null;
+      res.end(
+        JSON.stringify(
+          isV4Query ? [{ pool_id: V4_POOL_ID, token0: TOKEN_A, token1: TOKEN_B }] : [{ pool_address: POOL_ADDRESS, token0: TOKEN_A, token1: TOKEN_B }]
+        )
+      );
       return;
     }
     res.statusCode = 404;
@@ -116,9 +145,10 @@ describe("GET /api/wallets/[address]/activity", () => {
 
     expect(res.status).toBe(200);
     expect(body.indexed).toBe(true);
-    expect(body.swaps).toHaveLength(1);
+    expect(body.swaps).toHaveLength(2); // this wallet's v3 swap plus its v4 swap (see the next test) — both come back from one call
 
-    const swap = body.swaps[0];
+    const swap = body.swaps.find((s: { pool_address: string }) => s.pool_address === POOL_ADDRESS);
+    expect(swap).toBeDefined();
     expect(swap.pool_address).toBe(POOL_ADDRESS);
     expect(swap.recipient).toBe(WALLET);
     expect(swap.amount0).toBe("1000000000000000000");
@@ -133,6 +163,21 @@ describe("GET /api/wallets/[address]/activity", () => {
     expect(pool.token1).toBe(TOKEN_B);
     expect(pool.token0Symbol).toBe("AAA");
     expect(pool.token1Symbol).toBe("BBB");
+  });
+
+  it("includes a v4 swap alongside v3, normalized to the same pool_address-keyed shape", async () => {
+    const { GET } = await import("./route");
+    const res = await GET(new Request("http://localhost/api/wallets/x/activity"), {
+      params: Promise.resolve({ address: WALLET }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.swaps).toHaveLength(2);
+    const v4Swap = body.swaps.find((s: { pool_address: string }) => s.pool_address === V4_POOL_ID);
+    expect(v4Swap).toBeDefined();
+    expect(v4Swap.recipient).toBe(WALLET); // tx.from, per indexer/scan-v4.ts — the Swap event's own sender is the router
+    expect(body.pools[V4_POOL_ID]).toMatchObject({ token0: TOKEN_A, token1: TOKEN_B });
   });
 
   it("rejects an invalid address before touching the database", async () => {

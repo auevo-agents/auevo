@@ -1,4 +1,5 @@
 import { formatUnits } from "viem";
+import type { QuoteAssetPrice } from "./quote-asset";
 
 /**
  * A single wallet's realized PnL, denominated in ETH rather than USD —
@@ -69,4 +70,63 @@ export function computeWalletPnl(swaps: WalletSwapInput[], wethAddress: string):
   }
 
   return { realizedPnlEth, wins, losses, tokensTraded: perToken.size };
+}
+
+/**
+ * RWA_SPEC.md Phase 6's generalization: `computeWalletPnl` above stays
+ * exactly as it was (still what the memecoin-era wallet profile/Smart
+ * Money pages read, ETH-only, untouched so their existing tests keep
+ * passing) — this is a new, separate function for the USD/multi-quote-
+ * asset case Portfolio and the RWA Smart Money leaderboard need. Same
+ * cost-basis logic, generalized over any number of recognized quote
+ * assets (see quote-asset.ts) instead of a single hardcoded WETH address,
+ * and priced in USD via each asset's own resolved usdPrice instead of raw
+ * ETH units.
+ */
+export interface WalletPnlSummaryUsd {
+  realizedPnlUsd: number;
+  wins: number;
+  losses: number;
+  tokensTraded: number;
+}
+
+export function computeWalletPnlUsd(swaps: WalletSwapInput[], quoteAssets: QuoteAssetPrice[]): WalletPnlSummaryUsd {
+  const quoteByAddress = new Map(quoteAssets.map((q) => [q.address.toLowerCase(), q]));
+  const perToken = new Map<string, { buyUsd: number; sellUsd: number }>();
+
+  for (const s of swaps) {
+    const token0 = s.token0.toLowerCase();
+    const token1 = s.token1.toLowerCase();
+    const quote0 = quoteByAddress.get(token0);
+    const quote1 = quoteByAddress.get(token1);
+    if (Boolean(quote0) === Boolean(quote1)) continue; // neither leg is a recognized quote asset, or (degenerately) both are — no USD cost basis either way
+
+    const quote = quote0 ?? quote1!;
+    const baseToken = quote0 ? token1 : token0;
+    const amount0 = BigInt(s.amount0);
+    const amount1 = BigInt(s.amount1);
+    const quoteAmount = quote0 ? amount0 : amount1;
+    // Pool's perspective: positive base amount = wallet paid it (sold); negative = wallet received it (bought).
+    const baseAmount = quote0 ? amount1 : amount0;
+
+    const quoteUsd = Math.abs(Number(formatUnits(quoteAmount, quote.decimals))) * quote.usdPrice;
+    const entry = perToken.get(baseToken) ?? { buyUsd: 0, sellUsd: 0 };
+    if (baseAmount < 0n) entry.buyUsd += quoteUsd;
+    else if (baseAmount > 0n) entry.sellUsd += quoteUsd;
+    perToken.set(baseToken, entry);
+  }
+
+  let realizedPnlUsd = 0;
+  let wins = 0;
+  let losses = 0;
+  for (const { buyUsd, sellUsd } of perToken.values()) {
+    if (buyUsd > 0 && sellUsd > 0) {
+      const pnl = sellUsd - buyUsd;
+      realizedPnlUsd += pnl;
+      if (pnl > 0) wins += 1;
+      else losses += 1;
+    }
+  }
+
+  return { realizedPnlUsd, wins, losses, tokensTraded: perToken.size };
 }

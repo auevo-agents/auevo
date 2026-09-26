@@ -9,8 +9,9 @@ import { robinhoodChain } from "@/lib/chains";
 import { formatAge, shortenAddress } from "@/lib/format";
 import { isWatched, readWatchedWallets, setWalletLabel, watchWallet } from "@/lib/watched-wallets";
 import { computeWalletPnl } from "@/lib/wallet-pnl";
-import { aggregatePositions, evaluatePosition, type PositionView } from "@/lib/wallet-positions";
+import { aggregatePositions, aggregatePositionsUsd, evaluatePosition, evaluatePositionUsd, type PositionView } from "@/lib/wallet-positions";
 import { WETH9 } from "@/lib/uniswap";
+import type { QuoteAssetPrice } from "@/lib/quote-asset";
 
 const ERC20_ABI = [
   { type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
@@ -205,6 +206,72 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
     return withData.reduce((sum, p) => sum + (p.unrealizedPnlWeth ?? 0), 0);
   }, [positionViews]);
 
+  // RWA_SPEC.md Phase 6's "/app/portfolio в USD" — a second, USD-denominated
+  // view scoped to just this wallet's tokenized-stock holdings, alongside
+  // (not replacing) the general ETH-denominated Positions section above.
+  const [quoteAssets, setQuoteAssets] = useState<QuoteAssetPrice[] | null>(null);
+  const [rwaTickerByAddress, setRwaTickerByAddress] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    fetch("/api/rwa/quote-assets")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.assets)) setQuoteAssets(data.assets);
+      })
+      .catch(() => {});
+
+    fetch("/api/rwa/assets")
+      .then((res) => res.json())
+      .then((data: { assets?: { ticker: string; tokens: { chainId: number; address: string }[] }[] }) => {
+        const map = new Map<string, string>();
+        for (const asset of data.assets ?? []) {
+          for (const t of asset.tokens) {
+            if (t.chainId === robinhoodChain.id) map.set(t.address.toLowerCase(), asset.ticker);
+          }
+        }
+        setRwaTickerByAddress(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const positionsByTokenUsd = useMemo(() => {
+    if (!activity || !quoteAssets) return new Map();
+    const inputs = activity.swaps
+      .map((s) => {
+        const pool = activity.pools[s.pool_address];
+        return pool
+          ? { amount0: s.amount0, amount1: s.amount1, token0: pool.token0, token1: pool.token1, tick: s.tick, blockNumber: s.block_number }
+          : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    return aggregatePositionsUsd(inputs, quoteAssets, (t) => decimalsByToken.get(t.toLowerCase()) ?? 18);
+  }, [activity, quoteAssets, decimalsByToken]);
+
+  interface RwaPositionRow {
+    ticker: string;
+    balance: number;
+    avgCostUsd: number | null;
+    currentPriceUsd: number;
+    currentValueUsd: number;
+    unrealizedPnlUsd: number | null;
+  }
+
+  const rwaPositionViews = useMemo(() => {
+    const views: RwaPositionRow[] = [];
+    for (const [token, pos] of positionsByTokenUsd) {
+      const ticker = rwaTickerByAddress.get(token);
+      if (!ticker) continue; // this section is scoped to verified RWA tokens only
+      const balanceRaw = balanceByToken.get(token);
+      if (balanceRaw === undefined) continue;
+      const decimals = decimalsByToken.get(token) ?? 18;
+      const view = evaluatePositionUsd(pos, Number(formatUnits(balanceRaw, decimals)));
+      views.push({ ticker, ...view });
+    }
+    return views.sort((a, b) => b.currentValueUsd - a.currentValueUsd);
+  }, [positionsByTokenUsd, balanceByToken, decimalsByToken, rwaTickerByAddress]);
+
+  const totalPortfolioUsd = useMemo(() => rwaPositionViews.reduce((sum, v) => sum + v.currentValueUsd, 0), [rwaPositionViews]);
+
   if (!address) {
     return (
       <>
@@ -345,6 +412,46 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
             buys — a token moved in from outside this window will show a skewed cost basis. Same
             methodology as <Link href="/app/smart-money">Smart Money</Link>, applied to this one wallet.
           </p>
+        </div>
+      )}
+
+      {rwaPositionViews.length > 0 && (
+        <div className="token-side-card" style={{ marginTop: 20 }}>
+          <h4>RWA Portfolio (USD)</h4>
+          <p className="desk-note" style={{ marginBottom: 10 }}>
+            Tokenized-stock holdings only, priced in USD from each trade&apos;s USDG or WETH leg (RWA_SPEC.md phase 6) — the general Positions
+            section below covers every token this wallet has traded, in ETH.
+          </p>
+          <div className="token-stat-grid">
+            <div className="token-stat">
+              <span>TOTAL VALUE</span>
+              <strong>{totalPortfolioUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}</strong>
+            </div>
+          </div>
+          <div className="desk-scroll" style={{ marginTop: 10 }}>
+            <div className="money-row money-row-nopair money-head">
+              <span>ASSET</span>
+              <span className="desk-col-right">BALANCE</span>
+              <span className="desk-col-right">VALUE</span>
+              <span className="desk-col-right">UNREALIZED PNL</span>
+            </div>
+            {rwaPositionViews.map((v) => (
+              <Link key={v.ticker} href={`/app/assets/${v.ticker}`} className="money-row money-row-nopair money-row-link">
+                <span>
+                  <b>{v.ticker}</b>
+                </span>
+                <span className="desk-col-right">{v.balance.toFixed(4)}</span>
+                <span className="desk-col-right">
+                  {v.currentValueUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })}
+                </span>
+                <span className={`desk-col-right ${v.unrealizedPnlUsd === null ? "" : v.unrealizedPnlUsd >= 0 ? "desk-change-pos" : "desk-change-neg"}`}>
+                  {v.unrealizedPnlUsd === null
+                    ? "—"
+                    : `${v.unrealizedPnlUsd >= 0 ? "+" : ""}${v.unrealizedPnlUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
