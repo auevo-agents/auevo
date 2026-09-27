@@ -12796,3 +12796,16 @@ a {
   background: none;
   transform: none;
 }
+
+
+.fees-premium .brand-auevo span::after,
+.scanner-premium .brand-auevo span::after {
+  content: none !important;
+  display: none !important;
+}
+
+.fees-premium .brand-auevo .auevo-wordmark > span,
+.scanner-premium .brand-auevo .auevo-wordmark > span {
+  font-size: inherit;
+  line-height: inherit;
+}
