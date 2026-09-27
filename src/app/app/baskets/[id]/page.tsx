@@ -7,6 +7,7 @@ import { useAccount, useReadContracts, useSendTransaction, useSignTypedData, use
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { PERMIT2, USDG, USDG_DECIMALS } from "@/lib/rwa/dex/addresses";
 import { Disclaimer } from "../../../disclaimer";
+import { BrandIcon } from "../../../brand-icon";
 
 /**
  * RWA_SPEC.md Phase 7's basket buy/sell page — the "покупка корзины ...
@@ -137,6 +138,23 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
   // --- Buy ---
   const [weightMode, setWeightMode] = useState<WeightMode>("target");
   const [customWeights, setCustomWeights] = useState<Record<string, number>>({});
+  // Seeds every holding at its real target weight (0-100 scale, matching
+  // the sliders below) as soon as the basket loads — without this, a
+  // slider the user never touches would be missing from customWeights
+  // entirely, and the server treats a missing ticker's weight as 0 (see
+  // lib/rwa/baskets.ts's weightsFor), silently zeroing out every holding
+  // the user didn't personally drag instead of leaving it at target.
+  useEffect(() => {
+    if (!basket) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setCustomWeights((prev) => {
+      if (Object.keys(prev).length > 0) return prev;
+      const seeded: Record<string, number> = {};
+      for (const h of basket.holdings) seeded[h.ticker] = h.targetWeight * 100;
+      return seeded;
+    });
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [basket]);
   const [amountIn, setAmountIn] = useState("");
   const [buyError, setBuyError] = useState<string | null>(null);
   const [buyPreview, setBuyPreview] = useState<{ ticker: string; amountIn: string }[] | null>(null);
@@ -393,14 +411,17 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
         </div>
         {basket.holdings.map((h) => (
           <div key={h.ticker} className="money-row money-row-nopair">
-            <span>
-              <b>{h.ticker}</b>
-              {h.symbol && <small style={{ color: "#5a6469" }}> {h.symbol}</small>}
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <BrandIcon symbol={h.ticker} kind="ticker" size={22} />
+              <span>
+                <b>{h.ticker}</b>
+                {h.symbol && <small style={{ color: "#5a6469" }}> {h.symbol}</small>}
+              </span>
             </span>
             <span className="desk-col-right">{(h.targetWeight * 100).toFixed(1)}%</span>
             <span className="desk-col-right">{h.priceUsd !== null ? `$${h.priceUsd.toFixed(2)}` : "—"}</span>
-            <span className={`desk-col-right ${h.available ? "desk-change-pos" : "desk-change-neg"}`}>
-              {h.available ? "listed" : "not verified here"}
+            <span className={`desk-col-right ${h.available ? "desk-change-pos" : "desk-change-flat"}`}>
+              {h.available ? "listed" : "not on Robinhood Chain yet"}
             </span>
           </div>
         ))}
@@ -408,7 +429,18 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
 
       {!isConnected && <div className="app-empty">Connect a wallet above to trade this basket.</div>}
 
-      {isConnected && (
+      {isConnected && availableHoldings.length === 0 && (
+        <div className="app-empty app-empty-text">
+          <p>
+            None of this basket&apos;s {basket.holdings.length} holdings have a verified xStocks token deployed on
+            Robinhood Chain yet — buying, selling and rebalancing all route through Uniswap directly on this chain
+            (see the DEX page), so there&apos;s nothing here to trade until at least one holding lists here. The
+            composition above still reflects the basket&apos;s real target weights.
+          </p>
+        </div>
+      )}
+
+      {isConnected && availableHoldings.length > 0 && (
         <div className="trade-panel trade-panel-wide">
         <div className="trade-form">
           <h4>Buy</h4>
@@ -425,19 +457,30 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
           </div>
 
           {weightMode === "custom" && (
-            <div className="desk-scroll">
-              {basket.holdings.map((h) => (
-                <div key={h.ticker} className="money-row money-row-nopair">
-                  <span>{h.ticker}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={customWeights[h.ticker] ?? h.targetWeight}
-                    onChange={(e) => setCustomWeights((prev) => ({ ...prev, [h.ticker]: Number(e.target.value) }))}
-                  />
-                </div>
-              ))}
-              <p className="desk-note">Values are relative shares, not required to sum to 1 — normalized automatically.</p>
+            <div className="basket-weight-sliders">
+              {basket.holdings.map((h) => {
+                const value = customWeights[h.ticker] ?? h.targetWeight * 100;
+                const total = basket.holdings.reduce((sum, hh) => sum + (customWeights[hh.ticker] ?? hh.targetWeight * 100), 0);
+                const normalizedPct = total > 0 ? (value / total) * 100 : 0;
+                return (
+                  <div key={h.ticker} className="basket-weight-slider-row">
+                    <span className="basket-weight-slider-label">
+                      <BrandIcon symbol={h.ticker} kind="ticker" size={20} />
+                      <b>{h.ticker}</b>
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={value}
+                      onChange={(e) => setCustomWeights((prev) => ({ ...prev, [h.ticker]: Number(e.target.value) }))}
+                    />
+                    <span className="basket-weight-slider-pct">{normalizedPct.toFixed(1)}%</span>
+                  </div>
+                );
+              })}
+              <p className="desk-note">Drag to set each holding&apos;s relative share — percentages shown are normalized live and don&apos;t need to sum to 100 as you go.</p>
             </div>
           )}
 
