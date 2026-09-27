@@ -66,29 +66,48 @@ export default function IssuersPage() {
 
       {issuers && indexed && (
         <div className="issuer-card-grid">
-          {issuers.map((issuer) => (
-            <article key={issuer.id} className="issuer-card">
-              <h4>
-                {issuer.name}
-                {issuer.suffix && <span style={{ color: "#5a6469", fontWeight: 400 }}> · suffix &quot;{issuer.suffix}&quot;</span>}
-              </h4>
-              {issuer.backingNote && <p>{issuer.backingNote}</p>}
-              <div className="issuer-card-meta">
-                <span>{issuer.tickerCount} ticker{issuer.tickerCount === 1 ? "" : "s"}</span>
-                <span>{issuer.tokenCount} token{issuer.tokenCount === 1 ? "" : "s"}</span>
-                {issuer.website && (
-                  <a href={issuer.website} target="_blank" rel="noreferrer">
-                    website
-                  </a>
-                )}
-              </div>
-              {issuer.tokenCount > 0 && (
-                <Link href={`/app/assets?issuer=${issuer.id}`} className="app-link-button">
-                  View {issuer.tokenCount} token{issuer.tokenCount === 1 ? "" : "s"} →
-                </Link>
-              )}
-            </article>
-          ))}
+          {issuers.map((issuer, index) => {
+            const isLive = issuer.tokenCount > 0;
+            const monogram = issuer.name
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")
+              .toUpperCase();
+
+            return (
+              <article
+                key={issuer.id}
+                className={`issuer-card ${isLive ? "issuer-card--active" : "issuer-card--profile"}`}
+              >
+                <div className="issuer-card-topline">
+                  <span className="issuer-card-monogram" aria-hidden="true">{monogram || index + 1}</span>
+                  <span className={`issuer-card-status ${isLive ? "issuer-card-status--live" : ""}`}>
+                    {isLive ? "Live registry" : "Issuer profile"}
+                  </span>
+                </div>
+                <div className="issuer-card-copy">
+                  <h4>{issuer.name}</h4>
+                  {issuer.suffix && <span className="issuer-card-suffix">Token suffix · {issuer.suffix}</span>}
+                  {issuer.backingNote && <p>{issuer.backingNote}</p>}
+                </div>
+                <div className="issuer-card-stats">
+                  <div><strong>{issuer.tickerCount}</strong><span>Tickers</span></div>
+                  <div><strong>{issuer.tokenCount}</strong><span>Tokens</span></div>
+                </div>
+                <div className="issuer-card-footer">
+                  {issuer.website && (
+                    <a href={issuer.website} target="_blank" rel="noreferrer">Issuer site</a>
+                  )}
+                  {isLive && (
+                    <Link href={`/app/assets?issuer=${issuer.id}`} className="issuer-card-open">
+                      View registry
+                    </Link>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </>
