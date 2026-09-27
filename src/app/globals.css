@@ -8859,6 +8859,15 @@ a {
   color: var(--muted);
 }
 
+.landing2-stat-note {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: .02em;
+  color: var(--faint);
+}
+
 @media (max-width: 620px) {
   .landing2-stats { grid-template-columns: 1fr; }
   .landing2-stat { border-left: none; border-top: 1px solid var(--line); }
@@ -9186,6 +9195,13 @@ a {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
   color: var(--muted);
+}
+
+.dash-stat-note {
+  margin-top: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: var(--faint);
 }
 
 @media (max-width: 700px) {

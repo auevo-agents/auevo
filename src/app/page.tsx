@@ -18,7 +18,7 @@ import { loadTickerTokens } from "@/lib/rwa/scanner-data";
 import { fetchPublicQuotes, type PublicQuote } from "@/lib/rwa/public-quotes";
 import { buildPremiumRows, sortByAbsPremium } from "@/lib/rwa/scanner";
 import { sortAssetSummaries, type AssetSummary } from "@/lib/rwa/catalog";
-import { LIFI_EVM_CHAINS } from "@/lib/rwa/lifi/chains";
+import { LIFI_EVM_CHAINS, isSupportedLifiChain } from "@/lib/rwa/lifi/chains";
 
 /**
  * RWA_SPEC.md section 6's landing page: "живые топы, сканер-превью (топ
@@ -49,13 +49,23 @@ async function loadLandingData() {
       issuerNames: [] as string[],
       issuerLabels: {} as Record<string, string>,
       publicQuotes,
+      chainsDiscoveredCount: 0,
+      chainsComingSoonCount: 0,
     };
   }
 
-  const [{ premiumRows, mostAvailable }, issuerRecords] = await Promise.all([
+  const [{ premiumRows, mostAvailable, chainsDiscoveredCount, chainsComingSoonCount }, issuerRecords] = await Promise.all([
     (async () => {
       try {
         const { summaries } = await loadTickerTokens(supabase);
+        // Real chain diversity the registry has actually found tokens on —
+        // separate from LIFI_EVM_CHAINS (what Swap & Bridge can route
+        // between today). The registry regularly finds a tokenized asset
+        // on a chain before that chain has a trading route, so this is
+        // never smaller than the "supported" count and is the honest
+        // "how many networks, really" figure rather than the routing
+        // list's own size.
+        const discoveredChainIds = new Set(summaries.flatMap((s) => s.tokens.map((t) => t.chainId)));
         return {
           premiumRows: sortByAbsPremium(buildPremiumRows(summaries)),
           // Falls back to this when nothing has a priced premium yet (an
@@ -63,9 +73,16 @@ async function loadLandingData() {
           // issuer/chain counts instead of an empty section, never a
           // fabricated price. See the "Live from the scanner" section below.
           mostAvailable: sortAssetSummaries(summaries, "most_available").filter((a) => a.tokenCount > 0),
+          chainsDiscoveredCount: discoveredChainIds.size,
+          chainsComingSoonCount: [...discoveredChainIds].filter((id) => !isSupportedLifiChain(id)).length,
         };
       } catch {
-        return { premiumRows: [] as ReturnType<typeof buildPremiumRows>, mostAvailable: [] as AssetSummary[] };
+        return {
+          premiumRows: [] as ReturnType<typeof buildPremiumRows>,
+          mostAvailable: [] as AssetSummary[],
+          chainsDiscoveredCount: 0,
+          chainsComingSoonCount: 0,
+        };
       }
     })(),
     (async () => {
@@ -84,6 +101,8 @@ async function loadLandingData() {
     issuerNames: issuerRecords.map((issuer) => issuer.name),
     issuerLabels: Object.fromEntries(issuerRecords.map((issuer) => [issuer.id, issuer.name])),
     publicQuotes,
+    chainsDiscoveredCount,
+    chainsComingSoonCount,
   };
 }
 
@@ -193,7 +212,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     redirect(`/legacy/fees?wallet=${encodeURIComponent(address)}`);
   }
 
-  const { premiumRows, mostAvailable, issuerNames, issuerLabels, publicQuotes } = await loadLandingData();
+  const { premiumRows, mostAvailable, issuerNames, issuerLabels, publicQuotes, chainsComingSoonCount } = await loadLandingData();
   const tickerRows = premiumRows.map((r) => ({ ticker: r.ticker, priceUsd: r.priceUsd, premiumBps: r.premiumBps! }));
   const liveTops = premiumRows.slice(0, LIVE_TOPS_LIMIT);
   const chainNames = LIFI_EVM_CHAINS.map((c) => c.chain.name);
@@ -380,6 +399,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <div className="landing2-stat">
               <span className="landing2-stat-value"><Counter value={chainNames.length} /></span>
               <span className="landing2-stat-label">Chains supported</span>
+              {chainsComingSoonCount > 0 && (
+                <span className="landing2-stat-note">+{chainsComingSoonCount} more found — coming soon</span>
+              )}
             </div>
             <div className="landing2-stat">
               <span className="landing2-stat-value"><Counter value={1} /></span>
