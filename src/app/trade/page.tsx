@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
+import { AuevoLogo } from "../auevo-logo";
 
 // Jupiter Plugin (developers.jup.ag) — the actively maintained successor to
 // the now-deprecated Jupiter Terminal. Same underlying idea: a free,
@@ -134,8 +135,8 @@ export default function TradePage() {
 
       <main className="trade-page trade-page-v2">
         <header className="topbar">
-          <Link href="/" className="brand">
-            auevo<span>_</span>
+          <Link href="/" className="brand brand-auevo" aria-label="Auevo home">
+            <AuevoLogo />
           </Link>
 
           <nav>

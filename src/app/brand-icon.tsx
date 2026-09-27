@@ -28,15 +28,13 @@ export function BrandIcon({ symbol, name, kind = "ticker", size = 28 }: { symbol
 
   // A user-supplied logo file (public/logos/) is checked first — real,
   // full-fidelity art beats the inline-path fallback below when both exist.
-  // Same circular .brand-icon-badge frame as the other two cases below,
-  // so all three render at a consistent size/style; object-fit: contain
-  // (not cover) because several of these are square app-icon-style
-  // glyphs with their own background — cropping them to a circle edge-to-
-  // edge would cut corners off rather than just framing them.
+  // Fill the circular frame edge-to-edge. Several uploaded marks are square
+  // app-icon tiles; clipping the image itself to the badge turns those tiles
+  // into intentional round marks instead of a square floating inside a circle.
   if (file) {
     return (
       <span className="brand-icon-badge" style={{ width: size, height: size }} title={label}>
-        <img src={`/logos/${file}`} alt={label} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+        <img src={`/logos/${file}`} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", display: "block" }} />
       </span>
     );
   }

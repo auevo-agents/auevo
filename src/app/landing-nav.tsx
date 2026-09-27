@@ -75,12 +75,13 @@ export function LandingNav() {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        Explore
+        <span className="landing-nav-label-desktop">Explore</span>
+        <span className="landing-nav-label-mobile">Menu</span>
       </button>
-      <Link href="/app/assets" className="landing-nav-trigger" style={{ textDecoration: "none" }}>
+      <Link href="/app/assets" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Markets
       </Link>
-      <Link href="/docs" className="landing-nav-trigger" style={{ textDecoration: "none" }}>
+      <Link href="/docs" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Docs
       </Link>
       <Link href="/app" className="landing-cta-ghost">
@@ -100,6 +101,21 @@ export function LandingNav() {
               ))}
             </div>
           ))}
+          <div className="landing-nav-group landing-nav-mobile-actions">
+            <p className="landing-nav-group-label">Auevo</p>
+            <Link href="/app/assets" className="landing-nav-link" onClick={() => setOpen(false)}>
+              <span className="landing-nav-link-title">Markets</span>
+              <span className="landing-nav-link-body">Browse the verified asset registry</span>
+            </Link>
+            <Link href="/docs" className="landing-nav-link" onClick={() => setOpen(false)}>
+              <span className="landing-nav-link-title">Docs</span>
+              <span className="landing-nav-link-body">Product and market structure guide</span>
+            </Link>
+            <Link href="/app" className="landing-nav-link" onClick={() => setOpen(false)}>
+              <span className="landing-nav-link-title">Open workspace</span>
+              <span className="landing-nav-link-body">Use every Auevo market tool</span>
+            </Link>
+          </div>
         </div>
       )}
     </div>
