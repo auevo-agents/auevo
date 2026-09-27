@@ -8,20 +8,20 @@ import "./globals.css";
 // lives on at /legacy/fees and keeps its own page-level copy.
 export const metadata: Metadata = {
   metadataBase: new URL("https://auevo.io"),
-  title: "Auevo — Every tokenized stock. Every issuer. Scanned.",
+  title: "Auevo — See the asset behind the token.",
   description:
-    "A marketplace for tokenized real-world assets — stocks, ETFs, treasuries, private credit — across issuers and chains, plus a scanner for premium/discount, arbitrage, risk and liquidity that a plain marketplace doesn't show you.",
+    "Compare tokenized stocks across issuers and chains. See premiums, contract risk and available liquidity before you trade.",
   openGraph: {
-    title: "Auevo — Every tokenized stock. Every issuer. Scanned.",
+    title: "Auevo — See the asset behind the token.",
     description:
-      "Tokenized real-world assets across issuers and chains, with the premium/discount, arbitrage, risk and liquidity data a plain marketplace doesn't show you.",
+      "Compare tokenized equities across issuers and chains, with premiums, contract checks and market liquidity.",
     url: "https://auevo.io",
     siteName: "Auevo",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Auevo — Every tokenized stock. Every issuer. Scanned.",
+    title: "Auevo — See the asset behind the token.",
     description:
       "Tokenized real-world assets across issuers and chains, with the premium/discount, arbitrage, risk and liquidity data a plain marketplace doesn't show you.",
   },
