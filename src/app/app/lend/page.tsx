@@ -138,6 +138,12 @@ export default function LendPage() {
             Read-only — deposits happen on Kamino itself, not here. Rates come straight from Kamino&apos;s own
             public API and can move between page loads.
           </p>
+          <p className="desk-note">
+            Want leverage on a tokenized-stock position (deposit → borrow → re-deposit in one loop)? That&apos;s
+            Kamino&apos;s own <a href="https://app.kamino.finance/multiply" target="_blank" rel="noreferrer">Multiply</a> product
+            built on this same market — Auevo doesn&apos;t run a leveraged-loop contract of its own, so this links out
+            rather than reimplementing it.
+          </p>
           <Disclaimer compact />
         </>
       )}
