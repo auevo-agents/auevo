@@ -6,6 +6,7 @@ export default function LaunchpadPage() {
   return (
     <ComingSoon
       title="Launchpad"
+      heroClassName="product-header--launch"
       body={
         <>
           <p>

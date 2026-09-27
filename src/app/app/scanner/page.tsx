@@ -638,7 +638,7 @@ export default function ScannerPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--scanner">
         <div>
           <h3>Scanner</h3>
           <p>Premium, arbitrage, risk, liquidity and new-listing signals across every tokenized stock Auevo tracks</p>

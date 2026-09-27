@@ -7,6 +7,7 @@ export default function OtcDeskPage() {
   return (
     <ComingSoon
       title="OTC Desk"
+      heroClassName="product-header--otc"
       body={
         <>
           <p>

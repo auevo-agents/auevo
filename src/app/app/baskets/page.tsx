@@ -59,7 +59,7 @@ export default function BasketsPage() {
 
   return (
     <>
-      <div className="dash-hero">
+      <div className="dash-hero dash-hero--baskets">
         <p className="dash-eyebrow">Strategy baskets · One signature</p>
         <h1 className="dash-title">Invest in a theme.</h1>
         <p className="dash-subtitle">

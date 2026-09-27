@@ -132,7 +132,7 @@ function AssetsApp() {
 
   return (
     <>
-      <div className="dash-hero">
+      <div className="dash-hero dash-hero--assets">
         <p className="dash-eyebrow">Live registry · Robinhood Chain</p>
         <h1 className="dash-title">Assets</h1>
         <p className="dash-subtitle">

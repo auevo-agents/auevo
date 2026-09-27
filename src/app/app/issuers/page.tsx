@@ -53,7 +53,7 @@ export default function IssuersPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--issuers">
         <div>
           <h3>Issuers</h3>
           <p>Who backs each tokenized asset, and by their own disclosures — not verified by us</p>

@@ -68,7 +68,7 @@ export default function LendPage() {
 
   return (
     <>
-      <div className="dash-hero">
+      <div className="dash-hero dash-hero--lend">
         <p className="dash-eyebrow">Read-only · Kamino xStocks</p>
         <h1 className="dash-title">Earn on your stocks.</h1>
         <p className="dash-subtitle">Supply a tokenized stock as collateral, or borrow against it — rates straight from Kamino&apos;s own market.</p>
