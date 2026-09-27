@@ -297,7 +297,20 @@ export const DOC_SECTIONS: DocSection[] = [
           {
             type: "callout",
             tone: "info",
-            text: "Index baskets (fully-backed, redeemable fund-style tokens, e.g. Reserve Protocol's DTFs) aren't offered yet — Reserve has no deployment on Robinhood Chain as of this writing. Automated (self-rebalancing) baskets are not built in this phase.",
+            text: "Index baskets (fully-backed, redeemable fund-style tokens, e.g. Reserve Protocol's DTFs) aren't offered yet — Reserve has no deployment on Robinhood Chain as of this writing. A basket-backed token launch (Auevo minting its own redeemable wrapper token backed by a basket's holdings) isn't offered either, and isn't planned: that would need Auevo to hold the backing assets in escrow in a contract of its own, the same custodial risk this app's own rules rule out for lending and vaults (see Automated rebalancing below for the non-custodial alternative this app builds instead).",
+          },
+          {
+            type: "h2",
+            text: "Automated rebalancing",
+          },
+          {
+            type: "p",
+            text: "Every basket's own page has a \"Check rebalance\" tool: it compares this wallet's actual holdings against the basket's stated target weights and, if they've drifted past 3%, prepares the exact sell/buy trade to correct it — still one signature, computed from a live quote the same way Buy and Sell already are.",
+          },
+          {
+            type: "callout",
+            tone: "info",
+            text: "This is deliberately not a self-executing vault: Auevo never holds your basket assets. The tool detects drift and builds the trade; nothing moves until you review it and sign the one resulting transaction yourself.",
           },
         ],
       },

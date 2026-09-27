@@ -285,3 +285,146 @@ export async function resolveBasketSell(
 
   return { legs, excluded };
 }
+
+export interface RebalanceHoldingInput {
+  ticker: string;
+  /** Raw on-chain units this wallet currently holds of this ticker's verified token — 0 if none. */
+  balance: bigint;
+}
+
+export interface ResolvedRebalanceLeg extends ResolvedBasketLeg {
+  side: "buy" | "sell";
+}
+
+export interface ResolvedBasketRebalance {
+  needed: boolean;
+  /** This basket's own targetWeight vs. this wallet's current value share, per ticker, in basis points — positive means overweight. */
+  driftBps: Record<string, number>;
+  legs: ResolvedRebalanceLeg[];
+  excluded: ExcludedLeg[];
+}
+
+const DUST_THRESHOLD_BPS = 200n; // a leg worth less than 2% of the whole portfolio isn't worth a trade even once the overall drift crosses the alert threshold
+
+/**
+ * Non-custodial automated rebalancing — HyperDex's "Automated Baskets"
+ * without the part RWA_SPEC.md section 9 rules out (Auevo running its own
+ * automated-vault contract that holds user funds). This detects drift from
+ * a basket's own stated target weights and prepares the exact trade to
+ * correct it, but the funds never leave the holder's wallet until they
+ * sign the one resulting transaction — the same non-custodial posture as
+ * buy/sell, just computing the trade from a live position instead of a
+ * fresh deposit.
+ *
+ * Every currently-held ticker is valued by actually quoting a sale of its
+ * full held balance for USDG (bestLeg), never a stored price row — the
+ * real number this wallet would realize selling right now, from the same
+ * quoting path buy/sell already trust. A ticker that can't be valued this
+ * way (no verified token, or no live route at this size) is excluded
+ * entirely and its target weight is redistributed across the tickers that
+ * could be valued, mirroring resolveBasketBuy's own "exclude, don't guess"
+ * rule rather than assuming a price for it.
+ */
+export async function resolveBasketRebalance(
+  client: PublicClient,
+  supabase: SupabaseClient,
+  basket: BasketRecord,
+  holdings: RebalanceHoldingInput[],
+  driftThresholdBps: number,
+  slippageBps: number
+): Promise<ResolvedBasketRebalance> {
+  const tokensByTicker = await resolveVerifiedTokens(
+    supabase,
+    basket.chainId,
+    basket.holdings.map((h) => h.ticker)
+  );
+  const balanceByTicker = new Map(holdings.filter((h) => h.balance > 0n).map((h) => [h.ticker, h.balance]));
+
+  const excluded: ExcludedLeg[] = [];
+  const valued: {
+    ticker: string;
+    token: Address;
+    decimals: number;
+    symbol: string;
+    balance: bigint;
+    valueUsdg: bigint;
+    targetWeight: number;
+  }[] = [];
+
+  for (const holding of basket.holdings) {
+    const token = tokensByTicker.get(holding.ticker);
+    if (!token) {
+      excluded.push({ ticker: holding.ticker, reason: "no verified token for this ticker on this chain" });
+      continue;
+    }
+
+    const balance = balanceByTicker.get(holding.ticker) ?? 0n;
+    if (balance === 0n) {
+      // Not currently held — still a valid rebalance target (a fresh buy leg if underweight), valued at zero for now.
+      valued.push({ ticker: holding.ticker, token: token.address, decimals: token.decimals, symbol: token.symbol, balance: 0n, valueUsdg: 0n, targetWeight: holding.targetWeight });
+      continue;
+    }
+
+    const quote = await bestLeg(client, token.address, USDG, balance);
+    if (!quote) {
+      excluded.push({ ticker: holding.ticker, reason: "no live USDG pool at this size" });
+      continue;
+    }
+    valued.push({ ticker: holding.ticker, token: token.address, decimals: token.decimals, symbol: token.symbol, balance, valueUsdg: quote.amountOut, targetWeight: holding.targetWeight });
+  }
+
+  const totalValueUsdg = valued.reduce((sum, v) => sum + v.valueUsdg, 0n);
+  const targetWeightSum = valued.reduce((sum, v) => sum + v.targetWeight, 0);
+  if (totalValueUsdg === 0n || targetWeightSum <= 0) {
+    return { needed: false, driftBps: {}, legs: [], excluded };
+  }
+
+  const driftBps: Record<string, number> = {};
+  let maxDriftBps = 0;
+  for (const v of valued) {
+    const normalizedTarget = v.targetWeight / targetWeightSum;
+    const currentWeight = Number(v.valueUsdg) / Number(totalValueUsdg);
+    const drift = Math.round((currentWeight - normalizedTarget) * 10_000);
+    driftBps[v.ticker] = drift;
+    maxDriftBps = Math.max(maxDriftBps, Math.abs(drift));
+  }
+
+  if (maxDriftBps < driftThresholdBps) {
+    return { needed: false, driftBps, legs: [], excluded };
+  }
+
+  const legs: ResolvedRebalanceLeg[] = [];
+  for (const v of valued) {
+    const normalizedTarget = v.targetWeight / targetWeightSum;
+    const targetValueUsdg = (totalValueUsdg * BigInt(Math.round(normalizedTarget * 1_000_000))) / 1_000_000n;
+    const deltaUsdg = targetValueUsdg - v.valueUsdg;
+    const absDeltaUsdg = deltaUsdg < 0n ? -deltaUsdg : deltaUsdg;
+    if (absDeltaUsdg * 10_000n < totalValueUsdg * DUST_THRESHOLD_BPS) continue; // not worth a dust trade
+
+    if (deltaUsdg < 0n) {
+      // Overweight — sell the proportional slice of the held balance worth |deltaUsdg|.
+      const sellUsdg = -deltaUsdg;
+      const amountIn = v.valueUsdg > 0n ? (v.balance * sellUsdg) / v.valueUsdg : 0n;
+      if (amountIn <= 0n) continue;
+      const quote = await bestLeg(client, v.token, USDG, amountIn);
+      if (!quote) {
+        excluded.push({ ticker: v.ticker, reason: "no live USDG pool at this size" });
+        continue;
+      }
+      const amountOutMinimum = quote.amountOut - (quote.amountOut * BigInt(slippageBps)) / 10_000n;
+      legs.push({ ticker: v.ticker, token: v.token, decimals: v.decimals, symbol: v.symbol, weight: normalizedTarget, quote, amountIn, amountOutMinimum, side: "sell" });
+    } else {
+      // Underweight — buy deltaUsdg worth (USDG is Auevo's own 1:1 USD quote asset, so a USD delta is directly a USDG amount).
+      const amountIn = deltaUsdg;
+      const quote = await bestLeg(client, USDG, v.token, amountIn);
+      if (!quote) {
+        excluded.push({ ticker: v.ticker, reason: "no live USDG pool at this size" });
+        continue;
+      }
+      const amountOutMinimum = quote.amountOut - (quote.amountOut * BigInt(slippageBps)) / 10_000n;
+      legs.push({ ticker: v.ticker, token: v.token, decimals: v.decimals, symbol: v.symbol, weight: normalizedTarget, quote, amountIn, amountOutMinimum, side: "buy" });
+    }
+  }
+
+  return { needed: legs.length > 0, driftBps, legs, excluded };
+}

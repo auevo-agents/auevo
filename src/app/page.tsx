@@ -6,13 +6,14 @@ import { LandingOrbit } from "./landing-orbit";
 import { LandingTicker } from "./landing-ticker";
 import { LandingCards } from "./landing-cards";
 import { LandingNav } from "./landing-nav";
-import { PartnerRow } from "./landing-partners";
+import { PublicQuotesTicker } from "./landing-public-quotes";
 import { LandingFlow } from "./landing-flow";
 import { Counter } from "./landing-counter";
 import { Reveal } from "./landing-reveal";
 import { BrandIcon } from "./brand-icon";
 import { getSupabaseServer } from "@/lib/supabase";
 import { loadTickerTokens } from "@/lib/rwa/scanner-data";
+import { fetchPublicQuotes, type PublicQuote } from "@/lib/rwa/public-quotes";
 import { buildPremiumRows, sortByAbsPremium } from "@/lib/rwa/scanner";
 import { LIFI_EVM_CHAINS } from "@/lib/rwa/lifi/chains";
 
@@ -37,7 +38,8 @@ const LIVE_TOPS_LIMIT = 5;
 
 async function loadLandingData() {
   const supabase = getSupabaseServer();
-  if (!supabase) return { premiumRows: [] as ReturnType<typeof buildPremiumRows>, issuerNames: [] as string[] };
+  const publicQuotes = await fetchPublicQuotes().catch(() => [] as PublicQuote[]);
+  if (!supabase) return { premiumRows: [] as ReturnType<typeof buildPremiumRows>, issuerNames: [] as string[], publicQuotes };
 
   const [premiumRows, issuerNames] = await Promise.all([
     (async () => {
@@ -58,7 +60,7 @@ async function loadLandingData() {
     })(),
   ]);
 
-  return { premiumRows, issuerNames };
+  return { premiumRows, issuerNames, publicQuotes };
 }
 
 function formatUsd(value: number | null): string {
@@ -131,7 +133,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     redirect(`/legacy/fees?wallet=${encodeURIComponent(address)}`);
   }
 
-  const { premiumRows, issuerNames } = await loadLandingData();
+  const { premiumRows, issuerNames, publicQuotes } = await loadLandingData();
   const tickerRows = premiumRows.map((r) => ({ ticker: r.ticker, priceUsd: r.priceUsd, premiumBps: r.premiumBps! }));
   const liveTops = premiumRows.slice(0, LIVE_TOPS_LIMIT);
   const chainNames = LIFI_EVM_CHAINS.map((c) => c.chain.name);
@@ -146,12 +148,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </header>
 
       <LandingTicker rows={tickerRows} />
-      <PartnerRow
-        items={[
-          ...issuerNames.map((name) => ({ name, kind: "issuer" as const })),
-          ...chainNames.map((name) => ({ name, kind: "chain" as const })),
-        ]}
-      />
+      <PublicQuotesTicker quotes={publicQuotes} />
 
       <section className="landing2-hero">
         <div className="landing2-hero-grid">
