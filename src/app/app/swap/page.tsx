@@ -360,7 +360,7 @@ function SwapBridgeApp() {
                   <span className="desk-actions">
                     {log.explorerUrl ? (
                       <a href={log.explorerUrl} target="_blank" rel="noreferrer">
-                        tx ↗
+                        tx
                       </a>
                     ) : null}
                   </span>
