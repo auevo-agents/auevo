@@ -10,6 +10,7 @@ import {
 } from "wagmi";
 import { DCA_VAULT_ABI } from "@/lib/dcaVaultAbi";
 import { ConnectButton } from "../connect-button";
+import { TokenPickerButton, usePickableTokens } from "../../token-picker";
 
 /**
  * DCA bots — recurring-buy positions, non-custodial by design: only a
@@ -121,6 +122,7 @@ export default function BotsPage() {
 
 function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
   const { address: account, isConnected } = useAccount();
+  const pickableTokens = usePickableTokens();
 
   const [tokenIn, setTokenIn] = useState("");
   const [tokenOut, setTokenOut] = useState("");
@@ -253,24 +255,18 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
           </div>
 
           <label className="trade-field">
-            <span>Spend token (address)</span>
-            <input
-              value={tokenIn}
-              onChange={(e) => setTokenIn(e.target.value.trim())}
-              placeholder="0x…"
-              spellCheck={false}
-            />
-            {typeof inSymbol === "string" && <small>{inSymbol}</small>}
+            <span>Spend token</span>
+            <div className="trade-field-picker-row">
+              <TokenPickerButton value={tokenIn} onChange={setTokenIn} tokens={pickableTokens} />
+              {typeof inSymbol === "string" && <small>{inSymbol}</small>}
+            </div>
           </label>
 
           <label className="trade-field">
-            <span>Buy token (address)</span>
-            <input
-              value={tokenOut}
-              onChange={(e) => setTokenOut(e.target.value.trim())}
-              placeholder="0x…"
-              spellCheck={false}
-            />
+            <span>Buy token</span>
+            <div className="trade-field-picker-row">
+              <TokenPickerButton value={tokenOut} onChange={setTokenOut} tokens={pickableTokens} />
+            </div>
           </label>
 
           <label className="trade-field">

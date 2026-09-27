@@ -8,6 +8,7 @@ import { ERC20_ABI } from "@/lib/erc20-abi";
 import { robinhoodChain } from "@/lib/chains";
 import { LIFI_EVM_CHAIN_LIST, chainNameFor } from "@/lib/rwa/lifi/chains";
 import { ConnectButton } from "../connect-button";
+import { TokenPickerButton, usePickableTokens } from "../../token-picker";
 import { executeRoute, LIFI_NATIVE_ADDRESS, type StepLog } from "./route-executor";
 import type { Route, RoutesResponse } from "@lifi/types";
 
@@ -114,6 +115,13 @@ function SwapBridgeApp() {
   const effectiveToToken = toNative ? LIFI_NATIVE_ADDRESS : toToken;
   const fromTokenAddr = isValidToken(effectiveFromToken) ? effectiveFromToken : undefined;
   const toTokenAddr = isValidToken(effectiveToToken) ? effectiveToToken : undefined;
+
+  // Chain-aware — the verified catalog behind the picker has real rows for
+  // every chain in LIFI_EVM_CHAIN_LIST, not just Robinhood Chain (rwa_tokens
+  // tracks issuance across Ethereum, BSC, Arbitrum and HyperEVM too), so the
+  // list re-filters whenever the "from"/"to" chain changes.
+  const fromPickableTokens = usePickableTokens(fromChainId);
+  const toPickableTokens = usePickableTokens(effectiveToChainId);
 
   const fromMeta = useReadContracts({
     allowFailure: true,
@@ -274,22 +282,22 @@ function SwapBridgeApp() {
 
           <label className="trade-field">
             <span>From token</span>
-            <input
-              value={fromNative ? "" : fromToken}
-              onChange={(e) => setFromToken(e.target.value.trim())}
-              placeholder="0x… token address"
-              spellCheck={false}
-              disabled={fromNative}
-            />
+            {fromNative ? (
+              <div className="token-picker-native-badge">Native {chainNameFor(fromChainId)} gas token</div>
+            ) : (
+              <div className="trade-field-picker-row">
+                <TokenPickerButton value={fromToken} onChange={setFromToken} tokens={fromPickableTokens} />
+                {typeof fromSymbol === "string" && <small>{fromSymbol}</small>}
+                {typeof fromBalance === "bigint" && typeof effectiveFromDecimals === "number" && (
+                  <small>balance {Number(formatUnits(fromBalance, effectiveFromDecimals)).toFixed(4)}</small>
+                )}
+              </div>
+            )}
             <small>
               <label style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
                 <input type="checkbox" checked={fromNative} onChange={(e) => setFromNative(e.target.checked)} />
                 native {chainNameFor(fromChainId)} gas token
               </label>
-              {typeof fromSymbol === "string" && ` · ${fromSymbol}`}
-              {typeof fromBalance === "bigint" && typeof effectiveFromDecimals === "number"
-                ? ` · balance ${Number(formatUnits(fromBalance, effectiveFromDecimals)).toFixed(4)}`
-                : ""}
             </small>
           </label>
 
@@ -308,13 +316,13 @@ function SwapBridgeApp() {
 
           <label className="trade-field">
             <span>To token</span>
-            <input
-              value={toNative ? "" : toToken}
-              onChange={(e) => setToToken(e.target.value.trim())}
-              placeholder="0x… token address"
-              spellCheck={false}
-              disabled={toNative}
-            />
+            {toNative ? (
+              <div className="token-picker-native-badge">Native {chainNameFor(effectiveToChainId)} gas token</div>
+            ) : (
+              <div className="trade-field-picker-row">
+                <TokenPickerButton value={toToken} onChange={setToToken} tokens={toPickableTokens} />
+              </div>
+            )}
             <small>
               <label style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
                 <input type="checkbox" checked={toNative} onChange={(e) => setToNative(e.target.checked)} />
