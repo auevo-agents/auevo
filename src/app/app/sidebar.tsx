@@ -67,15 +67,26 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "explorer", label: "Explorer", href: "/app/explorer" },
     ],
   },
+  {
+    id: "more",
+    label: "More",
+    links: [
+      { id: "token-scanner", label: "Token Scanner", href: "/scanner" },
+      { id: "fee-scanner", label: "Fee Scanner (legacy)", href: "/legacy/fees" },
+      { id: "docs", label: "Docs", href: "/docs" },
+    ],
+  },
 ];
 
-// Token Scanner (/scanner) and Fee Scanner (/legacy/fees) live outside
-// this nav on purpose — both are public-site pages with their own chrome
-// (marketing header, or fees' own hand-rolled result view), and Fee
-// Scanner reads a *Solana* wallet's bot fees, nothing to do with
-// Robinhood Chain. /app/scanner above is the new RWA scanner from
-// RWA_SPEC.md section 6 (premium/arbitrage/risk/liquidity/new/smart
-// money tabs) — a different, EVM-native tool, built in Phase 5.
+// Token Scanner (/scanner) and Fee Scanner (/legacy/fees) sit in their own
+// "More" group rather than mixed into Trade/Build/Track: both are
+// pre-RWA tools that keep their own page chrome (marketing header, or
+// Fee Scanner's own hand-rolled result view) instead of the /app shell,
+// and Fee Scanner reads a *Solana* wallet's bot fees, nothing to do with
+// Robinhood Chain — grouping them with the RWA tools above would imply
+// they're part of the same product. /app/scanner above is the new RWA
+// scanner from RWA_SPEC.md section 6 (premium/arbitrage/risk/liquidity/
+// new/smart money tabs), a different, EVM-native tool built in Phase 5.
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/app") return pathname === "/app";
