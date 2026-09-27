@@ -392,6 +392,19 @@ export default function AppOverviewPage() {
 
         <LandingCards cards={QUICK_ACTIONS} />
       </div>
+
+      <Link href="/app/agent" className="agent-promo-banner">
+        <span className="agent-preview-dot" aria-hidden="true" />
+        <span className="agent-promo-body">
+          <span className="agent-promo-eyebrow">Coming soon</span>
+          <strong>AUEVO AI — your elite trading concierge</strong>
+          <span>
+            Explains what you&apos;re looking at, walks you through baskets, pools and lending, and helps
+            you invest with more confidence. Currently in training.
+          </span>
+        </span>
+        <span className="agent-promo-cta">Preview →</span>
+      </Link>
     </>
   );
 }

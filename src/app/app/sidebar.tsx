@@ -77,6 +77,15 @@ export function Sidebar() {
           <b>Overview</b>
         </Link>
 
+        <Link
+          href="/app/agent"
+          className={isActive(pathname, "/app/agent") ? "app-nav-link active" : "app-nav-link"}
+          onClick={() => setMobileOpen(false)}
+        >
+          <b>AUEVO AI</b>
+          <span className="app-nav-soon-badge">soon</span>
+        </Link>
+
         {NAV_GROUPS.map((group) => (
           <div className="app-nav-group" key={group.id}>
             <button
