@@ -15,6 +15,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { loadTickerTokens } from "@/lib/rwa/scanner-data";
 import { fetchPublicQuotes, type PublicQuote } from "@/lib/rwa/public-quotes";
 import { buildPremiumRows, sortByAbsPremium } from "@/lib/rwa/scanner";
+import { sortAssetSummaries, type AssetSummary } from "@/lib/rwa/catalog";
 import { LIFI_EVM_CHAINS } from "@/lib/rwa/lifi/chains";
 
 /**
@@ -39,15 +40,29 @@ const LIVE_TOPS_LIMIT = 5;
 async function loadLandingData() {
   const supabase = getSupabaseServer();
   const publicQuotes = await fetchPublicQuotes().catch(() => [] as PublicQuote[]);
-  if (!supabase) return { premiumRows: [] as ReturnType<typeof buildPremiumRows>, issuerNames: [] as string[], publicQuotes };
+  if (!supabase) {
+    return {
+      premiumRows: [] as ReturnType<typeof buildPremiumRows>,
+      mostAvailable: [] as AssetSummary[],
+      issuerNames: [] as string[],
+      publicQuotes,
+    };
+  }
 
-  const [premiumRows, issuerNames] = await Promise.all([
+  const [{ premiumRows, mostAvailable }, issuerNames] = await Promise.all([
     (async () => {
       try {
         const { summaries } = await loadTickerTokens(supabase);
-        return sortByAbsPremium(buildPremiumRows(summaries));
+        return {
+          premiumRows: sortByAbsPremium(buildPremiumRows(summaries)),
+          // Falls back to this when nothing has a priced premium yet (an
+          // early registry, or the price cron hasn't caught up) — real
+          // issuer/chain counts instead of an empty section, never a
+          // fabricated price. See the "Live from the scanner" section below.
+          mostAvailable: sortAssetSummaries(summaries, "most_available").filter((a) => a.tokenCount > 0),
+        };
       } catch {
-        return [] as ReturnType<typeof buildPremiumRows>;
+        return { premiumRows: [] as ReturnType<typeof buildPremiumRows>, mostAvailable: [] as AssetSummary[] };
       }
     })(),
     (async () => {
@@ -60,7 +75,7 @@ async function loadLandingData() {
     })(),
   ]);
 
-  return { premiumRows, issuerNames, publicQuotes };
+  return { premiumRows, mostAvailable, issuerNames, publicQuotes };
 }
 
 function formatUsd(value: number | null): string {
@@ -125,6 +140,33 @@ const FEATURE_CARDS = [
   },
 ] as const;
 
+const TRIPTYCH_CARDS = [
+  {
+    num: "A",
+    title: "Compare",
+    body: "See how the same tokenized stock compares across every issuer that's tokenized it — price, chain, verification, side by side.",
+    tag: "Every issuer, one view",
+    href: "/app/assets",
+    mockup: "chips",
+  },
+  {
+    num: "B",
+    title: "Verify",
+    body: "A contract risk score before you trade — mint, pause, blacklist, freeze and upgradeability, checked directly from the deployed bytecode, not a claim.",
+    tag: "Risk, not a black box",
+    href: "/app/scanner",
+    mockup: "risk",
+  },
+  {
+    num: "C",
+    title: "Trade",
+    body: "Route to whichever issuer/chain combination has the best price for your size on Robinhood Chain, or bridge a tokenized asset in from five other chains.",
+    tag: "Best available route",
+    href: "/app/swap",
+    mockup: "compare",
+  },
+] as const;
+
 export default async function Home({ searchParams }: PageProps<"/">) {
   const { wallet } = await searchParams;
   const address = Array.isArray(wallet) ? wallet[0] : wallet;
@@ -133,7 +175,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     redirect(`/legacy/fees?wallet=${encodeURIComponent(address)}`);
   }
 
-  const { premiumRows, issuerNames, publicQuotes } = await loadLandingData();
+  const { premiumRows, mostAvailable, issuerNames, publicQuotes } = await loadLandingData();
   const tickerRows = premiumRows.map((r) => ({ ticker: r.ticker, priceUsd: r.priceUsd, premiumBps: r.premiumBps! }));
   const liveTops = premiumRows.slice(0, LIVE_TOPS_LIMIT);
   const chainNames = LIFI_EVM_CHAINS.map((c) => c.chain.name);
@@ -222,7 +264,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <Reveal>
         <section className="landing2-section">
-          <p className="landing2-section-label">02 / The workspace</p>
+          <p className="landing2-section-label">02 / Compare, verify, trade</p>
+          <h2 className="landing2-section-title">A tokenized stock is a claim, not the asset. Know the difference.</h2>
+          <LandingCards cards={TRIPTYCH_CARDS} tickers={tickerRows.map((r) => r.ticker)} />
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="landing2-section">
+          <p className="landing2-section-label">03 / The workspace</p>
           <h2 className="landing2-section-title">Six tools, one wallet.</h2>
           <LandingCards cards={FEATURE_CARDS} tickers={tickerRows.map((r) => r.ticker)} />
         </section>
@@ -230,7 +280,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <Reveal>
         <section className="landing2-section">
-          <p className="landing2-section-label">03 / By the numbers</p>
+          <p className="landing2-section-label">04 / By the numbers</p>
           <h2 className="landing2-section-title">Every issuer, every chain, one registry.</h2>
           <div className="landing2-stats">
             <div className="landing2-stat">
@@ -257,16 +307,16 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 
       <Reveal>
         <section className="landing2-section">
-          <p className="landing2-section-label">04 / How it flows</p>
+          <p className="landing2-section-label">05 / How it flows</p>
           <h2 className="landing2-section-title">From issuer to your wallet, in one pass.</h2>
           <LandingFlow />
         </section>
       </Reveal>
 
-      {liveTops.length > 0 && (
+      {liveTops.length > 0 ? (
         <Reveal>
           <section className="landing2-section">
-            <p className="landing2-section-label">05 / Live from the scanner</p>
+            <p className="landing2-section-label">06 / Live from the scanner</p>
             <h2 className="landing2-section-title">Today&apos;s biggest premiums and discounts.</h2>
             <div className="landing2-tops">
               {liveTops.map((row) => {
@@ -286,6 +336,36 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </div>
           </section>
         </Reveal>
+      ) : (
+        mostAvailable.length > 0 && (
+          <Reveal>
+            <section className="landing2-section">
+              <p className="landing2-section-label">06 / Live from the registry</p>
+              <h2 className="landing2-section-title">Most available right now, across every issuer and chain.</h2>
+              <div className="landing2-tops">
+                {mostAvailable.slice(0, LIVE_TOPS_LIMIT).map((asset) => (
+                  <Link key={asset.ticker} href={`/app/assets/${asset.ticker}`} className="landing2-tops-row">
+                    <b style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <BrandIcon symbol={asset.ticker} name={asset.name} kind="ticker" size={22} />
+                      {asset.ticker}
+                    </b>
+                    <span className="landing2-tops-name">{asset.name}</span>
+                    <span className="landing2-tops-price">
+                      {asset.issuerCount} issuer{asset.issuerCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="landing2-tops-premium">
+                      {asset.chainCount} chain{asset.chainCount === 1 ? "" : "s"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+              <p className="desk-note" style={{ marginTop: 4 }}>
+                Premium needs a priced pool on both sides to compute — shown here by how many issuers/chains the
+                registry has verified it on instead, until that catches up.
+              </p>
+            </section>
+          </Reveal>
+        )
       )}
 
       <Reveal>

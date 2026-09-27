@@ -1,6 +1,6 @@
 import { BrandIcon } from "./brand-icon";
 
-export type MockupKind = "chips" | "compare" | "checklist" | "apr" | "alert";
+export type MockupKind = "chips" | "compare" | "checklist" | "apr" | "alert" | "risk";
 
 /**
  * Small "show it working" previews embedded in each feature card, the
@@ -84,6 +84,25 @@ export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: stri
             <span>TSLA / USDG</span>
             <span>Uniswap v4</span>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "risk") {
+    return (
+      <div className="landing2-mockup">
+        <div className="landing2-mockup-row">
+          <span>Contract risk</span>
+          <b className="landing2-ticker-up">Low</b>
+        </div>
+        <div className="landing2-mockup-check" style={{ marginTop: 10 }}>
+          <span className="landing2-mockup-check-icon">✓</span>
+          No mint / pause / blacklist role found
+        </div>
+        <div className="landing2-mockup-check">
+          <span className="landing2-mockup-check-icon">✓</span>
+          Checked directly from deployed bytecode
         </div>
       </div>
     );
