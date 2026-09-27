@@ -7,6 +7,7 @@ import { LandingHeaderWave } from "./landing-header-wave";
 import { LandingTicker } from "./landing-ticker";
 import { LandingCards } from "./landing-cards";
 import { LandingNav } from "./landing-nav";
+import { SiteFooterNav } from "./site-footer-nav";
 import { PublicQuotesTicker } from "./landing-public-quotes";
 import { LandingFlow } from "./landing-flow";
 import { Counter } from "./landing-counter";
@@ -423,8 +424,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </Reveal>
 
       <footer className="landing2-footer">
+        <SiteFooterNav />
         <div className="landing2-footer-row">
-          <AuevoLogo />
+          <Link href="/" aria-label="Auevo home">
+            <AuevoLogo />
+          </Link>
           <nav className="landing2-footer-links" aria-label="Legal and social">
             <Link href="/privacy" className="landing2-footer-link">
               Privacy
