@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { AuevoLogo, AuevoMark } from "@/app/auevo-logo";
 import { useSearchParams } from "next/navigation";
 import type { Severity } from "@/lib/evm/types";
 import type {
@@ -121,10 +122,10 @@ function ScannerApp() {
   }, [searchParams]);
 
   return (
-    <main className="site">
+    <main className="site scanner-premium">
       <header className="topbar">
-        <Link href="/" className="brand">
-          auevo<span>_</span>
+        <Link href="/" className="brand brand-auevo" aria-label="Auevo home">
+          <AuevoLogo />
         </Link>
 
         <nav>
@@ -174,7 +175,7 @@ function ScannerApp() {
               onClick={() => handleScan()}
               disabled={status === "loading" || !address.trim()}
             >
-              {status === "loading" ? <span className="loader" /> : "→"}
+              {status === "loading" ? <span className="loader" /> : "Scan"}
             </button>
           </div>
 
@@ -214,7 +215,7 @@ function ScannerApp() {
                 </>
               ) : (
                 <>
-                  <span className="scan-empty-mark">◇</span>
+                  <AuevoMark className="scan-empty-mark" title="Auevo" />
                   <p>Paste a contract address to see the report here.</p>
                 </>
               )}

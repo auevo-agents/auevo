@@ -343,7 +343,7 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
           </code>
           <div className="token-detail-links">
             <a href={`https://robinhoodchain.blockscout.com/address/${address}`} target="_blank" rel="noreferrer">
-              View on Blockscout ↗
+              View on Blockscout
             </a>
           </div>
         </div>

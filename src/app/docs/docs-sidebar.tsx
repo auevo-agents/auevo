@@ -19,6 +19,12 @@ export function DocsSidebar() {
 
   return (
     <nav className="docs-sidebar">
+      <div className="docs-sidebar-intro">
+        <span>Product guide</span>
+        <strong>Market structure, explained.</strong>
+        <p>Verified assets, issuer routes and execution — one reference.</p>
+      </div>
+
       <div className="docs-sidebar-search">
         <span className="dash-search-icon">⌕</span>
         <input
@@ -27,9 +33,10 @@ export function DocsSidebar() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <kbd>/</kbd>
       </div>
 
-      {DOC_SECTIONS.map((section) => {
+      {DOC_SECTIONS.map((section, sectionIndex) => {
         const pages = q
           ? section.pages.filter(
               (p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)
@@ -39,7 +46,7 @@ export function DocsSidebar() {
 
         return (
           <div className="docs-nav-section" key={section.id}>
-            <p className="docs-nav-section-title">{section.title}</p>
+            <p className="docs-nav-section-title"><span>{String(sectionIndex + 1).padStart(2, "0")}</span>{section.title}</p>
             {pages.map((page) => (
               <Link
                 key={page.slug}

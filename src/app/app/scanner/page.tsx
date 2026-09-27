@@ -163,7 +163,7 @@ function ArbitrageTab({ active }: { active: Tab }) {
             </span>
             <span className="desk-col-right desk-change-pos">+{(r.spreadBps / 100).toFixed(2)}%</span>
             <span className="desk-actions">
-              <Link href={`/app/swap?mode=bridge&toChain=${r.high.chainId}&toToken=${r.high.address}`}>bridge →</Link>
+              <Link href={`/app/swap?mode=bridge&toChain=${r.high.chainId}&toToken=${r.high.address}`}>bridge</Link>
             </span>
           </div>
         ))}

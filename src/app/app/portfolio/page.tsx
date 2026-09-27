@@ -47,7 +47,7 @@ export default function PortfolioPage() {
           <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
             <ConnectButton />
             <Link href="/app/assets" className="landing-cta-ghost">
-              Browse assets →
+              Browse assets
             </Link>
           </div>
         </div>
