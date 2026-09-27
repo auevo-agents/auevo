@@ -374,7 +374,7 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--baskets">
         <div>
           <h3>{basket.name}</h3>
           <p>{basket.description}</p>

@@ -60,7 +60,7 @@ export default function WalletsPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--wallets">
         <div>
           <h3>Wallets</h3>
           <p>Follow any address — balance, name, and its real activity feed</p>

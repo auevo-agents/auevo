@@ -67,7 +67,7 @@ export default function ConstellationMapPage(
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--market">
         <div>
           <h3>Constellation Map</h3>
           <p>Holder funding graph · Robinhood Chain</p>

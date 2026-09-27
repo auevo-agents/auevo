@@ -39,7 +39,7 @@ function DexApp() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--trading">
         <div>
           <h3>DEX</h3>
           <p>Swap, pools and liquidity tools · Robinhood Chain</p>

@@ -275,7 +275,7 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
   if (!address) {
     return (
       <>
-        <header className="product-header">
+        <header className="product-header product-header--wallets">
           <div>
             <h3>Wallet</h3>
           </div>
@@ -287,7 +287,7 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--wallets">
         <div>
           <h3>Wallet</h3>
           <p>Balance and on-chain activity · Robinhood Chain</p>
