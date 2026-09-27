@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://auevo.io"),
   title: "Auevo — One platform for everything tokenized.",
   description:
-    "Search every tokenized stock, ETF, treasury, commodity and credit claim. Compare issuers, check contract risk, trade in one signature, earn on pools and baskets, track your portfolio — all in one place.",
+    "Search every tokenized stock, ETF, treasury, commodity and credit claim. Compare issuers, trade in one signature, and track your portfolio — all in one place.",
   openGraph: {
     title: "Auevo — One platform for everything tokenized.",
     description:
-      "Search, compare, trade, earn and track every tokenized stock, ETF, treasury, commodity and credit claim, across every issuer and chain — all without leaving Auevo.",
+      "Search, compare and trade every tokenized stock, ETF, treasury, commodity and credit claim — all without leaving Auevo.",
     url: "https://auevo.io",
     siteName: "Auevo",
     type: "website",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Auevo — One platform for everything tokenized.",
     description:
-      "Search, compare, trade, earn and track every tokenized stock, ETF, treasury, commodity and credit claim, across every issuer and chain — all without leaving Auevo.",
+      "Search, compare and trade every tokenized stock, ETF, treasury, commodity and credit claim — all without leaving Auevo.",
   },
   verification: {
     google: "-qVb443obwXraFs4OWaGDR9l8lFDZcl5fDKT6fMVN-c",
