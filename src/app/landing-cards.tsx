@@ -44,7 +44,7 @@ export function LandingCards({ cards, tickers }: { cards: readonly FeatureCard[]
           <p>{card.body}</p>
           <span className="landing2-card-arrow">
             <span className="landing2-card-dot" aria-hidden="true" />
-            {card.tag} →
+            {card.tag}
           </span>
         </Link>
       ))}
