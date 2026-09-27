@@ -77,7 +77,7 @@ export default function IssuersPage() {
                 <span>{issuer.tokenCount} token{issuer.tokenCount === 1 ? "" : "s"}</span>
                 {issuer.website && (
                   <a href={issuer.website} target="_blank" rel="noreferrer">
-                    website ↗
+                    website
                   </a>
                 )}
               </div>
