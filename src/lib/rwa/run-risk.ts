@@ -2,9 +2,19 @@ import type { Address } from "viem";
 import { getSupabaseServer } from "@/lib/supabase";
 import { scanTokenRiskByChain } from "./risk";
 import { withFetchRetry } from "./db-retry";
+import { Deadline } from "@/lib/evm/deadline";
 
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000; // rescan a token at most once a day
 const MAX_SCANS_PER_RUN = 15; // each scan is several sequential RPC calls across up to two addresses (proxy + implementation) — bounded to stay well inside a cron route's own time budget
+// Belt-and-suspenders alongside MAX_SCANS_PER_RUN: that count assumed a
+// roughly constant per-scan RPC latency, which held until rwa_tokens grew
+// past ~350 rows — a real run then hit Vercel's own 30s
+// FUNCTION_INVOCATION_TIMEOUT mid-scan (confirmed in production 2026-09-27,
+// see api/cron/rwa-risk/route.ts's own maxDuration comment). This stops
+// the loop early on a slow run instead of trusting the count alone —
+// same "always make forward progress within a time budget, never a hard
+// timeout" shape as run-registry.ts/run-prices.ts.
+const SCAN_BUDGET_MS = 45_000;
 
 /**
  * RWA_SPEC.md Phase 5's risk-scoring cron — scans rwa_tokens' contracts
@@ -54,8 +64,10 @@ export async function runRiskPass(): Promise<RiskRunResult> {
 
   let scanned = 0;
   let failed = 0;
+  const deadline = Deadline.in(SCAN_BUDGET_MS);
 
   for (const token of due) {
+    if (deadline.expired) break;
     try {
       const result = await scanTokenRiskByChain(token.chain_id, token.address as Address);
       const { error } = await withFetchRetry(() =>

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runRiskPass } from "@/lib/rwa/run-risk";
 
-export const maxDuration = 30;
+// Was 30 — a real production run (2026-09-27) hit Vercel's own
+// FUNCTION_INVOCATION_TIMEOUT at exactly that ceiling once rwa_tokens grew
+// past ~350 rows (more stale tokens queued up per run than before). 60 is
+// the same Hobby-plan ceiling api/cron/index-chain already uses.
+export const maxDuration = 60;
 
 /**
  * RWA_SPEC.md Phase 5's risk-scoring cron — see lib/rwa/run-risk.ts for
