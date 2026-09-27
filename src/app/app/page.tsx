@@ -345,7 +345,7 @@ export default function AppOverviewPage() {
           ))}
 
           <Link href="/app/scanner" className="app-link-button" style={{ display: "inline-block", marginTop: 12 }}>
-            View all markets →
+            View all markets
           </Link>
         </div>
 
