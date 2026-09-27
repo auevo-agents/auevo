@@ -6,8 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { ConnectButton } from "../connect-button";
 import { SwapPanel } from "../swap-panel";
 import { LpPanel } from "../lp-panel";
-import { formatUsdCompact, formatPrice, shortenAddress } from "@/lib/format";
+import { formatUsdCompact, formatPrice } from "@/lib/format";
 import type { MarketPool } from "@/lib/geckoterminal";
+import { CopyableAddress } from "../../copyable-address";
 
 /**
  * DEX — Swap plus the other liquidity-side tools that belong next to it
@@ -166,7 +167,7 @@ function PoolsTab() {
               {pool.baseToken.symbol ?? "?"} / {pool.quoteToken.symbol ?? "?"}
               {pool.baseToken.address && (
                 <small style={{ marginLeft: 6, color: "#5a6469" }}>
-                  {shortenAddress(pool.baseToken.address, 4, 4)}
+                  <CopyableAddress address={pool.baseToken.address} head={4} tail={4} />
                 </small>
               )}
             </span>

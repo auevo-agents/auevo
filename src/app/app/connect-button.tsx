@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { CopyButton } from "../copy-button";
 
 /**
  * Wallet picker — one entry per wallet extension actually installed in
@@ -24,12 +25,13 @@ export function ConnectButton() {
   if (isConnected && address) {
     return (
       <div className="product-header-actions">
-        <button className="wallet-pill" title={address}>
+        <div className="wallet-pill" title={address}>
           <i>{address.slice(2, 3).toUpperCase()}</i>
           <span>
             {address.slice(0, 6)}…{address.slice(-4)}
           </span>
-        </button>
+          <CopyButton value={address} />
+        </div>
         <button onClick={() => disconnect()}>Disconnect</button>
       </div>
     );

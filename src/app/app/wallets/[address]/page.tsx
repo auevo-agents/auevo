@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatUnits, getAddress, isAddress, type Address } from "viem";
 import { useAccount, useBalance, useReadContracts } from "wagmi";
 import { ConnectButton } from "../../connect-button";
+import { CopyButton } from "../../../copy-button";
 import { robinhoodChain } from "@/lib/chains";
 import { formatAge, shortenAddress } from "@/lib/format";
 import { isWatched, readWatchedWallets, setWalletLabel, watchWallet } from "@/lib/watched-wallets";
@@ -323,6 +324,7 @@ export default function WalletDetailPage(props: PageProps<"/app/wallets/[address
           ) : (
             <h2>
               {currentLabel ?? shortenAddress(address, 8, 6)}
+              <CopyButton value={address} />
               {watched && (
                 <button
                   className="app-link-button"

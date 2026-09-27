@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { chainNameFor, explorerTxUrl } from "@/lib/rwa/lifi/chains";
-import { shortenAddress } from "@/lib/format";
+import { CopyableAddress } from "../../copyable-address";
+import { CopyButton } from "../../copy-button";
 
 /**
  * RWA_SPEC.md section 6's /app/explorer — "наши транзакции": every swap
@@ -114,10 +115,12 @@ export default function ExplorerPage() {
                 <span>
                   {formatTime(t.createdAt)}
                   <br />
-                  <small style={{ color: "#5a6469" }}>{shortenAddress(t.account)}</small>
+                  <small style={{ color: "#5a6469" }}>
+                    <CopyableAddress address={t.account} />
+                  </small>
                 </span>
                 <span>
-                  {shortenAddress(t.srcToken)} → {shortenAddress(t.dstToken)}
+                  <CopyableAddress address={t.srcToken} /> → <CopyableAddress address={t.dstToken} />
                   <br />
                   <small style={{ color: "#5a6469" }}>
                     {crossChain
@@ -131,9 +134,12 @@ export default function ExplorerPage() {
                 </span>
                 <span className="desk-actions">
                   {explorerUrl ? (
-                    <a href={explorerUrl} target="_blank" rel="noreferrer">
-                      tx
-                    </a>
+                    <>
+                      <a href={explorerUrl} target="_blank" rel="noreferrer">
+                        tx
+                      </a>
+                      {t.txHash && <CopyButton value={t.txHash} title="Copy tx hash" />}
+                    </>
                   ) : (
                     <span style={{ color: "#5a6469" }}>—</span>
                   )}

@@ -32,6 +32,7 @@ import { PERMIT2, UNIVERSAL_ROUTER } from "@/lib/rwa/dex/addresses";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { robinhoodChain } from "@/lib/chains";
 import { shortenAddress } from "@/lib/format";
+import { CopyableAddress } from "../copyable-address";
 import {
   DEFAULT_QUICK_BUY_PRESETS,
   readQuickBuyPresets,
@@ -1118,15 +1119,27 @@ export function SwapPanel({
           {signPermit.error && <p className="error">{signPermit.error.message}</p>}
           {buildError && <p className="error">{buildError}</p>}
           {sendV4Tx.error && <p className="error">{sendV4Tx.error.message}</p>}
-          {sendV4TxReceipt.isSuccess && <p className="trade-success">Swap confirmed on-chain.</p>}
+          {sendV4TxReceipt.isSuccess && sendV4Tx.data && (
+            <p className="trade-success">
+              Swap confirmed on-chain — <CopyableAddress address={sendV4Tx.data} />
+            </p>
+          )}
           {privateSwapNotice && <p className="desk-note">{privateSwapNotice}</p>}
-          {privateSwapHash && <p className="trade-success">Sent privately — {privateSwapHash}</p>}
+          {privateSwapHash && (
+            <p className="trade-success">
+              Sent privately — <CopyableAddress address={privateSwapHash} />
+            </p>
+          )}
         </>
       ) : (
         <>
           {approve.error && <p className="error">{approve.error.message}</p>}
           {swap.error && <p className="error">{swap.error.message}</p>}
-          {swapReceipt.isSuccess && <p className="trade-success">Swap confirmed on-chain.</p>}
+          {swapReceipt.isSuccess && swap.data && (
+            <p className="trade-success">
+              Swap confirmed on-chain — <CopyableAddress address={swap.data} />
+            </p>
+          )}
         </>
       )}
     </div>

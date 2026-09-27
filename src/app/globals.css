@@ -5954,6 +5954,38 @@ a {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* --- copy-to-clipboard affordance (addresses, contracts, tx hashes) --- */
+
+.copyable-address {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--faint, #626a71);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.copy-btn:hover {
+  color: var(--au-gold, #c9b27c);
+  background: rgba(201, 178, 124, .1);
+}
+
 /* --- section headings --- */
 
 .scan-section-heading {

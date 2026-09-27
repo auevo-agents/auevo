@@ -11,7 +11,7 @@ import {
 } from "wagmi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { UNISWAP_NFT_POSITION_MANAGER, FEE_TIERS } from "@/lib/uniswap";
-import { shortenAddress } from "@/lib/format";
+import { CopyableAddress } from "../copyable-address";
 
 interface Quote {
   to: Address;
@@ -261,7 +261,7 @@ export function LpPanel() {
           <>
             <div className="trade-quote">
               <span>
-                Pool {shortenAddress(quote.poolAddress)} · needs ≈
+                Pool <CopyableAddress address={quote.poolAddress} /> · needs ≈
                 {Number(formatUnits(BigInt(quote.amountARequired), decimalsA)).toFixed(6)} {symbolA ?? "A"} and ≈
                 {Number(formatUnits(BigInt(quote.amountBRequired), decimalsB)).toFixed(6)} {symbolB ?? "B"}
               </span>
@@ -312,7 +312,11 @@ export function LpPanel() {
             {approveA.error && <p className="error">{approveA.error.message}</p>}
             {approveB.error && <p className="error">{approveB.error.message}</p>}
             {sendMintTx.error && <p className="error">{sendMintTx.error.message}</p>}
-            {sendMintTx.data && <p className="desk-note">Tx: {sendMintTx.data}</p>}
+            {sendMintTx.data && (
+              <p className="desk-note">
+                Tx: <CopyableAddress address={sendMintTx.data} />
+              </p>
+            )}
             {mintReceipt.isSuccess && <p className="trade-success">Position minted.</p>}
           </>
         )}

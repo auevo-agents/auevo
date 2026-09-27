@@ -11,6 +11,7 @@ import {
   type SimulationNodeDatum,
 } from "d3-force";
 import { shortenAddress } from "@/lib/format";
+import { CopyButton } from "../../copy-button";
 
 /**
  * The funding graph — who holds this token and who funded whom, among the
@@ -214,7 +215,10 @@ export function ConstellationMap({ nodes, edges }: { nodes: GraphNode[]; edges: 
 
       {hover && (
         <div className="constellation-tooltip">
-          <code className="scan-mono">{hover.address}</code>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <code className="scan-mono">{hover.address}</code>
+            <CopyButton value={hover.address} />
+          </span>
           <span>{hover.kind === "mint" ? "Origin of supply (zero address)" : `${hover.percent.toFixed(2)}% of supply`}</span>
         </div>
       )}

@@ -6,7 +6,8 @@ import { ConnectButton } from "../connect-button";
 import { TradeList } from "../market/trade-list";
 import { aggregateWallets, type WalletAgg } from "@/lib/smart-money";
 import type { WalletLeaderboardEntry } from "@/lib/indexed-smart-money";
-import { formatUsdCompact, shortenAddress } from "@/lib/format";
+import { formatUsdCompact } from "@/lib/format";
+import { CopyableAddress } from "../../copyable-address";
 import { readWatchedWallets, watchWallet } from "@/lib/watched-wallets";
 import type { Trade } from "@/lib/geckoterminal";
 
@@ -288,7 +289,7 @@ function OnchainWalletRow({
     <div className="money-row">
       <span>
         <Link href={`/app/wallets/${wallet.wallet}`}>
-          <code className="scan-mono">{shortenAddress(wallet.wallet)}</code>
+          <CopyableAddress address={wallet.wallet} />
         </Link>
       </span>
       <span className="desk-col-right">{wallet.tokensTraded}</span>
@@ -329,7 +330,7 @@ function WalletRow({
   return (
     <div className="money-row">
       <span>
-        <code className="scan-mono">{shortenAddress(wallet.address)}</code>
+        <CopyableAddress address={wallet.address} />
       </span>
       <span className="desk-col-right">{wallet.tokens}</span>
       <span className="desk-col-right">{wallet.trades}</span>
