@@ -9535,6 +9535,79 @@ a {
   overflow: hidden;
 }
 
+/* Morpho USDG vaults — real deposit/withdraw cards. */
+.earn-vault-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.earn-vault-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.earn-vault-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.earn-vault-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.earn-vault-name small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.earn-vault-tvl {
+  margin-left: auto;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.earn-vault-tvl span {
+  font: 600 14px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #eef0ef;
+}
+
+.earn-vault-tvl small {
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.earn-vault-position {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(201,178,124,.06);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.earn-vault-position b {
+  color: #eef0ef;
+}
+
+.earn-vault-position button {
+  margin-left: auto;
+}
+
 /* Kamino xStocks lending reserves as cards (each with a real-data
    utilization gauge) instead of a plain rate table. */
 .lend-reserve-grid {
