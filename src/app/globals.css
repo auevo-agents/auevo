@@ -14192,12 +14192,12 @@ a {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(180deg, rgba(4,6,6,.02), rgba(4,6,6,.2) 34%, rgba(4,6,6,.9) 78%, #080a0a),
-    linear-gradient(90deg, rgba(4,6,6,.74), transparent 72%),
+    linear-gradient(180deg, rgba(4,6,6,.01), rgba(4,6,6,.08) 34%, rgba(4,6,6,.76) 82%, #080a0a),
+    linear-gradient(90deg, rgba(4,6,6,.48), transparent 68%),
     var(--issuer-photo);
   background-size: cover;
-  background-position: center;
-  filter: saturate(.8);
+  background-position: right center;
+  filter: saturate(.9) brightness(1.1);
   transition: transform .65s cubic-bezier(.2,.75,.25,1);
 }
 .issuer-card--active:nth-child(1) { --issuer-photo: url("/images/app-heroes/issuers.webp"); }
@@ -14321,17 +14321,17 @@ a {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(180deg, rgba(4,6,6,.03), rgba(4,6,6,.15) 34%, rgba(4,6,6,.87) 75%, #080a0a 100%),
-    linear-gradient(90deg, rgba(4,6,6,.66), rgba(4,6,6,.08) 76%),
+    linear-gradient(180deg, rgba(4,6,6,.01), rgba(4,6,6,.06) 34%, rgba(4,6,6,.76) 78%, #080a0a 100%),
+    linear-gradient(90deg, rgba(4,6,6,.4), rgba(4,6,6,.02) 72%),
     var(--basket-photo);
   background-size: 100% 100%, 100% 100%, cover;
   background-position: center;
-  filter: saturate(.82) contrast(1.03);
+  filter: saturate(.9) contrast(1.03) brightness(1.08);
   transition: transform .7s cubic-bezier(.2,.75,.25,1), filter .35s ease;
 }
 .dash-basket-card--cinematic:hover::before {
   transform: scale(1.045);
-  filter: saturate(.95) contrast(1.06);
+  filter: saturate(1) contrast(1.06) brightness(1.12);
 }
 .dash-basket-card--cinematic > * { position: relative; z-index: 2; }
 .dash-basket-card-index {
