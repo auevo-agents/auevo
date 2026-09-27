@@ -76,7 +76,6 @@ export function LandingNav() {
         onClick={() => setOpen((v) => !v)}
       >
         Explore
-        <span className={open ? "landing-nav-caret landing-nav-caret-open" : "landing-nav-caret"}>▾</span>
       </button>
       <Link href="/app/assets" className="landing-nav-trigger" style={{ textDecoration: "none" }}>
         Markets
@@ -85,7 +84,7 @@ export function LandingNav() {
         Docs
       </Link>
       <Link href="/app" className="landing-cta-ghost">
-        Open workspace →
+        Open workspace
       </Link>
 
       {open && (
