@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import Link from "next/link";
 import { Disclaimer } from "../../disclaimer";
 import { BrandIcon } from "../../brand-icon";
@@ -20,6 +20,24 @@ interface BasketSummary {
   availableCount: number;
   totalCount: number;
 }
+
+
+const BASKET_SCENES: Record<string, string> = {
+  "Aerospace & Defense": "aerospace-defense",
+  "AI & Semiconductors": "ai-semiconductors",
+  "Banks & Financials": "banks-financials",
+  "Broad Index Trackers": "broad-index-trackers",
+  "Cloud & Enterprise Software": "cloud-enterprise-software",
+  "Consumer Staples & Retail": "consumer-staples-retail",
+  "Crypto & Digital Assets Proxies": "crypto-digital-assets",
+  "EV & Mobility": "ev-mobility",
+  "Fintech & Payments": "fintech-payments",
+  "Healthcare & Pharma": "healthcare-pharma",
+  "Magnificent Seven": "magnificent-seven",
+  "Media & Entertainment": "media-entertainment",
+  "Precious Metals": "precious-metals",
+  "Treasuries & Private Credit": "treasuries-private-credit",
+};
 
 /**
  * RWA_SPEC.md Phase 7's basket catalog. Strategy baskets are real and
@@ -85,31 +103,53 @@ export default function BasketsPage() {
       {baskets && indexed && baskets.length > 0 && (
         <>
           <div className="dash-basket-grid" style={{ marginTop: 8 }}>
-            {baskets.map((basket) => (
-              <Link key={basket.id} href={`/app/baskets/${basket.id}`} className="dash-basket-card">
-                <div className="dash-basket-card-head">
-                  <div>
-                    <h4>{basket.name}</h4>
-                    <p>{basket.description}</p>
+            {baskets.map((basket, index) => {
+              const scene = BASKET_SCENES[basket.name] ?? "broad-index-trackers";
+              const availability = basket.totalCount > 0
+                ? Math.round((basket.availableCount / basket.totalCount) * 100)
+                : 0;
+              const cardStyle = {
+                "--basket-photo": `url("/images/basket-scenes/${scene}.webp")`,
+                "--basket-angle": `${availability * 3.6}deg`,
+              } as CSSProperties;
+
+              return (
+                <Link
+                  key={basket.id}
+                  href={`/app/baskets/${basket.id}`}
+                  className="dash-basket-card dash-basket-card--cinematic"
+                  style={cardStyle}
+                >
+                  <div className="dash-basket-card-index">{String(index + 1).padStart(2, "0")}</div>
+                  <div className="dash-basket-card-head">
+                    <div>
+                      <h4>{basket.name}</h4>
+                      <p>{basket.description}</p>
+                    </div>
+                    <span className="dash-basket-kind">{basket.kind}</span>
                   </div>
-                  <span className="dash-basket-kind">{basket.kind}</span>
-                </div>
-                <div className="landing2-mockup-chips">
-                  {basket.holdings.map((h) => (
-                    <span className="landing2-mockup-chip" key={h.ticker}>
-                      <BrandIcon symbol={h.ticker} kind="ticker" size={16} />
-                      {h.ticker}
+                  <div className="dash-basket-instrument">
+                    <div className="dash-basket-allocation" aria-label={`${availability}% tradeable`}>
+                      <span>{basket.availableCount}/{basket.totalCount}</span>
+                    </div>
+                    <div className="landing2-mockup-chips">
+                      {basket.holdings.map((h) => (
+                        <span className="landing2-mockup-chip" key={h.ticker}>
+                          <BrandIcon symbol={h.ticker} kind="ticker" size={16} />
+                          {h.ticker}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="dash-basket-foot">
+                    <span className={basket.availableCount === 0 ? "desk-change-neg" : basket.availableCount < basket.totalCount ? "desk-change-flat" : "desk-change-pos"}>
+                      {basket.availableCount}/{basket.totalCount} tradeable on Robinhood Chain
                     </span>
-                  ))}
-                </div>
-                <div className="dash-basket-foot">
-                  <span className={basket.availableCount === 0 ? "desk-change-neg" : basket.availableCount < basket.totalCount ? "desk-change-flat" : "desk-change-pos"}>
-                    {basket.availableCount}/{basket.totalCount} tradeable on Robinhood Chain
-                  </span>
-                  <span>View</span>
-                </div>
-              </Link>
-            ))}
+                    <span>Open basket</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
           <p className="desk-note">
             Every basket here is a Strategy basket (source=auevo), equal-weighted by default — see each
