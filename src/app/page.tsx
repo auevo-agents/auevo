@@ -209,15 +209,16 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <section className="landing2-hero landing2-hero-premium">
         <div className="landing2-hero-grid">
           <div className="landing2-hero-content">
-            <p className="landing2-eyebrow">The market for tokenized equities</p>
+            <p className="landing2-eyebrow">The platform for tokenized markets</p>
             <h1 className="landing2-h1">
-              See the asset
+              One platform for
               <br />
-              behind the <em>token.</em>
+              <em>everything</em> tokenized.
             </h1>
             <p className="landing2-hero-copy">
-              Compare tokenized stocks across issuers and chains. See the premium,
-              contract risk and available liquidity before you trade — in one clear view.
+              Search every tokenized stock, ETF, treasury, commodity and credit claim.
+              Compare issuers, check contract risk, trade in one signature, earn on pools
+              and baskets, track your portfolio — all without leaving Auevo.
             </p>
             <div className="landing2-cta-row">
               <Link href="/app/assets" className="landing2-cta">
