@@ -78,6 +78,9 @@ export function LandingNav() {
         Explore
         <span className={open ? "landing-nav-caret landing-nav-caret-open" : "landing-nav-caret"}>▾</span>
       </button>
+      <Link href="/docs" className="landing-nav-trigger" style={{ textDecoration: "none" }}>
+        Docs
+      </Link>
       <Link href="/app" className="landing-cta-ghost">
         Open workspace →
       </Link>
