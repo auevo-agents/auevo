@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AuevoLogo } from "@/app/auevo-logo";
 import type { ScanResult } from "@/lib/scan";
 
 type Status = "idle" | "loading" | "error" | "done";
@@ -107,7 +108,7 @@ function AuevoApp() {
   }
 
   return (
-    <main className="site">
+    <main className="site fees-premium">
       <Header onNavigate={goToSection} />
 
       {status === "done" && result ? (
@@ -135,8 +136,8 @@ function AuevoApp() {
 function Header({ onNavigate }: { onNavigate: (id: string) => void }) {
   return (
     <header className="topbar">
-      <Link href="/" className="brand">
-        auevo<span>_</span>
+      <Link href="/" className="brand brand-auevo" aria-label="Auevo home">
+        <AuevoLogo />
       </Link>
 
       <nav>
@@ -249,7 +250,7 @@ function Landing({
               onClick={() => onScan()}
               disabled={status === "loading" || !wallet.trim()}
             >
-              {status === "loading" ? <span className="loader" /> : "→"}
+              {status === "loading" ? <span className="loader" /> : "Scan"}
             </button>
           </div>
 
@@ -394,7 +395,7 @@ function Landing({
 
           <div className="preview-foot">
             <span>Example data shown for product preview.</span>
-            <strong>REAL WALLET → REAL NUMBERS</strong>
+            <strong>REAL WALLET · REAL NUMBERS</strong>
           </div>
         </div>
       </section>
@@ -480,9 +481,7 @@ function Landing({
 
           <aside className="product-sidebar">
             <div className="product-logo">
-
-              <strong>auevo</strong>
-              <i />
+              <AuevoLogo />
             </div>
 
             <nav className="product-nav">
@@ -812,7 +811,7 @@ function Landing({
               </div>
 
               <button className="view-market">
-                View market intelligence <span>→</span>
+                View market intelligence
               </button>
             </section>
 
@@ -893,7 +892,7 @@ function ResultView({
   return (
     <section className="result-page">
       <div className="result-toolbar">
-        <button onClick={onNewScan}>← Back to home</button>
+        <button onClick={onNewScan}>Back to home</button>
         <span>Last {result.daysScanned} days · Solana</span>
       </div>
 
@@ -914,7 +913,7 @@ function ResultView({
 
           {!empty && !noFees && (
             <Link href="/trade" className="trade-cta">
-              Trade this wallet for ~0.5% instead of ~1% →
+              Trade this wallet for ~0.5% instead of ~1%
             </Link>
           )}
         </div>
@@ -1134,7 +1133,6 @@ function EarlyAccessForm() {
       />
       <button onClick={submit} disabled={state === "sending"}>
         {state === "sending" ? "…" : "Get early access"}
-        <span>→</span>
       </button>
       {state === "error" && (
         <small>Couldn&apos;t save that — try again.</small>
