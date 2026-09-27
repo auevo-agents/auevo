@@ -300,6 +300,7 @@ interface NewRow {
   issuerId: string;
   symbol: string;
   discoveredAt: string;
+  priceUsd: number | null;
 }
 
 function timeAgo(iso: string): string {
@@ -321,6 +322,7 @@ function NewTab({ active }: { active: Tab }) {
       <div className="money-row money-row-nopair money-head">
         <span>ASSET</span>
         <span>ISSUER · CHAIN</span>
+        <span className="desk-col-right">PRICE</span>
         <span className="desk-col-right">DISCOVERED</span>
       </div>
       {data.rows.map((r) => (
@@ -335,6 +337,7 @@ function NewTab({ active }: { active: Tab }) {
           <span>
             {r.issuerId} · {chainNameFor(r.chainId)}
           </span>
+          <span className="desk-col-right">{formatUsd(r.priceUsd)}</span>
           <span className="desk-col-right">{timeAgo(r.discoveredAt)}</span>
         </Link>
       ))}

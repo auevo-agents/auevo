@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Disclaimer } from "../../disclaimer";
+import { BrandIcon } from "../../brand-icon";
 
 interface BasketHolding {
   ticker: string;
@@ -16,6 +17,8 @@ interface BasketSummary {
   description: string | null;
   holdings: BasketHolding[];
   oneYearReturn: number | null;
+  availableCount: number;
+  totalCount: number;
 }
 
 /**
@@ -94,13 +97,15 @@ export default function BasketsPage() {
                 <div className="landing2-mockup-chips">
                   {basket.holdings.map((h) => (
                     <span className="landing2-mockup-chip" key={h.ticker}>
-                      <span className="landing2-mockup-chip-dot" />
+                      <BrandIcon symbol={h.ticker} kind="ticker" size={16} />
                       {h.ticker}
                     </span>
                   ))}
                 </div>
                 <div className="dash-basket-foot">
-                  <span>{basket.holdings.length} holdings</span>
+                  <span className={basket.availableCount === 0 ? "desk-change-neg" : basket.availableCount < basket.totalCount ? "desk-change-flat" : "desk-change-pos"}>
+                    {basket.availableCount}/{basket.totalCount} tradeable on Robinhood Chain
+                  </span>
                   <span>View</span>
                 </div>
               </Link>

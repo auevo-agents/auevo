@@ -226,7 +226,12 @@ function HighlightTable({
               {row.score !== null && row.score !== undefined ? `risk ${row.score}` : "unscored"}
             </span>
           )}
-          {tab === "new" && <span className="dash-list-col">{row.symbol}</span>}
+          {tab === "new" && (
+            <>
+              <span className="dash-list-col">{formatUsd(row.priceUsd)}</span>
+              <span className="dash-list-col">{row.symbol}</span>
+            </>
+          )}
           <span className="dash-list-chevron" aria-hidden="true">›</span>
         </Link>
       ))}

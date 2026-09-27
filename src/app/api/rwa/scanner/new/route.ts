@@ -33,6 +33,29 @@ export async function GET() {
 
   const nameByTicker = new Map((underlyings ?? []).map((u) => [u.ticker, u.name]));
 
+  // Latest known price per (chain, address) — this route never fetched
+  // rwa_prices at all before, so every row here showed no price even for
+  // tokens Premium/Risk/Liquidity already price fine. Same "latest row
+  // wins" join /api/rwa/baskets/[id] already uses.
+  const { data: priceRows, error: pricesError } = tokens?.length
+    ? await supabase
+        .from("rwa_prices")
+        .select("chain_id, token_address, price_usd, ts")
+        .in(
+          "token_address",
+          tokens.map((t) => t.address)
+        )
+        .order("ts", { ascending: false })
+        .limit(2000)
+    : { data: [], error: null };
+  if (pricesError) return NextResponse.json({ error: `Could not read rwa_prices: ${pricesError.message}` }, { status: 500 });
+
+  const latestPriceByKey = new Map<string, number | null>();
+  for (const row of priceRows ?? []) {
+    const key = `${row.chain_id}:${row.token_address.toLowerCase()}`;
+    if (!latestPriceByKey.has(key)) latestPriceByKey.set(key, row.price_usd);
+  }
+
   return NextResponse.json({
     indexed: true,
     rows: (tokens ?? []).map((t) => ({
@@ -43,6 +66,7 @@ export async function GET() {
       issuerId: t.issuer_id,
       symbol: t.symbol,
       discoveredAt: t.discovered_at,
+      priceUsd: latestPriceByKey.get(`${t.chain_id}:${t.address.toLowerCase()}`) ?? null,
     })),
   });
 }
