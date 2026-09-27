@@ -130,9 +130,8 @@ function ScannerApp() {
         </Link>
 
         <nav>
-          <Link href="/legacy/fees">Fee scanner</Link>
           <span className="trade-nav-active">Token scanner</span>
-          <Link href="/trade">Trade</Link>
+          <Link href="/app">Auevo app →</Link>
         </nav>
 
         <div className="topbar-right">
