@@ -40,7 +40,12 @@ import { withFetchRetry } from "./db-retry";
 // count — RWA_REGISTRY_MAX_CHUNKS_PER_RUN still overrides it if a future
 // RPC provider turns out to need a tighter leash.
 const MAX_CHUNKS_PER_SCAN = Number(process.env.RWA_REGISTRY_MAX_CHUNKS_PER_RUN) || 1000;
-const SCAN_BUDGET_MS = 20_000;
+// The route's own maxDuration is 60s (api/cron/rwa-registry/route.ts) —
+// this only bounds discoverUsdgPools itself, leaving the other ~30s for
+// everything after it (candidate resolution, the xStocks fetch, pool
+// backfill/refresh, the checkpoint write), none of which have a deadline
+// of their own.
+const SCAN_BUDGET_MS = 30_000;
 const START_BLOCK = BigInt(process.env.RWA_REGISTRY_START_BLOCK || "0");
 const LOOKBACK_BLOCKS = BigInt(process.env.RWA_REGISTRY_LOOKBACK_BLOCKS || "2000000");
 

@@ -15,6 +15,20 @@ const MAX_SCANS_PER_RUN = 15; // each scan is several sequential RPC calls acros
 // same "always make forward progress within a time budget, never a hard
 // timeout" shape as run-registry.ts/run-prices.ts.
 const SCAN_BUDGET_MS = 45_000;
+// A between-iterations deadline check can't help against a single token
+// scan that itself hangs (a slow/unresponsive RPC node on one specific
+// contract) — confirmed in production 2026-09-27, where the pass still
+// ran the full 60s and got killed despite the SCAN_BUDGET_MS check above.
+// Race each individual scan against its own cap so one bad token can
+// only ever cost this much, never the whole run.
+const PER_TOKEN_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)),
+  ]);
+}
 
 /**
  * RWA_SPEC.md Phase 5's risk-scoring cron — scans rwa_tokens' contracts
@@ -69,7 +83,11 @@ export async function runRiskPass(): Promise<RiskRunResult> {
   for (const token of due) {
     if (deadline.expired) break;
     try {
-      const result = await scanTokenRiskByChain(token.chain_id, token.address as Address);
+      const result = await withTimeout(
+        scanTokenRiskByChain(token.chain_id, token.address as Address),
+        PER_TOKEN_TIMEOUT_MS,
+        `scanTokenRiskByChain(${token.chain_id}:${token.address})`
+      );
       const { error } = await withFetchRetry(() =>
         supabase.from("rwa_risk").upsert(
           {
