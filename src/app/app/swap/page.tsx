@@ -253,7 +253,8 @@ function SwapBridgeApp() {
         </button>
       </div>
 
-      <div className="trade-form" style={{ maxWidth: 480 }}>
+      <div className="trade-panel">
+        <div className="trade-form">
         {!isConnected && (
           <div className="app-notice app-notice-info">
             Browsing and getting quotes works without a wallet — connect above only when you&apos;re ready to actually swap or bridge.
@@ -406,6 +407,7 @@ function SwapBridgeApp() {
               ))}
             </div>
           )}
+        </div>
         </div>
     </>
   );

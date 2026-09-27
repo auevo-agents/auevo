@@ -122,7 +122,7 @@ export default function LendPage() {
         <>
           <div className="dash-list-card" style={{ marginTop: 8 }}>
             {reserves.map((r) => (
-              <div key={r.reservePubkey} className="dash-list-row" style={{ gridTemplateColumns: "1fr auto auto auto auto" }}>
+              <div key={r.reservePubkey} className="dash-list-row" style={{ gridTemplateColumns: "1fr auto auto auto auto auto" }}>
                 <span className="dash-list-name">
                   <b>{r.liquidityTokenMint.slice(0, 4)}…{r.liquidityTokenMint.slice(-4)}</b>
                   <small>Kamino xStocks market</small>
@@ -131,6 +131,16 @@ export default function LendPage() {
                 <span className="dash-list-col dash-list-col-hide-mobile">{formatPct(r.borrowApyPct)}</span>
                 <span className="dash-list-col">{formatUsd(r.totalSupplyUsd)}</span>
                 <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(r.totalBorrowUsd)}</span>
+                <span className="desk-actions">
+                  <a
+                    href="https://app.kamino.finance/lending"
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Opens Kamino's lending markets — find this reserve there to supply or borrow"
+                  >
+                    supply ↗
+                  </a>
+                </span>
               </div>
             ))}
           </div>

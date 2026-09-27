@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { AssetSummary, AssetSort } from "@/lib/rwa/catalog";
 import { Disclaimer } from "../../disclaimer";
 import { BrandIcon } from "../../brand-icon";
@@ -47,6 +48,19 @@ const CATEGORY_TABS: { id: CategoryFilter; label: string }[] = [
 ];
 
 export default function AssetsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AssetsApp />
+    </Suspense>
+  );
+}
+
+function AssetsApp() {
+  const searchParams = useSearchParams();
+  // Read once, not re-synced on every param change — same reasoning as the
+  // Swap & Bridge page's own prefill: this is the page's starting filter,
+  // not a value that should keep overriding the issuer chips' own clicks.
+  const [issuerFilter, setIssuerFilter] = useState<string | null>(() => searchParams.get("issuer"));
   const [sort, setSort] = useState<AssetSort>("most_available");
   const [assets, setAssets] = useState<AssetSummary[] | null>(null);
   const [issuers, setIssuers] = useState<IssuerSummary[] | null>(null);
@@ -102,13 +116,19 @@ export default function AssetsPage() {
     return counts;
   }, [assets]);
 
+  const issuerFilterName = useMemo(
+    () => (issuerFilter ? issuers?.find((i) => i.id === issuerFilter)?.name ?? issuerFilter : null),
+    [issuerFilter, issuers]
+  );
+
   const filtered = useMemo(() => {
     if (!assets) return null;
-    const byCategory = category === "all" ? assets : assets.filter((a) => a.category === category);
+    const byIssuer = issuerFilter ? assets.filter((a) => a.tokens.some((t) => t.issuerId === issuerFilter)) : assets;
+    const byCategory = category === "all" ? byIssuer : byIssuer.filter((a) => a.category === category);
     const q = query.trim().toLowerCase();
     if (!q) return byCategory;
     return byCategory.filter((a) => a.ticker.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
-  }, [assets, category, query]);
+  }, [assets, issuerFilter, category, query]);
 
   return (
     <>
@@ -130,12 +150,30 @@ export default function AssetsPage() {
         {activeIssuers.length > 0 && (
           <div className="landing2-partners" style={{ paddingTop: 20 }}>
             {activeIssuers.map((issuer) => (
-              <span className="landing2-partner-chip" key={issuer.id}>
+              <button
+                key={issuer.id}
+                type="button"
+                className="landing2-partner-chip"
+                style={{
+                  cursor: "pointer",
+                  border: issuer.id === issuerFilter ? "1px solid var(--red)" : undefined,
+                }}
+                onClick={() => setIssuerFilter((current) => (current === issuer.id ? null : issuer.id))}
+              >
                 <BrandIcon symbol={issuer.name} kind="issuer" size={22} />
                 {issuer.name}
-              </span>
+              </button>
             ))}
           </div>
+        )}
+
+        {issuerFilter && (
+          <p className="desk-note" style={{ marginTop: 12 }}>
+            Filtering by issuer: <b>{issuerFilterName}</b> ·{" "}
+            <button onClick={() => setIssuerFilter(null)} style={{ textDecoration: "underline" }}>
+              clear
+            </button>
+          </p>
         )}
 
         <div className="dash-search">

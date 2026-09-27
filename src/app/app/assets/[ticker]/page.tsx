@@ -159,7 +159,7 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
       )}
 
       {robinhoodToken && (
-        <div style={{ maxWidth: 420, marginTop: 16 }}>
+        <div className="trade-panel">
           <h4 style={{ marginBottom: 8 }}>Trade on Robinhood Chain</h4>
           <SwapPanel initialTokenIn={USDG} initialTokenOut={robinhoodToken.address} lockPair />
         </div>

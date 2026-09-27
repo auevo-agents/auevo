@@ -67,10 +67,12 @@ function DexApp() {
             Native ETH and ERC-20 pairs both work.
           </div>
 
-          <SwapPanel
-            initialTokenIn={searchParams.get("tokenIn") ?? ""}
-            initialTokenOut={searchParams.get("tokenOut") ?? ""}
-          />
+          <div className="trade-panel">
+            <SwapPanel
+              initialTokenIn={searchParams.get("tokenIn") ?? ""}
+              initialTokenOut={searchParams.get("tokenOut") ?? ""}
+            />
+          </div>
         </>
       )}
 
