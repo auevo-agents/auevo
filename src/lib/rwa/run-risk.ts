@@ -5,7 +5,13 @@ import { withFetchRetry } from "./db-retry";
 import { Deadline } from "@/lib/evm/deadline";
 
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000; // rescan a token at most once a day
-const MAX_SCANS_PER_RUN = 15; // each scan is several sequential RPC calls across up to two addresses (proxy + implementation) — bounded to stay well inside a cron route's own time budget
+// Was 15 on Vercel's old Hobby-plan 30-60s budget — this project moved to
+// the Pro plan (route.ts's maxDuration is now 120), so this is mostly a
+// belt-and-suspenders ceiling now: SCAN_BUDGET_MS below is what actually
+// paces a run. Raised alongside it so a run can make real progress
+// through the ~470 tokens that had never been scanned once as of
+// 2026-09-27, instead of trickling in at 15/day.
+const MAX_SCANS_PER_RUN = 40;
 // Belt-and-suspenders alongside MAX_SCANS_PER_RUN: that count assumed a
 // roughly constant per-scan RPC latency, which held until rwa_tokens grew
 // past ~350 rows — a real run then hit Vercel's own 30s
@@ -13,8 +19,10 @@ const MAX_SCANS_PER_RUN = 15; // each scan is several sequential RPC calls acros
 // see api/cron/rwa-risk/route.ts's own maxDuration comment). This stops
 // the loop early on a slow run instead of trusting the count alone —
 // same "always make forward progress within a time budget, never a hard
-// timeout" shape as run-registry.ts/run-prices.ts.
-const SCAN_BUDGET_MS = 45_000;
+// timeout" shape as run-registry.ts/run-prices.ts. Raised to use the
+// larger maxDuration now available on the Pro plan, leaving headroom
+// under the route's 120s ceiling for the DB reads/writes around the loop.
+const SCAN_BUDGET_MS = 100_000;
 // A between-iterations deadline check can't help against a single token
 // scan that itself hangs (a slow/unresponsive RPC node on one specific
 // contract) — confirmed in production 2026-09-27, where the pass still

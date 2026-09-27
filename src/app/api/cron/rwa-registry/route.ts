@@ -8,8 +8,9 @@ import { runRegistryPass } from "@/lib/rwa/run-registry";
 // (run-registry.ts) — everything after it (candidate resolution, the
 // xStocks token-list fetch, pool backfill/refresh, the checkpoint write)
 // has no deadline of its own, so total wall-clock time varies with how
-// many candidates/pools that run happens to touch. 60 is the same
-// Hobby-plan ceiling index-chain and rwa-risk already use.
+// many candidates/pools that run happens to touch. 60 comfortably covers
+// a pass today, same as index-chain and rwa-risk; this project is on the
+// Pro plan (up to 300s available) if a future run ever needs more.
 export const maxDuration = 60;
 
 /**

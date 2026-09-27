@@ -2,23 +2,23 @@
   "crons": [
     {
       "path": "/api/cron/index-chain",
-      "schedule": "0 3 * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/rwa-registry",
-      "schedule": "0 4 * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/rwa-prices",
-      "schedule": "0 6 * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/rwa-risk",
-      "schedule": "0 5 * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/rwa-alerts",
-      "schedule": "0 7 * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }
