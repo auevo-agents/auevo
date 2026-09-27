@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Disclaimer } from "../../disclaimer";
 import { BrandIcon } from "../../brand-icon";
 import { UtilizationGauge } from "../../utilization-gauge";
+import { EarnPanel } from "../earn-panel";
 
 interface KaminoReserve {
   reservePubkey: string;
@@ -27,12 +28,21 @@ function formatPct(value: number | null): string {
 }
 
 /**
- * RWA_SPEC.md Phase 8's /app/lend — read-only Kamino xStocks rates.
- * Deposits are explicitly out of scope (this app runs no lending
- * contracts of its own). KAMINO_XSTOCKS_MARKET_PUBKEY is confirmed and
- * documented in lib/rwa/kamino.ts's own doc comment — this page's "not
- * configured" state below is only for a deployment where that env var
- * genuinely hasn't been set yet, not an unresolved gap in this codebase.
+ * RWA_SPEC.md Phase 8's /app/lend — two distinct lending-adjacent features,
+ * not one:
+ *
+ * - Earn: real deposit/withdraw into Morpho's curated USDG vaults, live on
+ *   this app's own chain (Robinhood Chain) — see earn-panel.tsx and
+ *   lib/rwa/morpho-vaults.ts for why this can be a first-party UI (same
+ *   trust model as Swap/LP: an existing audited contract does the money
+ *   movement) rather than a read-only link-out.
+ * - Borrow: Kamino's xStocks rates, read-only. Deposits are explicitly out
+ *   of scope here — Kamino runs on Solana, a different chain with a
+ *   different wallet type, so there is no way to originate that
+ *   transaction from this EVM-only app. KAMINO_XSTOCKS_MARKET_PUBKEY is
+ *   confirmed and documented in lib/rwa/kamino.ts's own doc comment — this
+ *   page's "not configured" state below is only for a deployment where
+ *   that env var genuinely hasn't been set yet, not an unresolved gap.
  */
 export default function LendPage() {
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -72,9 +82,20 @@ export default function LendPage() {
   return (
     <>
       <div className="dash-hero dash-hero--lend">
-        <p className="dash-eyebrow">Read-only · Kamino xStocks</p>
+        <p className="dash-eyebrow">Live on Robinhood Chain · Morpho, and read-only Kamino xStocks</p>
         <h1 className="dash-title">Earn on your stocks.</h1>
-        <p className="dash-subtitle">Supply a tokenized stock as collateral, or borrow against it — rates straight from Kamino&apos;s own market.</p>
+        <p className="dash-subtitle">Deposit USDG into a curated vault right here, or supply a tokenized stock as collateral on Kamino — rates straight from each market.</p>
+      </div>
+
+      <div className="scan-section-heading">
+        <span>EARN</span>
+        <strong>USDG vaults on Morpho — deposit and withdraw directly, no linking out.</strong>
+      </div>
+      <EarnPanel />
+
+      <div className="scan-section-heading" style={{ marginTop: 32 }}>
+        <span>BORROW</span>
+        <strong>Kamino xStocks rates — read-only, deposits happen on Kamino itself (Solana).</strong>
       </div>
 
       {configured === true && !error && reserves.length > 0 && (
