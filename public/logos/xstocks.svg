@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
+  <defs>
+    <linearGradient id="xstocks-g" x1="0" y1="60" x2="60" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1FD59A"/>
+      <stop offset="1" stop-color="#5FCEF0"/>
+    </linearGradient>
+  </defs>
+  <rect width="60" height="60" rx="30" fill="url(#xstocks-g)"/>
+  <path fill="#FFFFFF" d="M15 15 Q25.05 34.95 45 45 Q34.95 25.05 15 15 Z"/>
+  <path fill="#FFFFFF" d="M45 15 Q34.95 34.95 15 45 Q25.05 25.05 45 15 Z"/>
+</svg>

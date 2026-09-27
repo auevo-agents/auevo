@@ -90,4 +90,17 @@ export const CHAIN_LOGO_FILES: Record<string, string> = {
   ethereum: "ethereum.svg",
 };
 
-export const ISSUER_LOGO_FILES: Record<string, string> = {};
+/**
+ * xstocks.svg: xStocks' own site (xstocks.fi/docs.xstocks.fi) is blocked
+ * by this environment's network egress policy, so the exact published
+ * file couldn't be fetched byte-for-byte. Hand-vectorized instead from
+ * their favicon as shown in a search result and their own published
+ * brand-kit gradient (#1FD59A → #5FCEF0, confirmed via WebSearch of
+ * docs.xstocks.fi/docs/media-and-brand-kit) — a faithful reproduction of
+ * the mark's shape and exact colors, not a byte-identical copy of their
+ * source file. Replace with the real asset if this environment ever gets
+ * access to fetch it directly.
+ */
+export const ISSUER_LOGO_FILES: Record<string, string> = {
+  xstocks: "xstocks.svg",
+};
