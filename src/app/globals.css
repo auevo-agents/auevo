@@ -6610,6 +6610,21 @@ a {
   max-width: 420px;
 }
 
+.trade-form h4 {
+  margin: 0;
+  font: 600 15px/1 Arial, Helvetica, sans-serif;
+  color: #eef0ef;
+}
+
+/* Separates stacked sub-flows sharing one card (basket Buy/Sell/Automated
+   rebalancing) — without this they only had the form's own uniform 14px
+   gap, no different from the gap between a label and its input. */
+.trade-form h4:not(:first-child) {
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid #1c2226;
+}
+
 /*
  * Tailwind's preflight strips a plain <button>'s entire native chrome
  * (background, border) down to inherited text color — so any button left
