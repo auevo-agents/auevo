@@ -147,7 +147,7 @@ export default function RwaPoolsPage() {
                       style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
                       onClick={() => setExpandedPoolId(expandedPoolId === p.poolId ? null : p.poolId)}
                     >
-                      {expandedPoolId === p.poolId ? "Close ×" : "Add liquidity →"}
+                      {expandedPoolId === p.poolId ? "Close ×" : "Add liquidity"}
                     </button>
                   ) : (
                     <span className="dash-list-col dash-list-col-hide-mobile">—</span>

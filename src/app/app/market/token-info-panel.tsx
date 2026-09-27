@@ -52,7 +52,7 @@ export function TokenInfoPanel({
         <>
           <p>Not scanned yet — a full scan takes a few seconds (contract, holders, liquidity).</p>
           <button className="app-link-button" onClick={onScan}>
-            Run security scan →
+            Run security scan
           </button>
         </>
       )}
@@ -67,7 +67,7 @@ export function TokenInfoPanel({
       {status === "error" && (
         <p>
           Could not complete a scan right now.{" "}
-          <Link href={`/scanner?token=${tokenAddress}`}>Try the full Token Scanner →</Link>
+          <Link href={`/scanner?token=${tokenAddress}`}>Try the full Token Scanner</Link>
         </p>
       )}
 
@@ -109,7 +109,7 @@ export function TokenInfoPanel({
           </div>
 
           <Link href={`/scanner?token=${tokenAddress}`} className="app-link-button">
-            Full report &amp; findings →
+            Full report &amp; findings
           </Link>
         </>
       )}

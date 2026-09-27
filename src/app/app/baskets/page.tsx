@@ -101,7 +101,7 @@ export default function BasketsPage() {
                 </div>
                 <div className="dash-basket-foot">
                   <span>{basket.holdings.length} holdings</span>
-                  <span>View →</span>
+                  <span>View</span>
                 </div>
               </Link>
             ))}

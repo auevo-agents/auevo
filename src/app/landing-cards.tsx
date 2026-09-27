@@ -11,6 +11,7 @@ interface FeatureCard {
   tag: string;
   href: string;
   mockup: MockupKind;
+  scene?: string;
 }
 
 /**
@@ -33,16 +34,17 @@ export function LandingCards({ cards, tickers }: { cards: readonly FeatureCard[]
         <Link
           key={card.href + card.title}
           href={card.href}
-          className="landing2-card"
+          className={card.scene ? `landing2-card landing2-card-${card.scene}` : "landing2-card"}
           onMouseMove={handleMouseMove}
         >
+          <span className="landing2-card-art" aria-hidden="true" />
           <CardMockup kind={card.mockup} tickers={tickers} />
           <span className="landing2-card-badge">{card.num}</span>
           <h4>{card.title}</h4>
           <p>{card.body}</p>
           <span className="landing2-card-arrow">
             <span className="landing2-card-dot" aria-hidden="true" />
-            {card.tag} →
+            {card.tag}
           </span>
         </Link>
       ))}

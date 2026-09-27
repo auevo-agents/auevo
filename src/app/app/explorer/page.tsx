@@ -132,7 +132,7 @@ export default function ExplorerPage() {
                 <span className="desk-actions">
                   {explorerUrl ? (
                     <a href={explorerUrl} target="_blank" rel="noreferrer">
-                      tx ↗
+                      tx
                     </a>
                   ) : (
                     <span style={{ color: "#5a6469" }}>—</span>

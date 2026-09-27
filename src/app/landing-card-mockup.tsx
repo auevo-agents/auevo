@@ -34,15 +34,15 @@ export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: stri
         <div className="landing2-mockup-rows">
           <div className="landing2-mockup-row">
             <span>Issuer A</span>
-            <span>+1.8%</span>
+            <span>Reference quote</span>
           </div>
           <div className="landing2-mockup-row landing2-mockup-row-best">
             <span>Issuer B</span>
-            <b>Best price</b>
+            <b>Compare offers</b>
           </div>
           <div className="landing2-mockup-row">
             <span>Issuer C</span>
-            <span>−0.4%</span>
+            <span>Token quote</span>
           </div>
         </div>
       </div>
@@ -93,16 +93,16 @@ export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: stri
     return (
       <div className="landing2-mockup">
         <div className="landing2-mockup-row">
-          <span>Contract risk</span>
-          <b className="landing2-ticker-up">Low</b>
+          <span>Contract review</span>
+          <b>On-chain</b>
         </div>
         <div className="landing2-mockup-check" style={{ marginTop: 10 }}>
           <span className="landing2-mockup-check-icon">✓</span>
-          No mint / pause / blacklist role found
+          Permission checks listed
         </div>
         <div className="landing2-mockup-check">
           <span className="landing2-mockup-check-icon">✓</span>
-          Checked directly from deployed bytecode
+          Source linked to deployment
         </div>
       </div>
     );
@@ -112,7 +112,7 @@ export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: stri
     <div className="landing2-mockup">
       <div className="landing2-mockup-row landing2-mockup-row-best">
         <span>
-          <b>Premium alert</b> · NVDA
+          <b>Illustrative alert</b> · NVDA
         </span>
         <span>Telegram</span>
       </div>
