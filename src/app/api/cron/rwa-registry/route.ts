@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runRegistryPass } from "@/lib/rwa/run-registry";
 
-export const maxDuration = 30;
+// Was 30 — a real production run (2026-09-27, once the cron-refresh
+// workflow's redirect bug stopped masking every call as a no-op success)
+// hit Vercel's own FUNCTION_INVOCATION_TIMEOUT at that ceiling. Only
+// discoverUsdgPools' own scan is bounded by SCAN_BUDGET_MS
+// (run-registry.ts) — everything after it (candidate resolution, the
+// xStocks token-list fetch, pool backfill/refresh, the checkpoint write)
+// has no deadline of its own, so total wall-clock time varies with how
+// many candidates/pools that run happens to touch. 60 is the same
+// Hobby-plan ceiling index-chain and rwa-risk already use.
+export const maxDuration = 60;
 
 /**
  * RWA_SPEC.md Phase 1's asset-registry cron — see lib/rwa/run-registry.ts
