@@ -6610,6 +6610,37 @@ a {
   max-width: 420px;
 }
 
+/*
+ * Tailwind's preflight strips a plain <button>'s entire native chrome
+ * (background, border) down to inherited text color — so any button left
+ * without its own class (an approve/sign/sell-fraction/check-rebalance
+ * step, "Create alert", "Link Telegram", "remove"…) renders as bare text
+ * with no visible boundary at all, not as a subtly-understyled button.
+ * This is a safety net for every such button inside a trade-form, so a
+ * newly added one can't silently repeat the same invisible-button bug.
+ */
+.trade-form button:not([class]) {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #252c30;
+  border-radius: 6px;
+  background: #0e1417;
+  color: #d7dadb;
+  font: 600 12.5px/1 Arial, Helvetica, sans-serif;
+  align-self: flex-start;
+}
+
+.trade-form button:not([class]):hover {
+  border-color: #3a444a;
+  background: #131a1e;
+}
+
+.trade-form button:not([class]):disabled {
+  color: #5a6469;
+  border-color: #1c2226;
+  background: #0a0e10;
+}
+
 .trade-field {
   display: flex;
   flex-direction: column;
@@ -9158,7 +9189,7 @@ a {
 
 .dash-list-row {
   display: grid;
-  grid-template-columns: 22px auto 1fr auto auto auto;
+  grid-template-columns: 22px auto 1fr auto auto auto 16px;
   align-items: center;
   gap: 14px;
   padding: 13px 18px;
@@ -9228,8 +9259,23 @@ a {
   font-size: 13px;
 }
 
+/* A persistent "this row goes somewhere" cue — .dash-list-row's only other
+   affordance is a hover background, invisible until the pointer is already
+   over it (and never shown at all on a static screenshot or via touch). */
+.dash-list-chevron {
+  color: var(--faint);
+  font-size: 15px;
+  text-align: center;
+  transition: color .15s ease, transform .15s ease;
+}
+
+.dash-list-row:hover .dash-list-chevron {
+  color: var(--ink);
+  transform: translateX(2px);
+}
+
 @media (max-width: 760px) {
-  .dash-list-row { grid-template-columns: 20px auto 1fr auto; }
+  .dash-list-row { grid-template-columns: 20px auto 1fr auto 16px; }
   .dash-list-col-hide-mobile { display: none; }
 }
 
@@ -10959,7 +11005,6 @@ a {
 }
 
 .app-connect-button,
-.app-link-button,
 .landing2-cta {
   border-color: #d9c79c;
   background: linear-gradient(180deg, #eee3ca, #c6aa70);
@@ -10968,11 +11013,27 @@ a {
 }
 
 .app-connect-button:hover,
-.app-link-button:hover,
 .landing2-cta:hover {
   background: linear-gradient(180deg, #f4ead5, #d0b67d);
   border-color: #ead9b2;
   color: #11120f;
+}
+
+/*
+ * .app-link-button is a plain inline text link (border:0/background:none/
+ * padding:0 at its base rule) used for trailing "view more" CTAs — it was
+ * briefly caught by the .app-connect-button/.landing2-cta gold-pill rule
+ * above, which paints a solid background behind it. Those two are real
+ * padded buttons, so a background reads as a pill; on this zero-padding
+ * text link the same background painted tight around the letters instead
+ * reads as a highlighter mark. Style it as a quiet gold text link instead.
+ */
+.app-link-button {
+  color: var(--au-gold, #c9b27c);
+}
+
+.app-link-button:hover {
+  color: var(--au-ivory, #f1ede4);
 }
 
 .trade-field,
@@ -10987,6 +11048,18 @@ a {
 .trade-field:focus-within {
   border-color: rgba(201,178,124,.38);
   box-shadow: 0 0 0 4px rgba(201,178,124,.055);
+}
+
+/*
+ * The base rule (.trade-field input:focus) paints the input's own red
+ * focus ring — it targets the <input> directly, so it stays visible on
+ * top of :focus-within's subtler gold ring on the wrapping <label> above.
+ * Override the input's own ring to match the gold theme instead of red.
+ */
+.trade-field input:focus,
+.trade-field select:focus {
+  border-color: rgba(201,178,124,.55);
+  box-shadow: 0 0 0 3px rgba(201,178,124,.16);
 }
 
 .trade-order-tab.active,
