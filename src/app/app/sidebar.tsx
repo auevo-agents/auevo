@@ -146,7 +146,6 @@ export function Sidebar() {
               onClick={() => setOpenGroup((v) => (v === group.id ? null : group.id))}
             >
               <b>{group.label}</b>
-              <span className={openGroup === group.id ? "app-nav-caret app-nav-caret-open" : "app-nav-caret"}>▾</span>
             </button>
 
             {openGroup === group.id && (
