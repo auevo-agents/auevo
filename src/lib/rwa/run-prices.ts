@@ -1,6 +1,11 @@
 import { getSupabaseServer } from "@/lib/supabase";
+import { getRobinhoodClient } from "@/lib/evm/client";
+import { robinhoodChain } from "@/lib/chains";
 import { fetchTokenPricesUsd } from "./gecko-price";
 import { fetchReferencePrice, computePremiumBps } from "./reference-price";
+import { computeTokenPriceUsdFromPool } from "./pools";
+import { STATE_VIEW_SLOT0_ABI } from "./registry";
+import { STATE_VIEW, USDG } from "./dex/addresses";
 import { withFetchRetry } from "./db-retry";
 
 /**
@@ -41,7 +46,7 @@ export async function runPricesPass(): Promise<PricesRunResult> {
   }
 
   const { data: tokens, error: tokensError } = await withFetchRetry(() =>
-    supabase.from("rwa_tokens").select("chain_id, address, underlying_ticker").eq("verified", true)
+    supabase.from("rwa_tokens").select("chain_id, address, underlying_ticker, decimals").eq("verified", true)
   );
   if (tokensError) {
     throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
@@ -69,6 +74,48 @@ export async function runPricesPass(): Promise<PricesRunResult> {
       }
     })
   );
+
+  // Robinhood Chain's own primary price source: this app already
+  // verified these pools exist (rwa_pools, from registry.ts), so it
+  // reads its own price back directly from StateView rather than waiting
+  // on GeckoTerminal to have indexed a brand-new L2's pools — see
+  // pools.ts's computeTokenPriceUsdFromPool for the derivation. Always
+  // overrides whatever (if anything) GeckoTerminal returned for these
+  // tokens: a live on-chain read of a pool this app itself discovered is
+  // more trustworthy than a third party's coverage of it.
+  const { data: robinhoodPools, error: robinhoodPoolsError } = await withFetchRetry(() =>
+    supabase.from("rwa_pools").select("pool_id, token0, token1").eq("chain_id", robinhoodChain.id).eq("dex", "uniswap_v4")
+  );
+  if (robinhoodPoolsError) {
+    throw new Error(`Could not read rwa_pools: ${robinhoodPoolsError.message}`);
+  }
+  if (robinhoodPools && robinhoodPools.length > 0) {
+    const decimalsByAddress = new Map(
+      tokens.filter((t) => t.chain_id === robinhoodChain.id).map((t) => [t.address.toLowerCase(), t.decimals])
+    );
+    const client = getRobinhoodClient();
+    await Promise.all(
+      robinhoodPools.map(async (pool) => {
+        const usdgIsCurrency0 = pool.token0.toLowerCase() === USDG.toLowerCase();
+        const tokenAddress = (usdgIsCurrency0 ? pool.token1 : pool.token0).toLowerCase();
+        const tokenDecimals = decimalsByAddress.get(tokenAddress);
+        if (tokenDecimals === undefined) return; // not one of this pass's verified tokens
+
+        try {
+          const slot0 = await client.readContract({
+            address: STATE_VIEW,
+            abi: STATE_VIEW_SLOT0_ABI,
+            functionName: "getSlot0",
+            args: [pool.pool_id as `0x${string}`],
+          });
+          const price = computeTokenPriceUsdFromPool({ sqrtPriceX96: slot0[0], usdgIsCurrency0, tokenDecimals });
+          if (price !== null) priceByKey.set(`${robinhoodChain.id}:${tokenAddress}`, price);
+        } catch {
+          // Node hiccup on this one pool — GeckoTerminal's own coverage (if any) stays as the fallback for it this pass.
+        }
+      })
+    );
+  }
 
   const tickers = [...new Set(tokens.map((t) => t.underlying_ticker))];
   const refByTicker = new Map<string, number | null>();
