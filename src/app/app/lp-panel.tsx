@@ -12,6 +12,7 @@ import {
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { UNISWAP_NFT_POSITION_MANAGER, FEE_TIERS } from "@/lib/uniswap";
 import { CopyableAddress } from "../copyable-address";
+import { TokenPickerButton, usePickableTokens } from "../token-picker";
 
 interface Quote {
   to: Address;
@@ -41,6 +42,7 @@ function isValidAddress(value: string): value is Address {
  */
 export function LpPanel() {
   const { address: account, isConnected } = useAccount();
+  const pickableTokens = usePickableTokens();
 
   const [tokenAInput, setTokenAInput] = useState("");
   const [tokenBInput, setTokenBInput] = useState("");
@@ -175,31 +177,33 @@ export function LpPanel() {
         </div>
 
         <label className="trade-field">
-          <span>Token A (address)</span>
-          <input
-            value={tokenAInput}
-            onChange={(e) => {
-              setTokenAInput(e.target.value.trim());
-              setQuote(null);
-            }}
-            placeholder="0x…"
-            spellCheck={false}
-          />
-          {typeof symbolA === "string" && <small>{symbolA}</small>}
+          <span>Token A</span>
+          <div className="trade-field-picker-row">
+            <TokenPickerButton
+              value={tokenAInput}
+              onChange={(address) => {
+                setTokenAInput(address);
+                setQuote(null);
+              }}
+              tokens={pickableTokens}
+            />
+            {typeof symbolA === "string" && <small>{symbolA}</small>}
+          </div>
         </label>
 
         <label className="trade-field">
-          <span>Token B (address)</span>
-          <input
-            value={tokenBInput}
-            onChange={(e) => {
-              setTokenBInput(e.target.value.trim());
-              setQuote(null);
-            }}
-            placeholder="0x…"
-            spellCheck={false}
-          />
-          {typeof symbolB === "string" && <small>{symbolB}</small>}
+          <span>Token B</span>
+          <div className="trade-field-picker-row">
+            <TokenPickerButton
+              value={tokenBInput}
+              onChange={(address) => {
+                setTokenBInput(address);
+                setQuote(null);
+              }}
+              tokens={pickableTokens}
+            />
+            {typeof symbolB === "string" && <small>{symbolB}</small>}
+          </div>
         </label>
 
         <label className="trade-field">

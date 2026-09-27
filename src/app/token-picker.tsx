@@ -27,56 +27,61 @@ interface RawAsset {
   tokens: RawAssetToken[];
 }
 
-let cachedTokens: PickableToken[] | null = null;
-let cachedTokensPromise: Promise<PickableToken[]> | null = null;
+let cachedAssets: RawAsset[] | null = null;
+let cachedAssetsPromise: Promise<RawAsset[]> | null = null;
 
 /**
  * The same verified rwa_tokens catalog /app/assets already reads
- * (/api/rwa/assets), filtered to this chain and reshaped for a picker —
- * never a separate/guessed token list. Cached module-wide since every
- * swap/trade form on a page needs the same list.
+ * (/api/rwa/assets) — never a separate/guessed token list. Fetched once
+ * (assets span every chain this app tracks, not just Robinhood Chain —
+ * rwa_tokens has real rows for Ethereum, BSC, Arbitrum, HyperEVM too, the
+ * other chains LI.FI's Swap/Bridge page can pick a "from"/"to" chain from)
+ * and cached module-wide since every swap/trade form on a page needs the
+ * same underlying list, just filtered to a different chain.
  */
-function fetchPickableTokens(): Promise<PickableToken[]> {
-  if (cachedTokens) return Promise.resolve(cachedTokens);
-  if (!cachedTokensPromise) {
-    cachedTokensPromise = fetch("/api/rwa/assets")
+function fetchRawAssets(): Promise<RawAsset[]> {
+  if (cachedAssets) return Promise.resolve(cachedAssets);
+  if (!cachedAssetsPromise) {
+    cachedAssetsPromise = fetch("/api/rwa/assets")
       .then((r) => r.json())
       .then((data) => {
         const assets = (data.assets ?? []) as RawAsset[];
-        const tokens: PickableToken[] = [];
-        for (const asset of assets) {
-          const onChain = asset.tokens.find((t) => t.chainId === robinhoodChain.id);
-          if (!onChain) continue;
-          tokens.push({
-            ticker: asset.ticker,
-            name: asset.name,
-            address: onChain.address,
-            decimals: onChain.decimals,
-            priceUsd: onChain.priceUsd ?? asset.primaryPriceUsd,
-          });
-        }
-        tokens.sort((a, b) => a.ticker.localeCompare(b.ticker));
-        cachedTokens = tokens;
-        return tokens;
+        cachedAssets = assets;
+        return assets;
       })
       .catch(() => []);
   }
-  return cachedTokensPromise;
+  return cachedAssetsPromise;
 }
 
-/** Verified xStocks tokens on Robinhood Chain, for any swap/trade form's asset picker. */
-export function usePickableTokens(): PickableToken[] {
-  const [tokens, setTokens] = useState<PickableToken[]>(cachedTokens ?? []);
+/** Verified tokens on the given chain, for any swap/trade form's asset picker. Defaults to Robinhood Chain — the only chain this app's own DEX/LP/bots forms trade on. */
+export function usePickableTokens(chainId: number = robinhoodChain.id): PickableToken[] {
+  const [assets, setAssets] = useState<RawAsset[]>(cachedAssets ?? []);
   useEffect(() => {
     let cancelled = false;
-    fetchPickableTokens().then((t) => {
-      if (!cancelled) setTokens(t);
+    fetchRawAssets().then((a) => {
+      if (!cancelled) setAssets(a);
     });
     return () => {
       cancelled = true;
     };
   }, []);
-  return tokens;
+  return useMemo(() => {
+    const tokens: PickableToken[] = [];
+    for (const asset of assets) {
+      const onChain = asset.tokens.find((t) => t.chainId === chainId);
+      if (!onChain) continue;
+      tokens.push({
+        ticker: asset.ticker,
+        name: asset.name,
+        address: onChain.address,
+        decimals: onChain.decimals,
+        priceUsd: onChain.priceUsd ?? asset.primaryPriceUsd,
+      });
+    }
+    tokens.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    return tokens;
+  }, [assets, chainId]);
 }
 
 const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
@@ -193,7 +198,7 @@ export function TokenPickerButton({
             )}
             {filtered.length === 0 && !ADDRESS_RE.test(trimmedQuery) && (
               <div className="token-picker-empty">
-                No matching xStocks tickers{allowCustomAddress ? " — paste a contract address instead" : ""}.
+                No matching verified tokens{allowCustomAddress ? " — paste a contract address instead" : ""}.
               </div>
             )}
           </div>

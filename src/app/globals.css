@@ -6752,6 +6752,12 @@ a {
   gap: 6px;
 }
 
+.trade-field-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* "You pay" / "You receive" swap cards — a labeled card containing a big
    amount input alongside a token-picker pill, instead of a bare labeled
    input. Two of these plus the divider replace the old raw-address
@@ -6956,6 +6962,19 @@ a {
   color: #5a6469;
   font-size: 12px;
   text-align: center;
+}
+
+.token-picker-native-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px dashed #252c30;
+  border-radius: 999px;
+  color: #7c8589;
+  font-size: 13px;
+  font-weight: 500;
+  width: fit-content;
 }
 
 .token-side-card .trade-form {
