@@ -5,11 +5,10 @@ export const maxDuration = 15;
 
 /**
  * RWA_SPEC.md Phase 8's /app/lend — read-only Kamino xStocks rates.
- * KAMINO_XSTOCKS_MARKET_PUBKEY starts unset on purpose (see
- * lib/rwa/kamino.ts's own doc comment on why the actual pubkey couldn't
- * be confirmed from this environment) — this route says so plainly
- * rather than guessing one, same pattern as /api/dex/permit-typed-data's
- * neighbors when a required address isn't configured.
+ * KAMINO_XSTOCKS_MARKET_PUBKEY is confirmed (see lib/rwa/kamino.ts's own
+ * doc comment for the value and how it was verified) — this route just
+ * says so plainly on a deployment where the env var itself isn't set,
+ * same pattern as /api/dex/permit-typed-data's neighbors.
  */
 export async function GET() {
   const marketPubkey = process.env.KAMINO_XSTOCKS_MARKET_PUBKEY;

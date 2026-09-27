@@ -2,29 +2,40 @@
  * Kamino Finance's public lending-market API — RWA_SPEC.md Phase 8's
  * `/app/lend` ("Kamino xStocks markets через их публичный API").
  *
- * FLAGGED, NOT FABRICATED: api.kamino.finance was unreachable from this
- * environment (network egress blocked both directly and via a
- * background research pass), so the endpoint path and field names below
- * are corroborated from search-engine snippets of Kamino's own docs
- * (kamino.com/docs/curators/markets/market-data) and a third-party
- * OpenAPI mirror (github.com/api-evangelist/kamino), not read first-hand
- * from Kamino's own live Swagger UI. Nobody has confirmed the actual
- * on-chain pubkey of Kamino's xStocks market either — xStocks lending is
- * confirmed to exist as a real Kamino Lend market (Chainlink's own
- * announcement, The Block, The Defiant all cover the integration), but
- * which specific market pubkey that is was not found. Both gaps are why
- * `KAMINO_XSTOCKS_MARKET_PUBKEY` below defaults to unset rather than a
- * guessed value — same posture this codebase already takes for anything
- * it can't verify (see e.g. dex/addresses.ts's own sourcing discipline).
- * Whoever sets that env var should first open
- * https://api.kamino.finance/documentation/ in a real browser to confirm
- * the path/fields match what this file assumes, and fix this file if not.
+ * Confirmed live 2026-09-27 against real responses fetched by the user
+ * from inside a real browser (this sandbox's own network egress to
+ * api.kamino.finance is blocked, so every value below was verified
+ * secondhand, never guessed):
+ *
+ * - The market list lives at `/v2/kamino-market` (not `/kamino-market/
+ *   markets` — that path treats the segment after `/kamino-market/` as a
+ *   pubkey and 400s on anything that isn't valid base58). The "xStocks
+ *   Market" entry's `lendingMarket` field is
+ *   `5wJeMrUYECGq41fxRESKALVcHnNX26TAWy4W98yULsua` — this is the one
+ *   `KAMINO_XSTOCKS_MARKET_PUBKEY` should be set to (two sibling markets
+ *   also matched "xStocks" in the UI but are narrower: "Sentora xStocks
+ *   Market" is a separate curator-run isolated market, "STRCx Market" is
+ *   single-asset-only — this file targets the general one).
+ * - `/kamino-market/{pubkey}/reserves/metrics` (the per-market endpoint
+ *   this file actually calls) needs no `/v2` prefix — confirmed by
+ *   fetching it directly with the pubkey above and getting real reserve
+ *   rows back (TSLAx, NVDAx, USDC, etc.), not a 404.
+ * - Every numeric field in that response (`supplyApy`, `borrowApy`,
+ *   `totalSupplyUsd`, `totalBorrowUsd`) is a numeric-STRING
+ *   (`"0.044395145359638066"`), not a JSON number — the original version
+ *   of this file assumed `number` (an unverified guess from search-engine
+ *   snippets of Kamino's docs, not a live response) and so silently
+ *   parsed every rate as null forever. Fixed below.
+ * - The response also carries a human-readable `liquidityToken` field
+ *   (e.g. `"TSLAx"`, `"NVDAx"`) the original guess didn't know about —
+ *   used now instead of showing a truncated mint address.
  */
 
 const KAMINO_API_BASE = "https://api.kamino.finance";
 
 export interface KaminoReserveMetrics {
   reservePubkey: string;
+  liquidityToken: string;
   liquidityTokenMint: string;
   supplyApyPct: number | null;
   borrowApyPct: number | null;
@@ -34,11 +45,25 @@ export interface KaminoReserveMetrics {
 
 interface RawKaminoReserve {
   reserve?: string;
+  liquidityToken?: string;
   liquidityTokenMint?: string;
-  supplyApy?: number;
-  borrowApy?: number;
-  totalSupplyUsd?: number;
-  totalBorrowUsd?: number;
+  // Kamino's API returns every one of these as a numeric string, not a JSON number.
+  supplyApy?: string;
+  borrowApy?: string;
+  totalSupplyUsd?: string;
+  totalBorrowUsd?: string;
+}
+
+function parseNumericPct(value: string | undefined): number | null {
+  if (typeof value !== "string") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n * 100 : null;
+}
+
+function parseNumericUsd(value: string | undefined): number | null {
+  if (typeof value !== "string") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -69,11 +94,12 @@ export async function fetchKaminoMarketReserves(marketPubkey: string): Promise<K
     .filter((r) => typeof r.reserve === "string" && typeof r.liquidityTokenMint === "string")
     .map((r) => ({
       reservePubkey: r.reserve!,
+      liquidityToken: r.liquidityToken ?? `${r.liquidityTokenMint!.slice(0, 4)}…${r.liquidityTokenMint!.slice(-4)}`,
       liquidityTokenMint: r.liquidityTokenMint!,
-      supplyApyPct: typeof r.supplyApy === "number" ? r.supplyApy * 100 : null,
-      borrowApyPct: typeof r.borrowApy === "number" ? r.borrowApy * 100 : null,
-      totalSupplyUsd: typeof r.totalSupplyUsd === "number" ? r.totalSupplyUsd : null,
-      totalBorrowUsd: typeof r.totalBorrowUsd === "number" ? r.totalBorrowUsd : null,
+      supplyApyPct: parseNumericPct(r.supplyApy),
+      borrowApyPct: parseNumericPct(r.borrowApy),
+      totalSupplyUsd: parseNumericUsd(r.totalSupplyUsd),
+      totalBorrowUsd: parseNumericUsd(r.totalBorrowUsd),
     }));
 
   // Every reserve missing every rate field means the response shape

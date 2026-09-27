@@ -9,18 +9,19 @@ afterEach(() => {
 });
 
 describe("fetchKaminoMarketReserves", () => {
-  it("parses a well-formed reserves/metrics response", async () => {
+  it("parses a well-formed reserves/metrics response (real shape: numeric-string fields)", async () => {
     global.fetch = vi.fn(
       async () =>
         new Response(
           JSON.stringify([
             {
               reserve: "resA",
+              liquidityToken: "TSLAx",
               liquidityTokenMint: "mintA",
-              supplyApy: 0.031,
-              borrowApy: 0.052,
-              totalSupplyUsd: 1_000_000,
-              totalBorrowUsd: 400_000,
+              supplyApy: "0.031",
+              borrowApy: "0.052",
+              totalSupplyUsd: "1000000",
+              totalBorrowUsd: "400000",
             },
           ])
         )
@@ -30,6 +31,7 @@ describe("fetchKaminoMarketReserves", () => {
     expect(reserves).toEqual([
       {
         reservePubkey: "resA",
+        liquidityToken: "TSLAx",
         liquidityTokenMint: "mintA",
         supplyApyPct: 3.1,
         borrowApyPct: 5.2,
@@ -37,6 +39,20 @@ describe("fetchKaminoMarketReserves", () => {
         totalBorrowUsd: 400_000,
       },
     ]);
+  });
+
+  it("falls back to a truncated mint address when liquidityToken is missing", async () => {
+    global.fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify([
+            { reserve: "resA", liquidityTokenMint: "mintAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", supplyApy: "0.01", borrowApy: "0.02", totalSupplyUsd: "1", totalBorrowUsd: "1" },
+          ])
+        )
+    ) as typeof fetch;
+
+    const reserves = await fetchKaminoMarketReserves("marketX");
+    expect(reserves?.[0].liquidityToken).toBe("mint…AAAA");
   });
 
   it("returns null on a non-ok HTTP response", async () => {

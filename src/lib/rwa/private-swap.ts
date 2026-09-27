@@ -17,10 +17,11 @@
  *    products tied to Ethereum's own proposer-builder separation, and
  *    this project's own rule against hardcoding an address/endpoint
  *    without a source applies here too. PRIVATE_SWAP_RPC_URL is left
- *    unset by default for exactly that reason — same posture as
- *    KAMINO_XSTOCKS_MARKET_PUBKEY. Whoever operates this deployment
- *    should only set it to an endpoint they've confirmed actually serves
- *    Robinhood Chain.
+ *    unset by default for exactly that reason — same posture
+ *    KAMINO_XSTOCKS_MARKET_PUBKEY (lib/rwa/kamino.ts) took until its own
+ *    value got confirmed. Whoever operates this deployment should only
+ *    set PRIVATE_SWAP_RPC_URL to an endpoint they've confirmed actually
+ *    serves Robinhood Chain.
  * 2. Even once an endpoint exists, most browser wallets (MetaMask's
  *    injected provider chief among them) never implemented
  *    `eth_signTransaction` — only `eth_sendTransaction`, which signs AND

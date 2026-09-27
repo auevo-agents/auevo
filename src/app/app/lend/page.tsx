@@ -5,6 +5,7 @@ import { Disclaimer } from "../../disclaimer";
 
 interface KaminoReserve {
   reservePubkey: string;
+  liquidityToken: string;
   liquidityTokenMint: string;
   supplyApyPct: number | null;
   borrowApyPct: number | null;
@@ -26,10 +27,10 @@ function formatPct(value: number | null): string {
 /**
  * RWA_SPEC.md Phase 8's /app/lend — read-only Kamino xStocks rates.
  * Deposits are explicitly out of scope (this app runs no lending
- * contracts of its own). Honest about the one real gap: the exact
- * xStocks market pubkey couldn't be confirmed from this environment
- * (network egress blocked api.kamino.finance) — see lib/rwa/kamino.ts's
- * own doc comment and /api/rwa/lend's KAMINO_XSTOCKS_MARKET_PUBKEY.
+ * contracts of its own). KAMINO_XSTOCKS_MARKET_PUBKEY is confirmed and
+ * documented in lib/rwa/kamino.ts's own doc comment — this page's "not
+ * configured" state below is only for a deployment where that env var
+ * genuinely hasn't been set yet, not an unresolved gap in this codebase.
  */
 export default function LendPage() {
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -96,14 +97,11 @@ export default function LendPage() {
       {configured === false && (
         <div className="dash-list-card" style={{ padding: 24 }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "var(--muted)" }}>
-            <strong style={{ color: "#f2f4f3" }}>Not configured yet.</strong> Kamino Finance added tokenized-stock
-            (xStocks) collateral to a real lending market in 2026, and Kamino does publish a public read API for
-            market/reserve data — but this environment&apos;s network access couldn&apos;t reach{" "}
-            <code>api.kamino.finance</code> to confirm that market&apos;s exact on-chain pubkey or double-check the
-            API&apos;s field names, and this project doesn&apos;t guess addresses. Once someone opens{" "}
-            <code>api.kamino.finance/documentation/</code> directly and confirms it, set{" "}
-            <code>KAMINO_XSTOCKS_MARKET_PUBKEY</code> to bring this page live — see{" "}
-            <code>src/lib/rwa/kamino.ts</code>.
+            <strong style={{ color: "#f2f4f3" }}>Not configured on this deployment.</strong> Kamino&apos;s xStocks
+            lending market and its public read API are confirmed and working (see{" "}
+            <code>src/lib/rwa/kamino.ts</code>) — this instance just doesn&apos;t have{" "}
+            <code>KAMINO_XSTOCKS_MARKET_PUBKEY</code> set yet. Set it to{" "}
+            <code>5wJeMrUYECGq41fxRESKALVcHnNX26TAWy4W98yULsua</code> to bring this page live.
           </p>
         </div>
       )}
@@ -124,7 +122,7 @@ export default function LendPage() {
             {reserves.map((r) => (
               <div key={r.reservePubkey} className="dash-list-row" style={{ gridTemplateColumns: "1fr auto auto auto auto auto" }}>
                 <span className="dash-list-name">
-                  <b>{r.liquidityTokenMint.slice(0, 4)}…{r.liquidityTokenMint.slice(-4)}</b>
+                  <b>{r.liquidityToken}</b>
                   <small>Kamino xStocks market</small>
                 </span>
                 <span className="dash-list-col desk-change-pos">{formatPct(r.supplyApyPct)}</span>
