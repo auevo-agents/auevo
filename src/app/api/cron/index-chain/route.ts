@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runIndexerPass } from "@/lib/indexer/run";
 
-// 60s is the max on Vercel's Hobby plan without Fluid Compute (same
-// ceiling as api/scan) — runIndexerPass's two scans split that budget
-// and each stops itself well inside it, so a slow RPC degrades into
-// "scanned less this run" rather than a timeout that loses progress.
+// 60s comfortably covers a pass today — runIndexerPass's two scans split
+// this budget and each stops itself well inside it, so a slow RPC
+// degrades into "scanned less this run" rather than a timeout that loses
+// progress. This project is on the Pro plan (up to 300s available) if a
+// future run ever needs more headroom than that.
 export const maxDuration = 60;
 
 /**

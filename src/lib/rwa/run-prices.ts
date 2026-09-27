@@ -9,19 +9,13 @@ import { STATE_VIEW, USDG } from "./dex/addresses";
 import { withFetchRetry } from "./db-retry";
 
 /**
- * RWA_SPEC.md Phase 1's price/liquidity cron — spec wants "каждые 5 мин",
- * but Vercel's Hobby plan (this project's actual plan) doesn't just
- * silently downgrade a sub-daily cron schedule to once a day — it REJECTS
- * the whole deployment outright at build time ("Hobby accounts are
- * limited to daily cron jobs"). An earlier version of this comment
- * assumed the former (harmless silent downgrade) and was wrong: that
- * assumption is exactly what silently broke every deploy of this project
- * from the commit that first added an every-5-minutes cron entry to
- * vercel.json onward, discovered 2026-09-26 only once a manual `vercel --prod`
- * surfaced the real build error. vercel.json's entry for this route is
- * once-daily like the other crons here; running more often needs either
- * the Pro plan or an external scheduler hitting this route directly
- * (same workaround already in use for the chain indexer).
+ * RWA_SPEC.md Phase 1's price/liquidity cron — spec wants "каждые 5 мин".
+ * Vercel's Hobby plan rejects any sub-daily cron schedule outright at
+ * build time ("Hobby accounts are limited to daily cron jobs"), which is
+ * why this ran once a day for a while (discovered the hard way
+ * 2026-09-26, see git history). This project is on the Pro plan as of
+ * 2026-09-27, so vercel.json now runs this every 5 minutes as originally
+ * specced.
  *
  * `liquidity_usd`/`volume_24h_usd` are deliberately left null here, not
  * guessed: Robinhood Chain's own RWA pools are all Uniswap v4
