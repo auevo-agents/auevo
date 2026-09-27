@@ -55,32 +55,32 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -fsS -L --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-prices"
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-prices"
 
       - name: rwa-registry
         continue-on-error: true
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -fsS -L --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-registry"
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-registry"
 
       - name: rwa-risk
         continue-on-error: true
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -fsS -L --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-risk"
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-risk"
 
       - name: rwa-alerts
         continue-on-error: true
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -fsS -L --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-alerts"
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-alerts"
 
       - name: index-chain
         continue-on-error: true
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -fsS -L --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/index-chain"
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/index-chain"
