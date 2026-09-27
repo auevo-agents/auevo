@@ -199,7 +199,7 @@ export default function MarketPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--market">
         <div>
           <h3>Market</h3>
           <p>Live pools on Robinhood Chain · Uniswap · data via GeckoTerminal</p>

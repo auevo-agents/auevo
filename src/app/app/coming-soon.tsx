@@ -4,13 +4,15 @@ import type { ReactNode } from "react";
 export function ComingSoon({
   title,
   body,
+  heroClassName,
 }: {
   title: string;
   body: ReactNode;
+  heroClassName?: string;
 }) {
   return (
     <>
-      <header className="product-header">
+      <header className={`product-header ${heroClassName ?? ""}`.trim()}>
         <div>
           <h3>{title}</h3>
           <p>Design stage — not deployed</p>

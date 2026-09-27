@@ -236,7 +236,7 @@ function SwapBridgeApp() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--swap">
         <div>
           <h3>Swap / Bridge</h3>
           <p>Cross-chain via LI.FI · {LIFI_EVM_CHAIN_LIST.map((c) => c.name).join(" · ")}</p>

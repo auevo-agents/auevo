@@ -295,7 +295,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--market">
         <div>
           <h3>Token</h3>
           <p>Pool detail · Robinhood Chain</p>

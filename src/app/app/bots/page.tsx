@@ -61,7 +61,7 @@ const ERC20_ABI = [
 export default function BotsPage() {
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--bots">
         <div>
           <h3>Bots</h3>
           <p>Recurring-buy (DCA) positions · non-custodial escrow</p>

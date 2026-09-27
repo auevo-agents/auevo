@@ -114,7 +114,7 @@ export default function SmartMoneyPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--smart-money">
         <div>
           <h3>Smart Money</h3>
           <p>Wallet leaderboard, ranked by realized profit this window · Robinhood Chain</p>
