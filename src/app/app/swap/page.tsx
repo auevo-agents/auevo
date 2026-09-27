@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { formatUnits, isAddress, parseUnits, type Address } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
+import { robinhoodChain } from "@/lib/chains";
 import { LIFI_EVM_CHAIN_LIST, chainNameFor } from "@/lib/rwa/lifi/chains";
 import { ConnectButton } from "../connect-button";
 import { executeRoute, LIFI_NATIVE_ADDRESS, type StepLog } from "./route-executor";
@@ -102,6 +103,12 @@ function SwapBridgeApp() {
   const [stepLogs, setStepLogs] = useState<StepLog[] | null>(null);
   const [executeError, setExecuteError] = useState<string | null>(null);
 
+  // null = not checked yet, true/false = whether LI.FI's own /v1/chains
+  // actually lists Robinhood Chain as live — see api/lifi/chains/route.ts's
+  // doc comment on why this can only ever be confirmed against the real
+  // LI.FI API, never from this dev environment.
+  const [robinhoodLifiSupport, setRobinhoodLifiSupport] = useState<boolean | null>(null);
+
   const effectiveToChainId = mode === "swap" ? fromChainId : toChainId;
   const effectiveFromToken = fromNative ? LIFI_NATIVE_ADDRESS : fromToken;
   const effectiveToToken = toNative ? LIFI_NATIVE_ADDRESS : toToken;
@@ -143,7 +150,11 @@ function SwapBridgeApp() {
       setRoutesResponse(null);
       setQuoteError(null);
       setSelectedRouteId(null);
-      if (!fromTokenAddr || !toTokenAddr || !parsedAmount || parsedAmount <= 0n || !account) return;
+      setRobinhoodLifiSupport(null);
+      // account is optional here — LI.FI quotes a route from token/chain/amount
+      // alone; a wallet is only needed to actually send anything, checked at
+      // the "Swap"/"Bridge" button below.
+      if (!fromTokenAddr || !toTokenAddr || !parsedAmount || parsedAmount <= 0n) return;
       if (mode === "swap" && fromTokenAddr.toLowerCase() === toTokenAddr.toLowerCase()) {
         setQuoteError("Choose two different tokens");
         return;
@@ -187,6 +198,26 @@ function SwapBridgeApp() {
     };
   }, [fromChainId, effectiveToChainId, fromTokenAddr, toTokenAddr, parsedAmount, account, mode]);
 
+  const involvesRobinhood = fromChainId === robinhoodChain.id || effectiveToChainId === robinhoodChain.id;
+  const gotEmptyRoutes = Boolean(routesResponse && routesResponse.routes.length === 0 && !quoting);
+
+  useEffect(() => {
+    if (!gotEmptyRoutes || !involvesRobinhood || robinhoodLifiSupport !== null) return;
+    let cancelled = false;
+    fetch("/api/lifi/chains")
+      .then((res) => res.json())
+      .then((data: { chains?: { id: number }[] }) => {
+        if (cancelled) return;
+        setRobinhoodLifiSupport(Boolean(data.chains?.some((c) => c.id === robinhoodChain.id)));
+      })
+      .catch(() => {
+        // Couldn't confirm either way — stays null, empty-state text below falls back to the generic message.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gotEmptyRoutes, involvesRobinhood, robinhoodLifiSupport]);
+
   const selectedRoute = routesResponse?.routes.find((r) => r.id === selectedRouteId) ?? null;
 
   async function handleExecute() {
@@ -222,11 +253,14 @@ function SwapBridgeApp() {
         </button>
       </div>
 
-      {!isConnected ? (
-        <div className="app-empty">Connect a wallet above to swap or bridge.</div>
-      ) : (
-        <div className="trade-form" style={{ maxWidth: 480 }}>
-          <label className="trade-field">
+      <div className="trade-form" style={{ maxWidth: 480 }}>
+        {!isConnected && (
+          <div className="app-notice app-notice-info">
+            Browsing and getting quotes works without a wallet — connect above only when you&apos;re ready to actually swap or bridge.
+          </div>
+        )}
+
+        <label className="trade-field">
             <span>From chain</span>
             <select value={fromChainId} onChange={(e) => setFromChainId(Number(e.target.value))}>
               {LIFI_EVM_CHAIN_LIST.map((c) => (
@@ -330,11 +364,15 @@ function SwapBridgeApp() {
           )}
 
           {routesResponse && routesResponse.routes.length === 0 && !quoting && (
-            <p className="app-empty">No route found for this pair/amount.</p>
+            <p className="app-empty">
+              {involvesRobinhood && robinhoodLifiSupport === false
+                ? "LI.FI doesn't have Robinhood Chain in its live routing yet — this specific pair can't bridge until it does."
+                : "No route found for this pair/amount."}
+            </p>
           )}
 
-          <button className="app-connect-button" disabled={!selectedRoute || executing} onClick={handleExecute}>
-            {executing ? "Executing…" : mode === "swap" ? "Swap" : "Bridge"}
+          <button className="app-connect-button" disabled={!selectedRoute || !account || executing} onClick={handleExecute}>
+            {executing ? "Executing…" : !account ? "Connect wallet to continue" : mode === "swap" ? "Swap" : "Bridge"}
           </button>
 
           {executeError && <p className="error">{executeError}</p>}
@@ -369,7 +407,6 @@ function SwapBridgeApp() {
             </div>
           )}
         </div>
-      )}
     </>
   );
 }
