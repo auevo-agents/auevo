@@ -1,8 +1,12 @@
 import { parseAbiItem, type Address } from "viem";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RobinhoodClient } from "@/lib/evm/client";
 import { Deadline } from "@/lib/evm/deadline";
 import { readTokenMetadata } from "@/lib/evm/erc20";
-import { POOL_MANAGER, USDG } from "@/lib/rwa/dex/addresses";
+import { robinhoodChain } from "@/lib/chains";
+import { POOL_MANAGER, USDG, STATE_VIEW, V4_FEE_TIERS, FEE_TO_TICK_SPACING, ZERO_ADDRESS } from "@/lib/rwa/dex/addresses";
+import { buildPoolKey, poolId } from "@/lib/rwa/dex/pool-key";
+import { withFetchRetry } from "./db-retry";
 
 /**
  * Discovers tokenized-stock tokens on Robinhood Chain by finding every v4
@@ -177,4 +181,113 @@ export async function resolveCandidateTokens(
       };
     })
   );
+}
+
+export const STATE_VIEW_SLOT0_ABI = [
+  {
+    type: "function",
+    name: "getSlot0",
+    stateMutability: "view",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "protocolFee", type: "uint24" },
+      { name: "lpFee", type: "uint24" },
+    ],
+  },
+] as const;
+
+/**
+ * Self-heals a real gap the block-scan discovery above can leave behind:
+ * `discoverUsdgPools`'s checkpoint (rwa_registry_state.synced_to_block)
+ * always advances past whatever range it just scanned even when the
+ * matched pool's own `rwa_pools` upsert fails (run-registry.ts's own doc
+ * comment on why — a token-discovery failure must never get stuck
+ * re-scanning forever, but the tradeoff is that a *pool* row lost to a
+ * transient failure in that same pass is never retried once the
+ * checkpoint moves on, since the Initialize event that would have found
+ * it again now sits behind `synced_to_block`). Confirmed against
+ * production 2026-09-27: 5 verified rwa_tokens on Robinhood Chain, 0
+ * rwa_pools rows at all.
+ *
+ * Rather than re-scanning event history for these specific tokens, this
+ * checks current on-chain state directly — the same StateView.getSlot0
+ * probe dex/quote.ts's own bestV4Leg already uses to find a live route,
+ * across the same standard fee tiers this app already assumes vanilla
+ * (no-hooks) RWA/USDG pools use (see dex/addresses.ts's own note on
+ * that). A token already covered by an existing rwa_pools row is
+ * skipped — this only ever fills in what's missing, never re-probes
+ * pools discovery already found.
+ */
+export async function backfillMissingPools(
+  client: RobinhoodClient,
+  supabase: SupabaseClient
+): Promise<{ checked: number; found: number }> {
+  const { data: tokens, error: tokensError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("address").eq("chain_id", robinhoodChain.id).eq("verified", true)
+  );
+  if (tokensError) throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
+  if (!tokens || tokens.length === 0) return { checked: 0, found: 0 };
+
+  const { data: existingPools, error: poolsError } = await withFetchRetry(() =>
+    supabase.from("rwa_pools").select("token0, token1").eq("chain_id", robinhoodChain.id).eq("dex", "uniswap_v4")
+  );
+  if (poolsError) throw new Error(`Could not read rwa_pools: ${poolsError.message}`);
+
+  const covered = new Set<string>();
+  for (const p of existingPools ?? []) {
+    const other = p.token0.toLowerCase() === USDG.toLowerCase() ? p.token1 : p.token0;
+    covered.add(other.toLowerCase());
+  }
+
+  const missing = tokens.filter((t) => !covered.has(t.address.toLowerCase()));
+  if (missing.length === 0) return { checked: tokens.length, found: 0 };
+
+  const newRows: {
+    chain_id: number;
+    pool_id: `0x${string}`;
+    dex: "uniswap_v4";
+    token0: Address;
+    token1: Address;
+    fee: number;
+    tick_spacing: number;
+    hooks: Address;
+  }[] = [];
+
+  for (const token of missing) {
+    for (const fee of V4_FEE_TIERS) {
+      const tickSpacing = FEE_TO_TICK_SPACING[fee];
+      const key = buildPoolKey(USDG, token.address as Address, fee, tickSpacing);
+      const id = poolId(key);
+      try {
+        const slot0 = await client.readContract({
+          address: STATE_VIEW,
+          abi: STATE_VIEW_SLOT0_ABI,
+          functionName: "getSlot0",
+          args: [id],
+        });
+        if (slot0[0] === 0n) continue; // uninitialized at this fee tier
+        newRows.push({
+          chain_id: robinhoodChain.id,
+          pool_id: id,
+          dex: "uniswap_v4",
+          token0: key.currency0,
+          token1: key.currency1,
+          fee,
+          tick_spacing: tickSpacing,
+          hooks: ZERO_ADDRESS,
+        });
+      } catch {
+        // Node hiccup on this one probe — the next pass tries again; never block the rest of the backfill on it.
+      }
+    }
+  }
+
+  if (newRows.length > 0) {
+    const { error } = await withFetchRetry(() => supabase.from("rwa_pools").upsert(newRows, { onConflict: "chain_id,pool_id" }));
+    if (error) throw new Error(`rwa_pools backfill upsert failed: ${error.message}`);
+  }
+
+  return { checked: tokens.length, found: newRows.length };
 }

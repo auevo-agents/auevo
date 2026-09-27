@@ -67,3 +67,44 @@ export function computeFeeAprPct(volume24hUsd: number, feeHundredthsOfBip: numbe
   const dailyFeesUsd = volume24hUsd * (feeHundredthsOfBip / 1_000_000);
   return ((dailyFeesUsd * 365) / liquidityUsd) * 100;
 }
+
+export interface TokenPriceFromPoolInput {
+  sqrtPriceX96: bigint;
+  /** true when USDG is currency0 of this pool's key — see dex/pool-key.ts's sortCurrencies (address order, not which side is "the RWA token"). */
+  usdgIsCurrency0: boolean;
+  tokenDecimals: number;
+}
+
+/**
+ * A tokenized stock's own live on-chain price in USD, derived directly
+ * from its v4 pool's sqrtPriceX96 against USDG (a 1:1 USD stablecoin) —
+ * no external price API involved at all. This is Robinhood Chain's own
+ * primary price source for run-prices.ts: gecko-price.ts's GeckoTerminal
+ * lookup depends on a third party having already indexed this pool,
+ * which a brand-new L2's own pools may not be yet; this app already
+ * verified the pool itself exists (rwa_pools, from registry.ts), so it
+ * doesn't need to wait on anyone else to read its own price back.
+ *
+ * sqrtPriceX96 encodes price = (currency1 raw) / (currency0 raw) —
+ * see computeLiquidityUsd's own derivation above for amount0Raw/
+ * amount1Raw; this is that same ratio, just expressed as a price instead
+ * of a pair of reserves, then rebased from raw units to human ones and
+ * flipped so the result is always "USD per one token", regardless of
+ * which side of the pool key USDG landed on.
+ */
+export function computeTokenPriceUsdFromPool(input: TokenPriceFromPoolInput): number | null {
+  const { sqrtPriceX96, usdgIsCurrency0, tokenDecimals } = input;
+  if (sqrtPriceX96 === 0n) return null; // pool not yet initialized
+
+  const priceX192 = sqrtPriceX96 * sqrtPriceX96; // (sqrtPriceX96/Q96)^2, kept as an integer ratio over Q96^2 until the final division
+  const Q192 = Q96 * Q96;
+
+  if (usdgIsCurrency0) {
+    // price_raw (currency1 per currency0) = priceX192 / Q192 = (RWA raw) per (USDG raw)
+    // USD per 1 RWA token = 1 / (price_raw * 10^(usdgDecimals - tokenDecimals)) = Q192 * 10^(tokenDecimals - usdgDecimals) / priceX192
+    return (Number(Q192) / Number(priceX192)) * 10 ** (tokenDecimals - USDG_DECIMALS);
+  }
+  // USDG is currency1: price_raw (currency1 per currency0) = priceX192 / Q192 = (USDG raw) per (RWA raw)
+  // USD per 1 RWA token = price_raw * 10^(tokenDecimals - usdgDecimals)
+  return (Number(priceX192) / Number(Q192)) * 10 ** (tokenDecimals - USDG_DECIMALS);
+}

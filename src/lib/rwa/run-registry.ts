@@ -4,7 +4,7 @@ import { Deadline } from "@/lib/evm/deadline";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { robinhoodChain } from "@/lib/chains";
-import { discoverUsdgPools, resolveCandidateTokens } from "./registry";
+import { discoverUsdgPools, resolveCandidateTokens, backfillMissingPools } from "./registry";
 import { fetchXstocksTokenListWithDiagnostics, tickerFromXstocksSymbol } from "./xstocks";
 import { STATE_VIEW, USDG } from "./dex/addresses";
 import { buildPoolKey } from "./dex/pool-key";
@@ -78,7 +78,7 @@ export interface RegistryRunResult {
   headBlock?: string;
   robinhood?: { discovered: number; syncedTo: string; partial: boolean };
   xstocks?: { discovered: number; available: boolean; error?: string | null };
-  pools?: { refreshed: number; error?: string | null };
+  pools?: { backfilled: number; refreshed: number; error?: string | null };
   checkpointError?: string | null;
 }
 
@@ -195,6 +195,15 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
     }
   }
 
+  let poolsBackfilled = 0;
+  if (!poolsError) {
+    try {
+      poolsBackfilled = (await backfillMissingPools(client, supabase)).found;
+    } catch (err) {
+      poolsError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
   let poolsRefreshed = 0;
   if (!poolsError) {
     try {
@@ -256,7 +265,7 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       partial: scanResult.partial,
     },
     xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null, error: xstocksError },
-    pools: { refreshed: poolsRefreshed, error: poolsError },
+    pools: { backfilled: poolsBackfilled, refreshed: poolsRefreshed, error: poolsError },
     checkpointError,
   };
 }

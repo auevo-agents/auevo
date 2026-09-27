@@ -43,6 +43,15 @@ beforeAll(async () => {
       return;
     }
 
+    if (req.method === "GET" && table === "rwa_pools") {
+      // No Robinhood-chain pools in this scenario — runPricesPass's
+      // on-chain price source (see pools.ts's computeTokenPriceUsdFromPool)
+      // simply has nothing to override, leaving GeckoTerminal's own
+      // coverage (asserted below) untouched.
+      res.end(JSON.stringify([]));
+      return;
+    }
+
     if (req.method === "POST" && table === "rwa_prices") {
       let body = "";
       req.on("data", (chunk) => (body += chunk));

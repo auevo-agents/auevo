@@ -163,7 +163,13 @@ beforeAll(async () => {
       return;
     }
     if (req.method === "GET" && table === "rwa_tokens") {
-      // refreshPoolMetrics' own per-pool decimals lookup.
+      const select = url.searchParams.get("select") ?? "";
+      if (select.includes("address")) {
+        // backfillMissingPools' own "every verified Robinhood-chain token" read.
+        res.end(JSON.stringify([{ address: NVDA_TOKEN }]));
+        return;
+      }
+      // refreshPoolMetrics' own per-pool decimals lookup (.maybeSingle()).
       res.end(JSON.stringify({ decimals: 18 }));
       return;
     }
