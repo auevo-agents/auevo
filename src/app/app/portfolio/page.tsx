@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
+import Link from "next/link";
 import { ConnectButton } from "../connect-button";
 
 /**
@@ -38,8 +39,17 @@ export default function PortfolioPage() {
       </header>
 
       {!isConnected && (
-        <div className="app-empty" style={{ marginTop: 20 }}>
-          Connect a wallet above to see your portfolio.
+        <div className="dash-list-card" style={{ marginTop: 20, padding: 28, textAlign: "center" }}>
+          <p style={{ margin: "0 0 20px", fontSize: 14, lineHeight: 1.7, color: "var(--muted)" }}>
+            Connect a wallet to see your RWA holdings in USD — cost basis, mark price and unrealized PnL for
+            every tokenized stock you hold on Robinhood Chain, plus your recent activity.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+            <ConnectButton />
+            <Link href="/app/assets" className="landing-cta-ghost">
+              Browse assets →
+            </Link>
+          </div>
         </div>
       )}
 
