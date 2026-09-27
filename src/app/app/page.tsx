@@ -34,6 +34,7 @@ const QUICK_ACTIONS = [
     tag: "Browse",
     href: "/app/assets",
     mockup: "chips",
+    scene: "assets",
   },
   {
     num: "02",
@@ -42,6 +43,7 @@ const QUICK_ACTIONS = [
     tag: "6 tabs",
     href: "/app/scanner",
     mockup: "compare",
+    scene: "scanner",
   },
   {
     num: "03",
@@ -50,6 +52,7 @@ const QUICK_ACTIONS = [
     tag: "One signature",
     href: "/app/baskets",
     mockup: "checklist",
+    scene: "baskets",
   },
   {
     num: "04",
@@ -58,6 +61,7 @@ const QUICK_ACTIONS = [
     tag: "Uniswap v4",
     href: "/app/pools",
     mockup: "apr",
+    scene: "pools",
   },
   {
     num: "05",
@@ -66,6 +70,7 @@ const QUICK_ACTIONS = [
     tag: "Best route",
     href: "/app/swap",
     mockup: "compare",
+    scene: "bridge",
   },
   {
     num: "06",
@@ -74,6 +79,7 @@ const QUICK_ACTIONS = [
     tag: "Your wallet",
     href: "/app/portfolio",
     mockup: "alert",
+    scene: "alerts",
   },
 ] as const;
 
