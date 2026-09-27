@@ -1,11 +1,26 @@
 import type { DocBlock } from "./content";
 
+export function headingId(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 export function DocBody({ blocks }: { blocks: DocBlock[] }) {
   return (
     <>
       {blocks.map((block, i) => {
         if (block.type === "p") return <p key={i}>{block.text}</p>;
-        if (block.type === "h2") return <h2 key={i}>{block.text}</h2>;
+        if (block.type === "h2") {
+          const id = headingId(block.text);
+          return (
+            <h2 key={i} id={id}>
+              <a href={`#${id}`} aria-label={`Link to ${block.text}`}>#</a>
+              {block.text}
+            </h2>
+          );
+        }
         if (block.type === "list") {
           return (
             <ul key={i}>
