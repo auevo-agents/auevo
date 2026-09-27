@@ -6295,7 +6295,7 @@ a {
 }
 
 .app-nav-link.active:hover {
-  color: #ff4259;
+  color: var(--au-gold, #c9b27c);
 }
 
 .app-nav-link b {
@@ -6586,7 +6586,7 @@ a {
 }
 
 .wallet-modal-item:hover:not(:disabled) {
-  border-color: rgba(255,52,77,.4);
+  border-color: rgba(201,178,124,.4);
 }
 
 .wallet-modal-item:disabled {
@@ -6982,7 +6982,7 @@ a {
 }
 
 .app-untrack:hover {
-  color: var(--red);
+  color: var(--au-gold, #c9b27c);
 }
 
 .app-nav-link.active {
@@ -7088,7 +7088,7 @@ a {
 }
 
 .desk-pair:hover .desk-pair-base {
-  color: var(--red);
+  color: var(--au-gold, #c9b27c);
 }
 
 .desk-pair-icon {
@@ -7182,7 +7182,7 @@ a {
 }
 
 .desk-actions a:hover {
-  color: var(--red);
+  color: var(--au-gold, #c9b27c);
   text-decoration: underline;
 }
 
@@ -7435,7 +7435,7 @@ a {
 }
 
 .token-detail-links a:hover {
-  color: var(--red);
+  color: var(--au-gold, #c9b27c);
 }
 
 .token-detail-price {
@@ -7869,7 +7869,7 @@ a {
 }
 
 .wallet-card:hover {
-  border-color: rgba(255,52,77,.4);
+  border-color: rgba(201,178,124,.4);
 }
 
 .wallet-card-avatar {
@@ -8180,12 +8180,6 @@ a {
   transition: border-color .18s ease, color .18s ease, background-color .18s ease;
 }
 
-.landing-cta-ghost:hover {
-  border-color: var(--red);
-  color: #fff;
-  background: rgba(255,52,77,.08);
-}
-
 .landing-status {
   font-size: 12px;
   color: #5a6469;
@@ -8433,7 +8427,7 @@ a {
 
 .landing2-cta:active {
   transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(255,52,77,.22);
+  box-shadow: 0 4px 12px rgba(201,178,124,.22);
 }
 
 .landing2-cta-link {
@@ -8443,11 +8437,6 @@ a {
   border-bottom: 2px solid var(--line-2);
   padding-bottom: 2px;
   transition: border-color .15s ease, color .15s ease;
-}
-
-.landing2-cta-link:hover {
-  border-color: var(--red);
-  color: #fff;
 }
 
 /* Orbit illustration — a "glass orb constellation": rotating rings, a

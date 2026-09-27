@@ -131,7 +131,7 @@ export default function LendPage() {
                 <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(r.totalBorrowUsd)}</span>
                 <span className="desk-actions">
                   <a
-                    href="https://app.kamino.finance/lending"
+                    href="https://kamino.com/lending"
                     target="_blank"
                     rel="noreferrer"
                     title="Opens Kamino's lending markets — find this reserve there to supply or borrow"
