@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Disclaimer } from "../../disclaimer";
+import { BrandIcon } from "../../brand-icon";
+import { UtilizationGauge } from "../../utilization-gauge";
 
 interface KaminoReserve {
   reservePubkey: string;
@@ -118,29 +120,54 @@ export default function LendPage() {
 
       {configured === true && !error && reserves.length > 0 && (
         <>
-          <div className="dash-list-card" style={{ marginTop: 8 }}>
-            {reserves.map((r) => (
-              <div key={r.reservePubkey} className="dash-list-row" style={{ gridTemplateColumns: "1fr auto auto auto auto auto" }}>
-                <span className="dash-list-name">
-                  <b>{r.liquidityToken}</b>
-                  <small>Kamino xStocks market</small>
-                </span>
-                <span className="dash-list-col desk-change-pos">{formatPct(r.supplyApyPct)}</span>
-                <span className="dash-list-col dash-list-col-hide-mobile">{formatPct(r.borrowApyPct)}</span>
-                <span className="dash-list-col">{formatUsd(r.totalSupplyUsd)}</span>
-                <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(r.totalBorrowUsd)}</span>
-                <span className="desk-actions">
-                  <a
-                    href="https://kamino.com/lending"
-                    target="_blank"
-                    rel="noreferrer"
-                    title="Opens Kamino's lending markets — find this reserve there to supply or borrow"
-                  >
-                    supply ↗
-                  </a>
-                </span>
-              </div>
-            ))}
+          <div className="lend-reserve-grid">
+            {reserves.map((r) => {
+              const utilizationPct =
+                r.totalSupplyUsd !== null && r.totalSupplyUsd > 0 && r.totalBorrowUsd !== null
+                  ? (r.totalBorrowUsd / r.totalSupplyUsd) * 100
+                  : null;
+              return (
+                <div key={r.reservePubkey} className="lend-reserve-card">
+                  <div className="lend-reserve-head">
+                    <BrandIcon symbol={r.liquidityToken} kind="ticker" size={30} />
+                    <div className="lend-reserve-name">
+                      <b>{r.liquidityToken}</b>
+                      <small>Kamino xStocks market</small>
+                    </div>
+                    <a
+                      className="lend-reserve-supply-link"
+                      href="https://kamino.com/lending"
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Opens Kamino's lending markets — find this reserve there to supply or borrow"
+                    >
+                      supply ↗
+                    </a>
+                  </div>
+                  <div className="lend-reserve-body">
+                    <UtilizationGauge pct={utilizationPct} gradientId={`lend-gauge-${r.reservePubkey}`} />
+                    <dl className="lend-reserve-stats">
+                      <div>
+                        <dt>Supply APY</dt>
+                        <dd className="desk-change-pos">{formatPct(r.supplyApyPct)}</dd>
+                      </div>
+                      <div>
+                        <dt>Borrow APY</dt>
+                        <dd>{formatPct(r.borrowApyPct)}</dd>
+                      </div>
+                      <div>
+                        <dt>Supplied</dt>
+                        <dd>{formatUsd(r.totalSupplyUsd)}</dd>
+                      </div>
+                      <div>
+                        <dt>Borrowed</dt>
+                        <dd>{formatUsd(r.totalBorrowUsd)}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <p className="desk-note">
             Read-only — deposits happen on Kamino itself, not here. Rates come straight from Kamino&apos;s own

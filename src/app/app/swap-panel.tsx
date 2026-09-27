@@ -40,6 +40,8 @@ import {
 } from "@/lib/quick-buy-presets";
 import { getWagmiConfig } from "@/lib/wagmi";
 import { signTransaction } from "wagmi/actions";
+import { BrandIcon } from "../brand-icon";
+import { TokenPickerButton, usePickableTokens } from "../token-picker";
 
 /**
  * The actual swap form — single-hop Uniswap V3 on Robinhood Chain.
@@ -244,6 +246,7 @@ export function SwapPanel({
 }: SwapPanelProps) {
   const { address: account, isConnected } = useAccount();
   const publicClient = usePublicClient();
+  const pickableTokens = usePickableTokens();
 
   // Locked mode: initialTokenIn/Out are the "buy" orientation (spend
   // quote, receive base); "sell" just swaps which one is in/out.
@@ -915,61 +918,62 @@ export function SwapPanel({
 
       {lockPair ? (
         <div className="trade-locked-pair">
-          <span>{displayInSymbol ?? (tokenIn ? shortenAddress(tokenIn) : "?")}</span>
+          <span className="trade-locked-token">
+            <BrandIcon symbol={displayInSymbol ?? "?"} kind="ticker" size={20} />
+            {displayInSymbol ?? (tokenIn ? shortenAddress(tokenIn) : "?")}
+          </span>
           <span className="trade-locked-arrow">→</span>
-          <span>{displayOutSymbol ?? (tokenOut ? shortenAddress(tokenOut) : "?")}</span>
+          <span className="trade-locked-token">
+            <BrandIcon symbol={displayOutSymbol ?? "?"} kind="ticker" size={20} />
+            {displayOutSymbol ?? (tokenOut ? shortenAddress(tokenOut) : "?")}
+          </span>
           {typeof inBalance === "bigint" && typeof inDecimals === "number" && (
             <small>balance {Number(formatUnits(inBalance, inDecimals)).toFixed(4)}</small>
           )}
         </div>
       ) : (
         <>
-          <label className="trade-field">
-            <span>Token in (address)</span>
-            <input
-              value={manualTokenIn}
-              onChange={(e) => setManualTokenIn(e.target.value.trim())}
-              placeholder="0x…"
-              spellCheck={false}
-            />
-            {typeof displayInSymbol === "string" && (
-              <small>
-                {displayInSymbol}
-                {typeof inBalance === "bigint" && typeof inDecimals === "number"
-                  ? ` · balance ${Number(formatUnits(inBalance, inDecimals)).toFixed(4)}`
-                  : ""}
-                {isNativeIn ? " (native)" : ""}
-              </small>
-            )}
-          </label>
+          <div className="swap-card">
+            <div className="swap-card-head">
+              <span className="swap-card-label">You pay</span>
+              {typeof inBalance === "bigint" && typeof inDecimals === "number" && (
+                <span className="swap-card-balance">
+                  balance {Number(formatUnits(inBalance, inDecimals)).toFixed(4)}
+                  {isNativeIn ? " (native)" : ""}
+                </span>
+              )}
+            </div>
+            <div className="swap-card-row">
+              <input
+                className="swap-card-amount"
+                value={amountIn}
+                onChange={(e) => setAmountIn(e.target.value)}
+                placeholder="0.0"
+                inputMode="decimal"
+              />
+              <TokenPickerButton value={manualTokenIn} onChange={setManualTokenIn} tokens={pickableTokens} />
+            </div>
+          </div>
 
-          <label className="trade-field">
-            <span>Token out (address)</span>
-            <input
-              value={manualTokenOut}
-              onChange={(e) => setManualTokenOut(e.target.value.trim())}
-              placeholder="0x…"
-              spellCheck={false}
-            />
-            {typeof displayOutSymbol === "string" && (
-              <small>
-                {displayOutSymbol}
-                {isNativeOut ? " (native)" : ""}
-              </small>
-            )}
-          </label>
+          <div className="swap-card-divider" aria-hidden="true">↓</div>
+
+          <div className="swap-card">
+            <div className="swap-card-head">
+              <span className="swap-card-label">You receive</span>
+            </div>
+            <div className="swap-card-row">
+              <span className="swap-card-amount swap-card-amount-readonly">
+                {useV4Route && v4Route && typeof outDecimals === "number"
+                  ? Number(formatUnits(v4Route.amountOut, outDecimals)).toFixed(6)
+                  : !useV4Route && quote && typeof outDecimals === "number"
+                    ? Number(formatUnits(quote.amountOut, outDecimals)).toFixed(6)
+                    : "0.0"}
+              </span>
+              <TokenPickerButton value={manualTokenOut} onChange={setManualTokenOut} tokens={pickableTokens} />
+            </div>
+          </div>
         </>
       )}
-
-      <label className="trade-field">
-        <span>Amount in</span>
-        <input
-          value={amountIn}
-          onChange={(e) => setAmountIn(e.target.value)}
-          placeholder="0.0"
-          inputMode="decimal"
-        />
-      </label>
 
       {lockPair && side === "buy" && (
         <div className="trade-quick-buy">
