@@ -5,6 +5,7 @@ import { maxUint160, maxUint256, parseUnits, formatUnits, type Address } from "v
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { PERMIT2, USDG, USDG_DECIMALS, V4_POSITION_MANAGER } from "@/lib/rwa/dex/addresses";
+import { CopyableAddress } from "../../copyable-address";
 
 const PERMIT2_APPROVE_ABI = [
   {
@@ -176,7 +177,11 @@ export function AddLiquidityPanel({ poolId, ticker }: { poolId: string; ticker: 
             {sendMintTx.isPending ? "Minting…" : "Add liquidity"}
           </button>
 
-          {sendMintTx.data && <p className="desk-note">Tx: {sendMintTx.data}</p>}
+          {sendMintTx.data && (
+            <p className="desk-note">
+              Tx: <CopyableAddress address={sendMintTx.data} />
+            </p>
+          )}
           {mintReceipt.isSuccess && <p style={{ color: "var(--green)" }}>Position minted.</p>}
           {sendMintTx.error && <p className="error">{sendMintTx.error.message}</p>}
         </>

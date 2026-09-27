@@ -9,6 +9,7 @@ import { TradeList } from "../../trade-list";
 import { TokenInfoPanel } from "../../token-info-panel";
 import { FavoriteStar } from "../../favorite-star";
 import { useTokenScan } from "../../use-token-scan";
+import { CopyableAddress } from "../../../../copyable-address";
 import {
   formatAge,
   formatPercent,
@@ -565,7 +566,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                     {topTraders.map((t, i) => (
                       <div className="rank-row" key={t.address}>
                         <span>{i + 1}</span>
-                        <code className="scan-mono">{shortenAddress(t.address)}</code>
+                        <CopyableAddress address={t.address} />
                         <span className="desk-col-right">{formatUsdCompact(t.volumeUsd)}</span>
                         <span className="desk-col-right">
                           {t.trades} ({t.buys}/{t.sells})
@@ -655,7 +656,7 @@ function HoldersSection({ scan }: { scan: ReturnType<typeof useTokenScan> }) {
         {holders.top.map((h, i) => (
           <div className="rank-row" key={h.address}>
             <span>{i + 1}</span>
-            <code className="scan-mono">{shortenAddress(h.address)}</code>
+            <CopyableAddress address={h.address} />
             <span className="desk-col-right">
               {typeof token.decimals === "number"
                 ? Number(formatUnits(BigInt(h.balance), token.decimals)).toLocaleString(undefined, {

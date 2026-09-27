@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { AuevoLogo, AuevoMark } from "@/app/auevo-logo";
+import { CopyButton } from "@/app/copy-button";
 import { useSearchParams } from "next/navigation";
 import type { Severity } from "@/lib/evm/types";
 import type {
@@ -355,13 +356,16 @@ function Report({ report }: { report: TokenScanReport }) {
             {report.holders.top.map((holder, index) => (
               <div className="scan-holder-row" key={holder.address}>
                 <span className="scan-holder-rank">{index + 1}</span>
-                <a
-                  href={`${EXPLORER_BASE}/address/${holder.address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {shorten(holder.address)}
-                </a>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <a
+                    href={`${EXPLORER_BASE}/address/${holder.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {shorten(holder.address)}
+                  </a>
+                  <CopyButton value={holder.address} />
+                </span>
                 <div className="bar-cell">
                   <span>{holder.percent.toFixed(2)}%</span>
                   <i>
@@ -465,14 +469,17 @@ function Fact({
     <div className="scan-fact">
       <span>{label}</span>
       {address ? (
-        <a
-          className="scan-mono scan-fact-link"
-          href={`${EXPLORER_BASE}/address/${address}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {value}
-        </a>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <a
+            className="scan-mono scan-fact-link"
+            href={`${EXPLORER_BASE}/address/${address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {value}
+          </a>
+          <CopyButton value={address} />
+        </span>
       ) : (
         <strong>{value}</strong>
       )}

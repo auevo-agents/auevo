@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatUnits, isAddress, type Address } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 import { ConnectButton } from "../connect-button";
+import { CopyableAddress } from "../../copyable-address";
 import { shortenAddress } from "@/lib/format";
 import {
   readWatchedWallets,
@@ -93,7 +94,7 @@ export default function WalletsPage() {
 
       {connected && !watched.some((w) => w.address.toLowerCase() === connected.toLowerCase()) && (
         <p className="scan-note" style={{ marginTop: 12 }}>
-          Your connected wallet ({shortenAddress(connected)}) isn&apos;t on the list —{" "}
+          Your connected wallet (<CopyableAddress address={connected} mono={false} />) isn&apos;t on the list —{" "}
           <button className="app-link-button" onClick={() => setWatched(watchWallet(connected))}>
             follow it
           </button>
@@ -114,7 +115,7 @@ export default function WalletsPage() {
                     {w.label ?? shortenAddress(w.address, 6, 4)}
                     {isYou && " (you)"}
                   </strong>
-                  <code className="scan-mono">{shortenAddress(w.address, 8, 6)}</code>
+                  <CopyableAddress address={w.address} head={8} tail={6} />
                 </span>
                 <span className="wallet-card-balance">
                   {raw !== undefined ? `${Number(formatUnits(raw, 18)).toFixed(4)} ETH` : "…"}

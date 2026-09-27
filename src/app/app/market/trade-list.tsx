@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import type { Trade } from "@/lib/geckoterminal";
-import { formatAge, formatPrice, formatUsdCompact, shortenAddress } from "@/lib/format";
+import { formatAge, formatPrice, formatUsdCompact } from "@/lib/format";
 import { watchWallet } from "@/lib/watched-wallets";
+import { CopyableAddress } from "../../copyable-address";
+import { CopyButton } from "../../copy-button";
 
 /**
  * A list of real trades — shared by Smart Money (large trades across many
@@ -80,11 +82,7 @@ function TradeRow({
       </span>
       <span className="desk-col-right">{formatPrice(trade.priceUsd)}</span>
       <span>
-        {trade.traderAddress ? (
-          <code className="scan-mono">{shortenAddress(trade.traderAddress)}</code>
-        ) : (
-          "—"
-        )}
+        {trade.traderAddress ? <CopyableAddress address={trade.traderAddress} /> : "—"}
       </span>
       <span className="desk-actions">
         {trade.traderAddress && (
@@ -93,13 +91,16 @@ function TradeRow({
           </button>
         )}
         {trade.txHash && (
-          <a
-            href={`https://robinhoodchain.blockscout.com/tx/${trade.txHash}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            tx
-          </a>
+          <>
+            <a
+              href={`https://robinhoodchain.blockscout.com/tx/${trade.txHash}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              tx
+            </a>
+            <CopyButton value={trade.txHash} title="Copy tx hash" />
+          </>
         )}
       </span>
     </div>
