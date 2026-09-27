@@ -180,6 +180,33 @@ export const DOC_SECTIONS: DocSection[] = [
         ],
       },
       {
+        slug: "markets",
+        title: "Markets: browsing by category",
+        summary: "Filtering the Assets page by stock, ETF, commodity, treasury or private credit.",
+        blocks: [
+          {
+            type: "p",
+            text: "The Assets page's category tabs split the registry the same way its own underlying catalog is classified: Stocks, ETFs, Commodities, Treasuries and Private Credit. A tab only appears once the registry has actually found a token in that category — an empty category is left off rather than shown with nothing in it.",
+          },
+          {
+            type: "table",
+            headers: ["Category", "What's in it"],
+            rows: [
+              ["Stocks", "Individual tokenized equities (e.g. NVDA, TSLA)"],
+              ["ETFs", "Tokenized exchange-traded funds (e.g. SPY, QQQ)"],
+              ["Commodities", "Asset-backed tokens tracking a physical commodity (e.g. XAUT, PAXG — gold)"],
+              ["Treasuries", "Tokens backed by government debt instruments (e.g. thBILL)"],
+              ["Private Credit", "Tokens representing a private-credit lending position (e.g. syrupUSDC, syrupUSDT)"],
+            ],
+          },
+          {
+            type: "callout",
+            tone: "info",
+            text: "Commodity, treasury and private-credit tickers don't have a reference price configured yet, so no premium is shown for them — the same \"unconfigured, not zero\" rule the Premium page explains.",
+          },
+        ],
+      },
+      {
         slug: "premium-and-discount",
         title: "Premium & discount, explained",
         summary: "How the number on every asset page is calculated.",
@@ -321,6 +348,10 @@ export const DOC_SECTIONS: DocSection[] = [
             type: "callout",
             tone: "warn",
             text: "This page is strictly read-only. Auevo runs no lending contracts of its own — every deposit or borrow happens on Kamino itself, not here.",
+          },
+          {
+            type: "p",
+            text: "Looking for leverage (deposit, borrow, and loop automatically) rather than a single supply/borrow position? That's Kamino's own Multiply product, built on this same xStocks market — Auevo links out to it from the Lend page rather than building a second, separate leveraged-vault contract.",
           },
         ],
       },

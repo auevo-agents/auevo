@@ -35,6 +35,17 @@ interface IssuerSummary {
   tokenCount: number;
 }
 
+type CategoryFilter = "all" | "stock" | "etf" | "commodity" | "treasury" | "private_credit";
+
+const CATEGORY_TABS: { id: CategoryFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "stock", label: "Stocks" },
+  { id: "etf", label: "ETFs" },
+  { id: "commodity", label: "Commodities" },
+  { id: "treasury", label: "Treasuries" },
+  { id: "private_credit", label: "Private Credit" },
+];
+
 export default function AssetsPage() {
   const [sort, setSort] = useState<AssetSort>("most_available");
   const [assets, setAssets] = useState<AssetSummary[] | null>(null);
@@ -42,6 +53,7 @@ export default function AssetsPage() {
   const [indexed, setIndexed] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<CategoryFilter>("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -84,12 +96,19 @@ export default function AssetsPage() {
 
   const activeIssuers = useMemo(() => (issuers ?? []).filter((i) => i.tokenCount > 0), [issuers]);
 
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of assets ?? []) counts.set(a.category, (counts.get(a.category) ?? 0) + 1);
+    return counts;
+  }, [assets]);
+
   const filtered = useMemo(() => {
     if (!assets) return null;
+    const byCategory = category === "all" ? assets : assets.filter((a) => a.category === category);
     const q = query.trim().toLowerCase();
-    if (!q) return assets;
-    return assets.filter((a) => a.ticker.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
-  }, [assets, query]);
+    if (!q) return byCategory;
+    return byCategory.filter((a) => a.ticker.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+  }, [assets, category, query]);
 
   return (
     <>
@@ -130,7 +149,24 @@ export default function AssetsPage() {
         </div>
       </div>
 
-      <div className="desk-tabs" style={{ justifyContent: "center", marginTop: 24 }}>
+      <div className="desk-tabs" style={{ justifyContent: "center", marginTop: 24, flexWrap: "wrap" }}>
+        {CATEGORY_TABS.map((tab) => {
+          const count = tab.id === "all" ? assets?.length ?? 0 : categoryCounts.get(tab.id) ?? 0;
+          if (tab.id !== "all" && assets && count === 0) return null;
+          return (
+            <button
+              key={tab.id}
+              className={category === tab.id ? "desk-tab active" : "desk-tab"}
+              onClick={() => setCategory(tab.id)}
+            >
+              {tab.label.toUpperCase()}
+              {assets ? ` (${count})` : ""}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="desk-tabs" style={{ justifyContent: "center", marginTop: 8 }}>
         <button className={sort === "most_available" ? "desk-tab active" : "desk-tab"} onClick={() => setSort("most_available")}>
           MOST AVAILABLE
         </button>
@@ -152,7 +188,9 @@ export default function AssetsPage() {
       {filtered && indexed && assets && assets.length > 0 && (
         <>
           {filtered.length === 0 ? (
-            <div className="app-empty">No asset matches &quot;{query}&quot;.</div>
+            <div className="app-empty">
+              {query.trim() ? `No asset matches "${query}".` : "No assets in this category yet."}
+            </div>
           ) : (
             <div className="dash-list-card" style={{ marginTop: 20 }}>
               {filtered.map((asset, i) => {
