@@ -6745,6 +6745,219 @@ a {
   font: 400 11px/1 Arial, Helvetica, sans-serif;
 }
 
+.trade-locked-token,
+.trade-field-asset-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "You pay" / "You receive" swap cards — a labeled card containing a big
+   amount input alongside a token-picker pill, instead of a bare labeled
+   input. Two of these plus the divider replace the old raw-address
+   text fields in the swap panel's unlocked mode. */
+.swap-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border: 1px solid #252c30;
+  border-radius: 12px;
+  background: #0a0e10;
+}
+
+.swap-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #7c8589;
+}
+
+.swap-card-label {
+  font-weight: 600;
+}
+
+.swap-card-balance {
+  font-size: 11px;
+  color: #5a6469;
+}
+
+.swap-card-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.swap-card-amount {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  color: #eef0ef;
+  font: 600 28px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0;
+}
+
+.swap-card-amount::placeholder {
+  color: #3a444a;
+}
+
+.swap-card-amount-readonly {
+  color: #d7dadb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swap-card-divider {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: -6px 0;
+  border: 1px solid #252c30;
+  border-radius: 50%;
+  background: #0d1215;
+  color: #7c8589;
+  font-size: 13px;
+  z-index: 1;
+}
+
+/* Token picker — a pill button (logo + ticker + chevron) that opens a
+   searchable list of verified xStocks tokens. */
+.token-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.token-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px 0 8px;
+  border: 1px solid #252c30;
+  border-radius: 999px;
+  background: #12181b;
+  color: #eef0ef;
+  font: 600 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+  white-space: nowrap;
+}
+
+.token-picker-trigger:hover {
+  border-color: rgba(201,178,124,.4);
+}
+
+.token-picker-placeholder {
+  color: #7c8589;
+  font-weight: 500;
+}
+
+.token-picker-custom {
+  font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #d7dadb;
+}
+
+.token-picker-chevron {
+  color: #5a6469;
+}
+
+.token-picker-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 280px;
+  max-width: 80vw;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #252c30;
+  border-radius: 12px;
+  background: #0d1215;
+  box-shadow: 0 20px 48px rgba(0,0,0,.5);
+  overflow: hidden;
+}
+
+.token-picker-search {
+  margin: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #252c30;
+  border-radius: 8px;
+  background: #0a0e10;
+  color: #eef0ef;
+  font-size: 13px;
+  outline: none;
+}
+
+.token-picker-search:focus {
+  border-color: var(--au-gold, #c9b27c);
+  box-shadow: 0 0 0 3px rgba(201,178,124,.18);
+}
+
+.token-picker-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0 6px 6px;
+}
+
+.token-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 8px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.token-picker-row:hover {
+  background: rgba(201,178,124,.08);
+}
+
+.token-picker-row-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.token-picker-row-info b {
+  font-size: 13px;
+  color: #eef0ef;
+}
+
+.token-picker-row-info small {
+  font-size: 11px;
+  color: #7c8589;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-picker-row-price {
+  margin-left: auto;
+  font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #7c8589;
+  flex-shrink: 0;
+}
+
+.token-picker-empty {
+  padding: 14px 10px;
+  color: #5a6469;
+  font-size: 12px;
+  text-align: center;
+}
+
 .token-side-card .trade-form {
   margin-top: 14px;
   max-width: none;
@@ -6817,9 +7030,9 @@ a {
 }
 
 .trade-pill-row button.active {
-  border-color: var(--red);
-  color: var(--red);
-  background: rgba(255,52,77,.08);
+  border-color: var(--au-gold, #c9b27c);
+  color: var(--au-gold, #c9b27c);
+  background: rgba(201,178,124,.08);
 }
 
 .trade-quick-buy {
@@ -9303,6 +9516,119 @@ a {
   overflow: hidden;
 }
 
+/* Kamino xStocks lending reserves as cards (each with a real-data
+   utilization gauge) instead of a plain rate table. */
+.lend-reserve-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.lend-reserve-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.lend-reserve-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lend-reserve-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lend-reserve-name small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.lend-reserve-supply-link {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lend-reserve-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lend-reserve-stats {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.lend-reserve-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lend-reserve-stats dt {
+  font-size: 10.5px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lend-reserve-stats dd {
+  margin: 0;
+  font: 600 14px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #eef0ef;
+}
+
+.utilization-gauge {
+  position: relative;
+  flex-shrink: 0;
+  width: 108px;
+}
+
+.utilization-gauge-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.utilization-gauge-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.utilization-gauge-label b {
+  font-size: 18px;
+  color: #eef0ef;
+}
+
+.utilization-gauge-label small {
+  font-size: 9px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .dash-list-row {
   display: grid;
   grid-template-columns: 22px auto 1fr auto auto auto 16px;
@@ -11196,7 +11522,10 @@ a {
 .trade-field,
 .trade-locked-pair,
 .trade-quote,
-.wallet-pill {
+.wallet-pill,
+.swap-card,
+.token-picker-trigger,
+.token-picker-panel {
   border-color: var(--au-line);
   background: rgba(5,7,7,.68);
   box-shadow: inset 0 1px rgba(255,255,255,.02);
@@ -11205,6 +11534,16 @@ a {
 .trade-field:focus-within {
   border-color: rgba(201,178,124,.38);
   box-shadow: 0 0 0 4px rgba(201,178,124,.055);
+}
+
+.token-picker-search {
+  border-color: var(--au-line);
+  background: rgba(5,7,7,.5);
+}
+
+.swap-card-divider {
+  border-color: var(--au-line);
+  background: #0d1215;
 }
 
 .trade-order-tab.active,

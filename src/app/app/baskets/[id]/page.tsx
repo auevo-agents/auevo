@@ -608,7 +608,10 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
           )}
 
           <label className="trade-field">
-            <span>Amount to spend (USDG)</span>
+            <span className="trade-field-asset-label">
+              <BrandIcon symbol="USDG" kind="ticker" size={16} />
+              Amount to spend (USDG)
+            </span>
             <input type="text" inputMode="decimal" value={amountIn} onChange={(e) => setAmountIn(e.target.value)} placeholder="0.0" />
           </label>
           {typeof usdgBalance === "bigint" && <p className="desk-note">Balance: {formatUnits(usdgBalance, USDG_DECIMALS)} USDG</p>}
