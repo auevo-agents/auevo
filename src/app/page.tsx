@@ -221,10 +221,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
             <div className="landing2-cta-row">
               <Link href="/app/assets" className="landing2-cta">
-                Explore markets <span aria-hidden="true">↗</span>
+                Explore markets
               </Link>
               <Link href="/app/scanner" className="landing2-cta-link">
-                Open scanner <span aria-hidden="true">→</span>
+                Open scanner
               </Link>
             </div>
             <p className="landing-status">
@@ -252,7 +252,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               </h2>
             </div>
             <Link href="/app/scanner" className="landing2-text-link">
-              Explore the scanner <span aria-hidden="true">↗</span>
+              Explore the scanner
             </Link>
           </div>
 
@@ -290,7 +290,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                       <span className="landing2-scanner-risk">
                         {row.riskScore == null ? <span className="landing2-risk-pending">Pending</span> : <><b>{row.riskScore}</b><small>Risk score</small></>}
                       </span>
-                      <span className="landing2-scanner-arrow" aria-hidden="true">↗</span>
                     </Link>
                   );
                 })}
@@ -312,7 +311,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                     <span className="landing2-scanner-issuer"><b>{asset.issuerCount}</b><small>Verified issuers</small></span>
                     <span className="landing2-scanner-issuer"><b>{asset.chainCount}</b><small>Supported chains</small></span>
                     <span className="landing2-scanner-live"><i />In registry</span>
-                    <span className="landing2-scanner-arrow" aria-hidden="true">↗</span>
                   </Link>
                 ))}
               </div>
@@ -322,7 +320,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <div className="landing2-scanner-empty">
               <span className="landing2-empty-mark">A</span>
               <p>The scanner is preparing its first market snapshot.</p>
-              <Link href="/app/scanner">Open the scanner <span aria-hidden="true">↗</span></Link>
+              <Link href="/app/scanner">Open the scanner</Link>
             </div>
           )}
         </section>
@@ -360,7 +358,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <h2 className="landing2-section-title">A complete toolkit for on-chain markets.</h2>
             </div>
             <Link href="/app" className="landing2-text-link">
-              Open workspace <span aria-hidden="true">↗</span>
+              Open workspace
             </Link>
           </div>
           <LandingCards cards={FEATURE_CARDS} tickers={tickerRows.map((r) => r.ticker)} />
@@ -394,7 +392,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           <h2>See what stands <em>behind the ticker.</em></h2>
           <p>Explore the registry, compare issuers and check the route before you trade.</p>
           <Link href="/app/scanner" className="landing2-cta">
-            Open the scanner <span aria-hidden="true">↗</span>
+            Open the scanner
           </Link>
         </section>
       </Reveal>
