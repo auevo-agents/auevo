@@ -27,7 +27,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         <nav className="docs-topbar-nav" aria-label="Documentation">
           <Link href="/docs/welcome">Guides</Link>
           <Link href="/docs/supported-chains">Networks</Link>
-          <Link href="/docs/scanner">Scanner</Link>
+          <Link href="/docs/premium-and-discount">Scanner</Link>
         </nav>
 
         <div className="docs-topbar-actions">
