@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatUnits } from "viem";
 import { useAccount, useBalance } from "wagmi";
 import { robinhoodChain } from "@/lib/chains";
-import { LIFI_EVM_CHAINS } from "@/lib/rwa/lifi/chains";
+import { LIFI_EVM_CHAINS, chainNameFor } from "@/lib/rwa/lifi/chains";
 import { LandingCards } from "../landing-cards";
+import { BrandIcon } from "../brand-icon";
 import { ConnectButton } from "./connect-button";
 
 /**
@@ -14,19 +16,14 @@ import { ConnectButton } from "./connect-button";
  * page is either read-only against the connected wallet's own account or
  * a link to a tool that already exists; nothing here custodies funds.
  *
- * Rebuilt from a near-empty KPI-strip-plus-two-legacy-links page into an
- * actual home screen: real registry stats up top, then the same
- * premium quick-action cards (with embedded mini-mockups) the landing
- * page's own "workspace" section uses, so this reads as a real product
- * home rather than a placeholder. Token Scanner and Fee Scanner (legacy,
- * pre-RWA tools) moved out of the primary flow here into the top nav's
- * Track group — this page's job now is the RWA product, not memecoin
- * leftovers.
- *
- * Not linked from any public page and excluded from the sitemap — see
- * the layout's `robots` metadata. It is reachable by anyone with the
- * URL, same as any page on a public deployment; that is a search-engine
- * request, not a security boundary.
+ * Restructured to add the two things a static KPI-strip-plus-cards page
+ * was missing next to the quick-action grid: a live "Scanner highlights"
+ * table (the same /api/rwa/scanner/* routes the full Scanner page reads,
+ * just Premium/Risk/New rather than all seven tabs — the fast ones,
+ * since this loads on every workspace visit) and a "Market map" panel of
+ * the same top tickers as clickable chips. Both read real data and
+ * degrade to an honest empty state rather than a fabricated row if the
+ * registry hasn't priced/scored anything yet.
  */
 
 const QUICK_ACTIONS = [
@@ -108,6 +105,145 @@ function useRegistryStats() {
   return { assetCount, issuerCount };
 }
 
+type HighlightTab = "premium" | "risk" | "new";
+
+const HIGHLIGHT_TABS: { id: HighlightTab; label: string; url: string }[] = [
+  { id: "premium", label: "Premium", url: "/api/rwa/scanner/premium" },
+  { id: "risk", label: "Risk", url: "/api/rwa/scanner/risk" },
+  { id: "new", label: "New listings", url: "/api/rwa/scanner/new" },
+];
+
+interface HighlightRow {
+  ticker: string;
+  name: string;
+  chainId: number;
+  issuerId: string;
+  symbol: string;
+  priceUsd?: number | null;
+  premiumBps?: number | null;
+  score?: number | null;
+}
+
+const HIGHLIGHT_LIMIT = 5;
+
+function useHighlightTab(tab: HighlightTab, active: HighlightTab, url: string, enabled = true) {
+  const [rows, setRows] = useState<HighlightRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || active !== tab || rows !== null) return;
+    let cancelled = false;
+    fetch(url)
+      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
+      .then(({ ok, json }) => {
+        if (cancelled) return;
+        if (!ok) {
+          setError(json.error ?? "Could not load this tab");
+          return;
+        }
+        setRows((json.rows ?? []).slice(0, HIGHLIGHT_LIMIT));
+      })
+      .catch(() => {
+        if (!cancelled) setError("Network error loading this tab");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  return { rows, error };
+}
+
+function formatUsd(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  return value.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatBps(bps: number): { text: string; className: string } {
+  const pct = bps / 100;
+  const sign = pct >= 0 ? "+" : "";
+  return { text: `${sign}${pct.toFixed(2)}%`, className: pct >= 0 ? "desk-change-pos" : "desk-change-neg" };
+}
+
+function HighlightTable({
+  tab,
+  active,
+  preloaded,
+}: {
+  tab: HighlightTab;
+  active: HighlightTab;
+  /** Premium is fetched once at the page level (Market Map needs it regardless of which tab is active) — passed down here instead of fetching it a second time. */
+  preloaded?: { rows: HighlightRow[] | null; error: string | null };
+}) {
+  const url = HIGHLIGHT_TABS.find((t) => t.id === tab)!.url;
+  const fetched = useHighlightTab(tab, active, url, !preloaded);
+  const { rows, error } = preloaded ?? fetched;
+
+  if (active !== tab) return null;
+  if (error) return <p className="error">{error}</p>;
+  if (!rows) return <div className="app-empty">Loading…</div>;
+  if (rows.length === 0) {
+    return (
+      <div className="app-empty">
+        {tab === "premium" && "No priced tokens yet — the price cron hasn't caught up."}
+        {tab === "risk" && "No contract-risk scans yet — the risk cron hasn't caught up."}
+        {tab === "new" && "No tokens discovered yet."}
+      </div>
+    );
+  }
+
+  return (
+    <div className="dash-list-card">
+      {rows.map((row) => (
+        <Link key={`${row.chainId}:${row.ticker}`} href={`/app/assets/${encodeURIComponent(row.ticker)}`} className="dash-list-row">
+          <BrandIcon symbol={row.ticker} name={row.name} kind="ticker" size={28} />
+          <span className="dash-list-name">
+            <b>{row.ticker}</b>
+            <small>{chainNameFor(row.chainId)}</small>
+          </span>
+          {tab === "premium" && (
+            <>
+              <span className="dash-list-col">{formatUsd(row.priceUsd)}</span>
+              <span className={`dash-list-col ${row.premiumBps !== null && row.premiumBps !== undefined ? formatBps(row.premiumBps).className : ""}`}>
+                {row.premiumBps !== null && row.premiumBps !== undefined ? formatBps(row.premiumBps).text : "—"}
+              </span>
+            </>
+          )}
+          {tab === "risk" && (
+            <span className={`dash-list-col ${row.score !== null && row.score !== undefined && row.score >= 70 ? "desk-change-pos" : "desk-change-neg"}`}>
+              {row.score !== null && row.score !== undefined ? `risk ${row.score}` : "unscored"}
+            </span>
+          )}
+          {tab === "new" && <span className="dash-list-col">{row.symbol}</span>}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/** Compact "top tickers" chip row — same Premium data the highlight table's first tab already fetched, reused as clickable chips rather than a second call. */
+function MarketMap({ rows }: { rows: HighlightRow[] | null }) {
+  if (!rows || rows.length === 0) {
+    return <div className="app-empty">No live tickers to map yet.</div>;
+  }
+  return (
+    <div className="landing2-partners" style={{ padding: 0, justifyContent: "flex-start" }}>
+      {rows.map((row) => (
+        <Link key={row.ticker} href={`/app/assets/${encodeURIComponent(row.ticker)}`} className="landing2-partner-chip">
+          <BrandIcon symbol={row.ticker} name={row.name} kind="ticker" size={22} />
+          {row.ticker}
+          {row.premiumBps !== null && row.premiumBps !== undefined && (
+            <span className={formatBps(row.premiumBps).className} style={{ fontSize: 11 }}>
+              {formatBps(row.premiumBps).text}
+            </span>
+          )}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default function AppOverviewPage() {
   const { address, isConnected, chainId } = useAccount();
   const balance = useBalance({
@@ -116,6 +252,8 @@ export default function AppOverviewPage() {
     query: { enabled: Boolean(address) },
   });
   const { assetCount, issuerCount } = useRegistryStats();
+  const [highlightTab, setHighlightTab] = useState<HighlightTab>("premium");
+  const premiumPreview = useHighlightTab("premium", "premium", "/api/rwa/scanner/premium");
 
   const wrongChain = isConnected && chainId !== robinhoodChain.id;
 
@@ -124,7 +262,7 @@ export default function AppOverviewPage() {
       <header className="product-header">
         <div>
           <h3>Overview</h3>
-          <p>Internal workspace · Robinhood Chain</p>
+          <p>Your tokenized markets workspace · Robinhood Chain</p>
         </div>
 
         <ConnectButton />
@@ -183,10 +321,47 @@ export default function AppOverviewPage() {
         </div>
       </div>
 
-      <div className="app-tools">
+      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16, alignItems: "start" }}>
+        <div className="app-tools">
+          <div className="scan-section-heading">
+            <span>SCANNER HIGHLIGHTS</span>
+            <strong>Real-time opportunities across tokenized assets, issuers and chains.</strong>
+          </div>
+
+          <div className="desk-tabs">
+            {HIGHLIGHT_TABS.map((t) => (
+              <button
+                key={t.id}
+                className={highlightTab === t.id ? "desk-tab active" : "desk-tab"}
+                onClick={() => setHighlightTab(t.id)}
+              >
+                {t.label.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {HIGHLIGHT_TABS.map((t) => (
+            <HighlightTable key={t.id} tab={t.id} active={highlightTab} preloaded={t.id === "premium" ? premiumPreview : undefined} />
+          ))}
+
+          <Link href="/app/scanner" className="app-link-button" style={{ display: "inline-block", marginTop: 12 }}>
+            View all markets →
+          </Link>
+        </div>
+
+        <div className="app-tools">
+          <div className="scan-section-heading">
+            <span>MARKET MAP</span>
+            <strong>Tokenized assets across chains and issuers.</strong>
+          </div>
+          <MarketMap rows={premiumPreview.rows} />
+        </div>
+      </div>
+
+      <div className="app-tools" style={{ marginTop: 24 }}>
         <div className="scan-section-heading">
           <span>QUICK ACTIONS</span>
-          <strong>Jump into the product</strong>
+          <strong>Everything you need to trade, track and build with tokenized markets.</strong>
         </div>
 
         <LandingCards cards={QUICK_ACTIONS} />

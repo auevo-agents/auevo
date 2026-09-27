@@ -1,4 +1,5 @@
 import { TICKER_BRANDS, ISSUER_BRANDS, CHAIN_BRANDS } from "./brand-marks";
+import { TICKER_LOGO_FILES, ISSUER_LOGO_FILES, CHAIN_LOGO_FILES } from "./brand-logo-files";
 
 const FALLBACK_COLORS = ["#ff344d", "#5ae09d", "#f5a623", "#6ea8fe", "#c77dff", "#ff8a5c"];
 
@@ -20,8 +21,25 @@ type BrandKind = "ticker" | "issuer" | "chain";
  */
 export function BrandIcon({ symbol, name, kind = "ticker", size = 28 }: { symbol: string; name?: string; kind?: BrandKind; size?: number }) {
   const table = kind === "ticker" ? TICKER_BRANDS : kind === "issuer" ? ISSUER_BRANDS : CHAIN_BRANDS;
+  const fileTable = kind === "ticker" ? TICKER_LOGO_FILES : kind === "issuer" ? ISSUER_LOGO_FILES : CHAIN_LOGO_FILES;
   const mark = table[symbol.toLowerCase()] ?? table[symbol];
+  const file = fileTable[symbol.toLowerCase()] ?? fileTable[symbol];
   const label = name ?? symbol;
+
+  // A user-supplied logo file (public/logos/) is checked first — real,
+  // full-fidelity art beats the inline-path fallback below when both exist.
+  // Same circular .brand-icon-badge frame as the other two cases below,
+  // so all three render at a consistent size/style; object-fit: contain
+  // (not cover) because several of these are square app-icon-style
+  // glyphs with their own background — cropping them to a circle edge-to-
+  // edge would cut corners off rather than just framing them.
+  if (file) {
+    return (
+      <span className="brand-icon-badge" style={{ width: size, height: size }} title={label}>
+        <img src={`/logos/${file}`} alt={label} style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+      </span>
+    );
+  }
 
   if (mark) {
     return (

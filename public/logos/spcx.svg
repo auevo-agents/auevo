@@ -1,0 +1,9 @@
+<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <rect width="60" height="60" fill="#000000"/>
+  <svg x="3" y="3" width="54" height="54" viewBox="271 0 129 50" preserveAspectRatio="xMidYMid meet">
+    <g fill="#FFFFFF">
+      <path d="M287.6 18.6H273l17.2 12.6c2.5-1.7 5.4-3.5 8-5l-10.6-7.6zm21.2 15.7c-2.5 1.7-5 3.6-7.4 5.4l13 9.5h14.7l-20.3-14.9z"/>
+      <path d="M399 .7c-80 4.6-117 38.8-125.3 46.9l-1.7 1.6h14.8C326.8 9.1 384.3 2 399 .7z"/>
+    </g>
+  </svg>
+</svg>
