@@ -12809,3 +12809,321 @@ a {
   font-size: inherit;
   line-height: inherit;
 }
+
+
+/* === AUEVO MOBILE + BRAND QA · 2026-09-27 === */
+
+/* The current logo is a component with nested spans. Old landing/legacy
+   selectors styled every span as an accent bar; reset those descendants
+   once, everywhere the unified brand is used. */
+.brand-auevo .auevo-logo,
+.landing-brand .auevo-logo,
+.app-topnav-logo .auevo-logo,
+.docs-brand .auevo-logo,
+.product-logo .auevo-logo {
+  position: static;
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none !important;
+  color: #f4f0e8;
+  transform: none;
+}
+
+.brand-auevo .auevo-wordmark,
+.landing-brand .auevo-wordmark,
+.app-topnav-logo .auevo-wordmark,
+.docs-brand .auevo-wordmark,
+.product-logo .auevo-wordmark {
+  position: static;
+  display: inline;
+  width: auto;
+  height: auto;
+  margin: 0;
+  color: #fff !important;
+  background: none !important;
+  transform: none;
+}
+
+.brand-auevo span::after,
+.landing-brand span::after,
+.app-topnav-logo span::after,
+.docs-brand span::after,
+.product-logo span::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Real square logo files become true circular marks instead of floating
+   square tiles inside a circular badge. */
+.brand-icon-badge {
+  padding: 0;
+}
+
+.brand-icon-badge > img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover !important;
+}
+
+/* The live registry fallback has four data cells, not the old six-column
+   premium table. Give it a matching grid at every width. */
+.landing2-scanner-table-fallback .landing2-scanner-head,
+.landing2-scanner-table-fallback .landing2-scanner-row {
+  grid-template-columns: minmax(220px, 1.6fr) minmax(112px, .55fr) minmax(100px, .5fr) minmax(128px, .65fr);
+}
+
+.landing2-scanner-table-fallback .landing2-scanner-head > :last-child {
+  display: none;
+}
+
+.landing-nav-label-mobile,
+.landing-nav-mobile-actions,
+.app-mobile-menu {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  /* Public landing: logo + one proper menu control. */
+  .landing-header {
+    min-height: 66px;
+    padding: 11px 16px;
+    gap: 14px;
+    overflow: visible;
+  }
+
+  .landing-brand {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .landing-brand .auevo-logo {
+    gap: 7px;
+  }
+
+  .landing-brand .auevo-mark {
+    width: 27px;
+    height: 27px;
+  }
+
+  .landing-brand .auevo-wordmark {
+    font-size: 19px;
+  }
+
+  .landing-nav {
+    position: static;
+    margin-left: auto;
+    gap: 0;
+  }
+
+  .landing-nav-primary-link,
+  .landing-cta-ghost,
+  .landing-nav-label-desktop {
+    display: none;
+  }
+
+  .landing-nav-label-mobile {
+    display: inline;
+  }
+
+  .landing-nav > button.landing-nav-trigger {
+    min-height: 40px;
+    padding: 0 15px;
+    border: 1px solid rgba(233,227,215,.2);
+    border-radius: 999px;
+    color: #f1ede5;
+    background: rgba(255,255,255,.025);
+  }
+
+  .landing-nav-panel {
+    position: fixed;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100dvh - 86px);
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    box-shadow: 0 32px 90px rgba(0,0,0,.72);
+  }
+
+  .landing-nav-group {
+    min-width: 0;
+    padding: 14px 16px;
+  }
+
+  .landing-nav-mobile-actions {
+    display: flex;
+  }
+
+  .landing2-hero-premium {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .landing2-h1 {
+    max-width: 100%;
+    font-size: clamp(44px, 12.2vw, 62px);
+    line-height: .94;
+    overflow-wrap: normal;
+  }
+
+  .landing2-hero-copy {
+    max-width: 100%;
+  }
+
+  .landing2-scanner-table-fallback {
+    overflow: visible;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-head {
+    display: none;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-row {
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    padding: 12px 14px;
+    gap: 9px;
+    grid-template-columns: minmax(0, 1fr) 42px 42px auto;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-asset {
+    min-width: 0;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-asset > span:last-child {
+    min-width: 0;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-asset small {
+    max-width: 150px;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-issuer {
+    justify-items: center;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-issuer small {
+    display: none;
+  }
+
+  .landing2-scanner-table-fallback .landing2-scanner-live {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  /* Workspace: collapse the overflowing group strip into one menu. */
+  .app-topnav {
+    height: 66px;
+    min-height: 66px;
+    padding: 10px 14px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .app-topnav-logo .auevo-mark {
+    width: 27px;
+    height: 27px;
+  }
+
+  .app-topnav-logo .auevo-wordmark {
+    font-size: 19px;
+  }
+
+  .app-mobile-menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    min-height: 38px;
+    margin-left: auto;
+    padding: 0 14px;
+    border: 1px solid rgba(233,227,215,.2);
+    border-radius: 999px;
+    color: #f0ece4;
+    background: rgba(255,255,255,.025);
+    font: 600 11px/1 Arial, Helvetica, sans-serif;
+  }
+
+  .app-topnav .app-topnav-links {
+    display: none !important;
+  }
+
+  .app-topnav .app-topnav-links.mobile-open {
+    position: fixed;
+    z-index: 90;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    display: flex !important;
+    width: auto;
+    max-height: calc(100dvh - 86px);
+    padding: 10px;
+    flex: none;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 3px;
+    overflow-y: auto;
+    border: 1px solid rgba(226,219,205,.15);
+    border-radius: 14px;
+    background: rgba(11,14,14,.98);
+    box-shadow: 0 32px 90px rgba(0,0,0,.74);
+    backdrop-filter: blur(20px);
+  }
+
+  .app-topnav .app-nav-link,
+  .app-topnav .app-nav-group,
+  .app-topnav .app-nav-group-trigger {
+    width: 100%;
+  }
+
+  .app-topnav .app-nav-link {
+    min-height: 42px;
+    justify-content: space-between;
+    padding: 0 13px;
+  }
+
+  .app-topnav .app-nav-group-panel {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    max-height: none;
+    margin: 2px 0 7px;
+    padding: 5px;
+    overflow: visible;
+    border-color: rgba(226,219,205,.11);
+    box-shadow: none;
+  }
+
+  .app-topnav .app-nav-group-link {
+    min-height: 40px;
+  }
+
+  .product-main.app-main {
+    width: calc(100% - 20px);
+    overflow-x: clip;
+  }
+
+  /* Docs already collapse well; keep long code/table content scrollable
+     inside the article instead of widening the entire viewport. */
+  .docs-content,
+  .docs-article,
+  .docs-page-grid {
+    min-width: 0;
+  }
+
+  .docs-article pre,
+  .docs-article table {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
