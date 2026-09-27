@@ -45,11 +45,12 @@ async function loadLandingData() {
       premiumRows: [] as ReturnType<typeof buildPremiumRows>,
       mostAvailable: [] as AssetSummary[],
       issuerNames: [] as string[],
+      issuerLabels: {} as Record<string, string>,
       publicQuotes,
     };
   }
 
-  const [{ premiumRows, mostAvailable }, issuerNames] = await Promise.all([
+  const [{ premiumRows, mostAvailable }, issuerRecords] = await Promise.all([
     (async () => {
       try {
         const { summaries } = await loadTickerTokens(supabase);
@@ -67,15 +68,21 @@ async function loadLandingData() {
     })(),
     (async () => {
       try {
-        const { data } = await supabase.from("rwa_issuers").select("name");
-        return (data ?? []).map((i) => i.name);
+        const { data } = await supabase.from("rwa_issuers").select("id, name");
+        return data ?? [];
       } catch {
-        return [] as string[];
+        return [] as { id: string; name: string }[];
       }
     })(),
   ]);
 
-  return { premiumRows, mostAvailable, issuerNames, publicQuotes };
+  return {
+    premiumRows,
+    mostAvailable,
+    issuerNames: issuerRecords.map((issuer) => issuer.name),
+    issuerLabels: Object.fromEntries(issuerRecords.map((issuer) => [issuer.id, issuer.name])),
+    publicQuotes,
+  };
 }
 
 function formatUsd(value: number | null): string {
@@ -175,7 +182,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     redirect(`/legacy/fees?wallet=${encodeURIComponent(address)}`);
   }
 
-  const { premiumRows, mostAvailable, issuerNames, publicQuotes } = await loadLandingData();
+  const { premiumRows, mostAvailable, issuerNames, issuerLabels, publicQuotes } = await loadLandingData();
   const tickerRows = premiumRows.map((r) => ({ ticker: r.ticker, priceUsd: r.priceUsd, premiumBps: r.premiumBps! }));
   const liveTops = premiumRows.slice(0, LIVE_TOPS_LIMIT);
   const chainNames = LIFI_EVM_CHAINS.map((c) => c.chain.name);
@@ -264,7 +271,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                         <span><b>{row.ticker}</b><small>{row.name}</small></span>
                       </span>
                       <span className="landing2-scanner-issuer">
-                        <b>{row.issuerId}</b><small>{chain}</small>
+                        <b>{issuerLabels[row.issuerId] ?? "Verified issuer"}</b><small>{chain}</small>
                       </span>
                       <span className="landing2-scanner-price">{formatUsd(row.priceUsd)}</span>
                       <span className={`landing2-scanner-premium ${premium.className}`}>
