@@ -107,15 +107,22 @@ function isGroupActive(pathname: string, group: NavGroup): boolean {
 export function Sidebar() {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!openGroup) return;
+    if (!openGroup && !mobileOpen) return;
     function onPointerDown(e: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpenGroup(null);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpenGroup(null);
+        setMobileOpen(false);
+      }
     }
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpenGroup(null);
+      if (e.key === "Escape") {
+        setOpenGroup(null);
+        setMobileOpen(false);
+      }
     }
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -123,7 +130,7 @@ export function Sidebar() {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [openGroup]);
+  }, [openGroup, mobileOpen]);
 
   return (
     <header className="app-topnav" ref={rootRef}>
@@ -132,8 +139,24 @@ export function Sidebar() {
         <span className="app-topnav-edition">Market intelligence</span>
       </Link>
 
-      <nav className="app-topnav-links">
-        <Link href="/app" className={isActive(pathname, "/app") && pathname === "/app" ? "app-nav-link active" : "app-nav-link"}>
+      <button
+        type="button"
+        className="app-mobile-menu"
+        aria-expanded={mobileOpen}
+        onClick={() => {
+          setMobileOpen((value) => !value);
+          setOpenGroup(null);
+        }}
+      >
+        {mobileOpen ? "Close" : "Menu"}
+      </button>
+
+      <nav className={mobileOpen ? "app-topnav-links mobile-open" : "app-topnav-links"}>
+        <Link
+          href="/app"
+          className={isActive(pathname, "/app") && pathname === "/app" ? "app-nav-link active" : "app-nav-link"}
+          onClick={() => setMobileOpen(false)}
+        >
           <b>Overview</b>
         </Link>
 
@@ -155,7 +178,10 @@ export function Sidebar() {
                     key={link.id}
                     href={link.href}
                     className={isActive(pathname, link.href) ? "app-nav-group-link active" : "app-nav-group-link"}
-                    onClick={() => setOpenGroup(null)}
+                    onClick={() => {
+                      setOpenGroup(null);
+                      setMobileOpen(false);
+                    }}
                   >
                     {link.label}
                     {link.soon && <span className="app-nav-badge">soon</span>}
