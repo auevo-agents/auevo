@@ -291,3 +291,78 @@ export async function backfillMissingPools(
 
   return { checked: tokens.length, found: newRows.length };
 }
+
+/**
+ * The other half of 0014_rwa_pool_candidates.sql's fix (see that
+ * migration's own doc comment, and run-registry.ts's own comment where
+ * every discovered pool's candidate gets cached here regardless of
+ * match): re-checks every cached candidate against the *current*
+ * rwa_underlyings catalog and promotes any newly-matching one straight
+ * to rwa_tokens + rwa_pools — a plain DB join, no RPC calls needed, so
+ * this runs on every pass regardless of block-scan progress. A ticker
+ * added to the catalog today immediately picks up any pool this app
+ * already scanned in the past for it, instead of waiting for a fresh
+ * Initialize event that will never come (the pool already exists).
+ */
+export async function reconcilePoolCandidates(supabase: SupabaseClient): Promise<{ promoted: number }> {
+  const { data: underlyings, error: underlyingsError } = await withFetchRetry(() =>
+    supabase.from("rwa_underlyings").select("ticker")
+  );
+  if (underlyingsError) throw new Error(`Could not read rwa_underlyings: ${underlyingsError.message}`);
+  const knownTickers = new Set((underlyings ?? []).map((u) => u.ticker as string));
+  if (knownTickers.size === 0) return { promoted: 0 };
+
+  const { data: candidates, error: candidatesError } = await withFetchRetry(() =>
+    supabase.from("rwa_pool_candidates").select("*").eq("chain_id", robinhoodChain.id).not("symbol", "is", null)
+  );
+  if (candidatesError) throw new Error(`Could not read rwa_pool_candidates: ${candidatesError.message}`);
+  if (!candidates || candidates.length === 0) return { promoted: 0 };
+
+  const { data: existingTokens, error: tokensError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("address").eq("chain_id", robinhoodChain.id)
+  );
+  if (tokensError) throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
+  const existingAddresses = new Set((existingTokens ?? []).map((t) => (t.address as string).toLowerCase()));
+
+  const toPromote = candidates.filter(
+    (c) => c.symbol && c.decimals !== null && knownTickers.has(c.symbol) && !existingAddresses.has((c.token_address as string).toLowerCase())
+  );
+  if (toPromote.length === 0) return { promoted: 0 };
+
+  const { error: tokensUpsertError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").upsert(
+      toPromote.map((c) => ({
+        chain_id: robinhoodChain.id,
+        address: c.token_address,
+        underlying_ticker: c.symbol,
+        issuer_id: "robinhood",
+        symbol: c.symbol,
+        decimals: c.decimals,
+        verified: true,
+        first_seen_block: c.first_seen_block,
+      })),
+      { onConflict: "chain_id,address" }
+    )
+  );
+  if (tokensUpsertError) throw new Error(`rwa_tokens upsert (candidate reconcile) failed: ${tokensUpsertError.message}`);
+
+  const poolRows = toPromote.map((c) => {
+    const key = buildPoolKey(USDG, c.token_address as Address, c.fee as number, c.tick_spacing as number, c.hooks as Address);
+    return {
+      chain_id: robinhoodChain.id,
+      pool_id: c.pool_id as `0x${string}`,
+      dex: "uniswap_v4" as const,
+      token0: key.currency0,
+      token1: key.currency1,
+      fee: c.fee as number,
+      tick_spacing: c.tick_spacing as number,
+      hooks: c.hooks as Address,
+    };
+  });
+  const { error: poolsUpsertError } = await withFetchRetry(() =>
+    supabase.from("rwa_pools").upsert(poolRows, { onConflict: "chain_id,pool_id" })
+  );
+  if (poolsUpsertError) throw new Error(`rwa_pools upsert (candidate reconcile) failed: ${poolsUpsertError.message}`);
+
+  return { promoted: toPromote.length };
+}

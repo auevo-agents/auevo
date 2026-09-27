@@ -165,12 +165,26 @@ beforeAll(async () => {
     if (req.method === "GET" && table === "rwa_tokens") {
       const select = url.searchParams.get("select") ?? "";
       if (select.includes("address")) {
-        // backfillMissingPools' own "every verified Robinhood-chain token" read.
+        // backfillMissingPools'/reconcilePoolCandidates' own "every verified Robinhood-chain token" read.
         res.end(JSON.stringify([{ address: NVDA_TOKEN }]));
         return;
       }
       // refreshPoolMetrics' own per-pool decimals lookup (.maybeSingle()).
       res.end(JSON.stringify({ decimals: 18 }));
+      return;
+    }
+    if (req.method === "POST" && table === "rwa_pool_candidates") {
+      let b = "";
+      req.on("data", (c) => (b += c));
+      req.on("end", () => {
+        res.statusCode = 201;
+        res.end("[]");
+      });
+      return;
+    }
+    if (req.method === "GET" && table === "rwa_pool_candidates") {
+      // No cached candidates in this scenario — reconcilePoolCandidates has nothing to promote.
+      res.end(JSON.stringify([]));
       return;
     }
     if (req.method === "POST" && table === "rwa_pools") {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Address } from "viem";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RobinhoodClient } from "@/lib/evm/client";
-import { backfillMissingPools } from "./registry";
+import { backfillMissingPools, reconcilePoolCandidates } from "./registry";
 import { USDG, STATE_VIEW } from "./dex/addresses";
 
 const NVDA: Address = "0x1111111111111111111111111111111111111111";
@@ -108,5 +108,118 @@ describe("backfillMissingPools", () => {
     const result = await backfillMissingPools(client, supabase);
     expect(result.found).toBe(0);
     expect(upserted).toBeNull();
+  });
+});
+
+/**
+ * A general per-table fake for reconcilePoolCandidates, which reads three
+ * different tables (rwa_underlyings, rwa_pool_candidates, rwa_tokens) and
+ * writes two (rwa_tokens, rwa_pools) — more tables than backfillMissingPools's
+ * own fakeSupabase above handles, so this is its own small builder rather
+ * than overloading that one.
+ */
+function fakeReconcileSupabase(params: {
+  underlyings: { ticker: string }[];
+  candidates: Record<string, unknown>[];
+  existingTokens: { address: string }[];
+  onTokensUpsert?: (rows: unknown[]) => void;
+  onPoolsUpsert?: (rows: unknown[]) => void;
+}): SupabaseClient {
+  let tokensReadCount = 0;
+  return {
+    from: (table: string) => {
+      const builder = {
+        select: () => builder,
+        eq: () => builder,
+        not: () => builder,
+        upsert: (rows: unknown[]) => {
+          if (table === "rwa_tokens") params.onTokensUpsert?.(rows);
+          if (table === "rwa_pools") params.onPoolsUpsert?.(rows);
+          return { then: (resolve: (v: { error: null }) => void) => resolve({ error: null }) };
+        },
+        then: (resolve: (v: { data: unknown; error: null }) => void) => {
+          if (table === "rwa_underlyings") return resolve({ data: params.underlyings, error: null });
+          if (table === "rwa_pool_candidates") return resolve({ data: params.candidates, error: null });
+          if (table === "rwa_tokens") {
+            tokensReadCount += 1;
+            return resolve({ data: params.existingTokens, error: null });
+          }
+          throw new Error(`unmocked table: ${table} (read #${tokensReadCount})`);
+        },
+      };
+      return builder;
+    },
+  } as unknown as SupabaseClient;
+}
+
+describe("reconcilePoolCandidates", () => {
+  it("promotes a cached candidate whose symbol now matches a known ticker", async () => {
+    let tokensUpserted: unknown[] | null = null;
+    let poolsUpserted: unknown[] | null = null;
+    const supabase = fakeReconcileSupabase({
+      underlyings: [{ ticker: "MRNA" }],
+      candidates: [
+        {
+          chain_id: 4663,
+          pool_id: "0xabc",
+          token_address: NVDA, // reused as a stand-in address
+          symbol: "MRNA",
+          decimals: 18,
+          fee: 3000,
+          tick_spacing: 60,
+          hooks: "0x0000000000000000000000000000000000000000",
+          first_seen_block: "12345",
+        },
+      ],
+      existingTokens: [],
+      onTokensUpsert: (rows) => {
+        tokensUpserted = rows;
+      },
+      onPoolsUpsert: (rows) => {
+        poolsUpserted = rows;
+      },
+    });
+
+    const result = await reconcilePoolCandidates(supabase);
+    expect(result.promoted).toBe(1);
+    expect(tokensUpserted).toMatchObject([{ underlying_ticker: "MRNA", address: NVDA, verified: true }]);
+    expect(poolsUpserted).toHaveLength(1);
+  });
+
+  it("skips a candidate whose symbol doesn't match any known ticker", async () => {
+    let promotedAnything = false;
+    const supabase = fakeReconcileSupabase({
+      underlyings: [{ ticker: "MRNA" }],
+      candidates: [
+        { chain_id: 4663, pool_id: "0xabc", token_address: NVDA, symbol: "SCAMCOIN", decimals: 18, fee: 3000, tick_spacing: 60, hooks: "0x0000000000000000000000000000000000000000", first_seen_block: "1" },
+      ],
+      existingTokens: [],
+      onTokensUpsert: () => {
+        promotedAnything = true;
+      },
+    });
+
+    const result = await reconcilePoolCandidates(supabase);
+    expect(result.promoted).toBe(0);
+    expect(promotedAnything).toBe(false);
+  });
+
+  it("skips a candidate that's already a known token", async () => {
+    const supabase = fakeReconcileSupabase({
+      underlyings: [{ ticker: "MRNA" }],
+      candidates: [
+        { chain_id: 4663, pool_id: "0xabc", token_address: NVDA, symbol: "MRNA", decimals: 18, fee: 3000, tick_spacing: 60, hooks: "0x0000000000000000000000000000000000000000", first_seen_block: "1" },
+      ],
+      existingTokens: [{ address: NVDA }],
+    });
+
+    const result = await reconcilePoolCandidates(supabase);
+    expect(result.promoted).toBe(0);
+  });
+
+  it("returns zero when there are no cached candidates", async () => {
+    const supabase = fakeReconcileSupabase({ underlyings: [{ ticker: "MRNA" }], candidates: [], existingTokens: [] });
+    const result = await reconcilePoolCandidates(supabase);
+    expect(result).toEqual({ promoted: 0 });
   });
 });
