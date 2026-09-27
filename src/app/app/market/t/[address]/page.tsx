@@ -358,7 +358,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                 <div className="token-detail-links">
                   {pool.baseToken.address && (
                     <Link href={`/scanner?token=${pool.baseToken.address}`}>
-                      Run Token Scanner →
+                      Run Token Scanner
                     </Link>
                   )}
                   <a
@@ -368,7 +368,7 @@ export default function TokenDetailPage(props: PageProps<"/app/market/t/[address
                     target="_blank"
                     rel="noreferrer"
                   >
-                    View on Blockscout ↗
+                    View on Blockscout
                   </a>
                 </div>
               </div>
@@ -620,7 +620,7 @@ function HoldersSection({ scan }: { scan: ReturnType<typeof useTokenScan> }) {
       <div className="app-empty app-empty-text">
         <p>Not scanned yet — holder distribution comes from the same security scan as Token Info.</p>
         <button className="app-link-button" onClick={scan.run}>
-          Run security scan →
+          Run security scan
         </button>
       </div>
     );
@@ -739,7 +739,7 @@ function InfoSection({
         <div className="token-detail-links" style={{ marginTop: 14 }}>
           {socials.map((s) => (
             <a key={s.label} href={s.href} target="_blank" rel="noreferrer">
-              {s.label} ↗
+              {s.label}
             </a>
           ))}
         </div>
