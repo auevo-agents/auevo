@@ -25,9 +25,11 @@ interface BasketSummary {
  * Protocol's DTFs (the only index-fund-on-chain product this app
  * researched) have no deployment on Robinhood Chain, confirmed against
  * Reserve's own GitHub (protocol/reserve-index-dtf repos) rather than
- * assumed, so there is nothing real to wire up yet. Automated
- * (rebalancing accounts) is explicitly out of scope for this phase per
- * the spec itself.
+ * assumed, so there is nothing real to wire up yet. Every basket here also
+ * has a non-custodial "Check rebalance" tool on its own page (see
+ * resolveBasketRebalance in lib/rwa/baskets.ts) — HyperDex's "Automated
+ * Baskets" without a custodial automated-vault contract, which
+ * RWA_SPEC.md section 9 rules out.
  */
 export default function BasketsPage() {
   const [baskets, setBaskets] = useState<BasketSummary[] | null>(null);

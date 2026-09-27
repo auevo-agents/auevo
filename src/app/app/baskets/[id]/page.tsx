@@ -53,6 +53,25 @@ interface PermitTypedData {
   message: Omit<SignedPermit, "signature">;
 }
 
+interface RebalanceLegView {
+  ticker: string;
+  token: Address;
+  side: "buy" | "sell";
+  amountIn: string;
+  protocol: string;
+}
+
+interface RebalancePreview {
+  needed: boolean;
+  driftBps: Record<string, number>;
+  driftThresholdBps: number;
+  to?: Address;
+  data?: `0x${string}`;
+  value?: string;
+  legs?: RebalanceLegView[];
+  excluded: { ticker: string; reason: string }[];
+}
+
 async function fetchPermit(owner: Address, token: Address): Promise<PermitTypedData | null> {
   const res = await fetch(`/api/dex/permit-typed-data?owner=${owner}&token=${token}`);
   const data = await res.json();
@@ -265,6 +284,91 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
     }
   }
 
+  // --- Automated rebalancing (non-custodial — see lib/rwa/baskets.ts's resolveBasketRebalance doc comment) ---
+  const [rebalancePreview, setRebalancePreview] = useState<RebalancePreview | null>(null);
+  const [rebalanceChecking, setRebalanceChecking] = useState(false);
+  const [rebalanceError, setRebalanceError] = useState<string | null>(null);
+  const [rebalancePermits, setRebalancePermits] = useState<Record<string, SignedPermit>>({});
+  const [rebalancePendingToken, setRebalancePendingToken] = useState<Address | null>(null);
+  const rebalanceApprove = useWriteContract();
+  const rebalanceSignPermit = useSignTypedData();
+  const [pendingRebalancePermit, setPendingRebalancePermit] = useState<{ token: Address; permit: Omit<SignedPermit, "signature"> } | null>(null);
+  const sendRebalanceTx = useSendTransaction();
+  const rebalanceReceipt = useWaitForTransactionReceipt({ hash: sendRebalanceTx.data });
+
+  useEffect(() => {
+    if (rebalanceSignPermit.data && pendingRebalancePermit) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setRebalancePermits((prev) => ({
+        ...prev,
+        [pendingRebalancePermit.token]: { ...pendingRebalancePermit.permit, signature: rebalanceSignPermit.data! },
+      }));
+      setPendingRebalancePermit(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [rebalanceSignPermit.data, pendingRebalancePermit]);
+
+  const rebalanceRequiredTokens = useMemo(() => {
+    const legs = rebalancePreview?.legs ?? [];
+    const byToken = new Map<Address, { ticker: string; amountIn: bigint }>();
+    for (const leg of legs) {
+      const token = leg.side === "buy" ? USDG : leg.token;
+      const prev = byToken.get(token);
+      const amountIn = BigInt(leg.amountIn) + (prev?.amountIn ?? 0n);
+      byToken.set(token, { ticker: leg.side === "buy" ? "USDG" : leg.ticker, amountIn });
+    }
+    return [...byToken.entries()].map(([token, v]) => ({ token, ...v }));
+  }, [rebalancePreview]);
+
+  async function checkRebalance() {
+    if (!account || !basket) return;
+    setRebalanceChecking(true);
+    setRebalanceError(null);
+    try {
+      const holdingsBody = basket.holdings
+        .filter((h) => h.token)
+        .map((h) => ({ ticker: h.ticker, balance: (tokenBalances.get(h.token!) ?? 0n).toString() }));
+      const res = await fetch(`/api/rwa/baskets/${basket.id}/build-rebalance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ holdings: holdingsBody, recipient: account, permits: rebalancePermits }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRebalanceError(data.error ?? "Could not check rebalance");
+        return;
+      }
+      setRebalancePreview(data);
+    } catch {
+      setRebalanceError("Network error checking rebalance");
+    } finally {
+      setRebalanceChecking(false);
+    }
+  }
+
+  function handleApproveRebalanceToken(token: Address) {
+    setRebalancePendingToken(token);
+    rebalanceApprove.writeContract({ address: token, abi: ERC20_ABI, functionName: "approve", args: [PERMIT2, maxUint256] });
+  }
+
+  async function handleSignRebalancePermit(token: Address) {
+    if (!account) return;
+    const data = await fetchPermit(account, token);
+    if (!data) return;
+    setPendingRebalancePermit({ token, permit: data.message });
+    rebalanceSignPermit.signTypedData({
+      domain: data.domain,
+      types: data.types as Record<string, { name: string; type: string }[]>,
+      primaryType: data.primaryType,
+      message: data.message as unknown as Record<string, unknown>,
+    });
+  }
+
+  function handleExecuteRebalance() {
+    if (!rebalancePreview?.to || !rebalancePreview.data) return;
+    sendRebalanceTx.sendTransaction({ to: rebalancePreview.to, data: rebalancePreview.data, value: BigInt(rebalancePreview.value ?? "0") });
+  }
+
   if (error) return <div className="app-empty">{error}</div>;
   if (!basket) return <div className="app-empty">Loading…</div>;
 
@@ -408,6 +512,77 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
           </div>
           {sellError && <p className="error">{sellError}</p>}
           {sellReceipt.isSuccess && <p className="desk-change-pos">Basket holdings sold.</p>}
+
+          <h4>Automated rebalancing</h4>
+          <p className="desk-note">
+            Checks this wallet&apos;s actual holdings against this basket&apos;s target weights and, if they&apos;ve drifted
+            more than 3%, prepares the exact trade to correct it — still one signature, and your funds never leave
+            your own wallet in the meantime. Nothing trades automatically without you signing this transaction.
+          </p>
+          <button onClick={checkRebalance} disabled={rebalanceChecking}>
+            {rebalanceChecking ? "Checking…" : "Check rebalance"}
+          </button>
+          {rebalanceError && <p className="error">{rebalanceError}</p>}
+
+          {rebalancePreview && !rebalancePreview.needed && (
+            <p className="desk-note">
+              Within {(rebalancePreview.driftThresholdBps / 100).toFixed(0)}% of target weights — no rebalance needed
+              right now.
+            </p>
+          )}
+
+          {rebalancePreview?.needed && rebalancePreview.legs && (
+            <>
+              <div className="desk-scroll">
+                {rebalancePreview.legs.map((l) => (
+                  <div key={`${l.ticker}-${l.side}`} className="money-row money-row-nopair">
+                    <span>
+                      <b className={l.side === "sell" ? "desk-change-neg" : "desk-change-pos"}>{l.side.toUpperCase()}</b>{" "}
+                      {l.ticker}
+                    </span>
+                    <span className="desk-col-right">
+                      drift {((rebalancePreview.driftBps[l.ticker] ?? 0) / 100).toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {rebalanceRequiredTokens.map(({ token, ticker, amountIn }) => {
+                const allowance = token === USDG ? usdgAllowanceToPermit2 : tokenAllowances.get(token);
+                const needsApprove = typeof allowance === "bigint" ? allowance < amountIn : true;
+                const hasPermit = Boolean(rebalancePermits[token]);
+                if (needsApprove) {
+                  return (
+                    <button
+                      key={token}
+                      onClick={() => handleApproveRebalanceToken(token)}
+                      disabled={rebalanceApprove.isPending && rebalancePendingToken === token}
+                    >
+                      Approve {ticker} to Permit2
+                    </button>
+                  );
+                }
+                if (!hasPermit) {
+                  return (
+                    <button key={token} onClick={() => handleSignRebalancePermit(token)}>
+                      Sign Permit2 for {ticker}
+                    </button>
+                  );
+                }
+                return null;
+              })}
+
+              <button onClick={handleExecuteRebalance} disabled={sendRebalanceTx.isPending}>
+                {sendRebalanceTx.isPending ? "Confirm in wallet…" : "Execute rebalance"}
+              </button>
+              {rebalancePreview.excluded.length > 0 && (
+                <p className="desk-note">
+                  Excluded: {rebalancePreview.excluded.map((e) => `${e.ticker} — ${e.reason}`).join(", ")}
+                </p>
+              )}
+            </>
+          )}
+          {rebalanceReceipt.isSuccess && <p className="desk-change-pos">Rebalanced.</p>}
         </div>
       )}
 

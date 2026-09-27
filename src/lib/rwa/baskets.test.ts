@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Address, PublicClient } from "viem";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { resolveBasketBuy, type BasketRecord } from "./baskets";
+import { resolveBasketBuy, resolveBasketRebalance, type BasketRecord } from "./baskets";
 import { USDG, UNISWAP_V3_FACTORY, STATE_VIEW, V4_QUOTER, ZERO_ADDRESS } from "./dex/addresses";
 
 const NVDA: Address = "0x1111111111111111111111111111111111111111";
@@ -186,6 +186,103 @@ describe("resolveBasketBuy", () => {
 
     expect(result.legs.find((l) => l.ticker === "NVDA")?.amountIn).toBe(900_000000n);
     expect(result.legs.find((l) => l.ticker === "TSLA")?.amountIn).toBe(100_000000n);
+  });
+});
+
+describe("resolveBasketRebalance", () => {
+  it("detects drift past the threshold and builds sell/buy legs back to target weight", async () => {
+    const supabase = fakeSupabase([
+      { address: NVDA, underlying_ticker: "NVDA", symbol: "NVDAx", decimals: 18 },
+      { address: TSLA, underlying_ticker: "TSLA", symbol: "TSLAx", decimals: 18 },
+    ]);
+    // Wallet holds 800 NVDA / 200 TSLA (18 decimals, $1/token) against a
+    // 50/50 target — 80/20 actual, 3000bps of drift on each leg.
+    const client = mockClientAlwaysInitialized(
+      quotesFor([
+        { tokenOut: NVDA, amountIn: 800_000000000000000000n, amountOut: 800_000000n }, // valuing the held balance
+        { tokenOut: NVDA, amountIn: 300_000000000000000000n, amountOut: 300_000000n }, // the resulting sell leg, re-quoted fresh
+        { tokenOut: TSLA, amountIn: 200_000000000000000000n, amountOut: 200_000000n }, // valuing the held balance
+        { tokenOut: TSLA, amountIn: 300_000000n, amountOut: 300_000000000000000000n }, // the resulting buy leg, re-quoted fresh
+      ])
+    );
+
+    const result = await resolveBasketRebalance(
+      client,
+      supabase,
+      basket([
+        { ticker: "NVDA", targetWeight: 0.5 },
+        { ticker: "TSLA", targetWeight: 0.5 },
+      ]),
+      [
+        { ticker: "NVDA", balance: 800_000000000000000000n },
+        { ticker: "TSLA", balance: 200_000000000000000000n },
+      ],
+      300,
+      100
+    );
+
+    expect(result.needed).toBe(true);
+    expect(result.driftBps.NVDA).toBe(3000);
+    expect(result.driftBps.TSLA).toBe(-3000);
+    expect(result.legs).toHaveLength(2);
+    const sellLeg = result.legs.find((l) => l.ticker === "NVDA")!;
+    expect(sellLeg.side).toBe("sell");
+    expect(sellLeg.amountIn).toBe(300_000000000000000000n);
+    const buyLeg = result.legs.find((l) => l.ticker === "TSLA")!;
+    expect(buyLeg.side).toBe("buy");
+    expect(buyLeg.amountIn).toBe(300_000000n);
+  });
+
+  it("reports no rebalance needed when drift is within the threshold", async () => {
+    const supabase = fakeSupabase([
+      { address: NVDA, underlying_ticker: "NVDA", symbol: "NVDAx", decimals: 18 },
+      { address: TSLA, underlying_ticker: "TSLA", symbol: "TSLAx", decimals: 18 },
+    ]);
+    const client = mockClientAlwaysInitialized(
+      quotesFor([
+        { tokenOut: NVDA, amountIn: 510_000000000000000000n, amountOut: 510_000000n },
+        { tokenOut: TSLA, amountIn: 490_000000000000000000n, amountOut: 490_000000n },
+      ])
+    );
+
+    const result = await resolveBasketRebalance(
+      client,
+      supabase,
+      basket([
+        { ticker: "NVDA", targetWeight: 0.5 },
+        { ticker: "TSLA", targetWeight: 0.5 },
+      ]),
+      [
+        { ticker: "NVDA", balance: 510_000000000000000000n },
+        { ticker: "TSLA", balance: 490_000000000000000000n },
+      ],
+      300,
+      100
+    );
+
+    expect(result.needed).toBe(false);
+    expect(result.legs).toEqual([]);
+  });
+
+  it("excludes a currently-held ticker with no verified token from the drift calculation", async () => {
+    const supabase = fakeSupabase([{ address: NVDA, underlying_ticker: "NVDA", symbol: "NVDAx", decimals: 18 }]);
+    const client = mockClientAlwaysInitialized(
+      quotesFor([{ tokenOut: NVDA, amountIn: 500_000000000000000000n, amountOut: 500_000000n }])
+    );
+
+    const result = await resolveBasketRebalance(
+      client,
+      supabase,
+      basket([
+        { ticker: "NVDA", targetWeight: 0.5 },
+        { ticker: "TSLA", targetWeight: 0.5 },
+      ]),
+      [{ ticker: "NVDA", balance: 500_000000000000000000n }],
+      300,
+      100
+    );
+
+    expect(result.excluded).toContainEqual({ ticker: "TSLA", reason: "no verified token for this ticker on this chain" });
   });
 });
 

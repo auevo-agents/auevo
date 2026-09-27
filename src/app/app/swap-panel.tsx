@@ -37,6 +37,8 @@ import {
   readQuickBuyPresets,
   writeQuickBuyPresets,
 } from "@/lib/quick-buy-presets";
+import { getWagmiConfig } from "@/lib/wagmi";
+import { signTransaction } from "wagmi/actions";
 
 /**
  * The actual swap form — single-hop Uniswap V3 on Robinhood Chain.
@@ -267,6 +269,31 @@ export function SwapPanel({
   } | null>(null);
   const [permitFetchError, setPermitFetchError] = useState<string | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
+
+  // "Private swap" — HyperDex's MEV-protected submission, best-effort by
+  // its own nature (see lib/rwa/private-swap.ts's doc comment: hidden
+  // entirely unless a real private RPC is configured server-side, and
+  // even then most injected wallets can't sign without also sending, so
+  // this always falls back to a normal transaction rather than silently
+  // doing nothing).
+  const [privateSwapConfigured, setPrivateSwapConfigured] = useState(false);
+  const [usePrivateSwap, setUsePrivateSwap] = useState(false);
+  const [privateSwapPending, setPrivateSwapPending] = useState(false);
+  const [privateSwapNotice, setPrivateSwapNotice] = useState<string | null>(null);
+  const [privateSwapHash, setPrivateSwapHash] = useState<`0x${string}` | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/rwa/private-swap/status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setPrivateSwapConfigured(Boolean(d.configured));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Lazy-initialized from localStorage — fine to differ from the SSR
   // markup for one paint, same reasoning as FavoriteStar.
@@ -665,6 +692,51 @@ export function SwapPanel({
     }
   }, [signPermit.data, pendingPermit]);
 
+  /**
+   * Tries private submission first: sign-without-sending, then relay the
+   * signed raw transaction to the server's configured private RPC. Never
+   * assumes success — a wallet that doesn't support `eth_signTransaction`
+   * (MetaMask's injected provider among them, which never implemented it)
+   * throws here, and this returns false so the caller falls back to a
+   * normal signed-and-sent transaction, with an honest on-screen reason
+   * either way.
+   */
+  async function sendPrivately(tx: { to: Address; data: `0x${string}`; value: bigint }): Promise<boolean> {
+    if (!account) return false;
+    setPrivateSwapNotice(null);
+    setPrivateSwapHash(null);
+    setPrivateSwapPending(true);
+    try {
+      const config = getWagmiConfig();
+      const signedTx = await signTransaction(config, {
+        account,
+        to: tx.to,
+        data: tx.data,
+        value: tx.value,
+        chainId: robinhoodChain.id,
+      });
+      const res = await fetch("/api/rwa/private-swap/broadcast", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ signedTx }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Private broadcast failed");
+      setPrivateSwapHash(data.hash);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      setPrivateSwapNotice(
+        /not supported|unsupported|method not found/i.test(message)
+          ? "This wallet doesn't support signing without sending — sent as a normal transaction instead."
+          : `Private submission failed${message ? ` (${message})` : ""} — sent as a normal transaction instead.`
+      );
+      return false;
+    } finally {
+      setPrivateSwapPending(false);
+    }
+  }
+
   async function handleV4Swap() {
     if (!tokenIn || !tokenOut || !account || !parsedAmountIn) return;
     if (typeof inDecimals !== "number" || typeof outDecimals !== "number") return;
@@ -716,13 +788,15 @@ export function SwapPanel({
         })
         .catch(() => {});
 
+      const tx = { to: data.to as Address, data: data.data as `0x${string}`, value: BigInt(data.value) };
+
+      if (usePrivateSwap && privateSwapConfigured) {
+        const sentPrivately = await sendPrivately(tx);
+        if (sentPrivately) return;
+      }
+
       const overrides = await gasOverridesFor(publicClient, gasTier);
-      sendV4Tx.sendTransaction({
-        to: data.to,
-        data: data.data,
-        value: BigInt(data.value),
-        ...overrides,
-      });
+      sendV4Tx.sendTransaction({ ...tx, ...overrides });
     } catch {
       setBuildError("Network error building the swap");
     }
@@ -941,6 +1015,13 @@ export function SwapPanel({
         </div>
       </label>
 
+      {useV4Route && privateSwapConfigured && (
+        <label className="trade-field" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <input type="checkbox" checked={usePrivateSwap} onChange={(e) => setUsePrivateSwap(e.target.checked)} />
+          <span>Private swap (MEV-protected, best-effort — falls back to a normal transaction if your wallet can&apos;t sign without sending)</span>
+        </label>
+      )}
+
       <div className="trade-quote">
         {(quoting || v4Quoting) && <span>Finding the best available pool…</span>}
         {quoteError && !useV4Route && <span className="trade-quote-error">{quoteError}</span>}
@@ -996,10 +1077,12 @@ export function SwapPanel({
         ) : (
           <button
             className="app-connect-button"
-            disabled={!v4Route || sendV4Tx.isPending || sendV4TxReceipt.isLoading}
+            disabled={!v4Route || sendV4Tx.isPending || sendV4TxReceipt.isLoading || privateSwapPending}
             onClick={handleV4Swap}
           >
-            {sendV4Tx.isPending || sendV4TxReceipt.isLoading
+            {privateSwapPending
+              ? "Sending privately…"
+              : sendV4Tx.isPending || sendV4TxReceipt.isLoading
               ? "Swapping…"
               : lockPair
                 ? `${side === "buy" ? "Buy" : "Sell"} ${(side === "buy" ? displayOutSymbol : displayInSymbol) ?? "token"}`
@@ -1036,6 +1119,8 @@ export function SwapPanel({
           {buildError && <p className="error">{buildError}</p>}
           {sendV4Tx.error && <p className="error">{sendV4Tx.error.message}</p>}
           {sendV4TxReceipt.isSuccess && <p className="trade-success">Swap confirmed on-chain.</p>}
+          {privateSwapNotice && <p className="desk-note">{privateSwapNotice}</p>}
+          {privateSwapHash && <p className="trade-success">Sent privately — {privateSwapHash}</p>}
         </>
       ) : (
         <>
