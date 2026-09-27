@@ -9891,6 +9891,45 @@ a {
   flex-shrink: 0;
 }
 
+/* /app/private-swap — a blurred swap-window mock under a plain badge,
+   instead of a page of explanatory text. */
+.private-swap-preview {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 48px 0 64px;
+}
+
+.private-swap-mock {
+  width: 420px;
+  max-width: 100%;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  filter: blur(4px);
+  opacity: .92;
+  pointer-events: none;
+  user-select: none;
+}
+
+.private-swap-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 11px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(201,178,124,.4);
+  background: rgba(13,16,16,.92);
+  color: var(--au-gold, #c9b27c);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
 .app-nav-soon-badge {
   margin-left: 6px;
   padding: 1px 6px;
