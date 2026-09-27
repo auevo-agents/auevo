@@ -12772,3 +12772,27 @@ a {
     linear-gradient(145deg, rgba(255,255,255,.028), transparent 45%),
     rgba(10,12,12,.46);
 }
+
+
+/* Neutralize legacy wordmark span rules inside the new Auevo logo. */
+.fees-premium .brand-auevo .auevo-logo,
+.scanner-premium .brand-auevo .auevo-logo {
+  position: static;
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  color: var(--au-ink);
+}
+
+.fees-premium .brand-auevo .auevo-wordmark,
+.scanner-premium .brand-auevo .auevo-wordmark,
+.fees-premium .brand-auevo .auevo-wordmark > span,
+.scanner-premium .brand-auevo .auevo-wordmark > span {
+  position: static;
+  display: inline;
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none;
+  transform: none;
+}
