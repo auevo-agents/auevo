@@ -563,6 +563,7 @@ export function SwapPanel({
   const approveReceipt = useWaitForTransactionReceipt({ hash: approve.data });
   const swap = useWriteContract();
   const swapReceipt = useWaitForTransactionReceipt({ hash: swap.data });
+  const [v3RecordId, setV3RecordId] = useState<number | null>(null);
 
   async function handleApprove() {
     if (!tokenIn || !parsedAmountIn) return;
@@ -581,6 +582,28 @@ export function SwapPanel({
       return;
     }
     const overrides = await gasOverridesFor(publicClient, gasTier);
+
+    // Best-effort, fire-and-forget — same posture as the v4 path's own
+    // record call below: app_transfers is this app's own trade log, never
+    // something that should block or fail the swap itself.
+    fetch("/api/dex/record", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        account,
+        recipient: account,
+        srcToken: tokenIn,
+        dstToken: tokenOut,
+        amountIn: parsedAmountIn.toString(),
+        route: `v3-${quote.fee}`,
+        feeBps: 0,
+      }),
+    })
+      .then((r) => r.json())
+      .then((r) => {
+        if (r.recorded && typeof r.id === "number") setV3RecordId(r.id);
+      })
+      .catch(() => {});
 
     if (isNativeOut) {
       // Two steps in one transaction: swap into the router's own
@@ -826,6 +849,30 @@ export function SwapPanel({
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [v4RecordId, sendV4TxReceipt.isSuccess, sendV4TxReceipt.isError, sendV4Tx.isError, sendV4Tx.data]);
+
+  // Same follow-up as the v4 path above, for the plain v3 route — this
+  // used to be the one swap path in this panel that never wrote to
+  // app_transfers at all, so a real v3 swap never showed up in Explorer.
+  useEffect(() => {
+    if (!v3RecordId) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (swapReceipt.isSuccess) {
+      fetch("/api/dex/record", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: v3RecordId, txHash: swap.data, status: "done" }),
+      }).catch(() => {});
+      setV3RecordId(null);
+    } else if (swapReceipt.isError || swap.isError) {
+      fetch("/api/dex/record", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: v3RecordId, txHash: swap.data, status: "failed" }),
+      }).catch(() => {});
+      setV3RecordId(null);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [v3RecordId, swapReceipt.isSuccess, swapReceipt.isError, swap.isError, swap.data]);
 
   function fillFraction(fraction: number) {
     if (typeof inBalance !== "bigint" || typeof inDecimals !== "number") return;

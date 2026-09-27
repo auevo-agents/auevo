@@ -80,6 +80,54 @@ async function fetchPermit(owner: Address, token: Address): Promise<PermitTypedD
   return data;
 }
 
+/**
+ * Best-effort, fire-and-forget app_transfers row — same posture as
+ * swap-panel.tsx's own record calls: this is this app's own trade log,
+ * never something that should block or fail a real trade. One row per
+ * leg (a basket buy/sell/rebalance moves several token pairs at once,
+ * and app_transfers is shaped around a single src/dst pair per row —
+ * same as how a multi-leg transaction reads on a normal block explorer).
+ */
+async function recordTransferLeg(params: {
+  account: Address;
+  srcToken: string;
+  dstToken: string;
+  amountIn: string;
+  route: string;
+}): Promise<number | null> {
+  try {
+    const res = await fetch("/api/dex/record", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        account: params.account,
+        recipient: params.account,
+        srcToken: params.srcToken,
+        dstToken: params.dstToken,
+        amountIn: params.amountIn,
+        route: params.route,
+        feeBps: 0,
+      }),
+    });
+    const data = await res.json();
+    return data.recorded && typeof data.id === "number" ? data.id : null;
+  } catch {
+    return null;
+  }
+}
+
+async function patchTransferLegs(ids: number[], status: "done" | "failed", txHash?: `0x${string}`): Promise<void> {
+  await Promise.all(
+    ids.map((id) =>
+      fetch("/api/dex/record", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id, txHash, status }),
+      }).catch(() => {})
+    )
+  );
+}
+
 export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id]">) {
   const { id } = use(params);
   const { address: account, isConnected } = useAccount();
@@ -166,6 +214,20 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
   const [usdgPermit, setUsdgPermit] = useState<SignedPermit | null>(null);
   const sendBuyTx = useSendTransaction();
   const buyReceipt = useWaitForTransactionReceipt({ hash: sendBuyTx.data });
+  const [buyRecordIds, setBuyRecordIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (buyRecordIds.length === 0) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (buyReceipt.isSuccess) {
+      patchTransferLegs(buyRecordIds, "done", sendBuyTx.data);
+      setBuyRecordIds([]);
+    } else if (buyReceipt.isError || sendBuyTx.isError) {
+      patchTransferLegs(buyRecordIds, "failed", sendBuyTx.data);
+      setBuyRecordIds([]);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [buyRecordIds, buyReceipt.isSuccess, buyReceipt.isError, sendBuyTx.isError, sendBuyTx.data]);
 
   useEffect(() => {
     if (signPermit.data && pendingPermit) {
@@ -227,6 +289,15 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
       }
       setBuyPreview(data.legs.map((l: { ticker: string; amountIn: string }) => ({ ticker: l.ticker, amountIn: l.amountIn })));
       setBuyExcluded(data.excluded ?? []);
+
+      const legs = data.legs as { ticker: string; token: Address; amountIn: string }[];
+      const ids = await Promise.all(
+        legs.map((l) =>
+          recordTransferLeg({ account, srcToken: USDG, dstToken: l.token, amountIn: l.amountIn, route: `basket-buy:${basket.id}` })
+        )
+      );
+      setBuyRecordIds(ids.filter((recordId): recordId is number => recordId !== null));
+
       sendBuyTx.sendTransaction({ to: data.to, data: data.data, value: BigInt(data.value) });
     } catch {
       setBuyError("Network error building the basket buy");
@@ -242,6 +313,20 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
   const sendSellTx = useSendTransaction();
   const sellReceipt = useWaitForTransactionReceipt({ hash: sendSellTx.data });
   const [sellError, setSellError] = useState<string | null>(null);
+  const [sellRecordIds, setSellRecordIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (sellRecordIds.length === 0) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (sellReceipt.isSuccess) {
+      patchTransferLegs(sellRecordIds, "done", sendSellTx.data);
+      setSellRecordIds([]);
+    } else if (sellReceipt.isError || sendSellTx.isError) {
+      patchTransferLegs(sellRecordIds, "failed", sendSellTx.data);
+      setSellRecordIds([]);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [sellRecordIds, sellReceipt.isSuccess, sellReceipt.isError, sendSellTx.isError, sendSellTx.data]);
 
   useEffect(() => {
     if (sellSignPermit.data && pendingSellPermit) {
@@ -296,6 +381,16 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
         setSellError(data.error ?? "Could not build the basket sell");
         return;
       }
+
+      const ids = await Promise.all(
+        holdings.map((h) => {
+          const token = availableHoldings.find((a) => a.ticker === h.ticker)?.token;
+          if (!token) return Promise.resolve(null);
+          return recordTransferLeg({ account, srcToken: token, dstToken: USDG, amountIn: h.amountIn, route: `basket-sell:${basket.id}` });
+        })
+      );
+      setSellRecordIds(ids.filter((recordId): recordId is number => recordId !== null));
+
       sendSellTx.sendTransaction({ to: data.to, data: data.data, value: BigInt(data.value) });
     } catch {
       setSellError("Network error building the basket sell");
@@ -313,6 +408,20 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
   const [pendingRebalancePermit, setPendingRebalancePermit] = useState<{ token: Address; permit: Omit<SignedPermit, "signature"> } | null>(null);
   const sendRebalanceTx = useSendTransaction();
   const rebalanceReceipt = useWaitForTransactionReceipt({ hash: sendRebalanceTx.data });
+  const [rebalanceRecordIds, setRebalanceRecordIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (rebalanceRecordIds.length === 0) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (rebalanceReceipt.isSuccess) {
+      patchTransferLegs(rebalanceRecordIds, "done", sendRebalanceTx.data);
+      setRebalanceRecordIds([]);
+    } else if (rebalanceReceipt.isError || sendRebalanceTx.isError) {
+      patchTransferLegs(rebalanceRecordIds, "failed", sendRebalanceTx.data);
+      setRebalanceRecordIds([]);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [rebalanceRecordIds, rebalanceReceipt.isSuccess, rebalanceReceipt.isError, sendRebalanceTx.isError, sendRebalanceTx.data]);
 
   useEffect(() => {
     if (rebalanceSignPermit.data && pendingRebalancePermit) {
@@ -382,8 +491,22 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
     });
   }
 
-  function handleExecuteRebalance() {
-    if (!rebalancePreview?.to || !rebalancePreview.data) return;
+  async function handleExecuteRebalance() {
+    if (!account || !basket || !rebalancePreview?.to || !rebalancePreview.data) return;
+
+    const ids = await Promise.all(
+      (rebalancePreview.legs ?? []).map((l) =>
+        recordTransferLeg({
+          account,
+          srcToken: l.side === "buy" ? USDG : l.token,
+          dstToken: l.side === "buy" ? l.token : USDG,
+          amountIn: l.amountIn,
+          route: `basket-rebalance:${basket.id}`,
+        })
+      )
+    );
+    setRebalanceRecordIds(ids.filter((recordId): recordId is number => recordId !== null));
+
     sendRebalanceTx.sendTransaction({ to: rebalancePreview.to, data: rebalancePreview.data, value: BigInt(rebalancePreview.value ?? "0") });
   }
 
