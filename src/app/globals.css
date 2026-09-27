@@ -40,6 +40,45 @@ input {
   font: inherit;
 }
 
+/*
+ * A safety-net baseline for any <input>/<select>/<textarea> that isn't
+ * wrapped in one of this app's own styled containers (.trade-field,
+ * .dash-search, .desk-search, …) — those keep their own, more specific
+ * rules (a class selector beats a bare-tag one, so this never overrides
+ * them). Without this, a plain <input> with no className renders the
+ * browser's own default control — a stark white box on this app's dark
+ * theme, and with no visible focus state anywhere either, since nothing
+ * upstream of this rule ever defined one.
+ */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background: #0a0e10;
+  color: #eef0ef;
+  border: 1px solid #252c30;
+  border-radius: 6px;
+  padding: 0 12px;
+  height: 38px;
+}
+
+textarea {
+  height: auto;
+  padding: 10px 12px;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(255, 52, 77, 0.18);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #5a6469;
+}
+
 button {
   cursor: pointer;
 }
@@ -6589,6 +6628,13 @@ a {
   color: #eef0ef;
   font-size: 13px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.trade-field input:focus,
+.trade-field select:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(255, 52, 77, 0.18);
 }
 
 .trade-field select {
