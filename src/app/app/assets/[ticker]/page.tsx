@@ -198,7 +198,7 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
                   <a href="#top">trade ↑</a>
                 ) : (
                   <Link href={`/app/swap?mode=bridge&toChain=${t.chainId}&toToken=${t.address}`} title={`Bridge into ${chainName(t.chainId)} to buy this`}>
-                    bridge →
+                    bridge
                   </Link>
                 )}
               </span>
@@ -219,7 +219,7 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
                 {issuer.backing_note && <p>{issuer.backing_note}</p>}
                 {issuer.website && (
                   <a href={issuer.website} target="_blank" rel="noreferrer">
-                    website ↗
+                    website
                   </a>
                 )}
               </article>
