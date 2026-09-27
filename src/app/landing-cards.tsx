@@ -11,7 +11,7 @@ interface FeatureCard {
   tag: string;
   href: string;
   mockup: MockupKind;
-  scene: "compare" | "verify" | "trade" | "assets" | "scanner" | "baskets" | "pools" | "bridge" | "alerts";
+  scene?: string;
 }
 
 /**
@@ -34,7 +34,7 @@ export function LandingCards({ cards, tickers }: { cards: readonly FeatureCard[]
         <Link
           key={card.href + card.title}
           href={card.href}
-          className={`landing2-card landing2-card-${card.scene}`}
+          className={card.scene ? `landing2-card landing2-card-${card.scene}` : "landing2-card"}
           onMouseMove={handleMouseMove}
         >
           <span className="landing2-card-art" aria-hidden="true" />
