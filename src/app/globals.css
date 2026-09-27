@@ -8120,6 +8120,7 @@ a {
 }
 
 .landing2-partner-avatar {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8129,6 +8130,28 @@ a {
   color: #0a0e10;
   font: 800 11px Arial, Helvetica, sans-serif;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.landing2-partner-avatar::after,
+.dash-list-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.55) 48%, transparent 66%);
+  background-size: 220% 220%;
+  background-position: -120% -120%;
+  animation: landing2-avatar-shine 6s ease-in-out infinite;
+}
+
+@keyframes landing2-avatar-shine {
+  0%, 40% { background-position: -120% -120%; }
+  60%, 100% { background-position: 120% 120%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing2-partner-avatar::after,
+  .dash-list-avatar::after { animation: none; display: none; }
 }
 
 /* Hero */
@@ -8238,25 +8261,53 @@ a {
   color: #fff;
 }
 
-/* Orbit illustration */
+/* Orbit illustration — a "glass orb constellation": rotating rings, a
+   dotted globe, and floating glass nodes with original category glyphs. */
 
 .landing2-orbit {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  max-width: 420px;
+  max-width: 460px;
   justify-self: center;
-  perspective: 700px;
+  perspective: 900px;
 }
 
-.landing2-orbit svg {
-  transform: rotateX(var(--tiltX, 0deg)) rotateY(var(--tiltY, 0deg));
-  transition: transform .25s ease-out;
-}
-
-.landing2-orbit svg {
+.landing2-orbit-tilt {
+  position: relative;
   width: 100%;
   height: 100%;
+  transform: rotateX(var(--tiltX, 0deg)) rotateY(var(--tiltY, 0deg));
+  transition: transform .25s ease-out;
+  transform-style: preserve-3d;
+}
+
+.landing2-orbit-glow {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,52,77,.28), transparent 70%);
+  filter: blur(18px);
+  animation: landing2-orbit-pulse 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes landing2-orbit-pulse {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50% { opacity: .9; transform: scale(1.08); }
+}
+
+.landing2-orbit-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.landing2-orbit-sphere {
+  fill: rgba(255,255,255,.02);
+  stroke: var(--line-2);
+  stroke-width: 1;
 }
 
 .landing2-orbit-ring {
@@ -8268,28 +8319,74 @@ a {
 
 .landing2-orbit-ring-1 { animation: landing2-spin 34s linear infinite; }
 .landing2-orbit-ring-2 { animation: landing2-spin 22s linear infinite reverse; }
+.landing2-orbit-ring-3 { animation: landing2-spin 46s linear infinite; stroke: rgba(255,52,77,.28); }
 
 @keyframes landing2-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
-.landing2-orbit-node {
-  fill: var(--red);
-}
-
 .landing2-orbit-dots {
   fill: var(--line-2);
 }
 
+.landing2-orbit-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  animation: landing2-orbit-float 5s ease-in-out infinite;
+}
+
+@keyframes landing2-orbit-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.landing2-orbit-node-glass {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 8px 20px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.15);
+  color: #f2f4f3;
+}
+
+.landing2-orbit-node-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--red);
+}
+
+.landing2-orbit-node-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .landing2-orbit-ring-1, .landing2-orbit-ring-2 { animation: none; }
-  .landing2-orbit svg { transform: none !important; transition: none; }
+  .landing2-orbit-ring-1, .landing2-orbit-ring-2, .landing2-orbit-ring-3,
+  .landing2-orbit-glow, .landing2-orbit-node { animation: none; }
+  .landing2-orbit-tilt { transform: none !important; transition: none; }
 }
 
 @media (max-width: 860px) {
   .landing2-hero-grid { grid-template-columns: 1fr; }
-  .landing2-orbit { max-width: 280px; margin: 0 auto; }
+  .landing2-orbit { max-width: 300px; margin: 0 auto 24px; }
+}
+
+@media (max-width: 500px) {
+  .landing2-orbit-node-label { display: none; }
 }
 
 /* How it works */
@@ -9039,6 +9136,7 @@ a {
 }
 
 .dash-list-avatar {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -9048,6 +9146,7 @@ a {
   font: 800 13px Arial, Helvetica, sans-serif;
   color: #0a0e10;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .dash-list-name {
