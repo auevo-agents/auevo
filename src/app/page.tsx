@@ -399,6 +399,25 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </Reveal>
 
       <footer className="landing2-footer">
+        <div className="landing2-footer-row">
+          <AuevoLogo />
+          <nav className="landing2-footer-links" aria-label="Legal and social">
+            <Link href="/privacy" className="landing2-footer-link">
+              Privacy
+            </Link>
+            <Link href="/policy" className="landing2-footer-link">
+              Policy
+            </Link>
+            <a
+              href="https://x.com/Auevotrade"
+              target="_blank"
+              rel="noreferrer"
+              className="landing2-footer-link"
+            >
+              X
+            </a>
+          </nav>
+        </div>
         <Disclaimer />
       </footer>
     </main>
