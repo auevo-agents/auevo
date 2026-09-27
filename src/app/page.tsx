@@ -10,6 +10,7 @@ import { PartnerRow } from "./landing-partners";
 import { LandingFlow } from "./landing-flow";
 import { Counter } from "./landing-counter";
 import { Reveal } from "./landing-reveal";
+import { BrandIcon } from "./brand-icon";
 import { getSupabaseServer } from "@/lib/supabase";
 import { loadTickerTokens } from "@/lib/rwa/scanner-data";
 import { buildPremiumRows, sortByAbsPremium } from "@/lib/rwa/scanner";
@@ -145,7 +146,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       </header>
 
       <LandingTicker rows={tickerRows} />
-      <PartnerRow items={[...issuerNames, ...chainNames]} />
+      <PartnerRow
+        items={[
+          ...issuerNames.map((name) => ({ name, kind: "issuer" as const })),
+          ...chainNames.map((name) => ({ name, kind: "chain" as const })),
+        ]}
+      />
 
       <section className="landing2-hero">
         <div className="landing2-hero-grid">
@@ -270,7 +276,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                 const premium = formatPremium(row.premiumBps!);
                 return (
                   <Link key={`${row.chainId}:${row.address}`} href={`/app/assets/${row.ticker}`} className="landing2-tops-row">
-                    <b>{row.ticker}</b>
+                    <b style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <BrandIcon symbol={row.ticker} name={row.name} kind="ticker" size={22} />
+                      {row.ticker}
+                    </b>
                     <span className="landing2-tops-name">{row.name}</span>
                     <span className="landing2-tops-price">{formatUsd(row.priceUsd)}</span>
                     <span className={`landing2-tops-premium ${premium.className}`}>{premium.text}</span>

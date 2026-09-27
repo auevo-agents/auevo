@@ -1,3 +1,5 @@
+import { BrandIcon } from "./brand-icon";
+
 export type MockupKind = "chips" | "compare" | "checklist" | "apr" | "alert";
 
 /**
@@ -17,7 +19,7 @@ export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: stri
         <div className="landing2-mockup-chips">
           {shown.map((t) => (
             <span className="landing2-mockup-chip" key={t}>
-              <span className="landing2-mockup-chip-dot" />
+              <BrandIcon symbol={t} kind="ticker" size={14} />
               {t}
             </span>
           ))}
