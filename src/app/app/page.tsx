@@ -260,7 +260,7 @@ export default function AppOverviewPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--overview">
         <div>
           <h3>Overview</h3>
           <p>Your tokenized markets workspace · Robinhood Chain</p>

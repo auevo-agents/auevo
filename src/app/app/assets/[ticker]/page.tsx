@@ -111,7 +111,7 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
   if (error) {
     return (
       <>
-        <header className="product-header">
+        <header className="product-header product-header--assets">
           <div>
             <h3>{ticker}</h3>
           </div>
@@ -137,7 +137,7 @@ export default function AssetDetailPage({ params }: PageProps<"/app/assets/[tick
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--assets">
         <div>
           <h3>
             {asset.ticker} <span style={{ color: "#5a6469", fontWeight: 400 }}>· {asset.name}</span>

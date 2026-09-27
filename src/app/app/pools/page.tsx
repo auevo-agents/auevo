@@ -80,7 +80,7 @@ export default function RwaPoolsPage() {
 
   return (
     <>
-      <div className="dash-hero">
+      <div className="dash-hero dash-hero--pools">
         <p className="dash-eyebrow">Tokenized pools · Robinhood Chain</p>
         <h1 className="dash-title">Every pool. One chain.</h1>
         <p className="dash-subtitle">

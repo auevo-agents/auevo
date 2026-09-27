@@ -30,7 +30,7 @@ export default function PortfolioPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--portfolio">
         <div>
           <h3>Portfolio</h3>
           <p>Your own wallet&apos;s profile — balance, positions, activity</p>

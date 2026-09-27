@@ -80,7 +80,7 @@ export default function ExplorerPage() {
 
   return (
     <>
-      <header className="product-header">
+      <header className="product-header product-header--explorer">
         <div>
           <h3>Explorer</h3>
           <p>Every swap and bridge Auevo has sent through — Robinhood Chain trades (Phase 2) and LI.FI transfers (Phase 4)</p>
