@@ -9519,3 +9519,40 @@ a {
   }
   .docs-content { padding: 32px 20px 64px; }
 }
+
+/* Brand icon badge — a real official mark's SVG on a soft glass circle,
+   or (brand-icon-fallback) the existing colored-monogram treatment when
+   no real mark is available for that symbol. */
+
+.brand-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--line-2);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.brand-icon-fallback {
+  position: relative;
+  color: #0a0e10;
+  font-weight: 800;
+  font-family: Arial, Helvetica, sans-serif;
+  border: none;
+}
+
+.brand-icon-fallback::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.55) 48%, transparent 66%);
+  background-size: 220% 220%;
+  background-position: -120% -120%;
+  animation: landing2-avatar-shine 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-icon-fallback::after { animation: none; display: none; }
+}
