@@ -9886,6 +9886,11 @@ a {
   }
 }
 
+.app-nav-link svg,
+.app-nav-group-link svg {
+  flex-shrink: 0;
+}
+
 .app-nav-soon-badge {
   margin-left: 6px;
   padding: 1px 6px;
