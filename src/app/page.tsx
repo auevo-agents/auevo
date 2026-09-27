@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { GeoBanner } from "./geo-banner";
 import { Disclaimer } from "./disclaimer";
 import { LandingOrbit } from "./landing-orbit";
+import { LandingHeaderWave } from "./landing-header-wave";
 import { LandingTicker } from "./landing-ticker";
 import { LandingCards } from "./landing-cards";
 import { LandingNav } from "./landing-nav";
@@ -200,6 +201,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   return (
     <main className="landing2 landing2-premium">
       <header className="landing-header">
+        <LandingHeaderWave />
         <Link href="/" className="landing-brand" aria-label="Auevo home">
           <AuevoLogo />
         </Link>
