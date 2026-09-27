@@ -4,7 +4,7 @@ import { Deadline } from "@/lib/evm/deadline";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { robinhoodChain } from "@/lib/chains";
-import { discoverUsdgPools, resolveCandidateTokens, backfillMissingPools } from "./registry";
+import { discoverUsdgPools, resolveCandidateTokens, backfillMissingPools, reconcilePoolCandidates } from "./registry";
 import { fetchXstocksTokenListWithDiagnostics, tickerFromXstocksSymbol } from "./xstocks";
 import { STATE_VIEW, USDG } from "./dex/addresses";
 import { buildPoolKey } from "./dex/pool-key";
@@ -78,7 +78,7 @@ export interface RegistryRunResult {
   headBlock?: string;
   robinhood?: { discovered: number; syncedTo: string; partial: boolean };
   xstocks?: { discovered: number; available: boolean; error?: string | null };
-  pools?: { backfilled: number; refreshed: number; error?: string | null };
+  pools?: { candidatesPromoted: number; backfilled: number; refreshed: number; error?: string | null };
   checkpointError?: string | null;
 }
 
@@ -132,6 +132,37 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
   let poolsError: string | null = null;
   if (scanResult.pools.length > 0) {
     const candidates = await resolveCandidateTokens(client, scanResult.pools);
+
+    // Cache every discovered pool's on-chain symbol read, matched or not
+    // — see 0014_rwa_pool_candidates.sql's own doc comment: a ticker added
+    // to rwa_underlyings *after* this block range was already scanned
+    // would otherwise never get a second chance to match, since the scan
+    // only ever moves forward from its checkpoint. reconcilePoolCandidates
+    // below re-checks this cache against the catalog on every pass.
+    try {
+      const candidatesByAddress = new Map(candidates.map((c) => [c.address.toLowerCase(), c]));
+      const candidateRows = scanResult.pools.map((p) => {
+        const resolved = candidatesByAddress.get(p.token.toLowerCase());
+        return {
+          chain_id: robinhoodChain.id,
+          pool_id: p.poolId,
+          token_address: p.token,
+          symbol: resolved?.symbol ?? null,
+          decimals: resolved?.decimals ?? null,
+          fee: p.fee,
+          tick_spacing: p.tickSpacing,
+          hooks: p.hooks,
+          first_seen_block: p.blockNumber,
+        };
+      });
+      const { error } = await withFetchRetry(() =>
+        supabase.from("rwa_pool_candidates").upsert(candidateRows, { onConflict: "chain_id,pool_id" })
+      );
+      if (error) throw new Error(`rwa_pool_candidates upsert failed: ${error.message}`);
+    } catch (err) {
+      poolsError = err instanceof Error ? err.message : String(err);
+    }
+
     // Never guess a decimals value (`decimals` is not-null in the schema
     // for good reason — a wrong one silently corrupts every price/amount
     // shown for this token) and only ever record a ticker we already
@@ -192,6 +223,15 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       } catch (err) {
         poolsError = err instanceof Error ? err.message : String(err);
       }
+    }
+  }
+
+  let candidatesPromoted = 0;
+  if (!poolsError) {
+    try {
+      candidatesPromoted = (await reconcilePoolCandidates(supabase)).promoted;
+    } catch (err) {
+      poolsError = err instanceof Error ? err.message : String(err);
     }
   }
 
@@ -265,7 +305,7 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
       partial: scanResult.partial,
     },
     xstocks: { discovered: xstocksDiscovered, available: xstocksTokens !== null, error: xstocksError },
-    pools: { backfilled: poolsBackfilled, refreshed: poolsRefreshed, error: poolsError },
+    pools: { candidatesPromoted, backfilled: poolsBackfilled, refreshed: poolsRefreshed, error: poolsError },
     checkpointError,
   };
 }
