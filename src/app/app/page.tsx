@@ -5,7 +5,7 @@ import Link from "next/link";
 import { formatUnits } from "viem";
 import { useAccount, useBalance } from "wagmi";
 import { robinhoodChain } from "@/lib/chains";
-import { LIFI_EVM_CHAINS, chainNameFor } from "@/lib/rwa/lifi/chains";
+import { LIFI_EVM_CHAINS, chainNameFor, isSupportedLifiChain } from "@/lib/rwa/lifi/chains";
 import { LandingCards } from "../landing-cards";
 import { BrandIcon } from "../brand-icon";
 import { ConnectButton } from "./connect-button";
@@ -80,13 +80,24 @@ const QUICK_ACTIONS = [
 function useRegistryStats() {
   const [assetCount, setAssetCount] = useState<number | null>(null);
   const [issuerCount, setIssuerCount] = useState<number | null>(null);
+  // Real chain diversity the registry has actually found tokens on, not
+  // just LIFI_EVM_CHAINS' own size (what Swap & Bridge can route between
+  // today) — the registry regularly finds a tokenized asset on a chain
+  // before that chain has a trading route, so this can only ever be
+  // larger, never smaller.
+  const [chainsComingSoonCount, setChainsComingSoonCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/rwa/assets?sort=alphabetical")
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled && Array.isArray(data.assets)) setAssetCount(data.assets.length);
+        if (cancelled || !Array.isArray(data.assets)) return;
+        setAssetCount(data.assets.length);
+        const discoveredChainIds = new Set(
+          (data.assets as { tokens?: { chainId: number }[] }[]).flatMap((a) => (a.tokens ?? []).map((t) => t.chainId))
+        );
+        setChainsComingSoonCount([...discoveredChainIds].filter((id) => !isSupportedLifiChain(id)).length);
       })
       .catch(() => {});
     fetch("/api/rwa/issuers")
@@ -102,7 +113,7 @@ function useRegistryStats() {
     };
   }, []);
 
-  return { assetCount, issuerCount };
+  return { assetCount, issuerCount, chainsComingSoonCount };
 }
 
 type HighlightTab = "premium" | "risk" | "new";
@@ -252,7 +263,7 @@ export default function AppOverviewPage() {
     chainId: robinhoodChain.id,
     query: { enabled: Boolean(address) },
   });
-  const { assetCount, issuerCount } = useRegistryStats();
+  const { assetCount, issuerCount, chainsComingSoonCount } = useRegistryStats();
   const [highlightTab, setHighlightTab] = useState<HighlightTab>("premium");
   const premiumPreview = useHighlightTab("premium", "premium", "/api/rwa/scanner/premium");
 
@@ -319,6 +330,9 @@ export default function AppOverviewPage() {
         <div className="dash-stat">
           <div className="dash-stat-value">{LIFI_EVM_CHAINS.length}</div>
           <div className="dash-stat-label">CHAINS SUPPORTED</div>
+          {chainsComingSoonCount > 0 && (
+            <div className="dash-stat-note">+{chainsComingSoonCount} more found — coming soon</div>
+          )}
         </div>
       </div>
 
