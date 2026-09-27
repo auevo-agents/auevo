@@ -70,8 +70,8 @@ input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(255, 52, 77, 0.18);
+  border-color: var(--au-gold, #c9b27c);
+  box-shadow: 0 0 0 3px rgba(201, 178, 124, 0.18);
 }
 
 input::placeholder,
@@ -6679,8 +6679,8 @@ a {
 .trade-field input:focus,
 .trade-field select:focus {
   outline: none;
-  border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(255, 52, 77, 0.18);
+  border-color: rgba(201,178,124,.55);
+  box-shadow: 0 0 0 3px rgba(201,178,124,.16);
 }
 
 .trade-field select {
@@ -11079,18 +11079,6 @@ a {
 .trade-field:focus-within {
   border-color: rgba(201,178,124,.38);
   box-shadow: 0 0 0 4px rgba(201,178,124,.055);
-}
-
-/*
- * The base rule (.trade-field input:focus) paints the input's own red
- * focus ring — it targets the <input> directly, so it stays visible on
- * top of :focus-within's subtler gold ring on the wrapping <label> above.
- * Override the input's own ring to match the gold theme instead of red.
- */
-.trade-field input:focus,
-.trade-field select:focus {
-  border-color: rgba(201,178,124,.55);
-  box-shadow: 0 0 0 3px rgba(201,178,124,.16);
 }
 
 .trade-order-tab.active,
