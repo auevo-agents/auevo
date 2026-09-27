@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { AuevoLogo } from "../auevo-logo";
 
 interface NavLink {
   id: string;
@@ -126,9 +127,9 @@ export function Sidebar() {
 
   return (
     <header className="app-topnav" ref={rootRef}>
-      <Link href="/app" className="app-topnav-logo">
-        <strong>auevo</strong>
-        <i />
+      <Link href="/app" className="app-topnav-logo" aria-label="Auevo workspace">
+        <AuevoLogo />
+        <span className="app-topnav-edition">Market intelligence</span>
       </Link>
 
       <nav className="app-topnav-links">
@@ -166,6 +167,11 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
+
+      <div className="app-topnav-trust" aria-label="Registry status">
+        <span className="app-topnav-trust-dot" />
+        <span>Verified registry</span>
+      </div>
     </header>
   );
 }
