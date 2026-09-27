@@ -89,7 +89,7 @@ export default function LendPage() {
 
       <div className="scan-section-heading">
         <span>EARN</span>
-        <strong>USDG vaults on Morpho — deposit and withdraw directly, no linking out.</strong>
+        <strong>USDG vaults — deposit and withdraw directly, no linking out.</strong>
       </div>
       <EarnPanel />
 
