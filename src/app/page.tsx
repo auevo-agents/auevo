@@ -11,6 +11,7 @@ import { LandingFlow } from "./landing-flow";
 import { Counter } from "./landing-counter";
 import { Reveal } from "./landing-reveal";
 import { BrandIcon } from "./brand-icon";
+import { AuevoLogo } from "./auevo-logo";
 import { getSupabaseServer } from "@/lib/supabase";
 import { loadTickerTokens } from "@/lib/rwa/scanner-data";
 import { fetchPublicQuotes, type PublicQuote } from "@/lib/rwa/public-quotes";
@@ -199,8 +200,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   return (
     <main className="landing2 landing2-premium">
       <header className="landing-header">
-        <Link href="/" className="landing-brand">
-          auevo<span>_</span>
+        <Link href="/" className="landing-brand" aria-label="Auevo home">
+          <AuevoLogo />
         </Link>
         <LandingNav />
       </header>
