@@ -100,6 +100,7 @@ const FEATURE_CARDS = [
   {
     num: "01",
     title: "Assets",
+    scene: "assets",
     body: "Every tokenized stock and ETF this app's registry has found, across every issuer and chain, with live premium and risk score.",
     tag: "Live · Robinhood Chain",
     href: "/app/assets",
@@ -108,6 +109,7 @@ const FEATURE_CARDS = [
   {
     num: "02",
     title: "Scanner",
+    scene: "scanner",
     body: "Premium, arbitrage, contract risk, liquidity depth and new listings — ranked, not just listed.",
     tag: "6 tabs",
     href: "/app/scanner",
@@ -116,6 +118,7 @@ const FEATURE_CARDS = [
   {
     num: "03",
     title: "Baskets",
+    scene: "baskets",
     body: "Buy 5–10 stocks in one wallet signature through Uniswap v4 — no N-signature flow.",
     tag: "One signature",
     href: "/app/baskets",
@@ -124,6 +127,7 @@ const FEATURE_CARDS = [
   {
     num: "04",
     title: "Pools",
+    scene: "pools",
     body: "v4 RWA/USDG pools on Robinhood Chain — liquidity, 24h volume and fee APR.",
     tag: "Uniswap v4",
     href: "/app/pools",
@@ -132,6 +136,7 @@ const FEATURE_CARDS = [
   {
     num: "05",
     title: "Swap & Bridge",
+    scene: "bridge",
     body: "Trade on Robinhood Chain, or bridge tokenized assets in from five other chains via LI.FI.",
     tag: "Best route",
     href: "/app/swap",
@@ -140,6 +145,7 @@ const FEATURE_CARDS = [
   {
     num: "06",
     title: "Alerts",
+    scene: "alerts",
     body: "Premium above a threshold, a new listing, or a whale trade — delivered to the web or Telegram.",
     tag: "Web + Telegram",
     href: "/app/scanner",
@@ -151,6 +157,7 @@ const TRIPTYCH_CARDS = [
   {
     num: "A",
     title: "Compare",
+    scene: "compare",
     body: "See how the same tokenized stock compares across every issuer that's tokenized it — price, chain, verification, side by side.",
     tag: "Every issuer, one view",
     href: "/app/assets",
@@ -159,6 +166,7 @@ const TRIPTYCH_CARDS = [
   {
     num: "B",
     title: "Verify",
+    scene: "verify",
     body: "A contract risk score before you trade — mint, pause, blacklist, freeze and upgradeability, checked directly from the deployed bytecode, not a claim.",
     tag: "Risk, not a black box",
     href: "/app/scanner",
@@ -167,6 +175,7 @@ const TRIPTYCH_CARDS = [
   {
     num: "C",
     title: "Trade",
+    scene: "trade",
     body: "Route to whichever issuer/chain combination has the best price for your size on Robinhood Chain, or bridge a tokenized asset in from five other chains.",
     tag: "Best available route",
     href: "/app/swap",
