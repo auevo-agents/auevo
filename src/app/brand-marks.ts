@@ -62,6 +62,23 @@ export const ISSUER_BRANDS: Record<string, BrandMark> = {
   "tether": { title: "Tether", hex: "50AF95", path: "M18.7538 10.5176c0 .6251-2.2379 1.1483-5.2381 1.2812l.0028.0007c-.0848.0064-.5233.0325-1.5012.0325-.7778 0-1.33-.0233-1.5237-.0325-3.0059-.1322-5.2495-.6555-5.2495-1.2819s2.2436-1.149 5.2495-1.2834v2.0442c.1965.0142.7594.0474 1.5372.0474.9334 0 1.4008-.0389 1.4849-.0466V9.2356c2.9994.1337 5.2381.657 5.2381 1.282zm5.19.5466L12.1248 22.389a.1803.1803 0 0 1-.2496 0L.0562 11.0635a.1781.1781 0 0 1-.0382-.2079l4.3762-9.1921a.1767.1767 0 0 1 .1626-.1026h14.8878a.1768.1768 0 0 1 .1612.1032l4.3762 9.1922a.1782.1782 0 0 1-.0382.2079zm-4.478-.4038c0-.8068-2.5515-1.4799-5.9473-1.6369V7.195h4.186V4.4055H6.3076V7.195h4.1852v1.8286c-3.4018.1562-5.9601.83-5.9601 1.6376 0 .8075 2.5583 1.4806 5.9601 1.6376v5.8618h3.025v-5.8639c3.394-.1563 5.948-.8295 5.948-1.6363z" },
 };
 
+/**
+ * Some issuers have no icon in simple-icons at all (xStocks, Ondo, Maple,
+ * Ethena, Theo, Paxos, bStocks, USD.ai are all too niche/DeFi-specific to
+ * be in that set — confirmed by searching its data file, not guessed).
+ * Their BrandIcon falls back to the plain monogram badge same as any
+ * other unmapped name — but the monogram's color is normally a hash of
+ * the name (colorForName), arbitrary and unrelated to the real brand.
+ * Where an issuer's own published brand color is known (their public
+ * docs/brand-kit page), using it here for the monogram is a small,
+ * honest step short of a fabricated logo shape — still just a letter in
+ * a circle, but the *right* circle color, not a random one.
+ */
+export const ISSUER_MONOGRAM_COLORS: Record<string, string> = {
+  // xStocks (Backed Finance) brand kit: docs.xstocks.fi/docs/media-and-brand-kit
+  xstocks: "#1FD59A",
+};
+
 export const CHAIN_BRANDS: Record<string, BrandMark> = {
   "ethereum": { title: "Ethereum", hex: "3C3C3D", path: "M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" },
   "bnb smart chain": { title: "BNB Chain", hex: "F0B90B", path: "M5.631 3.676 12.001 0l6.367 3.676-2.34 1.358L12 2.716 7.972 5.034l-2.34-1.358Zm12.737 4.636-2.34-1.358L12 9.272 7.972 6.954l-2.34 1.358v2.716l4.026 2.318v4.636L12 19.341l2.341-1.359v-4.636l4.027-2.318V8.312Zm0 7.352v-2.716l-2.34 1.358v2.716l2.34-1.358Zm1.663.96-4.027 2.318v2.717l6.368-3.677V10.63l-2.34 1.358v4.636Zm-2.34-10.63 2.34 1.358v2.716l2.341-1.358V5.994l-2.34-1.358-2.342 1.358ZM9.657 19.926v2.716L12 24l2.341-1.358v-2.716l-2.34 1.358-2.343-1.358Zm-4.027-4.262 2.341 1.358v-2.716l-2.34-1.358v2.716Zm4.027-9.67L12 7.352l2.341-1.358-2.34-1.358-2.343 1.358Zm-5.69 1.358L6.31 5.994 3.968 4.636l-2.34 1.358V8.71l2.34 1.358V7.352Zm0 4.636-2.34-1.358v7.352l6.368 3.677v-2.717l-4.028-2.318v-4.636Z" },

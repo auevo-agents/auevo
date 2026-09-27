@@ -216,6 +216,7 @@ function HighlightTable({
             </span>
           )}
           {tab === "new" && <span className="dash-list-col">{row.symbol}</span>}
+          <span className="dash-list-chevron" aria-hidden="true">›</span>
         </Link>
       ))}
     </div>

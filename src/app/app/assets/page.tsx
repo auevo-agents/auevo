@@ -156,11 +156,11 @@ function AssetsApp() {
                 className="landing2-partner-chip"
                 style={{
                   cursor: "pointer",
-                  border: issuer.id === issuerFilter ? "1px solid var(--red)" : undefined,
+                  border: issuer.id === issuerFilter ? "1px solid rgba(201,178,124,.6)" : undefined,
                 }}
                 onClick={() => setIssuerFilter((current) => (current === issuer.id ? null : issuer.id))}
               >
-                <BrandIcon symbol={issuer.name} kind="issuer" size={22} />
+                <BrandIcon symbol={issuer.id} name={issuer.name} kind="issuer" size={22} />
                 {issuer.name}
               </button>
             ))}
@@ -250,6 +250,7 @@ function AssetsApp() {
                       {premium.text}
                       {risk !== null && <span className="dash-list-arrow"> · risk {risk}</span>}
                     </span>
+                    <span className="dash-list-chevron" aria-hidden="true">›</span>
                   </Link>
                 );
               })}

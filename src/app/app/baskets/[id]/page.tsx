@@ -448,17 +448,17 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
           {typeof usdgBalance === "bigint" && <p className="desk-note">Balance: {formatUnits(usdgBalance, USDG_DECIMALS)} USDG</p>}
 
           {needsUsdgApprove && (
-            <button onClick={handleApproveUsdg} disabled={approveUsdc.isPending}>
+            <button className="app-connect-button" onClick={handleApproveUsdg} disabled={approveUsdc.isPending}>
               {approveUsdc.isPending ? "Approving…" : "1. Approve USDG to Permit2"}
             </button>
           )}
           {!needsUsdgApprove && !usdgPermit && (
-            <button onClick={handleSignUsdgPermit} disabled={signPermit.isPending}>
+            <button className="app-connect-button" onClick={handleSignUsdgPermit} disabled={signPermit.isPending}>
               {signPermit.isPending ? "Signing…" : "2. Sign Permit2 (free, off-chain)"}
             </button>
           )}
           {!needsUsdgApprove && usdgPermit && (
-            <button onClick={handleBuy} disabled={!parsedAmountIn || sendBuyTx.isPending}>
+            <button className="app-connect-button" onClick={handleBuy} disabled={!parsedAmountIn || sendBuyTx.isPending}>
               {sendBuyTx.isPending ? "Confirm in wallet…" : "3. Buy basket (one signature)"}
             </button>
           )}
@@ -507,9 +507,9 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
             return null;
           })}
           <div className="desk-tabs">
-            <button onClick={() => handleSell(0.25)}>SELL 25%</button>
-            <button onClick={() => handleSell(0.5)}>SELL 50%</button>
-            <button onClick={() => handleSell(1)}>SELL 100%</button>
+            <button className="desk-tab" onClick={() => handleSell(0.25)}>SELL 25%</button>
+            <button className="desk-tab" onClick={() => handleSell(0.5)}>SELL 50%</button>
+            <button className="desk-tab" onClick={() => handleSell(1)}>SELL 100%</button>
           </div>
           {sellError && <p className="error">{sellError}</p>}
           {sellReceipt.isSuccess && <p className="desk-change-pos">Basket holdings sold.</p>}
@@ -573,7 +573,7 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
                 return null;
               })}
 
-              <button onClick={handleExecuteRebalance} disabled={sendRebalanceTx.isPending}>
+              <button className="app-connect-button" onClick={handleExecuteRebalance} disabled={sendRebalanceTx.isPending}>
                 {sendRebalanceTx.isPending ? "Confirm in wallet…" : "Execute rebalance"}
               </button>
               {rebalancePreview.excluded.length > 0 && (

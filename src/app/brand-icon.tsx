@@ -1,4 +1,4 @@
-import { TICKER_BRANDS, ISSUER_BRANDS, CHAIN_BRANDS } from "./brand-marks";
+import { TICKER_BRANDS, ISSUER_BRANDS, CHAIN_BRANDS, ISSUER_MONOGRAM_COLORS } from "./brand-marks";
 import { TICKER_LOGO_FILES, ISSUER_LOGO_FILES, CHAIN_LOGO_FILES } from "./brand-logo-files";
 
 const FALLBACK_COLORS = ["#ff344d", "#5ae09d", "#f5a623", "#6ea8fe", "#c77dff", "#ff8a5c"];
@@ -49,10 +49,12 @@ export function BrandIcon({ symbol, name, kind = "ticker", size = 28 }: { symbol
     );
   }
 
+  const monogramColor = (kind === "issuer" && ISSUER_MONOGRAM_COLORS[symbol.toLowerCase()]) || colorForName(label);
+
   return (
     <span
       className="brand-icon-badge brand-icon-fallback"
-      style={{ width: size, height: size, background: colorForName(label), fontSize: size * 0.42 }}
+      style={{ width: size, height: size, background: monogramColor, fontSize: size * 0.42 }}
       title={label}
     >
       {label.charAt(0).toUpperCase()}
