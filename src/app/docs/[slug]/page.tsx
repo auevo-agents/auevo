@@ -37,7 +37,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
       <div className="docs-pager">
         {prev ? (
           <Link href={`/docs/${prev.page.slug}`} className="docs-pager-link docs-pager-prev">
-            <span>← Previous</span>
+            <span>Previous</span>
             <b>{prev.page.title}</b>
           </Link>
         ) : (
@@ -45,7 +45,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
         )}
         {next && (
           <Link href={`/docs/${next.page.slug}`} className="docs-pager-link docs-pager-next">
-            <span>Next →</span>
+            <span>Next</span>
             <b>{next.page.title}</b>
           </Link>
         )}
@@ -58,7 +58,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
           <a key={heading} href={`#${headingId(heading)}`}>{heading}</a>
         ))}
         <Link href="/app" className="docs-toc-product">
-          Open in product <span>↗</span>
+          Open in product
         </Link>
       </aside>
     </div>
