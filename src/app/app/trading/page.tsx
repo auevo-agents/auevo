@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ConnectButton } from "../connect-button";
 import { SwapPanel } from "../swap-panel";
+import { LpPanel } from "../lp-panel";
 import { formatUsdCompact, formatPrice, shortenAddress } from "@/lib/format";
 import type { MarketPool } from "@/lib/geckoterminal";
 
@@ -79,19 +80,16 @@ function DexApp() {
       {tab === "pools" && <PoolsTab />}
 
       {tab === "lp" && (
-        <div className="app-empty app-empty-text">
-          <p>
-            Adding/removing liquidity would route through Uniswap&apos;s own
-            NonfungiblePositionManager — an existing, already-audited contract,
-            the same trust model as Swap — not custom Solidity of ours. That
-            makes it a real near-term target, unlike Token Locker or the OTC
-            desk, which do need our own contract. Not wired up yet.
-          </p>
-          <p>
-            In the meantime, see <button onClick={() => setTab("pools")}>Pools</button> for
-            what already has liquidity on this chain.
-          </p>
-        </div>
+        <>
+          <div className="app-notice app-notice-info">
+            Full-range liquidity provision on any live Uniswap V3 pool on Robinhood Chain,
+            routed through Uniswap&apos;s own NonfungiblePositionManager — not custom Solidity
+            of ours. Removing liquidity isn&apos;t wired up yet; see{" "}
+            <button onClick={() => setTab("pools")}>Pools</button> for what already has
+            liquidity on this chain.
+          </div>
+          <LpPanel />
+        </>
       )}
 
       {tab === "locker" && (
