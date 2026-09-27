@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuevoLogo } from "../auevo-logo";
 import { NAV_GROUPS, type NavGroup } from "../nav-groups";
+import { NavIcon } from "../nav-icons";
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/app") return pathname === "/app";
@@ -74,6 +75,7 @@ export function Sidebar() {
           className={isActive(pathname, "/app") && pathname === "/app" ? "app-nav-link active" : "app-nav-link"}
           onClick={() => setMobileOpen(false)}
         >
+          <NavIcon kind="home" size={15} />
           <b>Overview</b>
         </Link>
 
@@ -82,6 +84,7 @@ export function Sidebar() {
           className={isActive(pathname, "/app/agent") ? "app-nav-link active" : "app-nav-link"}
           onClick={() => setMobileOpen(false)}
         >
+          <NavIcon kind="sparkle" size={15} />
           <b>AUEVO AI</b>
           <span className="app-nav-soon-badge">soon</span>
         </Link>
@@ -109,7 +112,9 @@ export function Sidebar() {
                       setMobileOpen(false);
                     }}
                   >
+                    {link.icon && <NavIcon kind={link.icon} size={15} />}
                     {link.label}
+                    {link.soon && <span className="app-nav-soon-badge">soon</span>}
                   </Link>
                 ))}
               </div>
