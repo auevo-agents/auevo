@@ -43,7 +43,7 @@ export function AuevoLogo({ className = "", compact = false, title = "Auevo" }: 
       <AuevoMark />
       {!compact && (
         <span className="auevo-wordmark" aria-label={title}>
-          auevo<span>_</span>
+          auevo
         </span>
       )}
     </span>
