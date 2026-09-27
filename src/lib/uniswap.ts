@@ -26,6 +26,14 @@ export const UNISWAP_QUOTER_V2: Address =
   "0x33e885eD0Ec9bF04EcfB19341582aADCb4c8A9E7";
 export const UNISWAP_SWAP_ROUTER_02: Address =
   "0xCaf681a66D020601342297493863E78C959E5cb2";
+/**
+ * NonfungiblePositionManager — re-confirmed against the same manifest
+ * 2026-09-27 while building the LP (add-liquidity) flow below; the other
+ * three addresses above were re-checked at the same time and are
+ * unchanged since 2026-09-21.
+ */
+export const UNISWAP_NFT_POSITION_MANAGER: Address =
+  "0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3";
 
 /**
  * WETH9 / wrapped native ETH for Robinhood Chain mainnet.
