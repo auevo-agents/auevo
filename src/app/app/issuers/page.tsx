@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Issuer {
   id: string;
@@ -81,6 +82,11 @@ export default function IssuersPage() {
                   </a>
                 )}
               </div>
+              {issuer.tokenCount > 0 && (
+                <Link href={`/app/assets?issuer=${issuer.id}`} className="app-link-button">
+                  View {issuer.tokenCount} token{issuer.tokenCount === 1 ? "" : "s"} →
+                </Link>
+              )}
             </article>
           ))}
         </div>

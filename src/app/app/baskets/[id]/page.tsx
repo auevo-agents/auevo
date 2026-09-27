@@ -409,6 +409,7 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
       {!isConnected && <div className="app-empty">Connect a wallet above to trade this basket.</div>}
 
       {isConnected && (
+        <div className="trade-panel trade-panel-wide">
         <div className="trade-form">
           <h4>Buy</h4>
           <div className="desk-tabs">
@@ -583,6 +584,7 @@ export default function BasketDetailPage({ params }: PageProps<"/app/baskets/[id
             </>
           )}
           {rebalanceReceipt.isSuccess && <p className="desk-change-pos">Rebalanced.</p>}
+        </div>
         </div>
       )}
 

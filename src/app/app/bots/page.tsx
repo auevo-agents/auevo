@@ -245,7 +245,8 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
           Connect a wallet above to create or manage a DCA position.
         </div>
       ) : (
-        <div className="trade-form" style={{ marginTop: 22 }}>
+        <div className="trade-panel">
+        <div className="trade-form">
           <div className="scan-section-heading">
             <span>NEW POSITION</span>
             <strong>Recurring buy — ERC-20 into ERC-20</strong>
@@ -351,6 +352,7 @@ function BotsApp({ vaultAddress }: { vaultAddress: Address }) {
           {createReceipt.isSuccess && (
             <p className="trade-success">Position created.</p>
           )}
+        </div>
         </div>
       )}
 

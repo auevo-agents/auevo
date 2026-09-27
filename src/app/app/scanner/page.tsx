@@ -221,8 +221,14 @@ function RiskTab({ active }: { active: Tab }) {
           <span>CAPABILITIES</span>
         </div>
         {data.rows.map((r) => (
-          <div key={`${r.chainId}-${r.address}`} className="money-row money-row-nopair">
-            <span>{tickerLink(r.ticker, <b>{r.ticker}</b>)}</span>
+          <Link
+            key={`${r.chainId}-${r.address}`}
+            href={`/app/assets/${encodeURIComponent(r.ticker)}`}
+            className="money-row money-row-nopair money-row-link"
+          >
+            <span>
+              <b>{r.ticker}</b>
+            </span>
             <span>
               {r.issuerId} · {chainNameFor(r.chainId)}
             </span>
@@ -230,7 +236,7 @@ function RiskTab({ active }: { active: Tab }) {
               {r.score ?? "not scanned yet"}
             </span>
             <span>{capabilityBadges(r)}</span>
-          </div>
+          </Link>
         ))}
       </div>
     </>
@@ -266,14 +272,20 @@ function LiquidityTab({ active }: { active: Tab }) {
           <span className="desk-col-right">$100K IMPACT</span>
         </div>
         {data.rows.map((r) => (
-          <div key={`${r.chainId}-${r.address}`} className="money-row money-row-nopair">
-            <span>{tickerLink(r.ticker, <b>{r.ticker}</b>)}</span>
+          <Link
+            key={`${r.chainId}-${r.address}`}
+            href={`/app/assets/${encodeURIComponent(r.ticker)}`}
+            className="money-row money-row-nopair money-row-link"
+          >
+            <span>
+              <b>{r.ticker}</b>
+            </span>
             {r.depths.map((d) => (
               <span key={d.usdIn} className={`desk-col-right ${d.priceImpactPct !== null && d.priceImpactPct > 1 ? "desk-change-neg" : ""}`}>
                 {d.amountOut === null ? "no route" : d.priceImpactPct !== null ? `${d.priceImpactPct.toFixed(2)}%` : "—"}
               </span>
             ))}
-          </div>
+          </Link>
         ))}
       </div>
     </>
@@ -312,13 +324,19 @@ function NewTab({ active }: { active: Tab }) {
         <span className="desk-col-right">DISCOVERED</span>
       </div>
       {data.rows.map((r) => (
-        <div key={`${r.chainId}-${r.address}`} className="money-row money-row-nopair">
-          <span>{tickerLink(r.ticker, <b>{r.ticker}</b>)}</span>
+        <Link
+          key={`${r.chainId}-${r.address}`}
+          href={`/app/assets/${encodeURIComponent(r.ticker)}`}
+          className="money-row money-row-nopair money-row-link"
+        >
+          <span>
+            <b>{r.ticker}</b>
+          </span>
           <span>
             {r.issuerId} · {chainNameFor(r.chainId)}
           </span>
           <span className="desk-col-right">{timeAgo(r.discoveredAt)}</span>
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -505,6 +523,7 @@ function AlertsTab() {
   if (!isConnected) return <div className="app-empty">Connect a wallet above to manage alerts.</div>;
 
   return (
+    <div className="trade-panel trade-panel-wide">
     <div className="trade-form">
       <h4>New alert</h4>
       <div className="desk-tabs">
@@ -609,6 +628,7 @@ function AlertsTab() {
       <p className="desk-note">
         Checked once a day (Vercel&apos;s Hobby plan won&apos;t run a cron more often) — not real-time.
       </p>
+    </div>
     </div>
   );
 }

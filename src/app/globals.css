@@ -7686,7 +7686,8 @@ a {
   color: #eef0ef;
 }
 
-.token-side-card .app-link-button {
+.token-side-card .app-link-button,
+.issuer-card .app-link-button {
   display: inline-block;
   margin-top: 14px;
 }
@@ -13640,4 +13641,35 @@ a {
   .landing-header-wave {
     display: none;
   }
+}
+
+/*
+ * Standalone action forms (Swap & Bridge, DEX swap, basket buy/sell,
+ * DCA position, new alert) were rendering as a bare, borderless
+ * .trade-form pinned to the left edge of the ~1400px-wide workspace
+ * column — .trade-form itself only picks up a border-color/background
+ * from the shared ".app-shell :is(...)" panel rule, never an actual
+ * border width or padding, because its other use (inside .token-side-card,
+ * next to a chart) already gets those from the card wrapper around it.
+ * .trade-panel is that missing wrapper for every place .trade-form (or
+ * SwapPanel, which renders one) stands alone on the page: it centers the
+ * form and gives it real card padding/border instead of loose fields
+ * floating in empty space. Leave .token-side-card's own nesting alone —
+ * it's a different, already-correct layout (chart + trade side column).
+ */
+.trade-panel {
+  width: 100%;
+  max-width: 460px;
+  margin: 22px auto 0;
+}
+
+.trade-panel-wide {
+  max-width: 640px;
+}
+
+.trade-panel .trade-form {
+  margin-top: 0;
+  max-width: none;
+  padding: 22px;
+  border: 1px solid var(--au-line, #1c2226);
 }
