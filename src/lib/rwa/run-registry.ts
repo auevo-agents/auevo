@@ -28,7 +28,18 @@ import { withFetchRetry } from "./db-retry";
  * own doc comment makes about not sharing with lib/rwa/registry.ts.
  */
 
-const MAX_CHUNKS_PER_SCAN = Number(process.env.RWA_REGISTRY_MAX_CHUNKS_PER_RUN) || 30;
+// 1000, not 30: discoverUsdgPools is already dual-bounded by
+// SCAN_BUDGET_MS's wall-clock deadline (see its own `deadline.expired`
+// check), so this chunk cap was never the thing standing between a slow
+// RPC and a blown Vercel timeout — the deadline already does that job.
+// A cap of 30 (300,000 blocks/run) against a chain producing ~860,000
+// blocks/day meant the scan structurally could never catch up regardless
+// of what nextFrom did below; confirmed against production 2026-09-27
+// (only 5 of 21 seeded tickers had been found). Left high enough that
+// the real limiting factor is now always the time budget, not this
+// count — RWA_REGISTRY_MAX_CHUNKS_PER_RUN still overrides it if a future
+// RPC provider turns out to need a tighter leash.
+const MAX_CHUNKS_PER_SCAN = Number(process.env.RWA_REGISTRY_MAX_CHUNKS_PER_RUN) || 1000;
 const SCAN_BUDGET_MS = 20_000;
 const START_BLOCK = BigInt(process.env.RWA_REGISTRY_START_BLOCK || "0");
 const LOOKBACK_BLOCKS = BigInt(process.env.RWA_REGISTRY_LOOKBACK_BLOCKS || "2000000");
@@ -37,10 +48,28 @@ function maxBigInt(a: bigint, b: bigint): bigint {
   return a > b ? a : b;
 }
 
-function nextFrom(synced: bigint, headBlock: bigint): bigint {
+/**
+ * Where to resume the next scan. LOOKBACK_BLOCKS only ever bootstraps a
+ * *fresh* checkpoint (synced=0, nothing scanned yet) — it used to also
+ * re-clamp `synced` forward to `headBlock - LOOKBACK_BLOCKS` on every
+ * single call once the scan fell more than LOOKBACK_BLOCKS behind head,
+ * which is a real bug, not a safety margin: since this scan's throughput
+ * (see MAX_CHUNKS_PER_SCAN's own note) was structurally slower than the
+ * chain's own growth rate, every run fell further behind than the last,
+ * so that re-clamp fired on *every* run and permanently discarded
+ * whatever unscanned history sat between the old `synced` and the new
+ * floor — forever, since a block range this scanner never visits can
+ * never contribute a token match. A real, already-deployed pool for one
+ * of the other 16 seeded tickers could easily be sitting in exactly that
+ * kind of skipped range. Once a checkpoint is established, this now only
+ * ever moves forward from `synced + 1` — slower to fully catch up from a
+ * large historical backlog, but it will actually get there, and it never
+ * again drops a block range on the floor.
+ */
+export function nextFrom(synced: bigint, headBlock: bigint): bigint {
+  if (synced > 0n) return maxBigInt(synced + 1n, START_BLOCK);
   const lookbackFloor = headBlock > LOOKBACK_BLOCKS ? headBlock - LOOKBACK_BLOCKS : 0n;
-  const floor = maxBigInt(START_BLOCK, lookbackFloor);
-  return maxBigInt(synced + 1n, floor);
+  return maxBigInt(START_BLOCK, lookbackFloor);
 }
 
 export interface RegistryRunResult {
