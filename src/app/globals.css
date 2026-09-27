@@ -13431,3 +13431,134 @@ a {
   .landing2-orbit-scan { opacity: .18; }
   .landing2-orbit-signal { opacity: .45; }
 }
+
+
+/* === AUEVO HEADER WATER RIPPLE === */
+.landing-header {
+  isolation: isolate;
+}
+
+.landing-header > .landing-brand,
+.landing-header > .landing-nav {
+  position: relative;
+  z-index: 2;
+}
+
+.landing-header-wave {
+  --wave-x: 50%;
+  --wave-y: 50%;
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .45s ease;
+  contain: paint;
+}
+
+.landing-header-wave.is-active {
+  opacity: 1;
+}
+
+.landing-header-wave::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 150px 18px at var(--wave-x) var(--wave-y),
+      rgba(247,235,205,.14) 0%,
+      rgba(215,192,145,.065) 24%,
+      transparent 70%),
+    radial-gradient(ellipse 320px 70px at var(--wave-x) var(--wave-y),
+      rgba(201,178,124,.055),
+      transparent 72%);
+  mix-blend-mode: screen;
+  filter: blur(.25px);
+}
+
+.landing-header-wave::after {
+  content: "";
+  position: absolute;
+  inset: -20% -5%;
+  opacity: .38;
+  background:
+    repeating-radial-gradient(
+      ellipse 64px 12px at var(--wave-x) var(--wave-y),
+      transparent 0 8px,
+      rgba(238,222,187,.05) 9px 10px,
+      transparent 11px 19px
+    );
+  mask-image: radial-gradient(ellipse 300px 90px at var(--wave-x) var(--wave-y), #000 0%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 300px 90px at var(--wave-x) var(--wave-y), #000 0%, transparent 78%);
+}
+
+.landing-header-wave-glow {
+  position: absolute;
+  left: var(--wave-x);
+  top: var(--wave-y);
+  width: 430px;
+  height: 110px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(ellipse, rgba(229,209,166,.075), transparent 68%);
+  filter: blur(7px);
+  transition: left .08s linear, top .08s linear;
+  will-change: left, top;
+}
+
+.landing-header-ripple {
+  position: absolute;
+  width: 18px;
+  height: 6px;
+  border: 1px solid rgba(239,223,188,.48);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.15);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.018),
+    0 0 14px rgba(218,190,135,.08);
+  will-change: transform, opacity;
+}
+
+.landing-header-ripple::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgba(231,211,170,.16);
+  border-radius: inherit;
+}
+
+.landing-header-ripple.is-running {
+  animation: auevo-header-water-ripple .92s cubic-bezier(.12,.55,.3,1) forwards;
+}
+
+@keyframes auevo-header-water-ripple {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.15);
+  }
+  12% {
+    opacity: .72;
+  }
+  68% {
+    opacity: .28;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(16, 7);
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 720px) {
+  .landing-header-wave {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-header-wave {
+    display: none;
+  }
+}
