@@ -10247,7 +10247,7 @@ a {
 }
 .landing2-card-compare { --card-art-x: 0%; --card-art-y: 0%; }
 .landing2-card-verify { --card-art-x: 50%; --card-art-y: 0%; }
-.landing2-card-trade { --card-art-x: 100%; --card-art-y: 0%; }
+.landing2-card-trade { --card-art-x: 100%; --card-art-y: 10%; }
 .landing2-card-assets { --card-art-x: 0%; --card-art-y: 50%; }
 .landing2-card-scanner { --card-art-x: 50%; --card-art-y: 50%; }
 .landing2-card-baskets { --card-art-x: 100%; --card-art-y: 50%; }
