@@ -1,3 +1,5 @@
+import { BrandIcon } from "./brand-icon";
+
 interface TickerRow {
   ticker: string;
   priceUsd: number | null;
@@ -17,6 +19,7 @@ function TickerContent({ rows }: { rows: TickerRow[] }) {
         const sign = pct >= 0 ? "+" : "";
         return (
           <span className="landing2-ticker-item" key={`${r.ticker}-${i}`}>
+            <BrandIcon symbol={r.ticker} kind="ticker" size={16} />
             <b>{r.ticker}</b>
             <span>{formatUsd(r.priceUsd)}</span>
             <span className={pct >= 0 ? "landing2-ticker-up" : "landing2-ticker-down"}>

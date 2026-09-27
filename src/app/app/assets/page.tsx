@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { AssetSummary, AssetSort } from "@/lib/rwa/catalog";
 import { Disclaimer } from "../../disclaimer";
+import { BrandIcon } from "../../brand-icon";
 
 /**
  * RWA_SPEC.md Phase 3's /app/assets catalog — every tokenized stock/ETF
@@ -15,14 +16,6 @@ import { Disclaimer } from "../../disclaimer";
  * volume, market cap) Phase 1's price cron deliberately doesn't populate
  * yet, so this stays one ranked list rather than fabricating three.
  */
-
-const AVATAR_COLORS = ["#ff344d", "#5ae09d", "#f5a623", "#6ea8fe", "#c77dff", "#ff8a5c"];
-
-function colorFor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-}
 
 function formatUsd(value: number | null): string {
   if (value === null) return "—";
@@ -119,9 +112,7 @@ export default function AssetsPage() {
           <div className="landing2-partners" style={{ paddingTop: 20 }}>
             {activeIssuers.map((issuer) => (
               <span className="landing2-partner-chip" key={issuer.id}>
-                <span className="landing2-partner-avatar" style={{ background: colorFor(issuer.name) }}>
-                  {issuer.name.charAt(0).toUpperCase()}
-                </span>
+                <BrandIcon symbol={issuer.name} kind="issuer" size={22} />
                 {issuer.name}
               </span>
             ))}
@@ -170,9 +161,7 @@ export default function AssetsPage() {
                 return (
                   <Link key={asset.ticker} href={`/app/assets/${asset.ticker}`} className="dash-list-row">
                     <span className="dash-list-rank">{i + 1}</span>
-                    <span className="dash-list-avatar" style={{ background: colorFor(asset.ticker) }}>
-                      {asset.ticker.charAt(0)}
-                    </span>
+                    <BrandIcon symbol={asset.ticker} name={asset.name} kind="ticker" size={32} />
                     <span className="dash-list-name">
                       <b>{asset.ticker}</b>
                       <small>{asset.name}</small>
