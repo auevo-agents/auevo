@@ -324,6 +324,64 @@ export const DOC_SECTIONS: DocSection[] = [
           },
         ],
       },
+      {
+        slug: "provide-liquidity",
+        title: "Provide liquidity",
+        summary: "Earn trading fees on RWA/USDG pools — a real position in your own wallet.",
+        blocks: [
+          {
+            type: "p",
+            text: "Any v4 RWA/USDG pool on the Pools page can be provided liquidity to, full-range. Deposit USDG and the matching amount of the tokenized stock (computed from the pool's current price), and Uniswap mints an NFT representing your position directly to your wallet.",
+          },
+          {
+            type: "p",
+            text: "Your position earns a share of every swap fee taken on that pool going forward — the same Fee APR figure shown on the Pools page is what a full-range position in that pool has been earning. Fees accrue to the position and are claimed by decreasing or closing it (in Uniswap's own interface, or a wallet that reads v4 positions) — Auevo's own page doesn't collect or touch them at any point.",
+          },
+          {
+            type: "callout",
+            tone: "warn",
+            text: "This is real liquidity provision, with the same risks as anywhere else on Uniswap: impermanent loss if the token's price moves against your position, and thinner pools moving price more per trade. Full-range means your capital is spread across every possible price, which is simpler but earns a smaller share of fees than a narrower range would at the current price.",
+          },
+          {
+            type: "p",
+            text: "The first time you provide liquidity to a given pool, expect four approval transactions (USDG and the stock token, each to Permit2 and then to Uniswap's Position Manager) before the deposit itself — a one-time setup per pool, not a per-deposit cost.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "fees",
+    title: "Fees & revenue",
+    pages: [
+      {
+        slug: "how-auevo-makes-money",
+        title: "How Auevo makes money",
+        summary: "A short, direct answer — no subscription, no token, one small fee on trades.",
+        blocks: [
+          {
+            type: "p",
+            text: "Auevo takes a 0.30% fee, taken from the trade's own output rather than charged separately, on two kinds of transactions it builds: a Basket buy or sell, and a swap executed directly on Robinhood Chain. Both are single wallet-signed transactions — the fee is embedded in that same transaction, not a second charge.",
+          },
+          {
+            type: "table",
+            headers: ["Section", "Fee"],
+            rows: [
+              ["Baskets (buy/sell)", "0.30% of the trade, taken on-chain in the same transaction"],
+              ["Swap on Robinhood Chain", "0.30% of the trade, taken on-chain in the same transaction"],
+              ["Swap & Bridge (cross-chain, via LI.FI)", "No Auevo fee. LI.FI or the underlying bridge/DEX may charge its own — shown in the quoted route before you confirm"],
+              ["Pools", "None — read-only, and providing liquidity earns Uniswap's own pool fee, paid directly to you, not through Auevo"],
+              ["Lend", "None — read-only mirror of Kamino's own market; deposits and their terms are entirely Kamino's"],
+              ["Scanner, Assets, Alerts, Docs", "None — informational, no trade involved"],
+            ],
+          },
+          {
+            type: "callout",
+            tone: "info",
+            text: "There is no subscription tier, no native Auevo token, and no paid or sponsored listing for any issuer or asset — the registry lists what it has verified, not what's been paid for.",
+          },
+        ],
+      },
     ],
   },
   {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Disclaimer } from "../../disclaimer";
+import { AddLiquidityPanel } from "./add-liquidity-panel";
 
 interface PoolRow {
   poolId: string | null;
@@ -43,6 +44,7 @@ export default function RwaPoolsPage() {
   const [pools, setPools] = useState<PoolRow[] | null>(null);
   const [indexed, setIndexed] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,28 +125,51 @@ export default function RwaPoolsPage() {
       {pools && indexed && pools.length > 0 && (
         <>
           <div className="dash-list-card" style={{ marginTop: 8 }}>
-            {pools.map((p) => (
-              <div key={p.poolId ?? p.poolAddress} className="dash-list-row" style={{ gridTemplateColumns: "auto 1fr auto auto auto auto" }}>
-                <span className="dash-list-avatar" style={{ background: "var(--panel-3)", color: "#f2f4f3", fontSize: 11 }}>
-                  {p.dex === "uniswap_v4" ? "v4" : "v3"}
-                </span>
-                <span className="dash-list-name">
-                  <b>{p.ticker ?? p.symbol ?? "?"} / USDG</b>
-                  <small>{(p.feeTier / 10_000).toFixed(2)}% fee tier</small>
-                </span>
-                <span className="dash-list-col dash-list-col-hide-mobile">Uniswap {p.dex === "uniswap_v4" ? "v4" : "v3"}</span>
-                <span className="dash-list-col">{formatUsd(p.liquidityUsd)}</span>
-                <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(p.volume24hUsd)}</span>
-                <span className="dash-list-col">{formatPct(p.feeAprPct)}</span>
-              </div>
-            ))}
+            {pools.map((p) => {
+              const key = p.poolId ?? p.poolAddress ?? "";
+              const canAddLiquidity = p.dex === "uniswap_v4" && Boolean(p.poolId);
+              return (
+                <div key={key} className="dash-list-row" style={{ gridTemplateColumns: "auto 1fr auto auto auto auto auto", cursor: canAddLiquidity ? "default" : undefined }}>
+                  <span className="dash-list-avatar" style={{ background: "var(--panel-3)", color: "#f2f4f3", fontSize: 11 }}>
+                    {p.dex === "uniswap_v4" ? "v4" : "v3"}
+                  </span>
+                  <span className="dash-list-name">
+                    <b>{p.ticker ?? p.symbol ?? "?"} / USDG</b>
+                    <small>{(p.feeTier / 10_000).toFixed(2)}% fee tier</small>
+                  </span>
+                  <span className="dash-list-col dash-list-col-hide-mobile">Uniswap {p.dex === "uniswap_v4" ? "v4" : "v3"}</span>
+                  <span className="dash-list-col">{formatUsd(p.liquidityUsd)}</span>
+                  <span className="dash-list-col dash-list-col-hide-mobile">{formatUsd(p.volume24hUsd)}</span>
+                  <span className="dash-list-col">{formatPct(p.feeAprPct)}</span>
+                  {canAddLiquidity ? (
+                    <button
+                      className="dash-list-arrow"
+                      style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
+                      onClick={() => setExpandedPoolId(expandedPoolId === p.poolId ? null : p.poolId)}
+                    >
+                      {expandedPoolId === p.poolId ? "Close ×" : "Add liquidity →"}
+                    </button>
+                  ) : (
+                    <span className="dash-list-col dash-list-col-hide-mobile">—</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {expandedPoolId &&
+            (() => {
+              const pool = pools.find((p) => p.poolId === expandedPoolId);
+              if (!pool) return null;
+              return <AddLiquidityPanel poolId={expandedPoolId} ticker={pool.ticker ?? pool.symbol ?? "TOKEN"} />;
+            })()}
           <p className="desk-note">
             &quot;Liquidity&quot; is the pool&apos;s virtual reserves at its current price (from its active
             liquidity), not a full-range TVL figure — Uniswap v4 has no subgraph this app reads from, and true
             full-range TVL needs traversing every initialized tick range, which this app doesn&apos;t do. Volume
             is summed directly from indexed USDG-side swap amounts over the last 24h — no external price needed
-            for that half. Adding liquidity from this page is not built yet (RWA_SPEC.md Phase 8: &quot;позже&quot;).
+            for that half. Adding liquidity (v4 pools only, full-range) mints a real Uniswap position from your
+            own wallet — Auevo never touches your funds, and you keep the position&apos;s NFT.
           </p>
           <Disclaimer compact />
         </>
