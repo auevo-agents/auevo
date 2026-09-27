@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsSidebar } from "./docs-sidebar";
+import { AuevoLogo } from "../auevo-logo";
 
 export const metadata: Metadata = {
   title: "Auevo — Docs",
@@ -16,13 +17,25 @@ export const metadata: Metadata = {
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="docs-shell">
-      <header className="landing-header">
-        <Link href="/" className="landing-brand">
-          auevo<span>_</span>
+      <header className="docs-topbar">
+        <Link href="/" className="docs-brand" aria-label="Auevo home">
+          <AuevoLogo />
+          <span className="docs-brand-divider" />
+          <span className="docs-brand-label">Documentation</span>
         </Link>
-        <Link href="/app" className="landing-cta-ghost">
-          Open workspace →
-        </Link>
+
+        <nav className="docs-topbar-nav" aria-label="Documentation">
+          <Link href="/docs/welcome">Guides</Link>
+          <Link href="/docs/supported-chains">Networks</Link>
+          <Link href="/docs/scanner">Scanner</Link>
+        </nav>
+
+        <div className="docs-topbar-actions">
+          <span className="docs-version">v1.0 · live</span>
+          <Link href="/app" className="docs-workspace-link">
+            Open workspace <span>↗</span>
+          </Link>
+        </div>
       </header>
       <div className="docs-body">
         <DocsSidebar />
