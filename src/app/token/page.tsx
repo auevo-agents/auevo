@@ -39,9 +39,10 @@ export const metadata: Metadata = {
 // address does (see the contract note below).
 const TOTAL_SUPPLY = 1_000_000_000;
 
-// Given directly by the token's own team (2026-09-28) — the first launch
-// attempt's address was pulled after it failed; this is the redeploy.
-const AUEVO_CONTRACT: `0x${string}` | null = "0xeAE9E5126CDc3CDca4Cc1Ef50259048C178F94Cf";
+// Pulled again (2026-09-28) — the redeploy address was also taken down at
+// the team's request. Do not re-add any address here without explicit
+// instruction; a new one will be provided if/when it's ready.
+const AUEVO_CONTRACT: `0x${string}` | null = null;
 
 const EXPLORER_BASE = "https://robinhoodchain.blockscout.com";
 
@@ -80,15 +81,15 @@ export default async function TokenPage() {
       <section className="token-hero">
         <img src="/logos/auevo.png" alt="AUEVO" className="token-hero-mark" />
         <h1>$AUEVO</h1>
-        <span className="token-hero-badge">Live on Robinhood Chain</span>
+        <span className="token-hero-badge">Launching soon</span>
         <p className="token-hero-lead">
-          The native token of the Auevo platform, on Robinhood Chain. Live
-          price and market cap land here the moment a pool is indexed; a
-          full read-only security self-scan is next.
+          The native token of the Auevo platform, launching on Robinhood
+          Chain. Contract address, price and market cap land here the
+          moment it deploys.
         </p>
       </section>
 
-      <section className="token-stats" aria-label="Token stats (price/market cap unavailable until a pool is indexed)">
+      <section className="token-stats" aria-label="Token stats (unavailable before launch)">
         {stats.map((stat) => (
           <div className="token-stat" key={stat.label}>
             <span className="token-stat-label">{stat.label}</span>
