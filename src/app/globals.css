@@ -10018,6 +10018,22 @@ a {
   }
 }
 
+.token-links {
+  max-width: 900px;
+  margin: -40px auto 80px;
+  padding: 0 24px;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.token-links a {
+  color: var(--au-gold, #c9b27c);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .app-nav-soon-badge {
   margin-left: 6px;
   padding: 1px 6px;
