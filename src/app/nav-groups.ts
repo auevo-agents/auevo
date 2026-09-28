@@ -33,7 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: "swap", label: "Swap & Bridge", href: "/app/swap", icon: "swap" },
       { id: "market", label: "Market", href: "/app/market", icon: "line-chart" },
       { id: "dex", label: "DEX", href: "/app/trading", icon: "grid" },
-      { id: "private-swap", label: "Private Swap", href: "/app/private-swap", icon: "lock", soon: true },
+      { id: "private-swap", label: "Private Swap", href: "/app/private-swap", icon: "lock" },
     ],
   },
   {

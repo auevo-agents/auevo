@@ -19,7 +19,8 @@
 .live i { width:6px;height:6px; }
 .orderState i { width:6px;height:6px; border-radius:50%; background:#c9b27c; }
 .fieldLabel,.field>span { display:block; margin:0 0 8px; color:#777f85; font:600 10px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.09em; text-transform:uppercase; }
-.input,.field input,.field select { width:100%; height:46px; min-width:0; border:1px solid #293238; border-radius:7px; background:#090d10; color:#edf0ef; font:500 13px/1 Arial,Helvetica,sans-serif; padding:0 13px; outline:none; }
+.input,.field input,.field select { width:100%; height:46px; min-width:0; border:1px solid #293238; border-radius:7px; background-color:#090d10; color:#edf0ef; font:500 13px/1 Arial,Helvetica,sans-serif; padding:0 13px; outline:none; }
+.field select { padding-right:34px; }
 .input:focus,.field input:focus,.field select:focus { border-color:#a99563; box-shadow:0 0 0 3px rgba(201,178,124,.11); }
 .assetGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:17px 0; }
 .field { display:block; min-width:0; margin:0 0 17px; }
