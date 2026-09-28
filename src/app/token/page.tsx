@@ -10,12 +10,12 @@ import { formatPrice, formatUsdCompact } from "@/lib/format";
  * scanner/layout.tsx has its own: a link to this shared before launch
  * shouldn't unfurl as the platform's generic homepage copy.
  *
- * Deliberately no tokenomics/utility copy yet: the contract hasn't
- * deployed, and this app doesn't publish financial claims it can't back
- * with a real, verified address. Real numbers replace the placeholders
- * below the moment the token launches — see docs/RWA_SPEC.md section 9's
- * standing "no hardcoding without a verified source" rule, which applies
- * here as much as to any on-chain address this app shows.
+ * Deliberately no tokenomics/utility copy: this app doesn't publish
+ * financial claims it can't back with real, verified data. Price/market
+ * cap below are DexScreener reads (real once a pool is indexed, "—"
+ * until then, never guessed) — see docs/RWA_SPEC.md section 9's standing
+ * "no hardcoding without a verified source" rule, which applies here as
+ * much as to any other on-chain address this app shows.
  */
 export const metadata: Metadata = {
   title: "$AUEVO — the Auevo token",
@@ -39,11 +39,9 @@ export const metadata: Metadata = {
 // address does (see the contract note below).
 const TOTAL_SUPPLY = 1_000_000_000;
 
-// Set to the real deployed address once the user gives it — the same way
-// every other on-chain address in this app gets confirmed (they paste a
-// real explorer URL), never a guess. Until then this whole page just
-// shows honest placeholders; nothing below depends on this being wrong.
-const AUEVO_CONTRACT: `0x${string}` | null = null;
+// Given directly by the token's own team on launch day (2026-09-28) —
+// same standing as every other user-confirmed address in this app.
+const AUEVO_CONTRACT: `0x${string}` | null = "0x8990841A6a666Ad0996A50ec1477F88374146f70";
 
 const EXPLORER_BASE = "https://robinhoodchain.blockscout.com";
 
