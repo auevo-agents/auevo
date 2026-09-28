@@ -110,6 +110,23 @@ describe("fetchReferencePrices", () => {
     expect(result.has("NOTATICKER")).toBe(false);
   });
 
+  it("throws on a batch-wide Twelve Data error (e.g. daily quota exceeded) instead of silently returning 0 updates", async () => {
+    // Real production shape, 2026-09-28: {"code":429,"message":"You have run
+    // out of API credits for the day...","status":"error"}. Before this
+    // guard, that response parsed as zero valid per-symbol entries — the
+    // cron logged a clean 200/"updated: 0" with no sign anything was wrong.
+    process.env.REFERENCE_PRICE_PROVIDER = "twelvedata";
+    process.env.REFERENCE_PRICE_API_KEY = "test-key";
+    global.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ code: 429, message: "You have run out of API credits for the day.", status: "error" }), {
+          status: 200,
+        })
+    ) as typeof fetch;
+
+    await expect(fetchReferencePrices(["NVDA", "AAPL"])).rejects.toThrow(/run out of API credits/);
+  });
+
   it("handles a single-ticker batch, which twelvedata returns in the flat {price} shape", async () => {
     process.env.REFERENCE_PRICE_PROVIDER = "twelvedata";
     process.env.REFERENCE_PRICE_API_KEY = "test-key";
