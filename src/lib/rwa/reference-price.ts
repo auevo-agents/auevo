@@ -120,8 +120,21 @@ async function twelveDataBatch(tickers: string[]): Promise<Map<string, Reference
       if (!res.ok) continue;
 
       const data = (await res.json()) as
-        | { price?: string; code?: number }
+        | { price?: string; code?: number; message?: string }
         | Record<string, { price?: string; code?: number }>;
+
+      // Twelve Data reports a batch-wide failure (rate limit, daily quota,
+      // bad key) as a single top-level {code, message} object rather than
+      // an HTTP error status or a per-symbol error — indistinguishable from
+      // "every symbol in this batch errored" unless checked for explicitly.
+      // Surfacing it (rather than silently treating it as "0 updates") is
+      // what makes a real outage visible in this cron's own logs instead of
+      // requiring a database query to notice — see the 2026-09-28 incident
+      // this was missing for (two straight runs, both HTTP 200, both
+      // "updated: 0", with the daily-quota error only found by hand).
+      if ("code" in data && "message" in data && typeof data.message === "string") {
+        throw new Error(`Twelve Data: ${data.message}`);
+      }
 
       // A single-symbol batch gets the flat {price} shape back, same as fetchReferencePrice's own call.
       if (batch.length === 1) {
@@ -141,8 +154,12 @@ async function twelveDataBatch(tickers: string[]): Promise<Map<string, Reference
         if (!Number.isFinite(priceUsd) || priceUsd <= 0) continue;
         out.set(ticker, { priceUsd, asOf: new Date(), source: "twelvedata", delayed: true });
       }
-    } catch {
-      // Node hiccup on this batch — those tickers simply have no reference price this pass.
+    } catch (err) {
+      // A batch-wide Twelve Data error (thrown above) is a real failure
+      // worth surfacing, not noise to swallow — everything else here
+      // (network hiccup, timeout, bad JSON) genuinely is just this one
+      // batch having no reference price this pass.
+      if (err instanceof Error && err.message.startsWith("Twelve Data: ")) throw err;
     } finally {
       clearTimeout(timer);
     }
