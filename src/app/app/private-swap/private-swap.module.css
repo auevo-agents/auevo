@@ -194,8 +194,8 @@
   background-size:cover,cover;
 }
 .productHeader > div { position:relative;z-index:1; }
-.productHeader h3 { color:var(--au-gold,#c9b27c); }
-.productHeader p { color:var(--au-gold,#c9b27c); }
+.productHeader.productHeader h3 { color:var(--au-gold,#c9b27c); }
+.productHeader.productHeader p { color:var(--au-gold,#c9b27c); }
 .gateLock {
   position:absolute!important;
   z-index:0!important;
