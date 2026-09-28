@@ -31,7 +31,17 @@ export const metadata: Metadata = {
   },
 };
 
-const STATS = ["Price", "Market cap", "Circulating supply", "Contract"];
+// Fixed at 1,000,000,000 — told directly by the token's own team, not an
+// on-chain read, so it needs no explorer-link verification the way an
+// address does (see the contract note below).
+const TOTAL_SUPPLY = 1_000_000_000;
+
+const STATS: { label: string; value: string }[] = [
+  { label: "Price", value: "—" },
+  { label: "Market cap", value: "—" },
+  { label: "Total supply", value: TOTAL_SUPPLY.toLocaleString("en-US") },
+  { label: "Contract", value: "—" },
+];
 
 export default function TokenPage() {
   return (
@@ -58,18 +68,16 @@ export default function TokenPage() {
         <span className="token-hero-badge">Launching soon</span>
         <p className="token-hero-lead">
           The native token of the Auevo platform, on Robinhood Chain. The
-          contract address, real supply figures and a full read-only security
-          self-scan land here the moment it deploys — the same scan every
-          other token gets on this app&apos;s{" "}
-          <Link href="/scanner">Token Scanner</Link>.
+          contract address, live price and a full read-only security
+          self-scan land here the moment it deploys.
         </p>
       </section>
 
-      <section className="token-stats" aria-label="Token stats (unavailable until launch)">
-        {STATS.map((label) => (
-          <div className="token-stat" key={label}>
-            <span className="token-stat-label">{label}</span>
-            <span className="token-stat-value">—</span>
+      <section className="token-stats" aria-label="Token stats (some unavailable until launch)">
+        {STATS.map((stat) => (
+          <div className="token-stat" key={stat.label}>
+            <span className="token-stat-label">{stat.label}</span>
+            <span className="token-stat-value">{stat.value}</span>
           </div>
         ))}
       </section>
