@@ -101,6 +101,20 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
   }
   const knownTickers = new Set((underlyingRows ?? []).map((r) => r.ticker as string));
 
+  // On-chain symbol() is attacker-controlled text (lib/evm/erc20.ts's own
+  // doc comment on this) — anyone can deploy a fresh contract that returns
+  // "IBM" and get it auto-listed as if it were the real tokenized stock
+  // unless the ticker is locked to whichever address verified it first.
+  // Confirmed against production 2026-09-28: IBM, TSLA and RCAT had each
+  // already accumulated a second Robinhood-Chain address this way.
+  const { data: existingRobinhoodTokens, error: existingTokensError } = await withFetchRetry(() =>
+    supabase.from("rwa_tokens").select("underlying_ticker").eq("chain_id", robinhoodChain.id)
+  );
+  if (existingTokensError) {
+    throw new Error(`Could not read rwa_tokens: ${existingTokensError.message}`);
+  }
+  const claimedTickers = new Set((existingRobinhoodTokens ?? []).map((t) => t.underlying_ticker as string));
+
   const client = getRobinhoodClient();
   const headBlock = await client.getBlockNumber();
 
@@ -171,11 +185,23 @@ export async function runRegistryPass(): Promise<RegistryRunResult> {
     // Never guess a decimals value (`decimals` is not-null in the schema
     // for good reason — a wrong one silently corrupts every price/amount
     // shown for this token) and only ever record a ticker we already
-    // recognize.
-    const matched = candidates.filter(
+    // recognize — and never a ticker some other address on this chain
+    // already owns (see claimedTickers above).
+    const matchedCandidates = candidates.filter(
       (c): c is typeof c & { symbol: string; decimals: number } =>
-        c.symbol !== null && c.decimals !== null && knownTickers.has(c.symbol)
+        c.symbol !== null && c.decimals !== null && knownTickers.has(c.symbol) && !claimedTickers.has(c.symbol)
     );
+    // Two brand-new pools in the same scan window can't both claim the same
+    // never-before-seen ticker either — earliest block wins, same rule as
+    // an existing verified address.
+    const matchedByTicker = new Map<string, (typeof matchedCandidates)[number]>();
+    for (const c of matchedCandidates) {
+      const existing = matchedByTicker.get(c.symbol);
+      if (!existing || BigInt(c.firstSeenBlock) < BigInt(existing.firstSeenBlock)) {
+        matchedByTicker.set(c.symbol, c);
+      }
+    }
+    const matched = [...matchedByTicker.values()];
 
     if (matched.length > 0) {
       const { error } = await withFetchRetry(() =>
