@@ -7788,6 +7788,42 @@ a {
   font-weight: 500;
 }
 
+.token-chart-ranges {
+  position: absolute;
+  z-index: 2;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+}
+
+.token-chart-ranges button {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(10,14,16,.7);
+  color: #7c8589;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease;
+}
+
+.token-chart-ranges button:hover {
+  color: #eef0ef;
+  border-color: rgba(201,178,124,.35);
+}
+
+.token-chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5a6469;
+  font-size: 13px;
+  pointer-events: none;
+}
+
 .token-stat-grid {
   margin-top: 20px;
   display: grid;
