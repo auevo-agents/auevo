@@ -164,13 +164,18 @@ beforeAll(async () => {
     }
     if (req.method === "GET" && table === "rwa_tokens") {
       const select = url.searchParams.get("select") ?? "";
-      if (select.includes("address")) {
-        // backfillMissingPools'/reconcilePoolCandidates' own "every verified Robinhood-chain token" read.
-        res.end(JSON.stringify([{ address: NVDA_TOKEN }]));
+      if (select.includes("decimals") && !select.includes("underlying_ticker")) {
+        // refreshPoolMetrics' own per-pool decimals lookup (.maybeSingle()).
+        res.end(JSON.stringify({ decimals: 18 }));
         return;
       }
-      // refreshPoolMetrics' own per-pool decimals lookup (.maybeSingle()).
-      res.end(JSON.stringify({ decimals: 18 }));
+      if (select.includes("underlying_ticker")) {
+        // run-registry.ts's own ticker-collision guard — nothing claimed yet in this scenario.
+        res.end(JSON.stringify([]));
+        return;
+      }
+      // backfillMissingPools'/reconcilePoolCandidates' own "every verified Robinhood-chain token" read.
+      res.end(JSON.stringify([{ address: NVDA_TOKEN }]));
       return;
     }
     if (req.method === "POST" && table === "rwa_pool_candidates") {
