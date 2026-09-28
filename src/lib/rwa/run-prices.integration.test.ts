@@ -6,12 +6,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
  * Exercises the real runPricesPass() against a scripted Supabase
  * (PostgREST) server and a scripted GeckoTerminal server — same strategy
  * as lib/indexer/run.integration.test.ts and the wallet-activity route's
- * own test. REFERENCE_PRICE_PROVIDER is left unset, matching this app's
- * actual current deployed state (no reference-price API key configured
- * yet) — reference-price.ts's own unit tests already cover the
- * twelvedata HTTP path directly, so this test focuses on what's unique
- * to the orchestration: grouping tokens by chain, joining GeckoTerminal
- * prices back onto them, and only inserting rows that got an actual price.
+ * own test. This test focuses on what's unique to the orchestration:
+ * grouping tokens by chain, joining GeckoTerminal prices back onto them,
+ * joining the reference-price *cache* (rwa_reference_prices, migration
+ * 0016 — reference-price.ts's own unit tests cover the twelvedata HTTP
+ * path that fills that cache, a separate, much-less-frequent cron), and
+ * only inserting rows that got an actual on-chain price.
  */
 
 const TOKEN_ROBINHOOD = "0x1111111111111111111111111111111111111111"; // chain 4663
@@ -21,9 +21,11 @@ const TOKEN_UNPRICED = "0x3333333333333333333333333333333333333333"; // chain 1,
 let dbServer: Server;
 let geckoServer: Server;
 let insertedRows: Record<string, unknown>[] = [];
+let referencePriceRows: { ticker: string; price_usd: number }[] = [];
 
 beforeEach(() => {
   insertedRows = [];
+  referencePriceRows = [];
 });
 
 beforeAll(async () => {
@@ -49,6 +51,11 @@ beforeAll(async () => {
       // simply has nothing to override, leaving GeckoTerminal's own
       // coverage (asserted below) untouched.
       res.end(JSON.stringify([]));
+      return;
+    }
+
+    if (req.method === "GET" && table === "rwa_reference_prices") {
+      res.end(JSON.stringify(referencePriceRows));
       return;
     }
 
@@ -90,7 +97,6 @@ beforeAll(async () => {
   process.env.SUPABASE_URL = `http://127.0.0.1:${dbPort}`;
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
   process.env.GECKOTERMINAL_API_URL = `http://127.0.0.1:${geckoPort}`;
-  delete process.env.REFERENCE_PRICE_PROVIDER;
 });
 
 afterAll(() => {
@@ -111,7 +117,21 @@ describe("runPricesPass", () => {
     const byAddress = new Map(insertedRows.map((r) => [r.token_address, r]));
     expect(byAddress.get(TOKEN_ROBINHOOD)).toMatchObject({ chain_id: 4663, price_usd: 185.5 });
     expect(byAddress.get(TOKEN_ETH)).toMatchObject({ chain_id: 1, price_usd: 190 });
-    // No reference-price provider configured — premium is unknown, not guessed.
+    // rwa_reference_prices is empty in this scenario — premium is unknown, not guessed.
     expect(byAddress.get(TOKEN_ROBINHOOD)?.premium_bps).toBeNull();
+  });
+
+  it("computes premium against a cached reference price when one exists", async () => {
+    referencePriceRows = [{ ticker: "NVDA", price_usd: 180 }];
+
+    const { runPricesPass } = await import("./run-prices");
+    const result = await runPricesPass();
+
+    expect(result.priced).toBe(2);
+    const byAddress = new Map(insertedRows.map((r) => [r.token_address, r]));
+    // (185.50 - 180) / 180 * 10000, rounded
+    expect(byAddress.get(TOKEN_ROBINHOOD)).toMatchObject({ reference_price_usd: 180, premium_bps: 306 });
+    // TSLA has no cached reference price — its token never got an on-chain
+    // price either, so it isn't inserted at all, same as before.
   });
 });

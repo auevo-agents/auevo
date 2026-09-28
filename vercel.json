@@ -13,6 +13,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/rwa-reference-prices",
+      "schedule": "0 */4 * * *"
+    },
+    {
       "path": "/api/cron/rwa-risk",
       "schedule": "*/15 * * * *"
     },

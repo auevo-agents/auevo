@@ -68,6 +68,10 @@ beforeAll(async () => {
       res.end(JSON.stringify([{ pool_id: POOL_ID, token0: POOL_KEY.currency0, token1: POOL_KEY.currency1 }]));
       return;
     }
+    if (req.method === "GET" && table === "rwa_reference_prices") {
+      res.end(JSON.stringify([]));
+      return;
+    }
     if (req.method === "POST" && table === "rwa_prices") {
       let body = "";
       req.on("data", (c) => (body += c));
@@ -96,7 +100,6 @@ beforeAll(async () => {
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
   process.env.GECKOTERMINAL_API_URL = `http://127.0.0.1:${(geckoServer.address() as AddressInfo).port}`;
   process.env.ROBINHOOD_RPC_URL = `http://127.0.0.1:${(rpcServer.address() as AddressInfo).port}`;
-  delete process.env.REFERENCE_PRICE_PROVIDER;
 });
 
 afterAll(() => {

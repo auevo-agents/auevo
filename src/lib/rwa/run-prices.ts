@@ -2,7 +2,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { getRobinhoodClient } from "@/lib/evm/client";
 import { robinhoodChain } from "@/lib/chains";
 import { fetchTokenPricesUsd } from "./gecko-price";
-import { fetchReferencePrices, computePremiumBps } from "./reference-price";
+import { computePremiumBps } from "./reference-price";
 import { computeTokenPriceUsdFromPool } from "./pools";
 import { STATE_VIEW_SLOT0_ABI } from "./registry";
 import { STATE_VIEW, USDG } from "./dex/addresses";
@@ -111,9 +111,23 @@ export async function runPricesPass(): Promise<PricesRunResult> {
     );
   }
 
+  // Reference (real-world) price comes from rwa_reference_prices — a cache
+  // its own, much-less-frequent cron (rwa-reference-prices) refreshes, not
+  // a live Twelve Data call every run. See migration 0016's own note: this
+  // catalog's ~87 tickers x this cron's 5-minute cadence would burn
+  // Twelve Data's 800-credit daily free-tier cap in under two hours
+  // (discovered in production 2026-09-28), regardless of batching.
   const tickers = [...new Set(tokens.map((t) => t.underlying_ticker))];
-  const refPrices = await fetchReferencePrices(tickers);
-  const refByTicker = new Map<string, number | null>(tickers.map((t) => [t, refPrices.get(t)?.priceUsd ?? null]));
+  const { data: refRows, error: refError } = await withFetchRetry(() =>
+    supabase.from("rwa_reference_prices").select("ticker, price_usd")
+  );
+  if (refError) {
+    throw new Error(`Could not read rwa_reference_prices: ${refError.message}`);
+  }
+  const refByTicker = new Map<string, number | null>(tickers.map((t) => [t, null]));
+  for (const r of refRows ?? []) {
+    if (refByTicker.has(r.ticker)) refByTicker.set(r.ticker, r.price_usd);
+  }
 
   const rows = tokens
     .map((t) => {
