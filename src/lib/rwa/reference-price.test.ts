@@ -127,6 +127,26 @@ describe("fetchReferencePrices", () => {
     await expect(fetchReferencePrices(["NVDA", "AAPL"])).rejects.toThrow(/run out of API credits/);
   });
 
+  it("throws when Twelve Data's quota error comes back as a real HTTP 429, not a 200 with an error body", async () => {
+    // The actual shape confirmed in production 2026-09-28 — !res.ok alone
+    // would silently `continue` past this exactly like a network hiccup.
+    process.env.REFERENCE_PRICE_PROVIDER = "twelvedata";
+    process.env.REFERENCE_PRICE_API_KEY = "test-key";
+    global.fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            code: 429,
+            message: "You have run out of API credits for the day. 882 API credits were used, with the current limit being 800.",
+            status: "error",
+          }),
+          { status: 429 }
+        )
+    ) as typeof fetch;
+
+    await expect(fetchReferencePrices(["NVDA", "AAPL"])).rejects.toThrow(/run out of API credits/);
+  });
+
   it("handles a single-ticker batch, which twelvedata returns in the flat {price} shape", async () => {
     process.env.REFERENCE_PRICE_PROVIDER = "twelvedata";
     process.env.REFERENCE_PRICE_API_KEY = "test-key";
