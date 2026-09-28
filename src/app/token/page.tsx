@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AuevoLogo } from "@/app/auevo-logo";
+import { CopyableAddress } from "@/app/copyable-address";
+import { fetchDexscreenerToken } from "@/lib/dexscreener";
+import { formatPrice, formatUsdCompact } from "@/lib/format";
 
 /**
  * $AUEVO's own public page — separate metadata for the same reason
@@ -36,14 +39,28 @@ export const metadata: Metadata = {
 // address does (see the contract note below).
 const TOTAL_SUPPLY = 1_000_000_000;
 
-const STATS: { label: string; value: string }[] = [
-  { label: "Price", value: "—" },
-  { label: "Market cap", value: "—" },
-  { label: "Total supply", value: TOTAL_SUPPLY.toLocaleString("en-US") },
-  { label: "Contract", value: "—" },
-];
+// Set to the real deployed address once the user gives it — the same way
+// every other on-chain address in this app gets confirmed (they paste a
+// real explorer URL), never a guess. Until then this whole page just
+// shows honest placeholders; nothing below depends on this being wrong.
+const AUEVO_CONTRACT: `0x${string}` | null = null;
 
-export default function TokenPage() {
+const EXPLORER_BASE = "https://robinhoodchain.blockscout.com";
+
+export default async function TokenPage() {
+  // DexScreener indexes by address across every chain it covers — no
+  // Robinhood-Chain-specific slug to get right or wrong here (unlike
+  // gecko-price.ts's NETWORK_SLUGS), so this is safe to wire up now and
+  // just starts returning real numbers once a pool exists.
+  const market = AUEVO_CONTRACT ? await fetchDexscreenerToken(AUEVO_CONTRACT) : null;
+
+  const stats: { label: string; value: string }[] = [
+    { label: "Price", value: formatPrice(market?.priceUsd ?? null) },
+    { label: "Market cap", value: formatUsdCompact(market?.marketCapUsd ?? null) },
+    { label: "Total supply", value: TOTAL_SUPPLY.toLocaleString("en-US") },
+    { label: "Contract", value: "—" },
+  ];
+
   return (
     <main className="site token-page">
       <header className="topbar">
@@ -74,13 +91,32 @@ export default function TokenPage() {
       </section>
 
       <section className="token-stats" aria-label="Token stats (some unavailable until launch)">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <div className="token-stat" key={stat.label}>
             <span className="token-stat-label">{stat.label}</span>
-            <span className="token-stat-value">{stat.value}</span>
+            {stat.label === "Contract" && AUEVO_CONTRACT ? (
+              <span className="token-stat-value">
+                <CopyableAddress address={AUEVO_CONTRACT} />
+              </span>
+            ) : (
+              <span className="token-stat-value">{stat.value}</span>
+            )}
           </div>
         ))}
       </section>
+
+      {AUEVO_CONTRACT && (
+        <section className="token-links">
+          <a href={`${EXPLORER_BASE}/address/${AUEVO_CONTRACT}`} target="_blank" rel="noreferrer">
+            View on explorer →
+          </a>
+          {market?.pairUrl && (
+            <a href={market.pairUrl} target="_blank" rel="noreferrer">
+              View on DexScreener →
+            </a>
+          )}
+        </section>
+      )}
     </main>
   );
 }
