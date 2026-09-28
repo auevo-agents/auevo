@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BrandIcon } from "./brand-icon";
 import { robinhoodChain } from "@/lib/chains";
 import { shortenAddress } from "@/lib/format";
@@ -108,7 +109,10 @@ export function TokenPickerButton({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [panelPosition, setPanelPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const selected = useMemo(
     () => tokens.find((t) => t.address.toLowerCase() === value.trim().toLowerCase()),
@@ -117,11 +121,43 @@ export function TokenPickerButton({
 
   useEffect(() => {
     if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+
+    function updatePosition() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(320, window.innerWidth - 24);
+      const maxHeight = Math.min(380, window.innerHeight - 24);
+      const below = window.innerHeight - rect.bottom - 12;
+      const above = rect.top - 12;
+      const top = below >= Math.min(350, maxHeight) || below >= above
+        ? Math.min(rect.bottom + 8, window.innerHeight - maxHeight - 12)
+        : Math.max(12, rect.top - maxHeight - 8);
+      const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+      setPanelPosition({ top, left, width });
     }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
+
+    function onDocPointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !panelRef.current?.contains(target)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    updatePosition();
+    document.addEventListener("pointerdown", onDocPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDocPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -135,7 +171,14 @@ export function TokenPickerButton({
 
   return (
     <div className="token-picker" ref={rootRef}>
-      <button type="button" className="token-picker-trigger" onClick={() => setOpen((o) => !o)}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="token-picker-trigger"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((o) => !o)}
+      >
         {selected ? (
           <>
             <BrandIcon symbol={selected.ticker} kind="ticker" size={22} />
@@ -151,8 +194,12 @@ export function TokenPickerButton({
         </svg>
       </button>
 
-      {open && (
-        <div className="token-picker-panel">
+      {open && panelPosition && typeof document !== "undefined" && createPortal(
+        <div
+          ref={panelRef}
+          className="token-picker-panel"
+          style={{ top: panelPosition.top, left: panelPosition.left, width: panelPosition.width }}
+        >
           <input
             autoFocus
             className="token-picker-search"
@@ -160,12 +207,14 @@ export function TokenPickerButton({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <div className="token-picker-list">
+          <div className="token-picker-list" role="listbox">
             {filtered.map((t) => (
               <button
                 key={t.address}
                 type="button"
                 className="token-picker-row"
+                role="option"
+                aria-selected={t.address.toLowerCase() === value.trim().toLowerCase()}
                 onClick={() => {
                   onChange(t.address);
                   setOpen(false);
@@ -202,7 +251,8 @@ export function TokenPickerButton({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
