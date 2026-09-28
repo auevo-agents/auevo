@@ -47,21 +47,22 @@ export async function quoteDepth(
   tokenOutDecimals: number,
   referencePriceUsd: number | null
 ): Promise<DepthQuote[]> {
-  const results: DepthQuote[] = [];
-
-  for (const usdIn of DEPTH_BUCKETS_USD) {
-    const amountInUsdg = parseUnits(usdIn.toString(), USDG_DECIMALS);
-    const route = await quoteRoute(client, USDG, tokenOut, amountInUsdg);
-    if (!route) {
-      results.push({ usdIn, amountOut: null, priceImpactPct: null });
-      continue;
-    }
-    results.push({
-      usdIn,
-      amountOut: route.amountOut,
-      priceImpactPct: computePriceImpactPct(usdIn, route.amountOut, tokenOutDecimals, referencePriceUsd),
-    });
-  }
-
-  return results;
+  // The three buckets are independent quotes — no reason to serialize them.
+  // This route's own maxDuration comment already flags how many RPC round-
+  // trips a full page load costs; running sequentially here made that up to
+  // 3x worse than it needed to be, which was tipping page loads (15 tokens)
+  // over Vercel's function timeout and surfacing as a bare "Network error"
+  // client-side rather than a real result.
+  return Promise.all(
+    DEPTH_BUCKETS_USD.map(async (usdIn) => {
+      const amountInUsdg = parseUnits(usdIn.toString(), USDG_DECIMALS);
+      const route = await quoteRoute(client, USDG, tokenOut, amountInUsdg);
+      if (!route) return { usdIn, amountOut: null, priceImpactPct: null };
+      return {
+        usdIn,
+        amountOut: route.amountOut,
+        priceImpactPct: computePriceImpactPct(usdIn, route.amountOut, tokenOutDecimals, referencePriceUsd),
+      };
+    })
+  );
 }

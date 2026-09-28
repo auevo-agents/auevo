@@ -1,3 +1,5 @@
+import { isPlausibleStockPriceUsd } from "./pools";
+
 /**
  * Assembles the Assets catalog (RWA_SPEC.md Phase 3, /app/assets and
  * /app/assets/[ticker]) from rwa_underlyings/rwa_tokens/rwa_prices —
@@ -74,7 +76,12 @@ export function latestPricesByKey(
   for (const r of rows) {
     const key = `${r.chain_id}:${r.token_address.toLowerCase()}`;
     if (!map.has(key)) {
-      map.set(key, { priceUsd: r.price_usd, premiumBps: r.premium_bps, ts: r.ts });
+      const priceUsd = r.price_usd !== null && isPlausibleStockPriceUsd(r.price_usd) ? r.price_usd : null;
+      // An implausible price has nothing real to be "at a premium/discount
+      // to" either — drop the premium alongside it rather than keep a
+      // premium_bps computed against a price this app no longer trusts.
+      const premiumBps = priceUsd !== null ? r.premium_bps : null;
+      map.set(key, { priceUsd, premiumBps, ts: r.ts });
     }
   }
   return map;

@@ -112,10 +112,32 @@ describe("computeTokenPriceUsdFromPool", () => {
   });
 
   it("rebases correctly for an 18-decimal token against USDG's 6 decimals", () => {
+    // usdgIsCurrency0: price = (1/price_raw) * 10^(18-6) = 1e12/price_raw.
+    // price_raw = 2e9 -> $500/token — ordinary and plausible.
+    const price = computeTokenPriceUsdFromPool({
+      sqrtPriceX96: sqrtPriceX96For(2_000_000_000),
+      usdgIsCurrency0: true,
+      tokenDecimals: 18,
+    });
+    expect(price).toBeCloseTo(500, 1);
+  });
+
+  it("returns null for a price outside any real stock/ETF's range — a pool with no trustworthy state, not an extreme quote", () => {
     // price_raw = 1 means 1 raw USDG unit (1e-6 USDG) equals 1 raw token unit (1e-18 token) —
-    // so 1 whole token (1e18 raw) = 1e18 raw USDG units = 1e12 USDG = $1e12. An extreme number,
-    // but it's the correct rebasing of an intentionally extreme raw ratio, not a realistic quote.
+    // so 1 whole token (1e18 raw) = 1e18 raw USDG units = 1e12 USDG = $1e12. Mathematically the
+    // correct rebasing of that raw ratio, but no real security trades there — a production
+    // incident (2026-09-28) with exactly this shape produced a $3.4e53 "price" for SPY and a
+    // fabricated multi-billion-percent arbitrage spread against it.
     const price = computeTokenPriceUsdFromPool({ sqrtPriceX96: SQRT_PRICE_1_0, usdgIsCurrency0: true, tokenDecimals: 18 });
-    expect(price).toBeCloseTo(1e12, -6);
+    expect(price).toBeNull();
+  });
+
+  it("returns null for a price below a cent — same guard, other direction", () => {
+    const price = computeTokenPriceUsdFromPool({
+      sqrtPriceX96: sqrtPriceX96For(0.000001),
+      usdgIsCurrency0: false,
+      tokenDecimals: 18,
+    });
+    expect(price).toBeNull();
   });
 });
