@@ -80,15 +80,15 @@ export default async function TokenPage() {
       <section className="token-hero">
         <img src="/logos/auevo.png" alt="AUEVO" className="token-hero-mark" />
         <h1>$AUEVO</h1>
-        <span className="token-hero-badge">Launching soon</span>
+        <span className="token-hero-badge">Live on Robinhood Chain</span>
         <p className="token-hero-lead">
-          The native token of the Auevo platform, on Robinhood Chain. The
-          contract address, live price and a full read-only security
-          self-scan land here the moment it deploys.
+          The native token of the Auevo platform, on Robinhood Chain. Live
+          price and market cap land here the moment a pool is indexed; a
+          full read-only security self-scan is next.
         </p>
       </section>
 
-      <section className="token-stats" aria-label="Token stats (some unavailable until launch)">
+      <section className="token-stats" aria-label="Token stats (price/market cap unavailable until a pool is indexed)">
         {stats.map((stat) => (
           <div className="token-stat" key={stat.label}>
             <span className="token-stat-label">{stat.label}</span>
