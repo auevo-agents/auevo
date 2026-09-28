@@ -117,7 +117,17 @@ async function twelveDataBatch(tickers: string[]): Promise<Map<string, Reference
     try {
       const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(batch.join(","))}&apikey=${apiKey}`;
       const res = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
-      if (!res.ok) continue;
+
+      // Twelve Data's rate-limit/quota error (confirmed 2026-09-28: "You have
+      // run out of API credits for the day...") comes back as a REAL HTTP 429,
+      // not a 200 with an error body — `!res.ok` alone would silently treat
+      // that as "this batch's tickers just have no price this pass" the same
+      // as a genuine network hiccup. Read the body before giving up on it.
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { message?: string } | null;
+        if (body?.message) throw new Error(`Twelve Data: ${body.message}`);
+        continue;
+      }
 
       const data = (await res.json()) as
         | { price?: string; code?: number; message?: string }
