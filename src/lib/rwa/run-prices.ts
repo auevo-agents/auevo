@@ -2,7 +2,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { getRobinhoodClient } from "@/lib/evm/client";
 import { robinhoodChain } from "@/lib/chains";
 import { fetchTokenPricesUsd } from "./gecko-price";
-import { fetchReferencePrice, computePremiumBps } from "./reference-price";
+import { fetchReferencePrices, computePremiumBps } from "./reference-price";
 import { computeTokenPriceUsdFromPool } from "./pools";
 import { STATE_VIEW_SLOT0_ABI } from "./registry";
 import { STATE_VIEW, USDG } from "./dex/addresses";
@@ -112,13 +112,8 @@ export async function runPricesPass(): Promise<PricesRunResult> {
   }
 
   const tickers = [...new Set(tokens.map((t) => t.underlying_ticker))];
-  const refByTicker = new Map<string, number | null>();
-  await Promise.all(
-    tickers.map(async (ticker) => {
-      const ref = await fetchReferencePrice(ticker);
-      refByTicker.set(ticker, ref?.priceUsd ?? null);
-    })
-  );
+  const refPrices = await fetchReferencePrices(tickers);
+  const refByTicker = new Map<string, number | null>(tickers.map((t) => [t, refPrices.get(t)?.priceUsd ?? null]));
 
   const rows = tokens
     .map((t) => {

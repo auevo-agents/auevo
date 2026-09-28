@@ -97,6 +97,74 @@ export async function fetchReferencePrice(ticker: string): Promise<ReferencePric
   return null;
 }
 
+/** Twelve Data allows up to 120 symbols per batch `/price` call — chunk rather than guess a larger limit works. */
+const TWELVEDATA_BATCH_SIZE = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
+async function twelveDataBatch(tickers: string[]): Promise<Map<string, ReferencePrice>> {
+  const apiKey = process.env.REFERENCE_PRICE_API_KEY;
+  const out = new Map<string, ReferencePrice>();
+  if (!apiKey || tickers.length === 0) return out;
+
+  for (const batch of chunk(tickers, TWELVEDATA_BATCH_SIZE)) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
+    try {
+      const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(batch.join(","))}&apikey=${apiKey}`;
+      const res = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
+      if (!res.ok) continue;
+
+      const data = (await res.json()) as
+        | { price?: string; code?: number }
+        | Record<string, { price?: string; code?: number }>;
+
+      // A single-symbol batch gets the flat {price} shape back, same as fetchReferencePrice's own call.
+      if (batch.length === 1) {
+        const flat = data as { price?: string; code?: number };
+        if (flat.price && !flat.code) {
+          const priceUsd = Number(flat.price);
+          if (Number.isFinite(priceUsd) && priceUsd > 0) {
+            out.set(batch[0], { priceUsd, asOf: new Date(), source: "twelvedata", delayed: true });
+          }
+        }
+        continue;
+      }
+
+      for (const [ticker, entry] of Object.entries(data as Record<string, { price?: string; code?: number }>)) {
+        if (!entry?.price || entry.code) continue; // this one symbol errored — leave it out, don't guess
+        const priceUsd = Number(entry.price);
+        if (!Number.isFinite(priceUsd) || priceUsd <= 0) continue;
+        out.set(ticker, { priceUsd, asOf: new Date(), source: "twelvedata", delayed: true });
+      }
+    } catch {
+      // Node hiccup on this batch — those tickers simply have no reference price this pass.
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Same provider selection as fetchReferencePrice, but one (or a few
+ * chunked) HTTP call(s) for every ticker instead of one call each —
+ * the price cron runs every 5 minutes across every verified ticker, and
+ * Twelve Data's free tier (8 requests/minute) can't sustain a per-ticker
+ * call once the registry passes a handful of tickers. Chainlink/unset
+ * still returns an empty map rather than guessing.
+ */
+export async function fetchReferencePrices(tickers: string[]): Promise<Map<string, ReferencePrice>> {
+  const provider = (process.env.REFERENCE_PRICE_PROVIDER ?? "").trim().toLowerCase();
+  if (provider === "twelvedata") return twelveDataBatch(tickers);
+  return new Map();
+}
+
 /** premium_bps = (price - reference) / reference * 10000, rounded to the nearest bp. Null propagates rather than becoming 0, which would read as "no premium" instead of "unknown". */
 export function computePremiumBps(priceUsd: number | null, referencePriceUsd: number | null): number | null {
   if (priceUsd === null || referencePriceUsd === null || referencePriceUsd <= 0) return null;
