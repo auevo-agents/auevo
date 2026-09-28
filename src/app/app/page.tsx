@@ -396,9 +396,11 @@ export default function AppOverviewPage() {
       <Link href="/token" className="agent-promo-banner">
         <span className="agent-preview-dot" aria-hidden="true" />
         <span className="agent-promo-body">
-          <span className="agent-promo-eyebrow">Live on Robinhood Chain</span>
+          <span className="agent-promo-eyebrow">Launching soon</span>
           <strong>$AUEVO — the native token of the Auevo platform</strong>
-          <span>Contract address, supply and price land on this page as they become available.</span>
+          <span>
+            Contract, supply and a full self-scan report land here the moment it deploys on Robinhood Chain.
+          </span>
         </span>
         <span className="agent-promo-cta">View →</span>
       </Link>
