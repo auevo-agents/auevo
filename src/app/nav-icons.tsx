@@ -22,7 +22,8 @@ export type NavIconKind =
   | "trending-up"
   | "search"
   | "document"
-  | "book";
+  | "book"
+  | "coin";
 
 export function NavIcon({ kind, size = 16 }: { kind: NavIconKind; size?: number }) {
   const common = {
@@ -173,6 +174,14 @@ export function NavIcon({ kind, size = 16 }: { kind: NavIconKind; size?: number 
         <svg {...common}>
           <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z" />
           <path d="M4 5.5v16" />
+        </svg>
+      );
+    case "coin":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M9 15.5c0 1 1.3 1.8 3 1.8s3-.8 3-1.8-1.3-1.5-3-1.8-3-.8-3-1.9 1.3-1.8 3-1.8 3 .8 3 1.8" />
+          <path d="M12 6.8v1.2M12 15.9v1.3" />
         </svg>
       );
     default:

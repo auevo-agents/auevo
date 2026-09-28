@@ -393,6 +393,18 @@ export default function AppOverviewPage() {
         <LandingCards cards={QUICK_ACTIONS} />
       </div>
 
+      <Link href="/token" className="agent-promo-banner">
+        <span className="agent-preview-dot" aria-hidden="true" />
+        <span className="agent-promo-body">
+          <span className="agent-promo-eyebrow">Launching soon</span>
+          <strong>$AUEVO — the native token of the Auevo platform</strong>
+          <span>
+            Contract, supply and a full self-scan report land here the moment it deploys on Robinhood Chain.
+          </span>
+        </span>
+        <span className="agent-promo-cta">View →</span>
+      </Link>
+
       <Link href="/app/agent" className="agent-promo-banner">
         <span className="agent-preview-dot" aria-hidden="true" />
         <span className="agent-promo-body">

@@ -16,6 +16,7 @@
  */
 
 export const TICKER_LOGO_FILES: Record<string, string> = {
+  auevo: "auevo.png",
   aapl: "aapl.svg",
   amc: "amc.svg",
   amd: "amd.svg",
