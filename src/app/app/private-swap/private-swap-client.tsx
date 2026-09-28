@@ -217,10 +217,10 @@ export function PrivateSwapClient() {
           <div className={styles.gateWarning}>
             <span className={styles.gateWarningIcon} aria-hidden="true">!</span>
             <p>
-              Private swaps route through third-party exchange partners and may take 15–45 minutes.
-              Partners may screen a transfer, request a review, hold it, or refund it. This route does
-              not guarantee anonymity. Send only the exact quoted amount to the deposit address before
-              it expires; transfers sent to the wrong address or network may not be recoverable.
+              Private swaps route your funds through two partner exchanges, so there is no on-chain link
+              between the sending and receiving wallet. They typically take 15–45 minutes. Exchanges
+              screen every swap and may hold, review, or refund it. Send only the exact amount shown
+              before the timer ends. Transfers to a wrong address cannot be reversed.
             </p>
           </div>
           <div className={styles.gateChecklist}>
