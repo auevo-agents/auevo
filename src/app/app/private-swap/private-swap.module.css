@@ -173,6 +173,7 @@
   position:relative;
   isolation:isolate;
   overflow:hidden;
+  display:flex;
   min-height:148px;
   align-items:center;
   padding:28px 34px;
@@ -194,8 +195,8 @@
   background-size:cover,cover;
 }
 .productHeader > div { position:relative;z-index:1; }
-.productHeader.productHeader h3 { color:var(--au-gold,#c9b27c); }
-.productHeader.productHeader p { color:var(--au-gold,#c9b27c); }
+.productHeader h3 { color:var(--au-gold,#c9b27c); }
+.productHeader p { color:var(--au-gold,#c9b27c); }
 .gateLock {
   position:absolute!important;
   z-index:0!important;
