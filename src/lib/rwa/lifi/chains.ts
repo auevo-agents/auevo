@@ -41,6 +41,11 @@ export function isSupportedLifiChain(chainId: number): boolean {
   return LIFI_EVM_CHAINS.some((c) => c.chain.id === chainId);
 }
 
+/** The chain's own gas-token symbol (ETH, BNB, ...) — for labeling the native-currency entry in a token picker. */
+export function nativeCurrencySymbolFor(chainId: number): string {
+  return LIFI_EVM_CHAINS.find((c) => c.chain.id === chainId)?.chain.nativeCurrency.symbol ?? "ETH";
+}
+
 /**
  * A block explorer's tx-detail link. Robinhood Chain's own explorer isn't
  * bundled in the chain definition (src/lib/chains.ts) the way the other

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data);
   } catch (err) {
     if (err instanceof LifiApiError) {
-      return NextResponse.json({ error: err.message, lifiBody: err.body }, { status: err.status >= 400 && err.status < 600 ? err.status : 502 });
+      return NextResponse.json({ error: err.userMessage, lifiBody: err.body }, { status: err.status >= 400 && err.status < 600 ? err.status : 502 });
     }
     return NextResponse.json({ error: "Could not reach LI.FI" }, { status: 502 });
   }

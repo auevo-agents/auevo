@@ -96,6 +96,19 @@ describe("lifiFetch", () => {
   });
 });
 
+describe("LifiApiError.userMessage", () => {
+  it("uses the real message LI.FI's own error body carries", () => {
+    const err = new LifiApiError(400, { message: "Token 4663-0x...5e19 is invalid or in deny list.", code: 1011 });
+    expect(err.userMessage).toBe("Token 4663-0x...5e19 is invalid or in deny list.");
+  });
+
+  it("falls back to a generic message when the body has no message field", () => {
+    expect(new LifiApiError(500, { code: 999 }).userMessage).toBe("LI.FI couldn't process this request");
+    expect(new LifiApiError(500, "plain text body").userMessage).toBe("LI.FI couldn't process this request");
+    expect(new LifiApiError(500, null).userMessage).toBe("LI.FI couldn't process this request");
+  });
+});
+
 describe("lifiFeeFraction", () => {
   afterEach(() => vi.unstubAllEnvs());
 
