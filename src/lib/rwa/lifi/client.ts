@@ -39,6 +39,23 @@ export class LifiApiError extends Error {
     this.status = status;
     this.body = body;
   }
+
+  /**
+   * A sentence worth putting in front of a person — LI.FI's own error
+   * bodies are usually `{ message, code }` with a real, readable sentence
+   * already in `message` (e.g. "Token ... is invalid or in deny list.");
+   * this app's `.message` above wraps that in "LI.FI API error 400: {...}"
+   * for logs, which is the wrong thing to show on a page (a real
+   * production case: the raw JSON blob, code and all, rendered directly
+   * in the swap form's error banner).
+   */
+  get userMessage(): string {
+    const body = this.body;
+    if (body && typeof body === "object" && typeof (body as { message?: unknown }).message === "string") {
+      return (body as { message: string }).message;
+    }
+    return "LI.FI couldn't process this request";
+  }
 }
 
 export interface LifiFetchOptions {

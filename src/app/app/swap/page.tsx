@@ -6,9 +6,9 @@ import { formatUnits, isAddress, parseUnits, type Address } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { robinhoodChain } from "@/lib/chains";
-import { LIFI_EVM_CHAIN_LIST, chainNameFor } from "@/lib/rwa/lifi/chains";
+import { LIFI_EVM_CHAIN_LIST, chainNameFor, nativeCurrencySymbolFor } from "@/lib/rwa/lifi/chains";
 import { ConnectButton } from "../connect-button";
-import { TokenPickerButton, usePickableTokens } from "../../token-picker";
+import { TokenPickerButton, usePickableTokens, type PickableToken } from "../../token-picker";
 import { executeRoute, LIFI_NATIVE_ADDRESS, type StepLog } from "./route-executor";
 import type { Route, RoutesResponse } from "@lifi/types";
 
@@ -40,6 +40,25 @@ type Mode = "swap" | "bridge";
 
 function isValidToken(value: string): value is Address {
   return value === LIFI_NATIVE_ADDRESS || isAddress(value, { strict: false });
+}
+
+/**
+ * The chain's native gas token as a normal, pickable entry — prepended to
+ * that chain's list instead of a separate "native" checkbox next to the
+ * picker. Two controls for one field (a picker, plus a checkbox that hides
+ * it behind a badge) meant the picker's own selection and the checkbox
+ * could disagree — e.g. pick a token, check "native" (picker hides), change
+ * the chain, uncheck it again: the picker reappears holding the old chain's
+ * address, which no longer matches anything in the new chain's list. One
+ * control and one piece of state removes the whole class of bug, not just
+ * this one path through it.
+ */
+function withNativeEntry(tokens: PickableToken[], chainId: number): PickableToken[] {
+  const symbol = nativeCurrencySymbolFor(chainId);
+  return [
+    { ticker: symbol, name: `Native ${chainNameFor(chainId)} gas token`, address: LIFI_NATIVE_ADDRESS, decimals: 18, priceUsd: null },
+    ...tokens,
+  ];
 }
 
 function routeLabel(route: Route): string {
@@ -91,8 +110,6 @@ function SwapBridgeApp() {
   });
   const [fromToken, setFromToken] = useState("");
   const [toToken, setToToken] = useState(() => searchParams.get("toToken") ?? "");
-  const [fromNative, setFromNative] = useState(false);
-  const [toNative, setToNative] = useState(false);
   const [amount, setAmount] = useState("");
 
   const [routesResponse, setRoutesResponse] = useState<RoutesResponse | null>(null);
@@ -111,35 +128,40 @@ function SwapBridgeApp() {
   const [robinhoodLifiSupport, setRobinhoodLifiSupport] = useState<boolean | null>(null);
 
   const effectiveToChainId = mode === "swap" ? fromChainId : toChainId;
-  const effectiveFromToken = fromNative ? LIFI_NATIVE_ADDRESS : fromToken;
-  const effectiveToToken = toNative ? LIFI_NATIVE_ADDRESS : toToken;
-  const fromTokenAddr = isValidToken(effectiveFromToken) ? effectiveFromToken : undefined;
-  const toTokenAddr = isValidToken(effectiveToToken) ? effectiveToToken : undefined;
+  const fromTokenAddr = isValidToken(fromToken) ? fromToken : undefined;
+  const toTokenAddr = isValidToken(toToken) ? toToken : undefined;
+  const fromIsNative = fromTokenAddr === LIFI_NATIVE_ADDRESS;
 
   // Chain-aware — the verified catalog behind the picker has real rows for
   // every chain in LIFI_EVM_CHAIN_LIST, not just Robinhood Chain (rwa_tokens
   // tracks issuance across Ethereum, BSC, Arbitrum and HyperEVM too), so the
-  // list re-filters whenever the "from"/"to" chain changes.
-  const fromPickableTokens = usePickableTokens(fromChainId);
-  const toPickableTokens = usePickableTokens(effectiveToChainId);
+  // list re-filters whenever the "from"/"to" chain changes. Each list gets
+  // its own chain's native gas token prepended — see withNativeEntry.
+  const rawFromPickableTokens = usePickableTokens(fromChainId);
+  const rawToPickableTokens = usePickableTokens(effectiveToChainId);
+  const fromPickableTokens = useMemo(() => withNativeEntry(rawFromPickableTokens, fromChainId), [rawFromPickableTokens, fromChainId]);
+  const toPickableTokens = useMemo(
+    () => withNativeEntry(rawToPickableTokens, effectiveToChainId),
+    [rawToPickableTokens, effectiveToChainId]
+  );
 
   const fromMeta = useReadContracts({
     allowFailure: true,
     contracts: [
-      fromTokenAddr && !fromNative
+      fromTokenAddr && !fromIsNative
         ? { address: fromTokenAddr, abi: ERC20_ABI, functionName: "decimals", chainId: fromChainId }
         : undefined,
-      fromTokenAddr && !fromNative
+      fromTokenAddr && !fromIsNative
         ? { address: fromTokenAddr, abi: ERC20_ABI, functionName: "symbol", chainId: fromChainId }
         : undefined,
-      fromTokenAddr && !fromNative && account
+      fromTokenAddr && !fromIsNative && account
         ? { address: fromTokenAddr, abi: ERC20_ABI, functionName: "balanceOf", args: [account], chainId: fromChainId }
         : undefined,
     ].filter(Boolean) as never[],
-    query: { enabled: Boolean(fromTokenAddr && !fromNative) },
+    query: { enabled: Boolean(fromTokenAddr && !fromIsNative) },
   });
   const [fromDecimals, fromSymbol, fromBalance] = useMemo(() => fromMeta.data?.map((r) => r.result) ?? [], [fromMeta.data]);
-  const effectiveFromDecimals = fromNative ? 18 : (fromDecimals as number | undefined);
+  const effectiveFromDecimals = fromIsNative ? 18 : (fromDecimals as number | undefined);
 
   const parsedAmount = useMemo(() => {
     if (!amount || typeof effectiveFromDecimals !== "number") return null;
@@ -282,23 +304,13 @@ function SwapBridgeApp() {
 
           <label className="trade-field">
             <span>From token</span>
-            {fromNative ? (
-              <div className="token-picker-native-badge">Native {chainNameFor(fromChainId)} gas token</div>
-            ) : (
-              <div className="trade-field-picker-row">
-                <TokenPickerButton value={fromToken} onChange={setFromToken} tokens={fromPickableTokens} />
-                {typeof fromSymbol === "string" && <small>{fromSymbol}</small>}
-                {typeof fromBalance === "bigint" && typeof effectiveFromDecimals === "number" && (
-                  <small>balance {Number(formatUnits(fromBalance, effectiveFromDecimals)).toFixed(4)}</small>
-                )}
-              </div>
-            )}
-            <small>
-              <label style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-                <input type="checkbox" checked={fromNative} onChange={(e) => setFromNative(e.target.checked)} />
-                native {chainNameFor(fromChainId)} gas token
-              </label>
-            </small>
+            <div className="trade-field-picker-row">
+              <TokenPickerButton value={fromToken} onChange={setFromToken} tokens={fromPickableTokens} />
+              {typeof fromSymbol === "string" && <small>{fromSymbol}</small>}
+              {typeof fromBalance === "bigint" && typeof effectiveFromDecimals === "number" && (
+                <small>balance {Number(formatUnits(fromBalance, effectiveFromDecimals)).toFixed(4)}</small>
+              )}
+            </div>
           </label>
 
           {mode === "bridge" && (
@@ -316,19 +328,9 @@ function SwapBridgeApp() {
 
           <label className="trade-field">
             <span>To token</span>
-            {toNative ? (
-              <div className="token-picker-native-badge">Native {chainNameFor(effectiveToChainId)} gas token</div>
-            ) : (
-              <div className="trade-field-picker-row">
-                <TokenPickerButton value={toToken} onChange={setToToken} tokens={toPickableTokens} />
-              </div>
-            )}
-            <small>
-              <label style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-                <input type="checkbox" checked={toNative} onChange={(e) => setToNative(e.target.checked)} />
-                native {chainNameFor(effectiveToChainId)} gas token
-              </label>
-            </small>
+            <div className="trade-field-picker-row">
+              <TokenPickerButton value={toToken} onChange={setToToken} tokens={toPickableTokens} />
+            </div>
           </label>
 
           <label className="trade-field">
