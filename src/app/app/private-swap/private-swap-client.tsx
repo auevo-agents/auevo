@@ -44,6 +44,15 @@ type Order = {
 const API = "/api/rwa/private-swap/houdini";
 const terminalStatuses = new Set([4, 5, 6, 7, 8]);
 
+const GATE_ACKNOWLEDGEMENTS = [
+  "I am not a U.S. resident or citizen, and I am not located in a country subject to U.S. or EU sanctions.",
+  "I am at least 18 years old.",
+  "The funds I use are not connected to unlawful activity.",
+  "The destination address is a wallet I control, and I have checked the address.",
+  "I understand that routing times vary and a transfer may take 15–45 minutes; provider partners may review, hold, or refund it.",
+  "I will send the exact amount shown before the deposit expires.",
+] as const;
+
 async function readJson<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || "Something went wrong. Please try again.");
@@ -89,6 +98,8 @@ export function PrivateSwapClient() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [gateChecks, setGateChecks] = useState<boolean[]>(() => GATE_ACKNOWLEDGEMENTS.map(() => false));
+  const [gateContinued, setGateContinued] = useState(false);
 
   const selectedFrom = useMemo(() => tokens.find((token) => token.id === fromId), [tokens, fromId]);
   const selectedTo = useMemo(() => tokens.find((token) => token.id === toId), [tokens, toId]);
@@ -115,7 +126,7 @@ export function PrivateSwapClient() {
     }
   }, []);
 
-  useEffect(() => { void loadTokens(""); }, [loadTokens]);
+  useEffect(() => { if (gateContinued) void loadTokens(""); }, [loadTokens, gateContinued]);
 
   useEffect(() => {
     if (!search.trim()) return;
@@ -191,6 +202,49 @@ export function PrivateSwapClient() {
     } catch {
       setError("Clipboard access is unavailable. Select and copy the address manually.");
     }
+  }
+
+  const canContinue = gateChecks.every(Boolean);
+
+  if (!gateContinued) {
+    return (
+      <div className={styles.gateBackdrop}>
+        <section className={styles.gateDialog} role="dialog" aria-modal="true" aria-labelledby="private-gate-title">
+          <div className={styles.gateTopline}>
+            <span className={styles.gateBrand}><i /> AUEVO <b>PRIVATE</b></span>
+            <span className={styles.gateStep}>BEFORE YOU CONTINUE</span>
+          </div>
+          <div className={styles.gateWarning}>
+            <span className={styles.gateWarningIcon} aria-hidden="true">!</span>
+            <p>
+              Private swaps route through third-party exchange partners and may take 15–45 minutes.
+              Partners may screen a transfer, request a review, hold it, or refund it. This route does
+              not guarantee anonymity. Send only the exact quoted amount to the deposit address before
+              it expires; transfers sent to the wrong address or network may not be recoverable.
+            </p>
+          </div>
+          <div className={styles.gateChecklist}>
+            <h2 id="private-gate-title">Please confirm before using Private Swap</h2>
+            <div className={styles.gateItems}>
+              {GATE_ACKNOWLEDGEMENTS.map((label, index) => (
+                <label className={styles.gateItem} key={label}>
+                  <input
+                    type="checkbox"
+                    checked={gateChecks[index]}
+                    onChange={(event) => setGateChecks((current) => current.map((checked, item) => item === index ? event.target.checked : checked))}
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+            <button className={styles.gateContinue} type="button" disabled={!canContinue} onClick={() => setGateContinued(true)}>
+              Continue
+            </button>
+            <p className={styles.gateFootnote}>Auevo does not custody funds or control provider execution.</p>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (
