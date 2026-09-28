@@ -94,6 +94,31 @@ describe("bestLeg", () => {
     expect(leg).toBeNull();
   });
 
+  it("finds a v4 pool at a non-standard fee tier when it's passed in as a known pool", async () => {
+    // Real bug this guards against: Robinhood Chain has shown live v4
+    // pools at fees like 375 and 951100 — values outside the four
+    // hardcoded V4_FEE_TIERS guesses, so a pair with real liquidity read
+    // back as "no pool" until the caller's own discovered rwa_pools rows
+    // are passed in as knownPools.
+    const key = buildPoolKey(USDG, STOCK, 375, 1);
+    const id = poolId(key);
+    const zeroForOne = USDG.toLowerCase() === key.currency0.toLowerCase();
+
+    const client = mockClient({
+      v4Pools: new Set([id]),
+      v4Quotes: new Map([[`${id}-${zeroForOne}-1000000`, 999000000000000000000n]]),
+    });
+
+    const withoutKnownPools = await bestLeg(client, USDG, STOCK, 1_000_000n);
+    expect(withoutKnownPools).toBeNull();
+
+    const withKnownPools = await bestLeg(client, USDG, STOCK, 1_000_000n, [
+      { token0: key.currency0, token1: key.currency1, fee: 375, tickSpacing: 1, hooks: ZERO_ADDRESS },
+    ]);
+    expect(withKnownPools?.protocol).toBe("v4");
+    expect(withKnownPools?.amountOut).toBe(999000000000000000000n);
+  });
+
   it("finds a v4 pool quoted in true native currency (address 0) for a WETH9 leg", async () => {
     const key = buildPoolKey(ZERO_ADDRESS, USDG, 500, 10);
     const id = poolId(key);

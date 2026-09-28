@@ -139,6 +139,24 @@ export interface LegQuoteV4 {
 export type LegQuote = LegQuoteV3 | LegQuoteV4;
 
 /**
+ * A v4 pool this app already discovered on-chain (rwa_pools) and knows the
+ * exact fee/tickSpacing/hooks for — passed in by the caller (the DB read
+ * belongs in the API route, not this pure-probing module) so routing isn't
+ * limited to V4_FEE_TIERS' four guessed tiers below. Real pools on
+ * Robinhood Chain have shown up with fees like 375 and 951100 — values no
+ * fixed guess-list would ever include — so a pair with genuine liquidity
+ * was reading back as "no pool" purely because this file didn't know that
+ * fee/tickSpacing combination to try.
+ */
+export interface KnownV4Pool {
+  token0: Address;
+  token1: Address;
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+}
+
+/**
  * `WETH9` is this app's existing "native ETH" placeholder address (same
  * convention as uniswap.ts/swap-panel.tsx: v3 has no native-currency
  * concept, so the UI has always used WETH9 in that slot and paid/received
@@ -190,19 +208,54 @@ async function bestV3Leg(
   return best;
 }
 
+const GUESSED_TICK_SPACING: Record<number, number> = { 100: 1, 500: 10, 3000: 60, 10000: 200 };
+
+/** Every (fee, tickSpacing, hooks) combination worth probing for one currency pair: the four standard guesses, plus any exact match this app has already discovered on-chain for this pair. */
+function candidatePoolConfigs(
+  currencyIn: Address,
+  currencyOut: Address,
+  knownPools: KnownV4Pool[]
+): { fee: number; tickSpacing: number; hooks?: Address }[] {
+  const guessed: { fee: number; tickSpacing: number; hooks?: Address }[] = V4_FEE_TIERS.map((fee) => ({
+    fee,
+    tickSpacing: GUESSED_TICK_SPACING[fee]!,
+  }));
+
+  const known = knownPools
+    .filter(
+      (p) =>
+        (p.token0.toLowerCase() === currencyIn.toLowerCase() && p.token1.toLowerCase() === currencyOut.toLowerCase()) ||
+        (p.token0.toLowerCase() === currencyOut.toLowerCase() && p.token1.toLowerCase() === currencyIn.toLowerCase())
+    )
+    .map((p) => ({ fee: p.fee, tickSpacing: p.tickSpacing, hooks: p.hooks }));
+
+  // Known pools first — they're confirmed real, so there's no point paying
+  // for four guessed-tier StateView reads before trying the one that
+  // actually exists.
+  const seen = new Set<string>();
+  const all: { fee: number; tickSpacing: number; hooks?: Address }[] = [];
+  for (const c of [...known, ...guessed]) {
+    const key = `${c.fee}:${c.tickSpacing}:${c.hooks ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    all.push(c);
+  }
+  return all;
+}
+
 async function bestV4Leg(
   client: PublicClient,
   tokenIn: Address,
   tokenOut: Address,
-  amountIn: bigint
+  amountIn: bigint,
+  knownPools: KnownV4Pool[] = []
 ): Promise<LegQuoteV4 | null> {
   let best: LegQuoteV4 | null = null;
 
   for (const currencyIn of v4CandidatesFor(tokenIn)) {
     for (const currencyOut of v4CandidatesFor(tokenOut)) {
-      for (const fee of V4_FEE_TIERS) {
-        const tickSpacing = { 100: 1, 500: 10, 3000: 60, 10000: 200 }[fee]!;
-        const key = buildPoolKey(currencyIn, currencyOut, fee, tickSpacing);
+      for (const { fee, tickSpacing, hooks } of candidatePoolConfigs(currencyIn, currencyOut, knownPools)) {
+        const key = buildPoolKey(currencyIn, currencyOut, fee, tickSpacing, hooks);
         const id = poolId(key);
 
         const slot0 = await client.readContract({
@@ -241,11 +294,12 @@ export async function bestLeg(
   client: PublicClient,
   tokenIn: Address,
   tokenOut: Address,
-  amountIn: bigint
+  amountIn: bigint,
+  knownPools: KnownV4Pool[] = []
 ): Promise<LegQuote | null> {
   const [v3, v4] = await Promise.all([
     bestV3Leg(client, tokenIn, tokenOut, amountIn),
-    bestV4Leg(client, tokenIn, tokenOut, amountIn),
+    bestV4Leg(client, tokenIn, tokenOut, amountIn, knownPools),
   ]);
   if (!v3) return v4;
   if (!v4) return v3;
@@ -272,11 +326,12 @@ export async function quoteRoute(
   client: PublicClient,
   tokenIn: Address,
   tokenOut: Address,
-  amountIn: bigint
+  amountIn: bigint,
+  knownPools: KnownV4Pool[] = []
 ): Promise<RouteQuote | null> {
   if (tokenIn.toLowerCase() === tokenOut.toLowerCase()) return null;
 
-  const direct = await bestLeg(client, tokenIn, tokenOut, amountIn);
+  const direct = await bestLeg(client, tokenIn, tokenOut, amountIn, knownPools);
   if (direct) return { legs: [direct], amountOut: direct.amountOut };
 
   if (
@@ -286,10 +341,10 @@ export async function quoteRoute(
     return null; // one side is already USDG — a "direct" pool is the only path, and none was found
   }
 
-  const leg1 = await bestLeg(client, tokenIn, USDG, amountIn);
+  const leg1 = await bestLeg(client, tokenIn, USDG, amountIn, knownPools);
   if (!leg1) return null;
 
-  const leg2 = await bestLeg(client, USDG, tokenOut, leg1.amountOut);
+  const leg2 = await bestLeg(client, USDG, tokenOut, leg1.amountOut, knownPools);
   if (!leg2) return null;
 
   return { legs: [leg1, leg2], amountOut: leg2.amountOut };
