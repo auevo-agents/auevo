@@ -115,11 +115,15 @@ export function PriceChart({ points }: { points: PricePoint[] }) {
     chartRef.current = chart;
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#34d399",
-      downColor: "#ff4259",
+      // Same muted up/down tones the rest of the app actually renders for
+      // gains/losses (globals.css's .desk-change-pos/.desk-change-neg) —
+      // not lightweight-charts' own bright default green/red, which read
+      // as a generic TradingView widget rather than this site's own look.
+      upColor: "#88b59a",
+      downColor: "#d78b82",
       borderVisible: false,
-      wickUpColor: "#34d399",
-      wickDownColor: "#ff4259",
+      wickUpColor: "#88b59a",
+      wickDownColor: "#d78b82",
     });
     candleSeriesRef.current = candleSeries;
 
