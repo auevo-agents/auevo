@@ -54,7 +54,29 @@ export const TICKER_BRANDS: Record<string, BrandMark> = {
   "VZ": { title: "Verizon", hex: "CD040B", path: "M18.302 0H22v.003L10.674 24H7.662L2 12h3.727l3.449 7.337z" },
   "ABBV": { title: "Abbvie", hex: "071D49", path: "M23.186 20.17c-1.533 0-2.14-.612-2.347-1.838l-.406-1.74c-.413.72-2.453 3.579-6.945 3.579H8.89C1.94 20.17 0 15.467 0 12c0-3.885 2.347-8.17 8.884-8.17h4.905c5.005 0 7.759 2.853 8.372 6.431.512 2.96 1.839 9.91 1.839 9.91zM13.076 6.378h-3.88c-4.698 0-6.231 2.965-6.231 5.623 0 2.653 1.533 5.618 6.236 5.618h3.875c4.904 0 6.236-3.065 6.236-5.618 0-2.246-1.231-5.618-6.236-5.618z" },
   "GOOGL": { title: "Google", hex: "4285F4", path: "M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" },
+  // Native chain gas tokens (Swap/Bridge's own picker uses these as ordinary
+  // ticker entries — see nav-groups.ts's withNativeEntry in app/swap/page.tsx).
+  // Same marks CHAIN_BRANDS below already carries for kind="chain" lookups;
+  // duplicated here under kind="ticker" since a picker row looks up by ticker.
+  "ETH": { title: "Ethereum", hex: "3C3C3D", path: "M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" },
+  "BNB": { title: "BNB Chain", hex: "F0B90B", path: "M5.631 3.676 12.001 0l6.367 3.676-2.34 1.358L12 2.716 7.972 5.034l-2.34-1.358Zm12.737 4.636-2.34-1.358L12 9.272 7.972 6.954l-2.34 1.358v2.716l4.026 2.318v4.636L12 19.341l2.341-1.359v-4.636l4.027-2.318V8.312Zm0 7.352v-2.716l-2.34 1.358v2.716l2.34-1.358Zm1.663.96-4.027 2.318v2.717l6.368-3.677V10.63l-2.34 1.358v4.636Zm-2.34-10.63 2.34 1.358v2.716l2.341-1.358V5.994l-2.34-1.358-2.342 1.358ZM9.657 19.926v2.716L12 24l2.341-1.358v-2.716l-2.34 1.358-2.343-1.358Zm-4.027-4.262 2.341 1.358v-2.716l-2.34-1.358v2.716Zm4.027-9.67L12 7.352l2.341-1.358-2.34-1.358-2.343 1.358Zm-5.69 1.358L6.31 5.994 3.968 4.636l-2.34 1.358V8.71l2.34 1.358V7.352Zm0 4.636-2.34-1.358v7.352l6.368 3.677v-2.717l-4.028-2.318v-4.636Z" },
+  // XAUT (Tether Gold) — Tether's own mark, the real issuer behind this
+  // ticker (same reasoning ISSUER_BRANDS' "tether" entry below already uses).
+  "XAUT": { title: "Tether", hex: "50AF95", path: "M18.7538 10.5176c0 .6251-2.2379 1.1483-5.2381 1.2812l.0028.0007c-.0848.0064-.5233.0325-1.5012.0325-.7778 0-1.33-.0233-1.5237-.0325-3.0059-.1322-5.2495-.6555-5.2495-1.2819s2.2436-1.149 5.2495-1.2834v2.0442c.1965.0142.7594.0474 1.5372.0474.9334 0 1.4008-.0389 1.4849-.0466V9.2356c2.9994.1337 5.2381.657 5.2381 1.282zm5.19.5466L12.1248 22.389a.1803.1803 0 0 1-.2496 0L.0562 11.0635a.1781.1781 0 0 1-.0382-.2079l4.3762-9.1921a.1767.1767 0 0 1 .1626-.1026h14.8878a.1768.1768 0 0 1 .1612.1032l4.3762 9.1922a.1782.1782 0 0 1-.0382.2079zm-4.478-.4038c0-.8068-2.5515-1.4799-5.9473-1.6369V7.195h4.186V4.4055H6.3076V7.195h4.1852v1.8286c-3.4018.1562-5.9601.83-5.9601 1.6376 0 .8075 2.5583 1.4806 5.9601 1.6376v5.8618h3.025v-5.8639c3.394-.1563 5.948-.8295 5.948-1.6363z" },
 };
+
+/**
+ * Confirmed absent from simple-icons' data file (searched, not guessed) as
+ * of this session: ADBE, ARKK, BRK.B, CRM, CVX, DIA, DIS, HD, IWM, JPM, MS,
+ * ORCL, PAXG, PEP, PG, SYRUPUSDC, SYRUPUSDT, THBILL, UNH, VOO, WMT, XLK,
+ * XOM, and HYPE (HyperEVM's native gas token). simple-icons is scoped to
+ * tech/dev/crypto/media brands (its own README) — it was never going to
+ * carry industrials, retailers, banks, healthcare insurers or ETF tickers,
+ * and this app never fabricates a logo shape to fill that gap (see this
+ * file's own top comment). Their BrandIcon falls back to the plain
+ * monogram badge, same as any other unmapped ticker — that fallback is the
+ * intended behavior for these, not a bug to keep chasing.
+ */
 
 export const ISSUER_BRANDS: Record<string, BrandMark> = {
   "robinhood": { title: "Robinhood", hex: "CCFF00", path: "M2.84 24h.53c.096 0 .192-.048.224-.128C7.591 13.696 11.94 8.656 14.67 5.638c.112-.128.064-.225-.096-.225h-4.88a.55.55 0 0 0-.45.225L5.746 9.972c-.514.642-.642 1.236-.642 2.086v4.43c-1.14 3.194-1.862 5.361-2.392 7.32-.032.125.016.192.129.192M20.447.646c-.754-.802-4.157-.834-5.73-.224a3 3 0 0 0-.786.465 41 41 0 0 0-3.323 3.178c-.112.113-.064.225.097.225h5.409c.497 0 .786.289.786.786v6.1c0 .16.128.208.225.064l3.258-4.254c.53-.69.69-.898.835-1.861.192-1.413.08-3.58-.77-4.479m-6.982 16.18 2.231-3.676a.7.7 0 0 0 .064-.29V6.73c0-.16-.112-.225-.224-.097-3.355 3.74-5.971 7.672-8.395 12.407-.06.12.016.225.16.177l5.009-1.54c.565-.174.882-.402 1.155-.852" },
