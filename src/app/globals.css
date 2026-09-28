@@ -15221,3 +15221,28 @@ a {
     flex-direction: column-reverse;
   }
 }
+
+
+/* Compare card: a balanced 3 × 5 overview using the logo files already in /public/logos. */
+.landing2-mockup-asset-grid {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  align-content:center;
+  gap:8px;
+  min-height:166px;
+}
+.landing2-mockup-asset-grid .landing2-mockup-chip {
+  width:100%;
+  min-width:0;
+  justify-content:center;
+  gap:6px;
+  padding:7px 5px;
+  font-size:10px;
+  white-space:nowrap;
+}
+.landing2-mockup-asset-grid .brand-icon-badge { flex:none; }
+@media (max-width:640px) {
+  .landing2-mockup-asset-grid { min-height:142px;gap:6px; }
+  .landing2-mockup-asset-grid .landing2-mockup-chip { gap:4px;padding:7px 3px;font-size:9px; }
+  .landing2-mockup-asset-grid .brand-icon-badge { width:14px!important;height:14px!important; }
+}
