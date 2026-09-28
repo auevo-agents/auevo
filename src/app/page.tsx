@@ -183,7 +183,7 @@ const TRIPTYCH_CARDS = [
     body: "See how the same tokenized stock compares across every issuer that's tokenized it — price, chain, verification, side by side.",
     tag: "Every issuer, one view",
     href: "/app/assets",
-    mockup: "chips",
+    mockup: "asset-grid",
   },
   {
     num: "B",

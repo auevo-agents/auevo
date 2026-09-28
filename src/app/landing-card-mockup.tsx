@@ -1,6 +1,6 @@
 import { BrandIcon } from "./brand-icon";
 
-export type MockupKind = "chips" | "compare" | "checklist" | "apr" | "alert" | "risk";
+export type MockupKind = "chips" | "asset-grid" | "compare" | "checklist" | "apr" | "alert" | "risk";
 
 /**
  * Small "show it working" previews embedded in each feature card, the
@@ -11,7 +11,22 @@ export type MockupKind = "chips" | "compare" | "checklist" | "apr" | "alert" | "
  * status checklist, an APR row, an alert toast — not a claim about a
  * specific live number.
  */
+const FEATURED_ASSETS = ["NVDA", "TSLA", "SPY", "QQQ", "AAPL", "MSFT", "AMZN", "META", "GOOGL", "AMD", "COIN", "PLTR", "MSTR", "NFLX", "TSM"] as const;
+
 export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: string[] }) {
+  if (kind === "asset-grid") {
+    return (
+      <div className="landing2-mockup landing2-mockup-asset-grid" role="list" aria-label="Featured tokenized assets">
+        {FEATURED_ASSETS.map((symbol) => (
+          <span className="landing2-mockup-chip" role="listitem" key={symbol}>
+            <BrandIcon symbol={symbol} kind="ticker" size={16} />
+            <span>{symbol}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
   if (kind === "chips") {
     const shown = tickers && tickers.length > 0 ? tickers.slice(0, 6) : ["NVDA", "TSLA", "SPY", "QQQ"];
     return (
