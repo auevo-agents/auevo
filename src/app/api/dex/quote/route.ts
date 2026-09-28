@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress, type Address } from "viem";
 import { getRobinhoodClient } from "@/lib/evm/client";
+import { getSupabaseServer } from "@/lib/supabase";
 import { quoteRoute } from "@/lib/rwa/dex/quote";
+import { fetchKnownV4Pools } from "@/lib/rwa/dex/known-pools";
 
 export const maxDuration = 20;
 
@@ -33,7 +35,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const client = getRobinhoodClient();
-    const route = await quoteRoute(client, tokenIn as Address, tokenOut as Address, amountIn);
+    const knownPools = await fetchKnownV4Pools(getSupabaseServer());
+    const route = await quoteRoute(client, tokenIn as Address, tokenOut as Address, amountIn, knownPools);
 
     if (!route) {
       return NextResponse.json({ found: false });
