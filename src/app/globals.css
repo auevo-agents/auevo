@@ -11966,11 +11966,27 @@ a {
 .trade-quote,
 .wallet-pill,
 .swap-card,
-.token-picker-trigger,
-.token-picker-panel {
+.token-picker-trigger {
   border-color: var(--au-line);
   background: rgba(5,7,7,.68);
   box-shadow: inset 0 1px rgba(255,255,255,.02);
+}
+
+/*
+ * .token-picker-panel used to be lumped in with the translucent inline
+ * fields above. That's fine for a trigger button sitting inside a card
+ * over this page's own dark background, but the panel is a
+ * position:fixed portal (see token-picker.tsx) that can land over
+ * *anything* — other form fields, body text, nav — so a translucent
+ * background let whatever was underneath show straight through it
+ * (screenshots: "Select token"/"5.0%"/"High" ghosting through the open
+ * panel). It needs a fully opaque background regardless of what it's
+ * floating over.
+ */
+.token-picker-panel {
+  border-color: var(--au-line);
+  background: #0b0f11;
+  box-shadow: 0 24px 70px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.03);
 }
 
 .trade-field:focus-within {
