@@ -195,8 +195,17 @@
   background-size:cover,cover;
 }
 .productHeader > div { position:relative;z-index:1; }
-.productHeader h3 { color:var(--au-gold,#c9b27c); }
-.productHeader p { color:var(--au-gold,#c9b27c); }
+.productHeader h3 {
+  font:400 clamp(34px,4vw,52px)/.98 Georgia,"Times New Roman",serif;
+  letter-spacing:-.045em;
+  color:var(--au-gold,#c9b27c);
+}
+.productHeader p {
+  max-width:720px;
+  margin-top:13px;
+  font:400 13px/1.65 Arial,Helvetica,sans-serif;
+  color:var(--au-gold,#c9b27c);
+}
 .gateLock {
   position:absolute!important;
   z-index:0!important;
