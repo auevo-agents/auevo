@@ -319,13 +319,27 @@ export async function reconcilePoolCandidates(supabase: SupabaseClient): Promise
   if (!candidates || candidates.length === 0) return { promoted: 0 };
 
   const { data: existingTokens, error: tokensError } = await withFetchRetry(() =>
-    supabase.from("rwa_tokens").select("address").eq("chain_id", robinhoodChain.id)
+    supabase.from("rwa_tokens").select("address, underlying_ticker").eq("chain_id", robinhoodChain.id)
   );
   if (tokensError) throw new Error(`Could not read rwa_tokens: ${tokensError.message}`);
   const existingAddresses = new Set((existingTokens ?? []).map((t) => (t.address as string).toLowerCase()));
+  // A ticker already claimed by a verified token on this chain is never
+  // promoted a second time under a different address — see this file's own
+  // note above resolveCandidateTokens on hostile-text symbols: on-chain
+  // symbol() is attacker-controlled, so any newly-deployed contract can
+  // return "IBM" and get itself listed as the real thing unless the first
+  // verified address for a ticker permanently owns it here. Confirmed
+  // against production 2026-09-28: IBM, TSLA and RCAT had each accumulated
+  // a second Robinhood-Chain address this way before this check existed.
+  const claimedTickers = new Set((existingTokens ?? []).map((t) => t.underlying_ticker as string));
 
   const toPromote = candidates.filter(
-    (c) => c.symbol && c.decimals !== null && knownTickers.has(c.symbol) && !existingAddresses.has((c.token_address as string).toLowerCase())
+    (c) =>
+      c.symbol &&
+      c.decimals !== null &&
+      knownTickers.has(c.symbol) &&
+      !existingAddresses.has((c.token_address as string).toLowerCase()) &&
+      !claimedTickers.has(c.symbol)
   );
   if (toPromote.length === 0) return { promoted: 0 };
 
