@@ -5,12 +5,18 @@ import { getRobinhoodClient } from "@/lib/evm/client";
 import { robinhoodChain } from "@/lib/chains";
 import { quoteDepth, DEPTH_BUCKETS_USD } from "@/lib/rwa/liquidity";
 
-export const maxDuration = 25;
+// Was 25 — real production page loads (15 tokens x 3 buckets each, each
+// bucket probing every v3 fee tier and v4 candidate) were timing out,
+// surfacing as a bare "Network error" client-side rather than a result.
+// liquidity.ts's quoteDepth now runs a token's 3 buckets in parallel
+// instead of sequentially, but this still leaves headroom on the Pro
+// plan's ceiling for the remaining per-token RPC cost.
+export const maxDuration = 60;
 
-// Each token costs several sequential RPC round-trips (quoteRoute probes
-// every v3 fee tier and v4 candidate per bucket) — capped so a page load
-// stays well inside maxDuration. ?ticker= below bypasses the cap for one
-// specific token, which is what a real user click needs.
+// Each token costs several RPC round-trips (quoteRoute probes every v3 fee
+// tier and v4 candidate per bucket) — capped so a page load stays well
+// inside maxDuration. ?ticker= below bypasses the cap for one specific
+// token, which is what a real user click needs.
 const DEFAULT_LIMIT = 15;
 
 /**

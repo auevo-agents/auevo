@@ -12,6 +12,21 @@ describe("latestPricesByKey", () => {
     ]);
     expect(map.get(`${ROBINHOOD}:0xaaa`)).toEqual({ priceUsd: 200, premiumBps: 100, ts: "2026-01-02T00:00:00Z" });
   });
+
+  it("treats a stored price outside any real stock's range as unknown, dropping its premium too", () => {
+    // Production incident 2026-09-28: a handful of pools' on-chain reads
+    // produced e.g. a $3.4e53 "price" for SPY, which fed a fabricated
+    // multi-billion-percent arbitrage spread. pools.ts now rejects this at
+    // write time, but this covers already-stored rows from before that guard existed.
+    const map = latestPricesByKey([
+      { chain_id: ROBINHOOD, token_address: "0xBBB", price_usd: 3.4e53, premium_bps: 999_999, ts: "2026-01-01T00:00:00Z" },
+      { chain_id: ROBINHOOD, token_address: "0xCCC", price_usd: 0.000016, premium_bps: -9999, ts: "2026-01-01T00:00:00Z" },
+      { chain_id: ROBINHOOD, token_address: "0xDDD", price_usd: 369.11, premium_bps: 200, ts: "2026-01-01T00:00:00Z" },
+    ]);
+    expect(map.get(`${ROBINHOOD}:0xbbb`)).toEqual({ priceUsd: null, premiumBps: null, ts: "2026-01-01T00:00:00Z" });
+    expect(map.get(`${ROBINHOOD}:0xccc`)).toEqual({ priceUsd: null, premiumBps: null, ts: "2026-01-01T00:00:00Z" });
+    expect(map.get(`${ROBINHOOD}:0xddd`)).toEqual({ priceUsd: 369.11, premiumBps: 200, ts: "2026-01-01T00:00:00Z" });
+  });
 });
 
 describe("buildAssetSummaries", () => {

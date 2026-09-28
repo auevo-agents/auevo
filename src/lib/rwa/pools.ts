@@ -76,6 +76,26 @@ export interface TokenPriceFromPoolInput {
 }
 
 /**
+ * Every ticker this app tracks is a real-world stock, ETF, commodity or
+ * treasury instrument — none of those trade below a cent or above six
+ * figures per share/unit. A computed price outside this range isn't a
+ * real (if extreme) market price; it means the pool has no trustworthy
+ * state right now — near-zero liquidity sitting at an extreme tick right
+ * after creation, or (found in production 2026-09-28) a handful of
+ * specific pools whose sqrtPriceX96 read back this way, producing e.g. a
+ * $3.4e53 SPY "price" and a fabricated +9,818,203,378% arbitrage spread
+ * against it. catalog.ts's latestPricesByKey applies this same bound to
+ * already-stored rows too, so a bad read never surfaces as real, whether
+ * it came from this write path or an older one.
+ */
+const MIN_PLAUSIBLE_PRICE_USD = 0.01;
+const MAX_PLAUSIBLE_PRICE_USD = 100_000;
+
+export function isPlausibleStockPriceUsd(priceUsd: number): boolean {
+  return priceUsd >= MIN_PLAUSIBLE_PRICE_USD && priceUsd <= MAX_PLAUSIBLE_PRICE_USD;
+}
+
+/**
  * A tokenized stock's own live on-chain price in USD, derived directly
  * from its v4 pool's sqrtPriceX96 against USDG (a 1:1 USD stablecoin) —
  * no external price API involved at all. This is Robinhood Chain's own
@@ -99,12 +119,18 @@ export function computeTokenPriceUsdFromPool(input: TokenPriceFromPoolInput): nu
   const priceX192 = sqrtPriceX96 * sqrtPriceX96; // (sqrtPriceX96/Q96)^2, kept as an integer ratio over Q96^2 until the final division
   const Q192 = Q96 * Q96;
 
-  if (usdgIsCurrency0) {
-    // price_raw (currency1 per currency0) = priceX192 / Q192 = (RWA raw) per (USDG raw)
-    // USD per 1 RWA token = 1 / (price_raw * 10^(usdgDecimals - tokenDecimals)) = Q192 * 10^(tokenDecimals - usdgDecimals) / priceX192
-    return (Number(Q192) / Number(priceX192)) * 10 ** (tokenDecimals - USDG_DECIMALS);
-  }
-  // USDG is currency1: price_raw (currency1 per currency0) = priceX192 / Q192 = (USDG raw) per (RWA raw)
-  // USD per 1 RWA token = price_raw * 10^(tokenDecimals - usdgDecimals)
-  return (Number(priceX192) / Number(Q192)) * 10 ** (tokenDecimals - USDG_DECIMALS);
+  const price = usdgIsCurrency0
+    ? // price_raw (currency1 per currency0) = priceX192 / Q192 = (RWA raw) per (USDG raw)
+      // USD per 1 RWA token = 1 / (price_raw * 10^(usdgDecimals - tokenDecimals)) = Q192 * 10^(tokenDecimals - usdgDecimals) / priceX192
+      (Number(Q192) / Number(priceX192)) * 10 ** (tokenDecimals - USDG_DECIMALS)
+    : // USDG is currency1: price_raw (currency1 per currency0) = priceX192 / Q192 = (USDG raw) per (RWA raw)
+      // USD per 1 RWA token = price_raw * 10^(tokenDecimals - usdgDecimals)
+      (Number(priceX192) / Number(Q192)) * 10 ** (tokenDecimals - USDG_DECIMALS);
+
+  // A pool at (or just after) creation can sit at an arbitrary tick with
+  // almost no real liquidity behind it — mathematically a valid
+  // sqrtPriceX96, but not a price anything actually traded at. Treating
+  // it as unknown rather than storing/showing it is the same "never
+  // guess" rule this app applies to a missing price, not a new one.
+  return isPlausibleStockPriceUsd(price) ? price : null;
 }

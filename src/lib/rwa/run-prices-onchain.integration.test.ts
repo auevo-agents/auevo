@@ -20,7 +20,14 @@ import { buildPoolKey, poolId } from "./dex/pool-key";
 
 const TOKEN_ONCHAIN = "0x9999999999999999999999999999999999999999"; // > USDG numerically -> USDG is currency0
 const TOKEN_DECIMALS = 18;
-const SQRT_PRICE_X96 = 79228162514264337593543950336n; // Q96 itself — price ratio 1.0
+const Q96 = 2n ** 96n;
+// price_raw = 5e9 rebases (18-decimal token vs USDG's 6) to $200/token — see
+// pools.ts's computeTokenPriceUsdFromPool for the derivation. A price_raw of
+// 1 (ratio 1.0) would rebase to $1e12, which pools.ts now rejects as
+// implausible (see its own 2026-09-28 note) — this test uses a price an
+// actual pool would plausibly sit at, not that edge case (pools.test.ts
+// covers the rejection itself).
+const SQRT_PRICE_X96 = BigInt(Math.floor(Math.sqrt(5_000_000_000) * Number(Q96)));
 const POOL_KEY = buildPoolKey(USDG, TOKEN_ONCHAIN, 3000, 60);
 const POOL_ID = poolId(POOL_KEY);
 const GET_SLOT0_SELECTOR = toFunctionSelector("getSlot0(bytes32)");
@@ -116,8 +123,7 @@ describe("runPricesPass — on-chain price source for Robinhood Chain", () => {
     expect(result.status).toBe("ok");
     expect(result.priced).toBe(1);
     expect(insertedRows).toHaveLength(1);
-    // price_raw = 1.0, USDG is currency0 (6 decimals), token has 18 -> $1e12 (see pools.test.ts's own note on this exact extreme-but-correct case).
     expect(insertedRows[0]).toMatchObject({ chain_id: 4663, token_address: TOKEN_ONCHAIN });
-    expect(insertedRows[0].price_usd as number).toBeCloseTo(1e12, -6);
+    expect(insertedRows[0].price_usd as number).toBeCloseTo(200, 1);
   });
 });
