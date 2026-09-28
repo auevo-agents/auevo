@@ -138,6 +138,12 @@ beforeAll(async () => {
       res.end(JSON.stringify({ synced_to_block: 0 })); // .single() shape
       return;
     }
+    // Nothing claimed yet — the ticker-collision guard (run-registry.ts)
+    // reads this before deciding what's safe to promote.
+    if (req.method === "GET" && table === "rwa_tokens") {
+      res.end(JSON.stringify([]));
+      return;
+    }
     if (req.method === "PATCH" && table === "rwa_registry_state") {
       let body = "";
       req.on("data", (chunk) => (body += chunk));
