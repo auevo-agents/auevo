@@ -210,6 +210,15 @@ export function PrivateSwapClient() {
     return (
       <div className={styles.gateBackdrop}>
         <section className={styles.gateDialog} role="dialog" aria-modal="true" aria-labelledby="private-gate-title">
+          <svg className={styles.gateLock} viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <circle cx="100" cy="100" r="88" stroke="currentColor" strokeOpacity=".28" strokeWidth="1"/>
+            <circle cx="100" cy="100" r="72" stroke="currentColor" strokeOpacity=".18" strokeWidth="1" strokeDasharray="2 7"/>
+            <path d="M66 88V66a34 34 0 0 1 68 0v22" stroke="currentColor" strokeWidth="3"/>
+            <rect x="48" y="86" width="104" height="78" rx="12" stroke="currentColor" strokeWidth="3"/>
+            <circle cx="100" cy="119" r="7" stroke="currentColor" strokeWidth="2.5"/>
+            <path d="M100 126v17" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M31 100h12M157 100h12M100 30v12M100 158v12" stroke="currentColor" strokeOpacity=".42" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
           <div className={styles.gateTopline}>
             <span className={styles.gateBrand}><i /> AUEVO <b>PRIVATE</b></span>
             <span className={styles.gateStep}>BEFORE YOU CONTINUE</span>
