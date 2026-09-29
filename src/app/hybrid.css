@@ -11,12 +11,12 @@
 }
 
 /* Identity shared across both surfaces. */
-.auevo-mark-a { fill: #2458e8; }
-.auevo-mark-orbit { stroke: #35cce6; stroke-width: 3.7; opacity: 1; }
-.auevo-mark-node { fill: #35d7e9; stroke: #2458e8; stroke-width: .4; }
+.auevo-mark { display: block; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(36,88,232,.2)); }
 .landing2 .auevo-logo { color: var(--hy-ink); }
 .landing2 .auevo-wordmark,
-.app-shell .auevo-wordmark { color: inherit; font-family: Arial, Helvetica, sans-serif; font-weight: 800; letter-spacing: -.055em; }
+.app-shell .auevo-wordmark { font-family: Arial, Helvetica, sans-serif; font-weight: 800; letter-spacing: .055em; }
+.landing2 .auevo-wordmark { color: #10182b !important; }
+.app-shell .auevo-wordmark { color: #f2f7ff !important; }
 .landing2 .auevo-wordmark > span,
 .app-shell .auevo-wordmark > span { color: inherit; }
 .landing2 .auevo-mark,
