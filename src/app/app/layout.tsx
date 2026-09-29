@@ -29,8 +29,10 @@ export default async function AppSectionLayout({ children }: LayoutProps<"/app">
           <span className="app-ambient-node app-ambient-node-two" />
         </div>
         <Sidebar />
-        <GeoBanner />
-        <div className="product-main app-main">{children}</div>
+        <div className="app-workspace">
+          <GeoBanner />
+          <div className="product-main app-main">{children}</div>
+        </div>
       </main>
     </AppProviders>
   );
