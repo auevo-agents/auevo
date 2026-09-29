@@ -211,9 +211,15 @@
   box-shadow: inset -70px -80px 110px rgba(0,0,0,.55), inset 18px 12px 38px rgba(255,255,255,.24), 0 0 100px var(--scene-glow), 0 0 260px var(--scene-glow);
   opacity: .62;
   transform: rotate(-14deg);
+  animation: planet-breathe 9s ease-in-out infinite;
 }
-.scenePlanet::after { content: ""; position: absolute; inset: -2%; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--scene-core) 58%, transparent); filter: blur(1px); box-shadow: 0 -7px 28px var(--scene-glow); }
-.sceneOrbit { right: 6%; bottom: 1%; width: min(92vw, 1250px); height: min(24vw, 310px); border: 1px solid color-mix(in srgb, var(--scene-core) 46%, transparent); border-radius: 50%; transform: rotate(-9deg); box-shadow: 0 0 18px var(--scene-glow), inset 0 0 20px var(--scene-glow); opacity: .55; }
+.scenePlanet::before { content: ""; position: absolute; inset: 5%; border-radius: 50%; background: radial-gradient(ellipse 18% 12% at 28% 22%, rgba(255,255,255,.88), rgba(255,255,255,.18) 48%, transparent 72%); mix-blend-mode: screen; animation: planet-glimmer 5.5s ease-in-out infinite; }
+.scenePlanet::after { content: ""; position: absolute; inset: -2%; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--scene-core) 58%, transparent); filter: blur(1px); box-shadow: 0 -7px 28px var(--scene-glow), 0 -18px 64px var(--scene-glow); animation: atmosphere-shimmer 4.5s ease-in-out infinite; }
+.sceneOrbit { right: 6%; bottom: 1%; width: min(92vw, 1250px); height: min(24vw, 310px); border: 1px solid color-mix(in srgb, var(--scene-core) 46%, transparent); border-radius: 50%; transform: rotate(-9deg); box-shadow: 0 0 18px var(--scene-glow), inset 0 0 20px var(--scene-glow); opacity: .55; animation: orbit-shimmer 7s ease-in-out infinite; }
+@keyframes planet-breathe { 0%,100% { transform: rotate(-14deg) scale(1); } 50% { transform: rotate(-14deg) scale(1.018); } }
+@keyframes planet-glimmer { 0%,100% { opacity: .5; transform: translate(-2%,-1%) scale(.95); } 50% { opacity: 1; transform: translate(3%,2%) scale(1.08); } }
+@keyframes atmosphere-shimmer { 0%,100% { opacity: .55; filter: blur(1px) brightness(.9); } 50% { opacity: 1; filter: blur(1px) brightness(1.4); } }
+@keyframes orbit-shimmer { 0%,100% { filter: brightness(.75); } 50% { filter: brightness(1.45); } }
 .walletRoot[data-theme="blue-light"] .scenePlanet { right: -8%; bottom: -38vw; opacity: .3; filter: saturate(.8); }
 .walletRoot[data-theme="blue-light"] .sceneOrbit { right: -4%; opacity: .3; }
 .walletRoot[data-theme="sky-light"] .scenePlanet { width: min(50vw, 680px); right: 23%; bottom: -29vw; opacity: .34; }
@@ -277,12 +283,12 @@
  */
 .comet {
   position: absolute;
-  top: -5%;
-  width: 3px;
-  height: 3px;
+  top: -8%;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--wallet-comet-color);
-  box-shadow: 0 0 8px 1.5px var(--wallet-comet-color);
+  background: #fff;
+  box-shadow: 0 0 5px 2px #fff, 0 0 16px 5px var(--wallet-comet-color);
   opacity: 0;
   animation: wallet-comet-fly linear infinite;
 }
@@ -292,26 +298,29 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 110px;
-  height: 1.5px;
-  background: linear-gradient(90deg, var(--wallet-comet-color), transparent);
+  width: clamp(110px, 13vw, 210px);
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,.95), var(--wallet-comet-color) 20%, transparent 100%);
   transform-origin: left center;
-  transform: translateY(-50%) rotate(148deg);
+  transform: translateY(-50%) rotate(-48deg);
+  filter: blur(.25px);
 }
+.comet::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--wallet-comet-color) 32%, transparent 70%); animation: meteor-spark .7s ease-in-out infinite alternate; }
+@keyframes meteor-spark { from { transform: scale(.72); opacity: .65; } to { transform: scale(1.25); opacity: 1; } }
 
 @keyframes wallet-comet-fly {
   0% {
     transform: translate(0, 0);
     opacity: 0;
   }
-  4% {
+  3% {
     opacity: 1;
   }
-  30% {
+  18% {
     opacity: 1;
   }
-  38% {
-    transform: translate(-55vw, 62vh);
+  27% {
+    transform: translate(-48vw, 54vh);
     opacity: 0;
   }
   100% {
@@ -322,7 +331,11 @@
 @media (prefers-reduced-motion: reduce) {
   .spaceBg::before,
   .spaceBg::after,
-  .comet {
+  .comet,
+  .scenePlanet,
+  .scenePlanet::before,
+  .scenePlanet::after,
+  .sceneOrbit {
     animation: none;
   }
 }
@@ -400,10 +413,21 @@
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3px;
 }
 
+.chatListRow { position: relative; display: flex; flex-wrap: wrap; align-items: center; border-radius: 10px; border: 1px solid transparent; }
+.chatListRow:hover { background: color-mix(in srgb, var(--wallet-text) 5%, transparent); }
+.chatListRowActive { background: var(--wallet-accent-soft); border-color: color-mix(in srgb, var(--wallet-accent) 22%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+
 .chatListItem {
-  padding: 8px 10px;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 4px 9px 9px;
   border-radius: 8px;
   font-size: 13px;
   color: var(--wallet-muted);
@@ -413,8 +437,8 @@
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
+.chatListItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .chatListItem:hover {
   color: var(--wallet-text);
@@ -425,6 +449,16 @@
   background: var(--wallet-accent-soft);
   color: var(--wallet-text);
 }
+.chatMoreBtn { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--wallet-muted); cursor: pointer; opacity: 0; }
+.chatListRow:hover .chatMoreBtn,
+.chatMoreBtn[aria-expanded="true"] { opacity: 1; }
+.chatMoreBtn:hover { color: var(--wallet-text); background: var(--wallet-accent-soft); }
+.chatActionMenu { flex: 0 0 calc(100% - 8px); margin: 0 4px 5px; padding: 5px; border: 1px solid var(--wallet-border); border-radius: 10px; background: color-mix(in srgb, var(--wallet-panel) 97%, transparent); backdrop-filter: blur(22px); box-shadow: 0 12px 30px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08); }
+.chatActionMenu button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 9px; border: 0; border-radius: 7px; background: transparent; color: var(--wallet-text); cursor: pointer; font-size: 12px; text-align: left; }
+.chatActionMenu button:hover { background: var(--wallet-accent-soft); }
+.chatActionMenu .chatDeleteAction { color: var(--wallet-danger); }
+.chatActionMenu button:disabled { opacity: .6; cursor: wait; }
+.chatListError { margin: 4px 2px; padding: 8px; border: 1px solid color-mix(in srgb, var(--wallet-danger) 45%, transparent); border-radius: 8px; color: var(--wallet-danger); background: color-mix(in srgb, var(--wallet-danger) 8%, transparent); font-size: 11px; line-height: 1.35; }
 
 .sidebarFooter {
   margin-top: auto;
@@ -1066,6 +1100,7 @@ select.fieldInput {
     cursor: pointer;
     flex-shrink: 0;
   }
+  .chatMoreBtn { opacity: 1; }
 
   .chatHeader {
     justify-content: space-between;

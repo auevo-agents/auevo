@@ -66,7 +66,7 @@ function AgentPortrait({ name, className = "", size = 36 }: { name: string; clas
   return <span className={`${styles.agentPortrait} ${className}`} role="img" aria-label={`${name} portrait`} style={{ backgroundPosition: `${x}% ${y}%`, width: size, height: size }} />;
 }
 
-type WalletIconName = "chat" | "agents" | "wallet" | "send" | "swap" | "receive" | "buy" | "theme" | "menu";
+type WalletIconName = "chat" | "agents" | "wallet" | "send" | "swap" | "receive" | "buy" | "theme" | "menu" | "more" | "pin" | "trash";
 function WalletIcon({ name, size = 20 }: { name: WalletIconName; size?: number }) {
   const paths: Record<WalletIconName, ReactNode> = {
     chat: <><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-9.5a7.5 7.5 0 1 1 17 0Z" /><path d="M7 11.5h9M7 15h5" /></>,
@@ -78,8 +78,24 @@ function WalletIcon({ name, size = 20 }: { name: WalletIconName; size?: number }
     buy: <><circle cx="12" cy="12" r="9" /><path d="M12 7v10M7 12h10" /></>,
     theme: <><path d="M12 3a9 9 0 1 0 0 18h1.5a2.2 2.2 0 0 0 1.7-3.6 1.6 1.6 0 0 1 1.2-2.6H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z" /><path d="M7.5 11h.01M10 7h.01M15 7.5h.01M17 11h.01" /></>,
     menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+    more: <><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" /></>,
+    pin: <><path d="m14 4 6 6-3 1-4 4-1 5-2-6-5-5 5-1 4-4Z" /><path d="m9 15-5 5" /></>,
+    trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
+
+const CHAT_PINS_EVENT = "auevo-wallet-chat-pins-change";
+function subscribeToChatPins(callback: () => void) {
+  window.addEventListener(CHAT_PINS_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(CHAT_PINS_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+function getChatPinsSnapshot(key: string) {
+  try { return localStorage.getItem(key) ?? "[]"; } catch { return "[]"; }
 }
 
 /** A preset's mood by name, for agents already saved to the DB (which only
@@ -303,8 +319,20 @@ function WalletApp({
   const [streamingText, setStreamingText] = useState<string | null>(null);
   const [chatStartBusy, setChatStartBusy] = useState(false);
   const [chatStartError, setChatStartError] = useState<string | null>(null);
+  const [chatMenuId, setChatMenuId] = useState<string | null>(null);
+  const [chatActionBusy, setChatActionBusy] = useState<string | null>(null);
+  const [chatListError, setChatListError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatPinsKey = `auevo-wallet-chat-pins:${address.toLowerCase()}`;
+  const chatPinsSnapshot = useSyncExternalStore(
+    subscribeToChatPins,
+    () => getChatPinsSnapshot(chatPinsKey),
+    () => "[]",
+  );
+  const pinnedChatIds = useMemo(() => {
+    try { return new Set<string>(JSON.parse(chatPinsSnapshot)); } catch { return new Set<string>(); }
+  }, [chatPinsSnapshot]);
 
   const profileSynced = useRef(false);
   useEffect(() => {
@@ -323,6 +351,10 @@ function WalletApp({
     queryKey: ["wallet-chats"],
     queryFn: () => walletFetchJson<Chat[]>("/api/wallet/chats"),
   });
+  const orderedChats = useMemo(
+    () => [...(chatsQuery.data ?? [])].sort((a, b) => Number(pinnedChatIds.has(b.id)) - Number(pinnedChatIds.has(a.id))),
+    [chatsQuery.data, pinnedChatIds],
+  );
 
   const agentsQuery = useQuery({
     queryKey: ["wallet-agents"],
@@ -351,6 +383,39 @@ function WalletApp({
   function openPersonaPicker() {
     setChatStartError(null);
     setShowPersonaPicker(true);
+  }
+
+  function setChatPinned(chatId: string, pinned: boolean) {
+    const next = new Set(pinnedChatIds);
+    if (pinned) next.add(chatId);
+    else next.delete(chatId);
+    try { localStorage.setItem(chatPinsKey, JSON.stringify([...next])); } catch {}
+    window.dispatchEvent(new Event(CHAT_PINS_EVENT));
+    setChatMenuId(null);
+  }
+
+  async function deleteChat(chatId: string) {
+    if (!window.confirm("Delete this chat and its messages? This cannot be undone.")) return;
+    setChatActionBusy(chatId);
+    setChatListError(null);
+    try {
+      const response = await walletFetch(`/api/wallet/chats/${chatId}`, { method: "DELETE" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? `Could not delete chat (${response.status})`);
+      }
+      const remaining = orderedChats.filter((chat) => chat.id !== chatId);
+      qc.setQueryData<Chat[]>(["wallet-chats"], (current) => (current ?? []).filter((chat) => chat.id !== chatId));
+      qc.removeQueries({ queryKey: ["wallet-messages", chatId] });
+      setChatPinned(chatId, false);
+      if (effectiveChatId === chatId) setSelectedChatId(remaining[0]?.id ?? null);
+      await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
+    } catch (error) {
+      setChatListError(error instanceof Error ? error.message : "Could not delete the chat.");
+    } finally {
+      setChatActionBusy(null);
+      setChatMenuId(null);
+    }
   }
 
   /**
@@ -461,20 +526,38 @@ function WalletApp({
             </div>
             <div className={styles.chatList}>
               {(chatsQuery.data ?? []).length === 0 && <span className={styles.chatListLabel}>Start a conversation.</span>}
-              {(chatsQuery.data ?? []).map((c) => {
+              {chatListError && <div className={styles.chatListError} role="alert">{chatListError}</div>}
+              {orderedChats.map((c) => {
                 const agent = (agentsQuery.data ?? []).find((a) => a.id === c.agent_id);
+                const pinned = pinnedChatIds.has(c.id);
                 return (
-                  <button
-                    key={c.id}
-                    className={c.id === effectiveChatId ? styles.chatListItemActive : styles.chatListItem}
-                    onClick={() => {
-                      setSelectedChatId(c.id);
-                      setSidebarOpen(false);
-                    }}
-                  >
-                    {agent?.emoji ? `${agent.emoji} ` : ""}
-                    {c.title ?? "New chat"}
-                  </button>
+                  <div key={c.id} className={`${styles.chatListRow} ${c.id === effectiveChatId ? styles.chatListRowActive : ""}`}>
+                    <button
+                      type="button"
+                      className={styles.chatListItem}
+                      onClick={() => {
+                        setSelectedChatId(c.id);
+                        setChatMenuId(null);
+                        setSidebarOpen(false);
+                      }}
+                    >
+                      {pinned && <WalletIcon name="pin" size={13} />}
+                      <span>{agent?.emoji ? `${agent.emoji} ` : ""}{c.title ?? "New chat"}</span>
+                    </button>
+                    <button type="button" className={styles.chatMoreBtn} aria-label={`Actions for ${c.title ?? "chat"}`} aria-expanded={chatMenuId === c.id} onClick={() => setChatMenuId((open) => open === c.id ? null : c.id)}>
+                      <WalletIcon name="more" size={18} />
+                    </button>
+                    {chatMenuId === c.id && (
+                      <div className={styles.chatActionMenu}>
+                        <button type="button" onClick={() => setChatPinned(c.id, !pinned)}>
+                          <WalletIcon name="pin" size={16} /> {pinned ? "Unpin" : "Pin chat"}
+                        </button>
+                        <button type="button" className={styles.chatDeleteAction} onClick={() => deleteChat(c.id)} disabled={chatActionBusy === c.id}>
+                          <WalletIcon name="trash" size={16} /> {chatActionBusy === c.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
