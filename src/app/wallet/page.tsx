@@ -265,10 +265,12 @@ function LoginGate({ theme, onLogin }: { theme: string; onLogin: () => void }) {
   return (
     <Shell theme={theme}>
       <div className={styles.loginGate}>
-        <h1>AUEVO Wallet</h1>
-        <p>Sign in with email, phone or X. No seed phrase to write down — you can always recover access the same way.</p>
+        <div className={styles.loginMark}><AuevoMark /></div>
+        <span className={styles.loginEyebrow}>AUEVO WALLET</span>
+        <h1>Your universe starts here.</h1>
+        <p>Explore your assets with a cosmic AI guide. Sign in with email, phone or X; your access remains recoverable without a seed phrase to write down.</p>
         <button className={styles.loginBtn} onClick={onLogin}>
-          Sign up / Login
+          Enter the wallet <span aria-hidden="true">↗</span>
         </button>
       </div>
     </Shell>
