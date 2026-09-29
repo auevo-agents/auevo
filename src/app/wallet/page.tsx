@@ -25,32 +25,88 @@ const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name }));
  * /api/wallet/agents), so it flows through the exact same persona/accent
  * plumbing a user's own custom agent does.
  */
-const PRESET_AGENTS: { name: string; persona: string; accent: string; emoji: string }[] = [
+type Mood = "neutral" | "wise" | "excited" | "calm";
+
+const PRESET_AGENTS: { name: string; persona: string; accent: string; emoji: string; mood: Mood }[] = [
   {
     name: "Ruslt",
     persona: "Neutral, precise, professional. Get straight to the point, no filler.",
     accent: "#5fe6a3",
     emoji: "◆",
+    mood: "neutral",
   },
   {
     name: "Sage",
     persona: "Calm and analytical. Explain your reasoning before conclusions, measured and thorough tone.",
     accent: "#6fb7ff",
     emoji: "🦉",
+    mood: "wise",
   },
   {
     name: "Bolt",
     persona: "Energetic and casual. Short, punchy, upbeat — talk like a sharp friend, not a bank. Light use of emoji is fine.",
     accent: "#ff9d4d",
     emoji: "⚡",
+    mood: "excited",
   },
   {
     name: "Zen",
     persona: "Minimalist. One or two sentences, max. No pleasantries, no filler — just the answer.",
     accent: "#b98bff",
     emoji: "◯",
+    mood: "calm",
   },
 ];
+
+/** A preset's mood by name, for agents already saved to the DB (which only
+ * carries name/persona/accent/emoji — see migration 0018) — lets the chat
+ * header and message bubbles draw the same little face for a preset agent
+ * picked earlier, without duplicating mood data server-side. */
+function moodForAgentName(name: string): Mood | null {
+  return PRESET_AGENTS.find((p) => p.name === name)?.mood ?? null;
+}
+
+/**
+ * A small illustrated face rather than a bare emoji — every preset gets a
+ * distinct, simple expression (not just a different color) so "Sage" and
+ * "Bolt" read as different characters at a glance, not the same dot in a
+ * different shade. Pure inline SVG: no image assets, crisp at any size.
+ */
+function PersonaAvatar({ mood, color, size = 36 }: { mood: Mood; color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="20" cy="20" r="20" fill={color} />
+      {mood === "neutral" && (
+        <>
+          <circle cx="14" cy="18" r="2.3" fill="#10151f" />
+          <circle cx="26" cy="18" r="2.3" fill="#10151f" />
+          <path d="M14 26 H26" stroke="#10151f" strokeWidth="2" strokeLinecap="round" />
+        </>
+      )}
+      {mood === "wise" && (
+        <>
+          <path d="M9 18 Q14 13 19 18" stroke="#10151f" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M21 18 Q26 13 31 18" stroke="#10151f" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M15 27 Q20 30.5 25 27" stroke="#10151f" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </>
+      )}
+      {mood === "excited" && (
+        <>
+          <path d="M11 15 L16 19.5 L11 24" stroke="#10151f" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M29 15 L24 19.5 L29 24" stroke="#10151f" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13 27 Q20 34 27 27" stroke="#10151f" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+        </>
+      )}
+      {mood === "calm" && (
+        <>
+          <path d="M10 18 H18" stroke="#10151f" strokeWidth="2" strokeLinecap="round" />
+          <path d="M22 18 H30" stroke="#10151f" strokeWidth="2" strokeLinecap="round" />
+          <path d="M16 26.5 Q20 28.5 24 26.5" stroke="#10151f" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  );
+}
 
 /**
  * Named color schemes — default matches the main site's own light design
@@ -385,40 +441,38 @@ function WalletApp({
       </aside>
 
       <main className={styles.main}>
-        <div className={styles.chatHeader}>
-          <span className={styles.chatHeaderDot} style={{ background: activeAgent?.accent_color || "var(--wallet-accent)" }} />
-          <span>
-            {activeAgent ? `${activeAgent.emoji ?? "✦"} ${activeAgent.name}` : "AUEVO"}
-          </span>
-        </div>
-        <div className={styles.messages}>
-          {(messagesQuery.data ?? []).length === 0 && !streamingText && (
-            <div className={styles.emptyState}>
-              <p>Ask about your balances, or anything else. This agent can only read what you see here — it can&apos;t send transactions.</p>
-            </div>
-          )}
-          {(messagesQuery.data ?? []).map((m) => (
-            <div key={m.id} className={m.role === "user" ? styles.msgRowUser : styles.msgRow}>
-              <div
-                className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}
-                style={m.role === "assistant" && activeAgent?.accent_color ? { borderLeft: `3px solid ${activeAgent.accent_color}` } : undefined}
-              >
-                {m.content}
+        {(() => {
+          const mood = activeAgent ? moodForAgentName(activeAgent.name) : null;
+          const avatarColor = activeAgent?.accent_color || "var(--wallet-accent)";
+          return (
+            <>
+              <div className={styles.chatHeader}>
+                <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} />
+                <span>{activeAgent ? activeAgent.name : "AUEVO"}</span>
               </div>
-            </div>
-          ))}
-          {streamingText !== null && (
-            <div className={styles.msgRow}>
-              <div
-                className={styles.msgBubble}
-                style={activeAgent?.accent_color ? { borderLeft: `3px solid ${activeAgent.accent_color}` } : undefined}
-              >
-                {streamingText || "…"}
+              <div className={styles.messages}>
+                {(messagesQuery.data ?? []).length === 0 && !streamingText && (
+                  <div className={styles.emptyState}>
+                    <p>Ask about your balances, or anything else. This agent can only read what you see here — it can&apos;t send transactions.</p>
+                  </div>
+                )}
+                {(messagesQuery.data ?? []).map((m) => (
+                  <div key={m.id} className={m.role === "user" ? styles.msgRowUser : styles.msgRow}>
+                    {m.role === "assistant" && <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} />}
+                    <div className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}>{m.content}</div>
+                  </div>
+                ))}
+                {streamingText !== null && (
+                  <div className={styles.msgRow}>
+                    <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} />
+                    <div className={styles.msgBubble}>{streamingText || "…"}</div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            </>
+          );
+        })()}
 
         <form
           className={styles.composer}
@@ -498,52 +552,54 @@ function AgentsPanel({
 
   return (
     <div className={styles.chatList}>
-      {agents.map((a) => (
-        <button key={a.id} className={styles.chatListItem} onClick={() => onStartChat(a)} title="Start a chat with this agent">
-          <span style={{ color: a.accent_color ?? undefined }}>{a.emoji ?? "✦"}</span> {a.name}
-        </button>
-      ))}
-      <input
-        className={styles.fieldInput}
-        placeholder="Agent name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ marginTop: 8 }}
-      />
-      <textarea
-        className={styles.fieldInput}
-        placeholder="Persona / instructions (optional)"
-        value={persona}
-        onChange={(e) => setPersona(e.target.value)}
-        rows={3}
-        style={{ marginTop: 6 }}
-      />
-      <input
-        className={styles.fieldInput}
-        placeholder="Emoji / glyph"
-        value={emoji}
-        maxLength={4}
-        onChange={(e) => setEmoji(e.target.value)}
-        style={{ marginTop: 6 }}
-      />
-      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-        {SWATCHES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setAccent(c)}
-            aria-label={`Pick color ${c}`}
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: "50%",
-              background: c,
-              border: accent === c ? "2px solid #fff" : "2px solid transparent",
-              cursor: "pointer",
-            }}
-          />
-        ))}
+      {agents.map((a) => {
+        const mood = moodForAgentName(a.name);
+        return (
+          <button key={a.id} className={styles.agentRow} onClick={() => onStartChat(a)} title="Start a chat with this agent">
+            {mood ? (
+              <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} />
+            ) : (
+              <span className={styles.agentRowEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
+                {a.emoji ?? "✦"}
+              </span>
+            )}
+            {a.name}
+          </button>
+        );
+      })}
+      <div className={styles.field} style={{ marginTop: 8 }}>
+        <label className={styles.fieldLabel}>Name</label>
+        <input className={styles.fieldInput} placeholder="Agent name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
-      <button className={styles.primaryBtn} style={{ marginTop: 6 }} onClick={create} disabled={busy || !name.trim()}>
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>Persona</label>
+        <textarea
+          className={styles.fieldInput}
+          placeholder="Persona / instructions (optional)"
+          value={persona}
+          onChange={(e) => setPersona(e.target.value)}
+          rows={3}
+        />
+      </div>
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>Emoji / glyph</label>
+        <input className={styles.fieldInput} placeholder="✦" value={emoji} maxLength={4} onChange={(e) => setEmoji(e.target.value)} />
+      </div>
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>Color</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          {SWATCHES.map((c) => (
+            <button
+              key={c}
+              onClick={() => setAccent(c)}
+              aria-label={`Pick color ${c}`}
+              className={styles.colorSwatch}
+              style={{ background: c, outline: accent === c ? "2px solid var(--wallet-text)" : "2px solid transparent" }}
+            />
+          ))}
+        </div>
+      </div>
+      <button className={styles.primaryBtn} onClick={create} disabled={busy || !name.trim()}>
         Create agent
       </button>
     </div>
@@ -577,20 +633,25 @@ function PersonaPicker({
         <div className={styles.personaGrid}>
           {PRESET_AGENTS.map((p) => (
             <button key={p.name} className={styles.personaCard} style={{ borderColor: p.accent }} onClick={() => onPick(p)}>
-              <span className={styles.personaEmoji} style={{ background: p.accent }}>
-                {p.emoji}
-              </span>
+              <PersonaAvatar mood={p.mood} color={p.accent} size={44} />
               <span className={styles.personaName}>{p.name}</span>
             </button>
           ))}
-          {customAgents.map((a) => (
-            <button key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)}>
-              <span className={styles.personaEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
-                {a.emoji ?? "✦"}
-              </span>
-              <span className={styles.personaName}>{a.name}</span>
-            </button>
-          ))}
+          {customAgents.map((a) => {
+            const mood = moodForAgentName(a.name);
+            return (
+              <button key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)}>
+                {mood ? (
+                  <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={44} />
+                ) : (
+                  <span className={styles.personaEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
+                    {a.emoji ?? "✦"}
+                  </span>
+                )}
+                <span className={styles.personaName}>{a.name}</span>
+              </button>
+            );
+          })}
         </div>
 
         <button className={styles.primaryBtn} style={{ marginTop: 14, background: "transparent", border: "1px solid var(--wallet-border)", color: "var(--wallet-text)" }} onClick={onBlank}>
