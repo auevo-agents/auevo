@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const supabase = await ensureProfile(privyUserId);
     const { data, error } = await supabase
       .from("wallet_agents")
-      .select("id, name, persona, avatar_url, model, created_at")
+      .select("id, name, persona, avatar_url, accent_color, emoji, model, created_at")
       .eq("privy_user_id", privyUserId)
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -28,12 +28,25 @@ export async function POST(req: Request) {
     if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
     const persona = typeof body.persona === "string" ? body.persona : "";
     const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : null;
+    const accentColor = typeof body.accentColor === "string" ? body.accentColor : null;
+    const emoji = typeof body.emoji === "string" ? body.emoji : null;
 
     const supabase = await ensureProfile(privyUserId);
+    // Presets (see PRESET_AGENTS in page.tsx) are just regular agents the
+    // client creates on first pick — dedupe on name so re-picking a preset
+    // reuses its row instead of piling up duplicates.
+    const { data: existing } = await supabase
+      .from("wallet_agents")
+      .select("id, name, persona, avatar_url, accent_color, emoji, model, created_at")
+      .eq("privy_user_id", privyUserId)
+      .eq("name", name)
+      .maybeSingle();
+    if (existing) return NextResponse.json(existing, { status: 200 });
+
     const { data, error } = await supabase
       .from("wallet_agents")
-      .insert({ privy_user_id: privyUserId, name, persona, avatar_url: avatarUrl })
-      .select("id, name, persona, avatar_url, model, created_at")
+      .insert({ privy_user_id: privyUserId, name, persona, avatar_url: avatarUrl, accent_color: accentColor, emoji })
+      .select("id, name, persona, avatar_url, accent_color, emoji, model, created_at")
       .single();
     if (error) throw error;
     return NextResponse.json(data, { status: 201 });

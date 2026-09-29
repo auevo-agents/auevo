@@ -21,6 +21,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (typeof body.name === "string" && body.name.trim()) patch.name = body.name.trim();
     if (typeof body.persona === "string") patch.persona = body.persona;
     if (typeof body.avatarUrl === "string" || body.avatarUrl === null) patch.avatar_url = body.avatarUrl;
+    if (typeof body.accentColor === "string" || body.accentColor === null) patch.accent_color = body.accentColor;
+    if (typeof body.emoji === "string" || body.emoji === null) patch.emoji = body.emoji;
 
     const supabase = getSupabaseServer();
     if (!supabase) throw new Error("Supabase is not configured on the server");
@@ -29,7 +31,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       .update(patch)
       .eq("id", id)
       .eq("privy_user_id", privyUserId)
-      .select("id, name, persona, avatar_url, model, created_at")
+      .select("id, name, persona, avatar_url, accent_color, emoji, model, created_at")
       .single();
     if (error) throw error;
     return NextResponse.json(data);

@@ -11,10 +11,45 @@ import { USDC_ADDRESS, WALLET_CHAINS } from "@/lib/wallet/tokens";
 import { walletFetch, walletFetchJson } from "@/lib/wallet/api-client";
 
 type Chat = { id: string; agent_id: string | null; title: string | null };
-type Agent = { id: string; name: string; persona: string };
+type Agent = { id: string; name: string; persona: string; accent_color: string | null; emoji: string | null };
 type Message = { id: string; role: "user" | "assistant"; content: string };
 
 const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name }));
+
+/**
+ * Ready-made assistant personalities — different mood, tone and accent
+ * color, picked once per chat rather than being a single fixed voice.
+ * Each preset is a regular wallet_agents row under the hood (created,
+ * deduped by name, the first time a user picks it — see POST
+ * /api/wallet/agents), so it flows through the exact same persona/accent
+ * plumbing a user's own custom agent does.
+ */
+const PRESET_AGENTS: { name: string; persona: string; accent: string; emoji: string }[] = [
+  {
+    name: "Ruslt",
+    persona: "Neutral, precise, professional. Get straight to the point, no filler.",
+    accent: "#5fe6a3",
+    emoji: "◆",
+  },
+  {
+    name: "Sage",
+    persona: "Calm and analytical. Explain your reasoning before conclusions, measured and thorough tone.",
+    accent: "#6fb7ff",
+    emoji: "🦉",
+  },
+  {
+    name: "Bolt",
+    persona: "Energetic and casual. Short, punchy, upbeat — talk like a sharp friend, not a bank. Light use of emoji is fine.",
+    accent: "#ff9d4d",
+    emoji: "⚡",
+  },
+  {
+    name: "Zen",
+    persona: "Minimalist. One or two sentences, max. No pleasantries, no filler — just the answer.",
+    accent: "#b98bff",
+    emoji: "◯",
+  },
+];
 
 export default function WalletPage() {
   // Guards calling usePrivy() below: WalletProviders only mounts
@@ -75,6 +110,7 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSend, setShowSend] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
+  const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -118,10 +154,37 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messagesQuery.data, streamingText]);
 
-  async function newChat() {
-    const chat = await walletFetchJson<Chat>("/api/wallet/chats", { method: "POST", body: JSON.stringify({}) });
+  const activeChat = (chatsQuery.data ?? []).find((c) => c.id === effectiveChatId) ?? null;
+  const activeAgent = (agentsQuery.data ?? []).find((a) => a.id === activeChat?.agent_id) ?? null;
+
+  /**
+   * Starts a chat with a given personality (a preset from PRESET_AGENTS,
+   * or a user's own saved agent) — or a blank, agent-less chat when
+   * `agent` is omitted entirely. Presets are created as an ordinary
+   * wallet_agents row the first time they're picked (POST dedupes by
+   * name), so a re-pick just reuses the same row.
+   */
+  async function startChat(agent?: { name: string; persona: string; accent: string; emoji: string } | Agent) {
+    let agentId: string | null = null;
+    if (agent) {
+      const created = await walletFetchJson<Agent>("/api/wallet/agents", {
+        method: "POST",
+        body: JSON.stringify(
+          "id" in agent
+            ? { name: agent.name, persona: agent.persona, accentColor: agent.accent_color, emoji: agent.emoji }
+            : { name: agent.name, persona: agent.persona, accentColor: agent.accent, emoji: agent.emoji }
+        ),
+      });
+      agentId = created.id;
+      await qc.invalidateQueries({ queryKey: ["wallet-agents"] });
+    }
+    const chat = await walletFetchJson<Chat>("/api/wallet/chats", {
+      method: "POST",
+      body: JSON.stringify({ agentId, title: agent?.name ?? null }),
+    });
     await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
     setSelectedChatId(chat.id);
+    setShowPersonaPicker(false);
   }
 
   async function sendMessage() {
@@ -184,26 +247,36 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
           <>
             <div className={styles.chatListLabel}>
               <span>RECENT CHATS</span>
-              <button onClick={newChat} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
+              <button onClick={() => setShowPersonaPicker(true)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
                 +
               </button>
             </div>
             <div className={styles.chatList}>
               {(chatsQuery.data ?? []).length === 0 && <span className={styles.chatListLabel}>Start a conversation.</span>}
-              {(chatsQuery.data ?? []).map((c) => (
-                <button
-                  key={c.id}
-                  className={c.id === effectiveChatId ? styles.chatListItemActive : styles.chatListItem}
-                  onClick={() => setSelectedChatId(c.id)}
-                >
-                  {c.title ?? "New chat"}
-                </button>
-              ))}
+              {(chatsQuery.data ?? []).map((c) => {
+                const agent = (agentsQuery.data ?? []).find((a) => a.id === c.agent_id);
+                return (
+                  <button
+                    key={c.id}
+                    className={c.id === effectiveChatId ? styles.chatListItemActive : styles.chatListItem}
+                    onClick={() => setSelectedChatId(c.id)}
+                  >
+                    {agent?.emoji ? `${agent.emoji} ` : ""}
+                    {c.title ?? "New chat"}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
 
-        {tab === "agents" && <AgentsPanel agents={agentsQuery.data ?? []} onCreated={() => qc.invalidateQueries({ queryKey: ["wallet-agents"] })} />}
+        {tab === "agents" && (
+          <AgentsPanel
+            agents={agentsQuery.data ?? []}
+            onCreated={() => qc.invalidateQueries({ queryKey: ["wallet-agents"] })}
+            onStartChat={(agent) => startChat(agent)}
+          />
+        )}
 
         <div className={styles.sidebarFooter}>
           <button onClick={onLogout} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
@@ -213,6 +286,12 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
       </aside>
 
       <main className={styles.main}>
+        <div className={styles.chatHeader}>
+          <span className={styles.chatHeaderDot} style={{ background: activeAgent?.accent_color || "var(--wallet-accent)" }} />
+          <span>
+            {activeAgent ? `${activeAgent.emoji ?? "✦"} ${activeAgent.name}` : "AUEVO"}
+          </span>
+        </div>
         <div className={styles.messages}>
           {(messagesQuery.data ?? []).length === 0 && !streamingText && (
             <div className={styles.emptyState}>
@@ -221,12 +300,22 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
           )}
           {(messagesQuery.data ?? []).map((m) => (
             <div key={m.id} className={m.role === "user" ? styles.msgRowUser : styles.msgRow}>
-              <div className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}>{m.content}</div>
+              <div
+                className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}
+                style={m.role === "assistant" && activeAgent?.accent_color ? { borderLeft: `3px solid ${activeAgent.accent_color}` } : undefined}
+              >
+                {m.content}
+              </div>
             </div>
           ))}
           {streamingText !== null && (
             <div className={styles.msgRow}>
-              <div className={styles.msgBubble}>{streamingText || "…"}</div>
+              <div
+                className={styles.msgBubble}
+                style={activeAgent?.accent_color ? { borderLeft: `3px solid ${activeAgent.accent_color}` } : undefined}
+              >
+                {streamingText || "…"}
+              </div>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -261,20 +350,43 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
 
       {showSend && <SendModal onClose={() => setShowSend(false)} />}
       {showReceive && <ReceiveModal address={address} onClose={() => setShowReceive(false)} />}
+      {showPersonaPicker && (
+        <PersonaPicker
+          customAgents={agentsQuery.data ?? []}
+          onPick={(agent) => startChat(agent)}
+          onBlank={() => startChat()}
+          onClose={() => setShowPersonaPicker(false)}
+        />
+      )}
     </Shell>
   );
 }
 
-function AgentsPanel({ agents, onCreated }: { agents: Agent[]; onCreated: () => void }) {
+const SWATCHES = ["#5fe6a3", "#6fb7ff", "#ff9d4d", "#b98bff", "#ff7a9c", "#ffe066"];
+
+function AgentsPanel({
+  agents,
+  onCreated,
+  onStartChat,
+}: {
+  agents: Agent[];
+  onCreated: () => void;
+  onStartChat: (agent: Agent) => void;
+}) {
   const [name, setName] = useState("");
   const [persona, setPersona] = useState("");
+  const [emoji, setEmoji] = useState("✦");
+  const [accent, setAccent] = useState(SWATCHES[0]);
   const [busy, setBusy] = useState(false);
 
   async function create() {
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await walletFetchJson("/api/wallet/agents", { method: "POST", body: JSON.stringify({ name, persona }) });
+      await walletFetchJson("/api/wallet/agents", {
+        method: "POST",
+        body: JSON.stringify({ name, persona, emoji, accentColor: accent }),
+      });
       setName("");
       setPersona("");
       onCreated();
@@ -286,9 +398,9 @@ function AgentsPanel({ agents, onCreated }: { agents: Agent[]; onCreated: () => 
   return (
     <div className={styles.chatList}>
       {agents.map((a) => (
-        <div key={a.id} className={styles.chatListItem}>
-          {a.name}
-        </div>
+        <button key={a.id} className={styles.chatListItem} onClick={() => onStartChat(a)} title="Start a chat with this agent">
+          <span style={{ color: a.accent_color ?? undefined }}>{a.emoji ?? "✦"}</span> {a.name}
+        </button>
       ))}
       <input
         className={styles.fieldInput}
@@ -305,9 +417,85 @@ function AgentsPanel({ agents, onCreated }: { agents: Agent[]; onCreated: () => 
         rows={3}
         style={{ marginTop: 6 }}
       />
+      <input
+        className={styles.fieldInput}
+        placeholder="Emoji / glyph"
+        value={emoji}
+        maxLength={4}
+        onChange={(e) => setEmoji(e.target.value)}
+        style={{ marginTop: 6 }}
+      />
+      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+        {SWATCHES.map((c) => (
+          <button
+            key={c}
+            onClick={() => setAccent(c)}
+            aria-label={`Pick color ${c}`}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: c,
+              border: accent === c ? "2px solid #fff" : "2px solid transparent",
+              cursor: "pointer",
+            }}
+          />
+        ))}
+      </div>
       <button className={styles.primaryBtn} style={{ marginTop: 6 }} onClick={create} disabled={busy || !name.trim()}>
         Create agent
       </button>
+    </div>
+  );
+}
+
+function PersonaPicker({
+  customAgents,
+  onPick,
+  onBlank,
+  onClose,
+}: {
+  customAgents: Agent[];
+  onPick: (agent: { name: string; persona: string; accent: string; emoji: string } | Agent) => void;
+  onBlank: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalEyebrow}>NEW CHAT</div>
+            <div className={styles.modalTitle}>Pick a personality</div>
+          </div>
+          <button className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.personaGrid}>
+          {PRESET_AGENTS.map((p) => (
+            <button key={p.name} className={styles.personaCard} style={{ borderColor: p.accent }} onClick={() => onPick(p)}>
+              <span className={styles.personaEmoji} style={{ background: p.accent }}>
+                {p.emoji}
+              </span>
+              <span className={styles.personaName}>{p.name}</span>
+            </button>
+          ))}
+          {customAgents.map((a) => (
+            <button key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)}>
+              <span className={styles.personaEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
+                {a.emoji ?? "✦"}
+              </span>
+              <span className={styles.personaName}>{a.name}</span>
+            </button>
+          ))}
+        </div>
+
+        <button className={styles.primaryBtn} style={{ marginTop: 14, background: "transparent", border: "1px solid var(--wallet-border)", color: "var(--wallet-text)" }} onClick={onBlank}>
+          Start blank chat
+        </button>
+      </div>
     </div>
   );
 }
@@ -326,9 +514,27 @@ function WalletPanel({
   onReceive: () => void;
 }) {
   const [tab, setTab] = useState<"assets" | "activity">("assets");
+  const [buyBusy, setBuyBusy] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
   const { fundWallet } = useFundWallet();
 
   const usdcTotal = balances.filter((b) => b.symbol === "USDC").reduce((sum, b) => sum + Number(b.formatted), 0);
+
+  async function handleBuy() {
+    setBuyError(null);
+    setBuyBusy(true);
+    try {
+      await fundWallet({ address });
+    } catch (err) {
+      // fundWallet rejects silently (no visible UI) if Privy's dashboard
+      // hasn't enabled a funding method (MoonPay/Coinbase Onramp) for this
+      // app yet — surfacing the message here is what makes that visible
+      // instead of "the Buy button does nothing."
+      setBuyError(err instanceof Error ? err.message : "Buy isn't available yet");
+    } finally {
+      setBuyBusy(false);
+    }
+  }
 
   return (
     <aside className={styles.panel}>
@@ -355,10 +561,11 @@ function WalletPanel({
         <button className={styles.actionBtn} onClick={onReceive}>
           ↓<span>Receive</span>
         </button>
-        <button className={styles.actionBtn} onClick={() => fundWallet({ address })}>
+        <button className={styles.actionBtn} onClick={handleBuy} disabled={buyBusy}>
           +<span>Buy</span>
         </button>
       </div>
+      {buyError && <div className={styles.errorText}>{buyError}</div>}
 
       <div className={styles.tabRow}>
         <button className={tab === "assets" ? styles.tabBtnActive : styles.tabBtn} onClick={() => setTab("assets")}>
