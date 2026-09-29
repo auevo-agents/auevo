@@ -5,24 +5,101 @@
  * private-swap.module.css's history); every rule below is reachable only
  * through this module's own generated class names, so it can never
  * collide with globals.css or with /app's own styling.
+ *
+ * Theming: every color is a CSS custom property set on .walletRoot, and
+ * .walletRoot[data-theme="…"] blocks below override that set. The default
+ * (blue-light, no data-theme needed) matches the main site's own hybrid.css
+ * tokens (--hy-blue #2458e8, --hy-ink, --hy-line, Arial) — see ThemePicker
+ * in page.tsx for how a viewer switches to one of the others.
  */
 
 .walletRoot {
+  --wallet-bg: #f7f9fd;
+  --wallet-panel: #ffffff;
+  --wallet-border: #dfe5ef;
+  --wallet-accent: #2458e8;
+  --wallet-accent-dim: rgba(36, 88, 232, 0.35);
+  --wallet-accent-soft: rgba(36, 88, 232, 0.08);
+  --wallet-accent-soft-2: rgba(36, 88, 232, 0.14);
+  --wallet-text: #121b2d;
+  --wallet-muted: #626e82;
+  --wallet-on-accent: #ffffff;
+  --wallet-danger: #c22a2a;
+  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(36, 88, 232, 0.09), transparent 60%), #f7f9fd;
+
+  min-height: 100vh;
+  background: var(--wallet-bg);
+  color: var(--wallet-text);
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sky — light, cyan accent. */
+.walletRoot[data-theme="sky-light"] {
+  --wallet-bg: #f4fbfd;
+  --wallet-panel: #ffffff;
+  --wallet-border: #d7edf3;
+  --wallet-accent: #0fb3d6;
+  --wallet-accent-dim: rgba(15, 179, 214, 0.35);
+  --wallet-accent-soft: rgba(15, 179, 214, 0.08);
+  --wallet-accent-soft-2: rgba(15, 179, 214, 0.14);
+  --wallet-text: #0f2b30;
+  --wallet-muted: #547479;
+  --wallet-on-accent: #ffffff;
+  --wallet-danger: #c22a2a;
+  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(15, 179, 214, 0.1), transparent 60%), #f4fbfd;
+}
+
+/* Violet — light. */
+.walletRoot[data-theme="violet-light"] {
+  --wallet-bg: #f9f7fd;
+  --wallet-panel: #ffffff;
+  --wallet-border: #e5defb;
+  --wallet-accent: #7c4dff;
+  --wallet-accent-dim: rgba(124, 77, 255, 0.35);
+  --wallet-accent-soft: rgba(124, 77, 255, 0.08);
+  --wallet-accent-soft-2: rgba(124, 77, 255, 0.14);
+  --wallet-text: #1e1730;
+  --wallet-muted: #6a6180;
+  --wallet-on-accent: #ffffff;
+  --wallet-danger: #c22a2a;
+  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(124, 77, 255, 0.1), transparent 60%), #f9f7fd;
+}
+
+/* Midnight — dark, green accent (the original AUEVO Wallet look). */
+.walletRoot[data-theme="green-dark"] {
   --wallet-bg: #050a08;
   --wallet-panel: #0b120e;
   --wallet-border: rgba(95, 230, 163, 0.14);
   --wallet-accent: #5fe6a3;
   --wallet-accent-dim: rgba(95, 230, 163, 0.35);
+  --wallet-accent-soft: rgba(95, 230, 163, 0.1);
+  --wallet-accent-soft-2: rgba(95, 230, 163, 0.16);
   --wallet-text: #eafff3;
   --wallet-muted: #7fa694;
+  --wallet-on-accent: #06140d;
+  --wallet-danger: #ff9b9b;
+  --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(95, 230, 163, 0.16), transparent 60%),
+    radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%), #050a08;
+}
 
-  min-height: 100vh;
-  background: var(--wallet-bg);
-  color: var(--wallet-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
-  display: flex;
-  position: relative;
-  overflow: hidden;
+/* Violet — dark. */
+.walletRoot[data-theme="violet-dark"] {
+  --wallet-bg: #0a0716;
+  --wallet-panel: #120f22;
+  --wallet-border: rgba(185, 139, 255, 0.16);
+  --wallet-accent: #b98bff;
+  --wallet-accent-dim: rgba(185, 139, 255, 0.35);
+  --wallet-accent-soft: rgba(185, 139, 255, 0.1);
+  --wallet-accent-soft-2: rgba(185, 139, 255, 0.16);
+  --wallet-text: #f1ebff;
+  --wallet-muted: #9b8fc2;
+  --wallet-on-accent: #180f2e;
+  --wallet-danger: #ff9b9b;
+  --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(185, 139, 255, 0.16), transparent 60%),
+    radial-gradient(ellipse 40% 60% at 15% 80%, rgba(124, 77, 255, 0.08), transparent 60%), #0a0716;
 }
 
 .spaceBg {
@@ -30,10 +107,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 40% at 75% 20%, rgba(95, 230, 163, 0.16), transparent 60%),
-    radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%),
-    #050a08;
+  background: var(--wallet-bg-image);
 }
 
 .sidebar {
@@ -90,7 +164,7 @@
 
 .navItemActive {
   composes: navItem;
-  background: rgba(95, 230, 163, 0.1);
+  background: var(--wallet-accent-soft);
   color: var(--wallet-text);
 }
 
@@ -131,7 +205,7 @@
 
 .chatListItemActive {
   composes: chatListItem;
-  background: rgba(95, 230, 163, 0.08);
+  background: var(--wallet-accent-soft);
   color: var(--wallet-text);
 }
 
@@ -181,12 +255,12 @@
   padding: 14px 8px;
   border-radius: 12px;
   border: 1px solid var(--wallet-border);
-  background: rgba(255, 255, 255, 0.02);
+  background: color-mix(in srgb, var(--wallet-text) 3%, transparent);
   cursor: pointer;
 }
 
 .personaCard:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--wallet-text) 6%, transparent);
 }
 
 .personaEmoji {
@@ -197,7 +271,7 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  color: #06140d;
+  color: rgba(0, 0, 0, 0.78);
 }
 
 .personaName {
@@ -242,11 +316,13 @@
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--wallet-text) 4%, transparent);
 }
 
 .msgBubbleUser {
   composes: msgBubble;
-  background: rgba(95, 230, 163, 0.12);
+  background: var(--wallet-accent-soft-2);
+  box-shadow: none;
 }
 
 .composer {
@@ -273,7 +349,7 @@
 
 .sendBtn {
   background: var(--wallet-accent);
-  color: #06140d;
+  color: var(--wallet-on-accent);
   border: none;
   border-radius: 10px;
   width: 44px;
@@ -308,6 +384,63 @@
 .panelTitle {
   font-weight: 600;
   font-size: 15px;
+}
+
+.themeBtn {
+  background: none;
+  border: 1px solid var(--wallet-border);
+  border-radius: 8px;
+  color: var(--wallet-muted);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.themeBtn:hover {
+  color: var(--wallet-text);
+  border-color: var(--wallet-accent-dim);
+}
+
+.themePanel {
+  border: 1px solid var(--wallet-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--wallet-text) 3%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.themeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--wallet-text);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+
+.themeRow:hover {
+  background: color-mix(in srgb, var(--wallet-text) 5%, transparent);
+}
+
+.themeRowActive {
+  composes: themeRow;
+  background: var(--wallet-accent-soft);
+}
+
+.themeSwatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .address {
@@ -380,7 +513,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid color-mix(in srgb, var(--wallet-text) 6%, transparent);
 }
 
 .assetLeft {
@@ -420,6 +553,7 @@
   border-radius: 16px;
   background: var(--wallet-panel);
   max-width: 360px;
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--wallet-text) 8%, transparent);
 }
 
 .loginGate h1 {
@@ -435,7 +569,7 @@
 
 .loginBtn {
   background: var(--wallet-accent);
-  color: #06140d;
+  color: var(--wallet-on-accent);
   border: none;
   border-radius: 10px;
   padding: 12px 20px;
@@ -448,7 +582,7 @@
   position: fixed;
   inset: 0;
   z-index: 20;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(10, 15, 25, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -461,6 +595,7 @@
   padding: 24px;
   width: 360px;
   max-width: calc(100vw - 32px);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--wallet-text) 10%, transparent);
 }
 
 .modalHeader {
@@ -503,7 +638,7 @@
 
 .fieldInput {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--wallet-text) 4%, transparent);
   border: 1px solid var(--wallet-border);
   border-radius: 10px;
   color: var(--wallet-text);
@@ -524,7 +659,7 @@
 .primaryBtn {
   width: 100%;
   background: var(--wallet-accent);
-  color: #06140d;
+  color: var(--wallet-on-accent);
   border: none;
   border-radius: 10px;
   padding: 12px;
@@ -545,7 +680,7 @@
 }
 
 .errorText {
-  color: #ff9b9b;
+  color: var(--wallet-danger);
   font-size: 12px;
   margin-top: 8px;
 }
