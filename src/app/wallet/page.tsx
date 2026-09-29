@@ -348,6 +348,11 @@ function WalletApp({
   const activeChat = (chatsQuery.data ?? []).find((c) => c.id === effectiveChatId) ?? null;
   const activeAgent = (agentsQuery.data ?? []).find((a) => a.id === activeChat?.agent_id) ?? null;
 
+  function openPersonaPicker() {
+    setChatStartError(null);
+    setShowPersonaPicker(true);
+  }
+
   /**
    * Starts a chat with a given personality (a preset from PRESET_AGENTS,
    * or a user's own saved agent) — or a blank, agent-less chat when
@@ -450,7 +455,7 @@ function WalletApp({
           <>
             <div className={styles.chatListLabel}>
               <span>RECENT CHATS</span>
-              <button onClick={() => setShowPersonaPicker(true)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
+              <button onClick={openPersonaPicker} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
                 +
               </button>
             </div>
@@ -515,7 +520,7 @@ function WalletApp({
                     <div className={styles.emptyOrbit} aria-hidden="true"><WalletIcon name="agents" size={34} /></div>
                     <h2>Your universe, your guide.</h2>
                     <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
-                    <button type="button" className={styles.chooseAgentBtn} onClick={() => setShowPersonaPicker(true)}>Choose an agent <span aria-hidden="true">↗</span></button>
+                    <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent <span aria-hidden="true">↗</span></button>
                   </div>
                 )}
                 {(messagesQuery.data ?? []).map((m) => (
