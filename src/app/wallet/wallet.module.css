@@ -29,6 +29,16 @@
   --wallet-star-color: rgba(18, 27, 45, 0.4);
   --wallet-comet-color: rgba(36, 88, 232, 0.6);
 
+  /*
+   * Without this, a system/browser in dark mode paints native form
+   * controls (input/textarea/select) with its own dark UA background
+   * instead of the near-transparent one set below on .fieldInput —
+   * Chromium's "auto dark" for forms overrides low-alpha author
+   * backgrounds it doesn't consider "real". This is what fixed the
+   * black Agent-name/emoji fields reported live.
+   */
+  color-scheme: light;
+
   min-height: 100vh;
   background: var(--wallet-bg);
   color: var(--wallet-text);
@@ -54,6 +64,7 @@
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(15, 179, 214, 0.1), transparent 60%), #f4fbfd;
   --wallet-star-color: rgba(15, 43, 48, 0.35);
   --wallet-comet-color: rgba(15, 179, 214, 0.65);
+  color-scheme: light;
 }
 
 /* Violet — light. */
@@ -72,6 +83,7 @@
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(124, 77, 255, 0.1), transparent 60%), #f9f7fd;
   --wallet-star-color: rgba(30, 23, 48, 0.35);
   --wallet-comet-color: rgba(124, 77, 255, 0.65);
+  color-scheme: light;
 }
 
 /* Midnight — dark, green accent (the original AUEVO Wallet look). */
@@ -91,6 +103,7 @@
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%), #050a08;
   --wallet-star-color: rgba(255, 255, 255, 0.85);
   --wallet-comet-color: rgba(95, 230, 163, 0.95);
+  color-scheme: dark;
 }
 
 /* Violet — dark. */
@@ -110,6 +123,7 @@
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(124, 77, 255, 0.08), transparent 60%), #0a0716;
   --wallet-star-color: rgba(255, 255, 255, 0.8);
   --wallet-comet-color: rgba(185, 139, 255, 0.95);
+  color-scheme: dark;
 }
 
 .spaceBg {
@@ -364,13 +378,6 @@
   color: var(--wallet-muted);
 }
 
-.chatHeaderDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
 .personaGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -394,20 +401,61 @@
 }
 
 .personaEmoji {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 20px;
   color: rgba(0, 0, 0, 0.78);
+  flex-shrink: 0;
 }
 
 .personaName {
   font-size: 12px;
   font-weight: 600;
   color: var(--wallet-text);
+}
+
+.agentRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--wallet-text);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agentRow:hover {
+  background: var(--wallet-accent-soft);
+}
+
+.agentRowEmoji {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.78);
+  flex-shrink: 0;
+}
+
+.colorSwatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  outline-offset: 2px;
+  cursor: pointer;
+  padding: 0;
 }
 
 .messages {
@@ -768,13 +816,26 @@
 
 .fieldInput {
   width: 100%;
-  background: color-mix(in srgb, var(--wallet-text) 4%, transparent);
+  background: color-mix(in srgb, var(--wallet-text) 5%, var(--wallet-panel));
   border: 1px solid var(--wallet-border);
   border-radius: 10px;
   color: var(--wallet-text);
   padding: 10px 12px;
   font-size: 13px;
+  font-family: inherit;
   box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.fieldInput::placeholder {
+  color: var(--wallet-muted);
+  opacity: 0.8;
+}
+
+.fieldInput:focus {
+  outline: none;
+  border-color: var(--wallet-accent-dim);
+  box-shadow: 0 0 0 3px var(--wallet-accent-soft);
 }
 
 .qrWrap {
