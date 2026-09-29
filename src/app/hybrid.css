@@ -249,58 +249,60 @@
   --au-gold-soft: rgba(67,117,229,.15);
   --au-line: #25364d;
   --au-line-strong: #416292;
-  display: flex;
-  align-items: stretch;
+  display: block;
   background: #0a1322;
   color: #eef4ff;
   font-family: Arial, Helvetica, sans-serif;
 }
 .app-shell .app-ambient { display: none; }
-.app-workspace { min-width: 0; flex: 1; }
-.app-shell .product-main.app-main { width: min(1500px, calc(100% - 72px)); padding-top: 34px; }
+.app-shell .product-main.app-main { width: min(1500px, calc(100% - 72px)); margin-inline: auto; padding-top: 34px; }
 .app-shell .app-topnav {
   position: sticky;
   top: 0;
   z-index: 40;
   display: flex;
-  flex: 0 0 228px;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  height: 100dvh;
-  padding: 27px 13px 16px;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 76px;
+  padding: 0 clamp(20px, 3vw, 46px);
   border: 0;
-  border-right: 1px solid #213249;
-  background: #0d192a;
-  box-shadow: none;
-  backdrop-filter: none;
+  border-bottom: 1px solid #21354f;
+  background: rgba(11, 24, 41, .94);
+  box-shadow: 0 12px 34px rgba(2, 8, 18, .24);
+  backdrop-filter: blur(20px) saturate(125%);
 }
-.app-shell .hybrid-sidebar-head { padding: 0 13px 28px; }
-.app-shell .app-topnav-logo { color: #f3f7ff; }
+.app-shell .app-topnav-logo { flex: none; color: #f3f7ff; }
 .app-shell .app-topnav-logo .auevo-mark { width: 27px; height: 27px; }
-.app-shell .app-topnav-links { display: flex; flex: 1; flex-direction: column; align-items: stretch; gap: 3px; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #344b69 transparent; }
-.app-shell .hybrid-nav-section { display: flex; flex-direction: column; gap: 2px; margin-top: 20px; }
-.app-shell .hybrid-nav-heading { padding: 0 14px 7px; color: #6e829e; font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+.app-shell .app-topnav-edition { border-color: #28405d; color: #6f849e; }
+.app-shell .app-topnav-links { display: flex; flex: 1; align-items: center; gap: 4px; min-width: 0; overflow: visible; }
+.app-shell .app-nav-group { position: relative; }
 .app-shell .app-nav-link {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
+  justify-content: center;
+  gap: 8px;
   flex: 0 0 auto;
-  width: 100%;
+  width: auto;
   height: 39px;
   padding: 0 13px;
   border: 1px solid transparent;
   border-radius: 9px;
   color: #9cafc6;
-  font-size: 12px;
+  font-size: 11px;
   text-decoration: none;
 }
 .app-shell .app-nav-link svg { flex: none; opacity: .8; }
 .app-shell .app-nav-link:hover { color: #fff; background: #172a43; border-color: #233c60; }
-.app-shell .app-nav-link.active { color: #dce9ff; background: #17376c; border-color: #315ca2; box-shadow: inset 3px 0 #67a4ff; }
-.app-shell .app-nav-link small { margin-left: auto; color: #6882a3; font-size: 9px; }
-.app-shell .app-topnav-trust { margin: 16px 11px 0; padding-top: 15px; border-top: 1px solid #24354c; color: #8295ac; }
+.app-shell .app-nav-link.active { color: #eaf2ff; background: #17376c; border-color: #315ca2; box-shadow: inset 0 1px rgba(255,255,255,.06); }
+.app-shell .app-nav-group-panel { border-color: #2c4667; background: rgba(11, 25, 43, .98); box-shadow: 0 24px 64px rgba(0,0,0,.46), inset 0 1px rgba(255,255,255,.035); }
+.app-shell .app-nav-group-link { color: #a6b8cd; }
+.app-shell .app-nav-group-link:hover { color: #fff; background: #172d49; }
+.app-shell .app-nav-group-link.active { color: #dbe8ff; background: #193a6d; }
+.app-shell .app-nav-soon-badge { color: #80a9f8; background: #172f55; }
+.app-shell .app-topnav-trust { flex: none; margin-left: auto; color: #8295ac; }
 .app-shell .app-topnav-trust-dot { background: #59c9a2; }
 .app-shell .product-header,
 .app-shell .dash-hero {
@@ -347,10 +349,109 @@
 .app-shell .desk-scroll,
 .app-shell .asset-chart-wrap,
 .app-shell .constellation-wrap { border: 1px solid #263b54; border-radius: 12px; background: #0e1b2b; box-shadow: none; }
-.app-shell .dash-list-row,
-.app-shell .money-row { border-color: #223449; }
-.app-shell .dash-list-row:hover,
-.app-shell .money-row:hover { background: #172b45; }
+
+/* One surface system for every panel, form, card and data table in /app. */
+.app-shell :is(
+  .dash-list-card,
+  .desk-scroll,
+  .scan-holder-table,
+  .asset-chart-wrap,
+  .constellation-wrap,
+  .app-tools,
+  .app-kpi,
+  .dash-stat,
+  .token-stat,
+  .dash-basket-card,
+  .issuer-card,
+  .wallet-card,
+  .earn-vault-card,
+  .lend-reserve-card,
+  .agent-preview-card,
+  .trade-form,
+  .trade-panel,
+  .token-chart-card,
+  .token-side-card,
+  .app-notice
+) {
+  border-color: #293f5a;
+  background:
+    radial-gradient(circle at 100% 0, rgba(77, 132, 224, .09), transparent 34%),
+    linear-gradient(145deg, rgba(255,255,255,.025), transparent 42%),
+    #101e30;
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 16px 42px rgba(1, 7, 16, .18);
+}
+.app-shell :is(.dash-list-card, .desk-scroll, .scan-holder-table) {
+  padding: 6px;
+  border-radius: 14px;
+  background: #0b1727;
+}
+.app-shell :is(
+  .dash-list-row,
+  .money-row,
+  .desk-row,
+  .rank-row,
+  .position-row,
+  .wallet-activity-row,
+  .pools-row,
+  .scan-holder-row
+) {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(17, 32, 51, .72);
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.app-shell :is(
+  .dash-list-row,
+  .money-row,
+  .desk-row,
+  .rank-row,
+  .position-row,
+  .wallet-activity-row,
+  .pools-row,
+  .scan-holder-row
+) + :is(
+  .dash-list-row,
+  .money-row,
+  .desk-row,
+  .rank-row,
+  .position-row,
+  .wallet-activity-row,
+  .pools-row,
+  .scan-holder-row
+) { margin-top: 3px; }
+.app-shell :is(.money-head, .desk-head, .rank-head, .position-head, .wallet-activity-head, .pools-head) {
+  z-index: 2;
+  border-color: #2b4665;
+  background: #162840;
+  color: #8fa5bf;
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 5px 15px rgba(0,0,0,.13);
+}
+.app-shell :is(
+  .dash-list-row,
+  .money-row:not(.money-head),
+  .desk-row:not(.desk-head),
+  .rank-row:not(.rank-head),
+  .position-row:not(.position-head),
+  .wallet-activity-row:not(.wallet-activity-head),
+  .pools-row:not(.pools-head),
+  .scan-holder-row
+):hover {
+  border-color: #315173;
+  background: #162b45;
+  transform: translateY(-1px);
+}
+.app-shell .token-info-grid {
+  gap: 4px;
+  padding: 5px;
+  border-color: #293f5a;
+  background: #0b1727;
+}
+.app-shell .token-info-stat { border-radius: 7px; background: #13243a; }
+.app-shell :is(.swap-card, .trade-field, .token-info-list) {
+  border-color: #2b4260;
+  background: #0d1a2b;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
 .app-shell .dash-search input,
 .app-shell .desk-search input { border-color: #2b4360; background: #0c192a; color: #f4f8ff; }
 .app-shell .dash-search input:focus,
@@ -417,7 +518,6 @@
 @media (max-width: 1180px) {
   .landing2 .landing2-hero-grid { grid-template-columns: minmax(0,1fr) minmax(360px,.9fr); }
   .hybrid-float-tag { display: none; }
-  .app-shell .app-topnav { flex-basis: 205px; }
   .app-shell .app-tools .landing2-cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .app-shell .app-overview-panels { grid-template-columns: 1fr; }
 }
@@ -427,16 +527,16 @@
   .hybrid-hero-visual { min-height: 0; padding: 12px 0 20px; }
   .hybrid-preview { transform: none; }
   .landing2 .landing2-h1 { font-size: clamp(40px, 7.5vw, 64px); }
-  .app-shell { display: block; }
   .app-shell .app-topnav {
     position: sticky;
-    height: auto;
     min-height: 66px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
     padding: 0 20px;
     border-right: 0;
     border-bottom: 1px solid #243a57;
   }
-  .app-shell .hybrid-sidebar-head { display: flex; align-items: center; justify-content: space-between; min-height: 65px; padding: 0; }
   .app-shell .app-mobile-menu { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 14px; border: 1px solid #2c4565; border-radius: 8px; background: #14253c; color: #f3f7ff; }
   .app-shell .app-topnav-links { display: none; max-height: calc(100dvh - 115px); padding-bottom: 18px; }
   .app-shell .app-topnav-links.mobile-open { display: flex; }
