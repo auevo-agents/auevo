@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { AuevoLogo } from "@/app/auevo-logo";
 import { CopyableAddress } from "@/app/copyable-address";
@@ -69,7 +70,7 @@ export default async function TokenPage() {
 
         <nav>
           <span className="trade-nav-active">$AUEVO</span>
-          <Link href="/app">Auevo app →</Link>
+          <Link href="/app">Open workspace</Link>
         </nav>
 
         <div className="topbar-right">
@@ -79,7 +80,7 @@ export default async function TokenPage() {
       </header>
 
       <section className="token-hero">
-        <img src="/logos/auevo.png" alt="AUEVO" className="token-hero-mark" />
+        <Image src="/images/auevo-mark.png" width={150} height={150} alt="AUEVO" className="token-hero-mark" />
         <h1>$AUEVO</h1>
         <span className="token-hero-badge">Launching soon</span>
         <p className="token-hero-lead">

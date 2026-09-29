@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { LegalShell } from "../legal-shell";
 
 export const metadata: Metadata = {
   title: "Policy — Auevo",
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PolicyPage() {
   return (
-    <main className="legal-page">
+    <LegalShell>
       <Link href="/" className="legal-page-back">
         ← Back to Auevo
       </Link>
@@ -80,6 +81,6 @@ export default function PolicyPage() {
           the legality of tokenized-asset trading where you live.
         </p>
       </section>
-    </main>
+    </LegalShell>
   );
 }
