@@ -707,3 +707,303 @@
   .hybrid-hero-search,
   .hybrid-preview { transition: none; transform: none; }
 }
+
+/* Standalone public pages share the same light discovery and dark workspace systems. */
+
+/* Documentation */
+.docs-shell {
+  --docs-gold: #2458e8;
+  --docs-ivory: #111a2d;
+  --docs-copy: #5f6d82;
+  --docs-line: #dfe6f0;
+  color: #162139;
+  background:
+    linear-gradient(110deg, rgba(247,249,253,.99) 0%, rgba(247,249,253,.97) 60%, rgba(247,249,253,.72) 100%),
+    url("/images/tech/circuit.webp") right top / 760px auto no-repeat fixed,
+    #f7f9fd;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.docs-topbar {
+  border-color: var(--docs-line);
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 10px 34px rgba(30,58,110,.08);
+}
+.docs-brand .auevo-wordmark { color: #10182b !important; }
+.docs-brand-divider { background: #dfe6f0; }
+.docs-brand-label { color: #758198; }
+.docs-topbar-nav { border-color: #dfe6f0; background: #f7f9fd; }
+.docs-topbar-nav a { color: #617087; }
+.docs-topbar-nav a:hover { color: #2458e8; background: #eaf0ff; }
+.docs-version { color: #6d7990; }
+.docs-version::before { background: #42b982; box-shadow: 0 0 0 4px rgba(66,185,130,.1); }
+.docs-workspace-link {
+  border-color: #2458e8;
+  color: #fff;
+  background: #2458e8;
+  box-shadow: 0 10px 24px rgba(36,88,232,.18);
+}
+.docs-sidebar {
+  border-color: var(--docs-line);
+  background: rgba(250,252,255,.86);
+  backdrop-filter: blur(18px);
+}
+.docs-sidebar-intro { border-color: var(--docs-line); }
+.docs-sidebar-intro > span,
+.docs-breadcrumb,
+.docs-toc-label { color: #2458e8; }
+.docs-sidebar-intro strong,
+.docs-title,
+.docs-article h2 { color: #111a2d; font-family: Arial, Helvetica, sans-serif; font-weight: 750; }
+.docs-sidebar-intro p,
+.docs-summary,
+.docs-article p,
+.docs-article li { color: #5f6d82; }
+.docs-sidebar-search input {
+  border-color: #d8e1ee;
+  background: #fff;
+  color: #17223a;
+  box-shadow: 0 7px 18px rgba(28,57,109,.05);
+}
+.docs-sidebar-search input:focus { border-color: #8faef8; box-shadow: 0 0 0 4px rgba(36,88,232,.08); }
+.docs-sidebar-search kbd { border-color: #d8e1ee; color: #7b879b; background: #f1f4f9; }
+.docs-nav-section-title { color: #65738a; }
+.docs-nav-section-title > span { color: #2458e8; }
+.docs-nav-link { color: #66758c; }
+.docs-nav-link:hover { color: #183258; background: #edf3ff; }
+.docs-nav-link.active {
+  color: #1746cf;
+  border-color: #cddafb;
+  background: linear-gradient(90deg, #e9f0ff, #f6f9ff);
+}
+.docs-nav-link.active::before { background: #2458e8; box-shadow: 0 0 10px rgba(36,88,232,.22); }
+.docs-title { letter-spacing: -.055em; }
+.docs-summary { border-color: var(--docs-line); }
+.docs-breadcrumb::before { background: #2458e8; }
+.docs-article h2 > a { color: #8aa7ed; }
+.docs-article li::marker { color: #2458e8; }
+.docs-callout {
+  border-color: #cddafb;
+  background: linear-gradient(135deg, #edf3ff, rgba(255,255,255,.9));
+  color: #40516d;
+}
+.docs-callout::before { border-color: #9cb6f5; color: #2458e8; }
+.docs-callout-warn { border-color: #f0d7c7; background: #fff8f3; }
+.docs-table-wrap {
+  border-color: #dce5f1;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 20px 55px rgba(28,57,109,.07);
+}
+.docs-table th { color: #536884; border-color: #e1e8f2; background: #f1f5fc; }
+.docs-table td { color: #536078; border-color: #e7ecf3; }
+.docs-pager { border-color: var(--docs-line); }
+.docs-pager-link { border-color: #dce5f1; background: rgba(255,255,255,.88); }
+.docs-pager-link:hover { border-color: #9bb4f3; background: #edf3ff; }
+.docs-pager-link span { color: #718099; }
+.docs-pager-link b { color: #17223a; }
+.docs-toc { border-color: #dfe6f0; }
+.docs-toc > a { color: #718097; }
+.docs-toc > a:hover { color: #1746cf; background: #edf3ff; }
+.docs-toc .docs-toc-product { border-color: #dfe6f0; color: #2458e8; }
+
+/* Privacy and policy */
+.legal-shell {
+  min-height: 100vh;
+  color: #152038;
+  background:
+    linear-gradient(115deg, rgba(247,249,253,.99) 0%, rgba(247,249,253,.96) 62%, rgba(247,249,253,.72) 100%),
+    url("/images/tech/assets.webp") right -110px top 40px / 720px auto no-repeat,
+    #f7f9fd;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.legal-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 0 clamp(20px, 4vw, 64px);
+  border-bottom: 1px solid #e1e7f0;
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(18px);
+}
+.legal-brand { color: #10182b; text-decoration: none; }
+.legal-brand .auevo-wordmark { color: #10182b !important; }
+.legal-workspace-link {
+  padding: 11px 15px;
+  border: 1px solid #d7e0ed;
+  border-radius: 9px;
+  color: #17223a;
+  background: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.legal-page { max-width: 820px; padding: 70px 28px 110px; }
+.legal-page-back { color: #2458e8; }
+.legal-page-back:hover { color: #1746cf; }
+.legal-page h1 { color: #10182b; font-size: clamp(46px, 7vw, 76px); letter-spacing: -.06em; }
+.legal-page-updated { color: #78859a; }
+.legal-page section {
+  margin-bottom: 16px;
+  padding: 25px 28px;
+  border: 1px solid #e0e7f1;
+  border-radius: 16px;
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 12px 34px rgba(29,57,105,.045);
+}
+.legal-page h2 { color: #17223a; font-size: 18px; }
+.legal-page p { color: #5d6b80; }
+.legal-page a { color: #2458e8; }
+
+/* Standalone intelligence tools */
+.fees-premium,
+.scanner-premium,
+.token-page {
+  --au-bg: #0a1322;
+  --au-surface: rgba(16,30,48,.94);
+  --au-surface-soft: rgba(19,38,62,.8);
+  --au-line: #243a55;
+  --au-line-strong: #355476;
+  --au-ink: #f2f7ff;
+  --au-muted: #a7b7ca;
+  --au-faint: #71849d;
+  --au-gold: #4f83f1;
+  --au-gold-soft: #a8c5ff;
+  color: #eef4ff;
+  background:
+    radial-gradient(circle at 82% 5%, rgba(58,119,224,.15), transparent 27%),
+    linear-gradient(rgba(108,148,204,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,148,204,.035) 1px, transparent 1px),
+    #0a1322;
+  background-size: auto, 88px 88px, 88px 88px, auto;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.fees-premium > .topbar,
+.scanner-premium > .topbar,
+.token-page > .topbar {
+  border-color: #21354f;
+  background: rgba(11,24,41,.94);
+  box-shadow: 0 12px 34px rgba(2,8,18,.24);
+}
+.fees-premium .brand-auevo .auevo-wordmark,
+.scanner-premium .brand-auevo .auevo-wordmark,
+.token-page .brand-auevo .auevo-wordmark { color: #f2f7ff !important; }
+.fees-premium > .topbar nav,
+.scanner-premium > .topbar nav,
+.token-page > .topbar nav { border-color: #29415f; background: #12233a; }
+.fees-premium > .topbar nav a,
+.fees-premium > .topbar nav span,
+.scanner-premium > .topbar nav a,
+.scanner-premium > .topbar nav span,
+.token-page > .topbar nav a,
+.token-page > .topbar nav span { color: #93a6bd; }
+.fees-premium > .topbar nav a:hover,
+.scanner-premium > .topbar nav a:hover,
+.scanner-premium > .topbar nav .trade-nav-active,
+.token-page > .topbar nav a:hover,
+.token-page > .topbar nav .trade-nav-active { color: #f3f7ff; background: #1d3555; }
+.fees-premium .network-dot,
+.scanner-premium .network-dot,
+.token-page .network-dot { background: #50d2ba; box-shadow: 0 0 0 4px rgba(80,210,186,.1); }
+.fees-premium .hero {
+  border-color: #243a55;
+  background: linear-gradient(100deg, #0a1322 0%, rgba(10,19,34,.9) 48%, rgba(10,19,34,.3) 76%, #0a1322 100%);
+}
+.fees-premium .hero::before {
+  inset: 0 -5% 0 34%;
+  background: url("/images/tech/market.webp") right center / cover no-repeat;
+  opacity: .76;
+  filter: saturate(.9) contrast(1.05);
+}
+.fees-premium .hero::after {
+  background: linear-gradient(90deg, #0a1322 0%, rgba(10,19,34,.88) 43%, rgba(10,19,34,.16) 72%, rgba(10,19,34,.62) 100%), linear-gradient(180deg, transparent 62%, #0a1322 100%);
+}
+.scanner-premium .scan-layout::before {
+  top: -50px;
+  background: url("/images/tech/ai.webp") center / cover no-repeat;
+  opacity: .58;
+  filter: saturate(.9) contrast(1.05);
+}
+.scanner-premium .scan-layout::after { background: linear-gradient(90deg, #0a1322 0%, rgba(10,19,34,.92) 34%, rgba(10,19,34,.3) 66%, rgba(10,19,34,.78) 100%), linear-gradient(180deg, transparent, #0a1322 58%); }
+.fees-premium .hero-copy h1,
+.fees-premium .preview-heading strong,
+.fees-premium .docs-heading strong,
+.fees-premium .platform-heading h2,
+.scanner-premium .scan-sidebar h1,
+.scanner-premium .scan-verdict > div > strong,
+.scanner-premium .scan-section-heading strong,
+.scanner-premium .scan-score-number strong { font-family: Arial, Helvetica, sans-serif; font-style: normal; font-weight: 750; }
+.fees-premium .hero-copy h1 span,
+.scanner-premium .scan-sidebar h1 span { color: #82aaff; font-style: normal; }
+.fees-premium .pill,
+.scanner-premium .pill { border-color: #355476; background: rgba(13,29,49,.78); color: #91a5be; }
+.fees-premium .pill span,
+.scanner-premium .pill span { color: #a8c5ff; }
+.fees-premium .pill i,
+.scanner-premium .pill i { background: #4f83f1; }
+.fees-premium .wallet-box,
+.scanner-premium .wallet-box { border-color: #355476; background: rgba(13,29,49,.9); box-shadow: 0 22px 70px rgba(1,7,18,.32); }
+.fees-premium .wallet-box:focus-within,
+.scanner-premium .wallet-box:focus-within { border-color: #6d9af8; box-shadow: 0 0 0 3px rgba(79,131,241,.12), 0 22px 70px rgba(1,7,18,.36); }
+.fees-premium .wallet-box button,
+.scanner-premium .wallet-box button { color: #fff; border-color: #4f83f1; background: #356de4; box-shadow: 0 10px 28px rgba(36,88,232,.24); }
+.fees-premium .preview,
+.fees-premium .docs-section,
+.fees-premium .platform-teaser { border-color: #243a55; background: #0a1322; }
+.fees-premium .preview-window,
+.fees-premium .auevo-product,
+.fees-premium .result-card,
+.fees-premium .email-capture,
+.scanner-premium .scan-empty,
+.scanner-premium .scan-verdict,
+.scanner-premium .scan-confidence,
+.scanner-premium .scan-facts,
+.scanner-premium .scan-findings,
+.scanner-premium .scan-holders,
+.scanner-premium .scan-limits { border-color: #2a4565; background: rgba(16,30,48,.94); box-shadow: 0 28px 80px rgba(1,7,18,.24); }
+.fees-premium .docs-grid article { border-color: #29435f; background: #101e30; }
+.fees-premium .docs-grid article:nth-child(1) { background: linear-gradient(135deg, rgba(16,30,48,.92), rgba(16,30,48,.76)), url("/images/tech/circuit.webp") center / cover; }
+.fees-premium .docs-grid article:nth-child(2) { background: linear-gradient(135deg, rgba(16,30,48,.92), rgba(16,30,48,.76)), url("/images/tech/market.webp") center / cover; }
+.fees-premium .docs-grid article:nth-child(3) { background: linear-gradient(135deg, rgba(16,30,48,.92), rgba(16,30,48,.76)), url("/images/tech/vault.webp") center / cover; }
+.scanner-premium .scan-empty { background: linear-gradient(135deg, rgba(12,27,47,.94), rgba(12,27,47,.75)), url("/images/tech/ai.webp") center / cover; }
+.scanner-premium .scan-empty::after { border-color: rgba(79,131,241,.22); box-shadow: 0 0 0 36px rgba(79,131,241,.04), 0 0 0 78px rgba(79,131,241,.025); }
+.scanner-premium .scan-verdict::before { background: #4f83f1; box-shadow: 0 0 18px rgba(79,131,241,.45); }
+.scanner-premium .scan-holder-row .bar-cell b { background: linear-gradient(90deg, #356de4, #66d8ee); }
+
+/* $AUEVO */
+.token-page { min-height: 100vh; }
+.token-page .topbar-right { color: #9aacc1; }
+.token-page .token-hero {
+  position: relative;
+  max-width: min(1120px, calc(100% - 40px));
+  min-height: 430px;
+  margin-top: 36px;
+  padding: 76px 28px 66px;
+  overflow: hidden;
+  border: 1px solid #29435f;
+  border-radius: 24px;
+  background: linear-gradient(100deg, rgba(10,25,44,.96), rgba(10,25,44,.7)), url("/images/tech/vault.webp") center / cover;
+  box-shadow: 0 30px 90px rgba(1,7,18,.25);
+}
+.token-page .token-hero-mark { width: 150px; height: 150px; margin-bottom: 18px; border-radius: 0; object-fit: contain; filter: drop-shadow(0 18px 30px rgba(30,100,235,.25)); }
+.token-page .token-hero h1 { color: #f3f7ff; font-size: clamp(52px, 7vw, 82px); letter-spacing: -.055em; }
+.token-page .token-hero-badge { border-color: #4f83f1; background: rgba(79,131,241,.14); color: #b7ceff; }
+.token-page .token-hero-lead { max-width: 600px; color: #b0c0d3; }
+.token-page .token-stats { max-width: 1120px; gap: 14px; }
+.token-page .token-stat { min-height: 138px; border-color: #29435f; background: #101e30; }
+.token-page .token-stat:nth-child(1) { background: linear-gradient(135deg, rgba(16,30,48,.94), rgba(16,30,48,.76)), url("/images/tech/market.webp") center / cover; }
+.token-page .token-stat:nth-child(2) { background: linear-gradient(135deg, rgba(16,30,48,.94), rgba(16,30,48,.76)), url("/images/tech/assets.webp") center / cover; }
+.token-page .token-stat:nth-child(3) { background: linear-gradient(135deg, rgba(16,30,48,.94), rgba(16,30,48,.76)), url("/images/tech/circuit.webp") center / cover; }
+.token-page .token-stat:nth-child(4) { background: linear-gradient(135deg, rgba(16,30,48,.94), rgba(16,30,48,.76)), url("/images/tech/vault.webp") center / cover; }
+.token-page .token-stat-label { color: #90a4bc; }
+.token-page .token-stat-value { color: #f3f7ff; }
+
+@media (max-width: 680px) {
+  .legal-topbar { min-height: 66px; padding: 0 16px; }
+  .legal-page { padding: 46px 16px 78px; }
+  .legal-page section { padding: 21px 19px; }
+  .token-page .token-hero { min-height: 390px; margin-top: 18px; padding: 50px 20px; }
+  .token-page .token-hero-mark { width: 112px; height: 112px; }
+}
