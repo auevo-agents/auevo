@@ -781,23 +781,29 @@
   z-index: 1;
   margin: auto;
   text-align: center;
-  padding: 40px;
+  padding: 42px;
   border: 1px solid var(--wallet-border);
-  border-radius: 16px;
+  border-radius: 24px;
   background: var(--wallet-panel);
-  max-width: 360px;
-  box-shadow: 0 20px 60px color-mix(in srgb, var(--wallet-text) 8%, transparent);
+  max-width: 420px;
+  box-shadow: 0 35px 95px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .08);
 }
+.walletRoot[data-theme="cosmic"] .loginGate { background: linear-gradient(145deg, rgba(24, 50, 84, .88), rgba(8, 25, 50, .94)); backdrop-filter: blur(24px); }
+.loginMark { display: grid; place-items: center; width: 78px; height: 78px; margin: 0 auto 17px; border-radius: 23px; background: radial-gradient(circle, rgba(42, 114, 231, .32), rgba(18, 48, 93, .12)); box-shadow: 0 0 48px rgba(53, 147, 255, .26); }
+.loginMark img { width: 64px; height: 64px; object-fit: contain; }
+.loginEyebrow { color: var(--wallet-accent); letter-spacing: .2em; font-size: 10px; font-weight: 800; }
 
 .loginGate h1 {
-  font-size: 20px;
-  margin: 0 0 8px;
+  font-size: 29px;
+  letter-spacing: -.04em;
+  margin: 11px 0 10px;
 }
 
 .loginGate p {
   color: var(--wallet-muted);
-  font-size: 13px;
-  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 26px;
 }
 
 .loginBtn {
@@ -809,7 +815,14 @@
   font-weight: 700;
   cursor: pointer;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  box-shadow: 0 12px 30px rgba(25, 105, 211, .25);
 }
+.loginBtn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.loginBtn:focus-visible { outline: 2px solid #b3e8ff; outline-offset: 3px; }
 
 .modalOverlay {
   position: fixed;
