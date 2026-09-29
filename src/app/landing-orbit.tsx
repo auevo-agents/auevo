@@ -1,95 +1,41 @@
-"use client";
-
-import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { BrandIcon } from "./brand-icon";
 
-const ASSETS = ["NVDA", "SPY", "TSLA"] as const;
-
+/** A product preview in the hero. Its rows are examples, not live quotes. */
 export function LandingOrbit() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedMotion.matches) return;
-
-    let frame = 0;
-    let pointerX = 0;
-    let pointerY = 0;
-
-    const paint = () => {
-      frame = 0;
-      const rect = node.getBoundingClientRect();
-      const viewport = window.innerHeight || 1;
-      const centerDelta = viewport / 2 - (rect.top + rect.height / 2);
-      const scrollProgress = Math.max(-1, Math.min(1, centerDelta / viewport));
-
-      node.style.setProperty("--tiltX", `${(-pointerY * 8).toFixed(2)}deg`);
-      node.style.setProperty("--tiltY", `${(pointerX * 10).toFixed(2)}deg`);
-      node.style.setProperty("--pointerX", `${((pointerX + 0.5) * 100).toFixed(1)}%`);
-      node.style.setProperty("--pointerY", `${((pointerY + 0.5) * 100).toFixed(1)}%`);
-      node.style.setProperty("--scrollShift", `${(scrollProgress * 22).toFixed(2)}px`);
-      node.style.setProperty("--scrollScale", (1 + Math.abs(scrollProgress) * 0.018).toFixed(3));
-    };
-
-    const requestPaint = () => {
-      if (!frame) frame = window.requestAnimationFrame(paint);
-    };
-
-    const handlePointerMove = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      const rect = node.getBoundingClientRect();
-      pointerX = Math.max(-0.5, Math.min(0.5, (event.clientX - rect.left) / rect.width - 0.5));
-      pointerY = Math.max(-0.5, Math.min(0.5, (event.clientY - rect.top) / rect.height - 0.5));
-      requestPaint();
-    };
-
-    const resetPointer = () => {
-      pointerX = 0;
-      pointerY = 0;
-      requestPaint();
-    };
-
-    node.addEventListener("pointermove", handlePointerMove, { passive: true });
-    node.addEventListener("pointerleave", resetPointer);
-    window.addEventListener("scroll", requestPaint, { passive: true });
-    window.addEventListener("resize", requestPaint, { passive: true });
-    paint();
-
-    return () => {
-      node.removeEventListener("pointermove", handlePointerMove);
-      node.removeEventListener("pointerleave", resetPointer);
-      window.removeEventListener("scroll", requestPaint);
-      window.removeEventListener("resize", requestPaint);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
-
   return (
-    <div className="landing2-orbit" aria-hidden="true" ref={ref}>
-      <div className="landing2-orbit-stage">
-        <div className="landing2-orbit-tilt">
-          <div className="landing2-orbit-halo" />
-          <span className="landing2-live-orbit landing2-live-orbit-1"><i /></span>
-          <span className="landing2-live-orbit landing2-live-orbit-2"><i /></span>
-          <span className="landing2-live-orbit landing2-live-orbit-3"><i /></span>
-          <div className="landing2-orbit-image" />
-          <div className="landing2-orbit-scan" />
-          <div className="landing2-orbit-lens" />
-          <span className="landing2-orbit-signal landing2-orbit-signal-1" />
-          <span className="landing2-orbit-signal landing2-orbit-signal-2" />
-          <span className="landing2-orbit-signal landing2-orbit-signal-3" />
-          {ASSETS.map((symbol, i) => (
-            <div className={`landing2-orbit-badge landing2-orbit-badge-${i + 1}`} key={symbol}>
-              <BrandIcon symbol={symbol} kind="ticker" size={28} />
-              <span>{symbol}</span>
+    <div className="hybrid-hero-visual">
+      <div className="hybrid-preview" aria-label="Preview of the Auevo asset explorer">
+        <div className="hybrid-preview-top">
+          <span className="hybrid-preview-brand"><span className="hybrid-preview-mark">A</span> AUEVO <small>/ Markets</small></span>
+          <span className="hybrid-preview-status"><i /> Registry overview</span>
+        </div>
+        <div className="hybrid-preview-heading">
+          <div>
+            <span className="hybrid-preview-kicker">TOKENIZED MARKETS</span>
+            <strong>Explore assets</strong>
+            <p>Compare issuers and chains before you trade.</p>
+          </div>
+          <span className="hybrid-preview-filter">All assets <span>⌄</span></span>
+        </div>
+        <div className="hybrid-preview-table">
+          <div className="hybrid-preview-row hybrid-preview-th"><span>ASSET</span><span>COMPARE</span><span>STATUS</span></div>
+          {[
+            { ticker: "TSLA", name: "Tesla" },
+            { ticker: "NVDA", name: "NVIDIA" },
+            { ticker: "SPY", name: "S&P 500 ETF" },
+          ].map((item) => (
+            <div className="hybrid-preview-row" key={item.ticker}>
+              <span className="hybrid-preview-asset"><BrandIcon symbol={item.ticker} kind="ticker" size={30} /><span><b>{item.ticker}</b><small>{item.name}</small></span></span>
+              <span className="hybrid-preview-compare">Issuer · chain</span>
+              <span className="hybrid-preview-listed"><i /> Browse</span>
             </div>
           ))}
         </div>
-        <div className="landing2-orbit-shadow" />
+        <Link className="hybrid-preview-bottom" href="/app/assets">Explore the registry <span aria-hidden="true">↗</span></Link>
       </div>
+      <span className="hybrid-float-tag hybrid-float-tag-top">One asset · multiple issuers</span>
+      <span className="hybrid-float-tag hybrid-float-tag-bottom">Verified on-chain data</span>
     </div>
   );
 }

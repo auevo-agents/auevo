@@ -329,7 +329,7 @@ export default function AppOverviewPage() {
         </article>
       </div>
 
-      <div className="dash-stat-strip" style={{ margin: "24px 0" }}>
+      <div className="dash-stat-strip app-overview-stats">
         <div className="dash-stat">
           <div className="dash-stat-value">{assetCount ?? "—"}</div>
           <div className="dash-stat-label">ASSETS TRACKED</div>
@@ -347,7 +347,7 @@ export default function AppOverviewPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16, alignItems: "start" }}>
+      <div className="app-overview-panels">
         <div className="app-tools">
           <div className="scan-section-heading">
             <span>SCANNER HIGHLIGHTS</span>
@@ -384,7 +384,7 @@ export default function AppOverviewPage() {
         </div>
       </div>
 
-      <div className="app-tools" style={{ marginTop: 24 }}>
+      <div className="app-tools app-overview-actions">
         <div className="scan-section-heading">
           <span>QUICK ACTIONS</span>
           <strong>Everything you need to trade, track and build with tokenized markets.</strong>

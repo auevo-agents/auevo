@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./hybrid.css";
 
 // Auevo is repositioning from a Solana fee-bot scanner into a
 // marketplace + scanner for tokenized real-world assets (see
