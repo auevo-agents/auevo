@@ -12,8 +12,8 @@
 
 /* Identity shared across both surfaces. */
 .auevo-mark-a { fill: #2458e8; }
-.auevo-mark-orbit { stroke: #7ca8ff; }
-.auevo-mark-node { fill: #6ac2f2; }
+.auevo-mark-orbit { stroke: #35cce6; stroke-width: 3.7; opacity: 1; }
+.auevo-mark-node { fill: #35d7e9; stroke: #2458e8; stroke-width: .4; }
 .landing2 .auevo-logo { color: var(--hy-ink); }
 .landing2 .auevo-wordmark,
 .app-shell .auevo-wordmark { color: inherit; font-family: Arial, Helvetica, sans-serif; font-weight: 800; letter-spacing: -.055em; }
@@ -306,7 +306,6 @@
 .app-shell .app-topnav-trust-dot { background: #59c9a2; }
 .app-shell .product-header,
 .app-shell .dash-hero {
-  --app-hero-image: url("/images/hybrid-dataflow.webp");
   border: 1px solid #284164;
   border-radius: 18px;
   background: #0b1b31;
@@ -318,6 +317,26 @@
 .app-shell .dash-hero::before { opacity: .74; filter: none; }
 .app-shell .product-header::after,
 .app-shell .dash-hero::after { background: linear-gradient(90deg, #0b192d 0%, rgba(11,25,45,.93) 38%, rgba(11,25,45,.25) 100%); }
+
+/* Distinct visual subjects replace the repeated wave on workspace headers. */
+.app-shell .product-header--overview { --app-hero-image: url("/images/tech/circuit.webp"); }
+.app-shell .product-header--bots { --app-hero-image: url("/images/tech/ai.webp"); }
+.app-shell .product-header--explorer { --app-hero-image: url("/images/tech/circuit.webp"); --app-hero-position: 72% center; }
+.app-shell .product-header--issuers { --app-hero-image: url("/images/tech/assets.webp"); }
+.app-shell .product-header--launch { --app-hero-image: url("/images/tech/ai.webp"); }
+.app-shell .product-header--market { --app-hero-image: url("/images/tech/market.webp"); }
+.app-shell .product-header--otc { --app-hero-image: url("/images/tech/private.webp"); }
+.app-shell .product-header--portfolio { --app-hero-image: url("/images/tech/vault.webp"); }
+.app-shell .product-header--scanner { --app-hero-image: url("/images/tech/market.webp"); --app-hero-position: 67% center; }
+.app-shell .product-header--smart-money { --app-hero-image: url("/images/tech/ai.webp"); --app-hero-position: 72% center; }
+.app-shell .product-header--swap { --app-hero-image: url("/images/tech/private.webp"); }
+.app-shell .product-header--trading { --app-hero-image: url("/images/tech/market.webp"); --app-hero-position: 74% center; }
+.app-shell .product-header--wallets { --app-hero-image: url("/images/tech/vault.webp"); }
+.app-shell :is(.product-header--assets, .dash-hero--assets) { --app-hero-image: url("/images/tech/assets.webp"); }
+.app-shell :is(.product-header--baskets, .dash-hero--baskets) { --app-hero-image: url("/images/tech/baskets.webp"); }
+.app-shell .dash-hero--lend { --app-hero-image: url("/images/tech/vault.webp"); }
+.app-shell .dash-hero--pools { --app-hero-image: url("/images/tech/circuit.webp"); --app-hero-position: 70% center; }
+.app-shell .dash-hero:not([class*="dash-hero--"]) { --app-hero-image: url("/images/tech/ai.webp"); }
 .app-shell .product-header h3,
 .app-shell .dash-title { color: #f6f9ff; font: 750 clamp(32px, 3.4vw, 48px)/1.04 Arial, sans-serif; letter-spacing: -.048em; text-shadow: none; }
 .app-shell .product-header p,
@@ -511,7 +530,7 @@
   grid-column: auto;
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+  min-height: 310px;
   padding: 18px;
   border: 1px solid #2b4261;
   border-radius: 13px;
@@ -519,9 +538,24 @@
   box-shadow: none;
 }
 .app-shell .app-tools .landing2-card:hover { border-color: #5788d9; background: linear-gradient(155deg, #203d66, #12243e 62%); }
-.app-shell .app-tools .landing2-card-art { display: none; }
-.app-shell .app-tools .landing2-card-badge { order: 0; padding: 0; border: 0; background: none; color: #7eafff; font: 700 11px Arial, sans-serif; }
-.app-shell .app-tools .landing2-card h4 { order: 1; max-width: none; margin: 15px 0 0; color: #f2f7ff; font: 700 20px/1.1 Arial, sans-serif; letter-spacing: -.03em; text-shadow: none; }
+.app-shell .app-tools .landing2-card-art {
+  display: block;
+  inset: 0 0 auto;
+  height: 145px;
+  background-image: linear-gradient(180deg, rgba(13,27,46,.08), #101e32 100%), var(--card-photo);
+  background-size: cover;
+  background-position: right center;
+  opacity: .88;
+  filter: none;
+}
+.app-shell .app-tools .landing2-card-assets { --card-photo: url("/images/tech/assets.webp"); }
+.app-shell .app-tools .landing2-card-scanner { --card-photo: url("/images/tech/market.webp"); }
+.app-shell .app-tools .landing2-card-baskets { --card-photo: url("/images/tech/baskets.webp"); }
+.app-shell .app-tools .landing2-card-pools { --card-photo: url("/images/tech/circuit.webp"); }
+.app-shell .app-tools .landing2-card-bridge { --card-photo: url("/images/tech/private.webp"); }
+.app-shell .app-tools .landing2-card-alerts { --card-photo: url("/images/tech/vault.webp"); }
+.app-shell .app-tools .landing2-card-badge { order: 0; align-self: flex-start; padding: 5px 8px; border: 1px solid #456e9a; border-radius: 6px; background: rgba(10,24,43,.8); color: #a9ceff; font: 700 11px Arial, sans-serif; }
+.app-shell .app-tools .landing2-card h4 { order: 1; max-width: none; margin: 105px 0 0; color: #f2f7ff; font: 700 20px/1.1 Arial, sans-serif; letter-spacing: -.03em; text-shadow: none; }
 .app-shell .app-tools .landing2-card p { order: 2; max-width: 37ch; margin: 9px 0; color: #a1b3ca; font-size: 11px; line-height: 1.5; text-shadow: none; }
 .app-shell .app-tools .landing2-card .landing2-mockup { order: 3; min-height: 0; margin-top: auto; padding: 8px; border: 1px solid #2c4566; border-radius: 7px; background: #0c192a; box-shadow: none; backdrop-filter: none; }
 .app-shell .app-tools .landing2-card-arrow { order: 4; margin-top: 10px; color: #8db6ff; font: 700 10px Arial, sans-serif; }
@@ -531,17 +565,34 @@
 .app-shell .landing2-mockup-check { color: #aabbd1; }
 .app-shell .landing2-mockup-check-icon { color: #9abaff; background: #203d69; }
 
-/* Former stock-photo surfaces adopt the same data backdrop. */
-.app-shell .issuer-card--active { --issuer-photo: url("/images/hybrid-dataflow.webp") !important; }
-.app-shell .issuer-card--active::before { filter: none; opacity: .45; }
+/* Editorial cards use subject-specific images and keep the text legible. */
+.app-shell .issuer-card--active:nth-child(1) { --issuer-photo: url("/images/tech/assets.webp"); }
+.app-shell .issuer-card--active:nth-child(2) { --issuer-photo: url("/images/tech/circuit.webp"); }
+.app-shell .issuer-card--active::before {
+  background-image: linear-gradient(180deg, rgba(11,27,47,.22), rgba(11,27,47,.92) 83%), var(--issuer-photo);
+  filter: none;
+  opacity: .86;
+}
+.app-shell .issuer-card--profile::before { background: radial-gradient(circle, rgba(57,118,224,.22), transparent 68%); }
 .app-shell .issuer-card,
 .app-shell .dash-basket-card--cinematic { border-color: #2a405b; background: #101e30; box-shadow: none; }
 .app-shell .dash-basket-card--cinematic::before {
-  background-image: linear-gradient(180deg, rgba(12,27,47,.38), #101e30 88%), url("/images/hybrid-dataflow.webp");
+  background-image: linear-gradient(180deg, rgba(12,27,47,.24), #101e30 90%), var(--basket-scene);
   background-position: center, center;
   filter: none;
-  opacity: .56;
+  opacity: .84;
 }
+.app-shell .dash-basket-card--cinematic:nth-child(5n + 1) { --basket-scene: url("/images/tech/baskets.webp"); }
+.app-shell .dash-basket-card--cinematic:nth-child(5n + 2) { --basket-scene: url("/images/tech/circuit.webp"); }
+.app-shell .dash-basket-card--cinematic:nth-child(5n + 3) { --basket-scene: url("/images/tech/assets.webp"); }
+.app-shell .dash-basket-card--cinematic:nth-child(5n + 4) { --basket-scene: url("/images/tech/market.webp"); }
+.app-shell .dash-basket-card--cinematic:nth-child(5n) { --basket-scene: url("/images/tech/ai.webp"); }
+.app-shell .earn-vault-card { background: linear-gradient(120deg, #101e30 22%, rgba(16,30,48,.86)), url("/images/tech/vault.webp") right center / cover; }
+.app-shell .lend-reserve-card { background: linear-gradient(120deg, #101e30 22%, rgba(16,30,48,.86)), url("/images/tech/circuit.webp") right center / cover; }
+.app-shell .agent-preview-card { background: linear-gradient(120deg, #101e30 18%, rgba(16,30,48,.7)), url("/images/tech/ai.webp") right center / cover; }
+.app-shell .wallet-card { background: linear-gradient(90deg, #101e30, rgba(16,30,48,.83)), url("/images/tech/vault.webp") right center / cover; }
+.app-shell .token-side-card { background: linear-gradient(125deg, #101e30 30%, rgba(16,30,48,.86)), url("/images/tech/assets.webp") right center / cover; }
+.app-shell .agent-promo-banner { background: linear-gradient(90deg, #12253e 30%, rgba(18,37,62,.65)), url("/images/tech/ai.webp") right center / cover; }
 .app-shell .dash-basket-card--cinematic .dash-basket-card-head h4,
 .app-shell .issuer-card-copy h4 { color: #f2f7ff; font-family: Arial, sans-serif; font-weight: 700; text-shadow: none; }
 .app-shell .dash-basket-card--cinematic .dash-basket-card-head p,
@@ -550,7 +601,7 @@
 .app-shell .dash-basket-allocation span { color: #90b6ff; }
 .app-shell .dash-basket-allocation { background: radial-gradient(circle at center, #0d1b2d 55%, transparent 57%), conic-gradient(#447ded var(--basket-angle), rgba(255,255,255,.1) 0); }
 .app-shell .private-swap-preview,
-.app-shell .private-swap-hero { background-image: linear-gradient(90deg, #0b192d, rgba(11,25,45,.46)), url("/images/hybrid-dataflow.webp"); }
+.app-shell .private-swap-hero { background-image: linear-gradient(90deg, #0b192d, rgba(11,25,45,.46)), url("/images/tech/private.webp"); }
 .app-shell :is(.dash-basket-card, .issuer-card, .wallet-card, .token-side-card, .token-chart-card)::after { border-color: rgba(75,130,220,.2); }
 
 @media (max-width: 1180px) {

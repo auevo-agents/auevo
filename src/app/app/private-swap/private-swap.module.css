@@ -235,3 +235,147 @@
   .productHeader p { max-width:74%;font-size:10px;line-height:1.45; }
   .gateLock { right:12px;width:118px;opacity:.17; }
 }
+
+/* Hybrid workspace: private routing has its own imagery and blue controls. */
+.productHeader {
+  min-height: 178px;
+  border-color: #315174;
+  border-radius: 18px;
+  background: #0b1b30;
+  box-shadow: 0 16px 46px rgba(0,0,0,.16);
+}
+.productHeader::before {
+  background-image: linear-gradient(90deg,#0b192d 0%,rgba(11,25,45,.94) 35%,rgba(11,25,45,.14) 100%),url("/images/tech/private.webp");
+  background-position: center,right center;
+}
+.productHeader h3 {
+  color: #f6f9ff;
+  font: 750 clamp(32px,3.4vw,48px)/1.04 Arial,Helvetica,sans-serif;
+  letter-spacing: -.048em;
+}
+.productHeader p { color: #b4c5df; font-size: 13px; }
+.page { color:#edf5ff; }
+.eyebrow,.kicker { color:#86afff; }
+.intro h1 { font-family:Arial,Helvetica,sans-serif;font-weight:750; }
+.intro p { color:#9eb0c9; }
+.card,.routeCard,.noticeCard,.orderCard {
+  border-color:#2b4565;
+  background:linear-gradient(145deg,rgba(255,255,255,.028),transparent 48%),#101f33;
+  box-shadow:inset 0 1px rgba(255,255,255,.035),0 20px 55px rgba(1,8,20,.22);
+}
+.card,.orderCard { border-radius:15px; }
+.routeCard,.noticeCard { border-radius:13px; }
+.cardHeader h2 { color:#f2f7ff; }
+.live,.orderState { color:#a8bed9; }
+.orderState i { background:#75a3fa; }
+.fieldLabel,.field>span,.quoteAmounts small,.orderSummary small,.depositBlock small,.receiver small { color:#879eb8; }
+.input,.field input,.field select,.amountBox {
+  border-color:#2b4565;
+  border-radius:9px;
+  background:#0b192b;
+  color:#f2f7ff;
+}
+.input:focus,.field input:focus,.field select:focus,.amountBox:focus-within {
+  border-color:#6698ff;
+  box-shadow:0 0 0 3px rgba(69,124,239,.15);
+}
+.primary,.gateContinue:not(:disabled) {
+  border-color:#5485e9;
+  border-radius:9px;
+  background:#2458e8;
+  color:#fff;
+  box-shadow:0 10px 25px rgba(36,88,232,.18);
+}
+.primary:hover:not(:disabled),.gateContinue:not(:disabled):hover { border-color:#80aaff;background:#356cf1; }
+.secondary { border-color:#385b83;background:#182e4c;color:#e4efff; }
+.secondary:hover:not(:disabled) { border-color:#6698ff;background:#20406c; }
+.routeCard {
+  background-image:linear-gradient(90deg,#101f33 15%,rgba(16,31,51,.80)),url("/images/tech/private.webp");
+  background-size:cover;
+  background-position:right center;
+}
+.routeLine>span { background:linear-gradient(90deg,#335a8c,#6aa7f7); }
+.routeLine i,.noticeIcon,.footerMark { border-color:#3d6a9f;color:#94bdff;background:#1a3555; }
+.routeLine b,.noticeCard b { color:#e8f1ff; }
+.routeLine small,.noticeCard p,.facts span,.footer { color:#91a6c0; }
+.noticeCard { background:linear-gradient(110deg,rgba(47,103,197,.12),transparent 68%),#101f33; }
+.quote { border-color:#355d8c;background:#122944; }
+.quoteTop,.quoteAmounts>span,.depositBlock button,.textButton,.hashRow a { color:#91b9ff; }
+.quoteTop b,.quoteAmounts strong,.orderSummary strong { color:#edf4ff; }
+.range,.disclaimer,.receiver code,.orderFooter,.hashRow { color:#97abc4; }
+.confirm { color:#b6c8dd; }
+.confirm input,.gateItem input { accent-color:#4078ef; }
+.depositBlock { border-color:#2c4665;background:#0b192b; }
+.orderNotice { border-left-color:#5a91f4;background:#132944; }
+.orderNotice b { color:#edf4ff; }
+.orderNotice p { color:#9db2cc; }
+.orderSummary,.orderFooter { border-color:#29415d; }
+
+.gateBackdrop {
+  top:76px;
+  z-index:10000;
+  padding:clamp(12px,3vh,28px) 18px 28px;
+  background:rgba(3,12,26,.9);
+  backdrop-filter:blur(15px);
+}
+.gateDialog {
+  display:grid;
+  grid-template-columns:minmax(250px,.85fr) minmax(0,1.15fr);
+  gap:18px;
+  width:min(100%,1010px);
+  padding:27px;
+  border-color:#345372;
+  border-radius:20px;
+  background:#0b192b;
+  box-shadow:0 30px 100px rgba(0,5,16,.65),inset 0 1px rgba(255,255,255,.045);
+}
+.gateDialog::before {
+  background-image:linear-gradient(90deg,rgba(11,25,43,.45),rgba(11,25,43,.87) 55%,#0b192b),url("/images/tech/private.webp");
+  background-position:right center;
+}
+.gateTopline { grid-column:1/-1;margin-bottom:0;padding-bottom:16px;border-bottom:1px solid #2c4562; }
+.gateBrand { color:#f5f9ff; }
+.gateBrand i { background:#4f9fff;box-shadow:0 0 14px rgba(76,159,255,.48); }
+.gateBrand b { border-color:#3b6ba5;background:#163a69;color:#aacaff; }
+.gateStep { color:#8da6c3; }
+.gateLock { display:none; }
+.gateWarning {
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:14px;
+  min-height:430px;
+  padding:24px;
+  border-color:#42658a;
+  border-radius:15px;
+  background:linear-gradient(180deg,rgba(8,23,43,.04) 0%,rgba(8,23,43,.3) 28%,#0a1b30 100%),url("/images/tech/private.webp") right center/auto 100% no-repeat;
+}
+.gateWarningIcon { width:24px;height:24px;border-color:#7eafff;color:#a8caff; }
+.gateWarning p { color:#d1def0;font-size:13px;line-height:1.6; }
+.gateChecklist { margin:0;padding:22px;border-color:#2d4767;background:rgba(12,27,47,.94); }
+.gateChecklist h2 { color:#f4f8ff;font:700 19px/1.2 Arial,Helvetica,sans-serif; }
+.gateItems { gap:6px; }
+.gateItem { grid-template-columns:20px 1fr;gap:12px;padding:8px 4px;color:#b8c9dd;font-size:12px;line-height:1.45; }
+.gateItem:hover { color:#edf4ff; }
+.gateItem input { border-color:#5d7998;background:#0c1a2b; }
+.gateItem input:checked { border-color:#5c96ff;background:#3570ed;box-shadow:inset 0 0 0 4px #102747; }
+.gateItem input:focus-visible { outline-color:#87b4ff; }
+.gateContinue { min-height:52px; }
+.gateContinue:disabled { border-color:#2c4562;background:#15263b;color:#68819e;opacity:1; }
+.gateFootnote { color:#849cb8; }
+
+@media(max-width:760px) {
+  .gateDialog { grid-template-columns:1fr;padding:16px;gap:12px; }
+  .gateWarning { min-height:190px;padding:16px;background-position:right 40%; }
+  .gateChecklist { padding:16px; }
+  .gateBackdrop { top:66px;padding:10px 10px 20px; }
+}
+@media(max-width:600px) {
+  .productHeader { min-height:150px;padding:22px; }
+  .productHeader::before { background-image:linear-gradient(90deg,#0b192d,rgba(11,25,45,.65)),url("/images/tech/private.webp"); }
+  .productHeader h3 { max-width:none;font-size:32px; }
+  .productHeader p { max-width:80%;font-size:11px; }
+  .gateWarning { min-height:160px; }
+  .gateWarning p,.gateItem { font-size:11px; }
+  .gateChecklist h2 { font-size:17px; }
+}
