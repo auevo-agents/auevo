@@ -26,6 +26,8 @@
   --wallet-on-accent: #ffffff;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(36, 88, 232, 0.09), transparent 60%), #f7f9fd;
+  --wallet-star-color: rgba(18, 27, 45, 0.4);
+  --wallet-comet-color: rgba(36, 88, 232, 0.6);
 
   min-height: 100vh;
   background: var(--wallet-bg);
@@ -50,6 +52,8 @@
   --wallet-on-accent: #ffffff;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(15, 179, 214, 0.1), transparent 60%), #f4fbfd;
+  --wallet-star-color: rgba(15, 43, 48, 0.35);
+  --wallet-comet-color: rgba(15, 179, 214, 0.65);
 }
 
 /* Violet — light. */
@@ -66,6 +70,8 @@
   --wallet-on-accent: #ffffff;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(124, 77, 255, 0.1), transparent 60%), #f9f7fd;
+  --wallet-star-color: rgba(30, 23, 48, 0.35);
+  --wallet-comet-color: rgba(124, 77, 255, 0.65);
 }
 
 /* Midnight — dark, green accent (the original AUEVO Wallet look). */
@@ -83,6 +89,8 @@
   --wallet-danger: #ff9b9b;
   --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(95, 230, 163, 0.16), transparent 60%),
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%), #050a08;
+  --wallet-star-color: rgba(255, 255, 255, 0.85);
+  --wallet-comet-color: rgba(95, 230, 163, 0.95);
 }
 
 /* Violet — dark. */
@@ -100,6 +108,8 @@
   --wallet-danger: #ff9b9b;
   --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(185, 139, 255, 0.16), transparent 60%),
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(124, 77, 255, 0.08), transparent 60%), #0a0716;
+  --wallet-star-color: rgba(255, 255, 255, 0.8);
+  --wallet-comet-color: rgba(185, 139, 255, 0.95);
 }
 
 .spaceBg {
@@ -107,7 +117,127 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  overflow: hidden;
   background: var(--wallet-bg-image);
+}
+
+/*
+ * Two star layers (near/far, different tile size and speed) drifting via
+ * `transform` only — cheap for the compositor, no layout/paint per frame.
+ * Each layer's background-image is a handful of small radial-gradient
+ * dots tiled with background-repeat; translating by exactly one tile
+ * loops seamlessly. Colors come from --wallet-star-color, so light themes
+ * get faint dark flecks and dark themes get bright ones — same technique,
+ * opposite polarity.
+ */
+.spaceBg::before,
+.spaceBg::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background-repeat: repeat;
+}
+
+.spaceBg::before {
+  background-image: radial-gradient(1.6px 1.6px at 12% 22%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.2px 1.2px at 38% 68%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.6px 1.6px at 64% 12%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.2px 1.2px at 82% 48%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.6px 1.6px at 24% 85%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.2px 1.2px at 92% 78%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.6px 1.6px at 50% 40%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.2px 1.2px at 15% 52%, var(--wallet-star-color), transparent 100%);
+  background-size: 340px 340px;
+  animation: wallet-drift-far 140s linear infinite;
+}
+
+.spaceBg::after {
+  background-image: radial-gradient(2.2px 2.2px at 20% 30%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.8px 1.8px at 70% 60%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(2.2px 2.2px at 45% 85%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(1.8px 1.8px at 88% 20%, var(--wallet-star-color), transparent 100%),
+    radial-gradient(2.2px 2.2px at 10% 70%, var(--wallet-star-color), transparent 100%);
+  background-size: 220px 220px;
+  opacity: 0.8;
+  animation: wallet-drift-near 80s linear infinite;
+}
+
+@keyframes wallet-drift-far {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-340px, -340px);
+  }
+}
+
+@keyframes wallet-drift-near {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(220px, -220px);
+  }
+}
+
+/*
+ * Comets: real elements (not pseudo-elements — a layer already spends
+ * both ::before/::after on the star fields above), one bright head plus a
+ * trailing gradient line rotated to point back along the flight path.
+ * Each cycle is mostly idle (opacity 0) so a comet reads as an occasional
+ * event, not a constant stream; distinct durations/delays keep the three
+ * from ever launching in sync.
+ */
+.comet {
+  position: absolute;
+  top: -5%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--wallet-comet-color);
+  box-shadow: 0 0 8px 1.5px var(--wallet-comet-color);
+  opacity: 0;
+  animation: wallet-comet-fly linear infinite;
+}
+
+.comet::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 110px;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--wallet-comet-color), transparent);
+  transform-origin: left center;
+  transform: translateY(-50%) rotate(148deg);
+}
+
+@keyframes wallet-comet-fly {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  4% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 1;
+  }
+  38% {
+    transform: translate(-55vw, 62vh);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spaceBg::before,
+  .spaceBg::after,
+  .comet {
+    animation: none;
+  }
 }
 
 .sidebar {
