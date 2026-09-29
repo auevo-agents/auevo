@@ -153,10 +153,27 @@ function PrivyGate({ theme, setTheme }: { theme: string; setTheme: (id: string) 
   return <WalletApp address={address} onLogout={logout} theme={theme} setTheme={setTheme} />;
 }
 
+// Three comets, staggered so they never launch together — see .comet /
+// @keyframes wallet-comet-fly in wallet.module.css for the actual flight
+// path (a long mostly-idle cycle with one quick diagonal streak).
+const COMETS = [
+  { left: "78%", duration: "13s", delay: "-2s" },
+  { left: "40%", duration: "17s", delay: "-9s" },
+  { left: "92%", duration: "21s", delay: "-14s" },
+];
+
 function Shell({ children, theme }: { children: React.ReactNode; theme: string }) {
   return (
     <div className={styles.walletRoot} data-theme={theme}>
-      <div className={styles.spaceBg} />
+      <div className={styles.spaceBg}>
+        {COMETS.map((c, i) => (
+          <span
+            key={i}
+            className={styles.comet}
+            style={{ left: c.left, animationDuration: c.duration, animationDelay: c.delay }}
+          />
+        ))}
+      </div>
       {children}
     </div>
   );
