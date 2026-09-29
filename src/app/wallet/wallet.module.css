@@ -28,6 +28,8 @@
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(36, 88, 232, 0.09), transparent 60%), #f7f9fd;
   --wallet-star-color: rgba(18, 27, 45, 0.4);
   --wallet-comet-color: rgba(36, 88, 232, 0.6);
+  --scene-core: #dce8ff;
+  --scene-glow: rgba(45, 105, 235, .28);
 
   /*
    * Without this, a system/browser in dark mode paints native form
@@ -61,9 +63,11 @@
   --wallet-muted: #547479;
   --wallet-on-accent: #ffffff;
   --wallet-danger: #c22a2a;
-  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(15, 179, 214, 0.1), transparent 60%), #f4fbfd;
+  --wallet-bg-image: radial-gradient(ellipse 58% 46% at 75% 15%, rgba(53, 217, 231, .22), transparent 62%), linear-gradient(145deg, #effcff, #e7f7fb 52%, #f7feff);
   --wallet-star-color: rgba(15, 43, 48, 0.35);
   --wallet-comet-color: rgba(15, 179, 214, 0.65);
+  --scene-core: #b9f7ff;
+  --scene-glow: rgba(24, 194, 220, .3);
   color-scheme: light;
 }
 
@@ -80,9 +84,11 @@
   --wallet-muted: #6a6180;
   --wallet-on-accent: #ffffff;
   --wallet-danger: #c22a2a;
-  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(124, 77, 255, 0.1), transparent 60%), #f9f7fd;
+  --wallet-bg-image: radial-gradient(ellipse 68% 52% at 72% 18%, rgba(167, 129, 255, .2), transparent 64%), linear-gradient(145deg, #fbf8ff, #eee9fb 52%, #fff);
   --wallet-star-color: rgba(30, 23, 48, 0.35);
   --wallet-comet-color: rgba(124, 77, 255, 0.65);
+  --scene-core: #e2d7ff;
+  --scene-glow: rgba(133, 83, 246, .28);
   color-scheme: light;
 }
 
@@ -103,6 +109,8 @@
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%), #050a08;
   --wallet-star-color: rgba(255, 255, 255, 0.85);
   --wallet-comet-color: rgba(95, 230, 163, 0.95);
+  --scene-core: #61ffb0;
+  --scene-glow: rgba(48, 237, 146, .32);
   color-scheme: dark;
 }
 
@@ -123,6 +131,8 @@
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(124, 77, 255, 0.08), transparent 60%), #0a0716;
   --wallet-star-color: rgba(255, 255, 255, 0.8);
   --wallet-comet-color: rgba(185, 139, 255, 0.95);
+  --scene-core: #ae82ff;
+  --scene-glow: rgba(139, 86, 255, .35);
   color-scheme: dark;
 }
 
@@ -142,10 +152,14 @@
   --wallet-bg-image: radial-gradient(ellipse 75% 70% at 51% 75%, rgba(32, 95, 187, .26), transparent 65%), radial-gradient(ellipse 44% 48% at 80% 12%, rgba(31, 107, 196, .22), transparent 70%), linear-gradient(150deg, #041023, #0a2341 55%, #050d1e);
   --wallet-star-color: rgba(189, 224, 255, .72);
   --wallet-comet-color: rgba(97, 203, 255, .92);
+  --scene-core: #57c9ff;
+  --scene-glow: rgba(54, 143, 255, .38);
   color-scheme: dark;
 }
+.sidebar,
+.panel { background: color-mix(in srgb, var(--wallet-panel) 88%, transparent); backdrop-filter: blur(22px) saturate(1.25); }
 .walletRoot[data-theme="cosmic"] .sidebar,
-.walletRoot[data-theme="cosmic"] .panel { background: linear-gradient(160deg, rgba(9, 25, 48, .93), rgba(11, 31, 59, .82)); backdrop-filter: blur(20px); }
+.walletRoot[data-theme="cosmic"] .panel { background: linear-gradient(160deg, rgba(9, 25, 48, .93), rgba(11, 31, 59, .82)); }
 .walletRoot[data-theme="cosmic"] .main { background: radial-gradient(ellipse 75% 54% at 52% 72%, rgba(44, 105, 193, .15), transparent); }
 .walletRoot[data-theme="cosmic"] .navItemActive,
 .walletRoot[data-theme="cosmic"] .chatListItemActive { box-shadow: inset 0 0 0 1px rgba(117, 177, 245, .16), 0 9px 28px rgba(0, 0, 0, .12); }
@@ -184,6 +198,32 @@
   inset: -20%;
   background-repeat: repeat;
 }
+
+.scenePlanet,
+.sceneOrbit { position: absolute; display: block; pointer-events: none; }
+.scenePlanet {
+  right: 16%;
+  bottom: -34vw;
+  width: min(72vw, 980px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 26%, rgba(255,255,255,.9), var(--scene-core) 15%, color-mix(in srgb, var(--scene-core) 45%, #07152b) 48%, #030914 75%);
+  box-shadow: inset -70px -80px 110px rgba(0,0,0,.55), inset 18px 12px 38px rgba(255,255,255,.24), 0 0 100px var(--scene-glow), 0 0 260px var(--scene-glow);
+  opacity: .62;
+  transform: rotate(-14deg);
+}
+.scenePlanet::after { content: ""; position: absolute; inset: -2%; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--scene-core) 58%, transparent); filter: blur(1px); box-shadow: 0 -7px 28px var(--scene-glow); }
+.sceneOrbit { right: 6%; bottom: 1%; width: min(92vw, 1250px); height: min(24vw, 310px); border: 1px solid color-mix(in srgb, var(--scene-core) 46%, transparent); border-radius: 50%; transform: rotate(-9deg); box-shadow: 0 0 18px var(--scene-glow), inset 0 0 20px var(--scene-glow); opacity: .55; }
+.walletRoot[data-theme="blue-light"] .scenePlanet { right: -8%; bottom: -38vw; opacity: .3; filter: saturate(.8); }
+.walletRoot[data-theme="blue-light"] .sceneOrbit { right: -4%; opacity: .3; }
+.walletRoot[data-theme="sky-light"] .scenePlanet { width: min(50vw, 680px); right: 23%; bottom: -29vw; opacity: .34; }
+.walletRoot[data-theme="sky-light"] .sceneOrbit { transform: rotate(8deg); opacity: .42; }
+.walletRoot[data-theme="violet-light"] .scenePlanet { width: min(55vw, 760px); right: auto; left: -15%; bottom: -20vw; opacity: .3; }
+.walletRoot[data-theme="violet-light"] .sceneOrbit { right: auto; left: -8%; transform: rotate(16deg); opacity: .33; }
+.walletRoot[data-theme="green-dark"] .scenePlanet { width: min(58vw, 790px); right: -10%; bottom: -20vw; opacity: .55; filter: hue-rotate(10deg); }
+.walletRoot[data-theme="green-dark"] .sceneOrbit { right: -14%; transform: rotate(-18deg); opacity: .65; }
+.walletRoot[data-theme="violet-dark"] .scenePlanet { width: min(48vw, 660px); right: 25%; bottom: -24vw; background: radial-gradient(circle at 50% 50%, #010207 0 40%, #3b177b 54%, #bd8aff 57%, transparent 60%); box-shadow: 0 0 85px rgba(144,81,255,.42), 0 0 220px rgba(87,32,181,.28); opacity: .92; }
+.walletRoot[data-theme="violet-dark"] .sceneOrbit { right: 13%; bottom: 4%; transform: rotate(-4deg); opacity: .75; }
 
 .spaceBg::before {
   background-image: radial-gradient(1.6px 1.6px at 12% 22%, var(--wallet-star-color), transparent 100%),
@@ -441,8 +481,11 @@
   border-color: var(--wallet-accent);
   box-shadow: 0 15px 28px rgba(0,0,0,.24), 0 0 24px rgba(86, 198, 255, .14);
 }
+.personaCard:disabled { cursor: wait; opacity: .72; }
 .personaCard:focus-visible { outline: 2px solid var(--wallet-accent); outline-offset: 2px; }
 .personaRole { color: var(--wallet-muted); font-size: 11px; line-height: 1.25; }
+.blankChatBtn { margin-top: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--wallet-panel) 86%, var(--wallet-accent)), var(--wallet-panel)); border: 1px solid var(--wallet-border); color: var(--wallet-text); box-shadow: inset 0 1px 0 rgba(255,255,255,.09); }
+.pickerError { margin-top: 12px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--wallet-danger) 55%, transparent); border-radius: 10px; color: var(--wallet-danger); background: color-mix(in srgb, var(--wallet-danger) 9%, transparent); font-size: 12px; line-height: 1.4; }
 @media (max-width: 620px) { .personaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .personaModal { padding: 16px; } }
 @media (prefers-reduced-motion: reduce) { .personaCard, .actionBtn { transition: none; } .personaCard:hover, .walletRoot[data-theme="cosmic"] .actionBtn:hover { transform: none; } }
 
@@ -620,12 +663,14 @@
 }
 
 .themeBtn {
-  background: none;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--wallet-panel) 92%, white), color-mix(in srgb, var(--wallet-panel) 86%, var(--wallet-accent)));
   border: 1px solid var(--wallet-border);
   border-radius: 8px;
   color: var(--wallet-muted);
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   font-size: 14px;
 }
@@ -638,8 +683,11 @@
 .themePanel {
   border: 1px solid var(--wallet-border);
   border-radius: 12px;
-  padding: 12px;
-  background: color-mix(in srgb, var(--wallet-text) 3%, transparent);
+  padding: 10px;
+  min-width: 232px !important;
+  background: color-mix(in srgb, var(--wallet-panel) 96%, transparent);
+  backdrop-filter: blur(24px) saturate(1.25);
+  box-shadow: 0 24px 65px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.12);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -649,7 +697,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 9px 10px;
   border-radius: 8px;
   background: none;
   border: none;
@@ -658,6 +706,9 @@
   font-size: 12px;
   text-align: left;
 }
+.themeRow > span:last-child { display: grid; gap: 2px; }
+.themeRow b { font-size: 12px; font-weight: 700; }
+.themeRow small { color: var(--wallet-muted); font-size: 10px; }
 
 .themeRow:hover {
   background: color-mix(in srgb, var(--wallet-text) 5%, transparent);
@@ -669,11 +720,12 @@
 }
 
 .themeSwatch {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset -7px -7px 9px rgba(0,0,0,.22), inset 4px 4px 7px rgba(255,255,255,.3), 0 3px 10px color-mix(in srgb, var(--wallet-accent) 35%, transparent);
 }
 
 .address {
@@ -996,6 +1048,10 @@ select.fieldInput {
 }
 
 @media (max-width: 860px) {
+  .scenePlanet { width: 120vw; right: -54vw; bottom: -37vw; opacity: .48; }
+  .sceneOrbit { width: 140vw; right: -63vw; bottom: 8%; }
+  .walletRoot[data-theme="violet-light"] .scenePlanet { left: -62vw; bottom: -28vw; }
+  .walletRoot[data-theme="violet-dark"] .scenePlanet { width: 105vw; right: -7vw; bottom: -53vw; }
   .mobileOnlyBtn {
     display: inline-flex;
     align-items: center;
@@ -1057,4 +1113,10 @@ select.fieldInput {
   .panelOpen {
     transform: translateX(0);
   }
+
+  .personaModal { max-height: calc(100dvh - 20px); border-radius: 20px; }
+  .personaGrid { gap: 8px; }
+  .personaCard { min-width: 0; }
+  .personaArt { aspect-ratio: 1 / 1.12; }
+  .blankChatBtn { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -12px 30px var(--wallet-panel), inset 0 1px 0 rgba(255,255,255,.09); }
 }
