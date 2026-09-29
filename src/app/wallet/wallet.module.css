@@ -510,6 +510,8 @@
 }
 
 .composerInput {
+  -webkit-appearance: none;
+  appearance: none;
   flex: 1;
   background: var(--wallet-panel);
   border: 1px solid var(--wallet-border);
@@ -517,6 +519,7 @@
   color: var(--wallet-text);
   padding: 12px 16px;
   font-size: 14px;
+  font-family: inherit;
   resize: none;
 }
 
@@ -759,7 +762,10 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  /* Above the mobile sidebar/wallet drawers (z-index 40 below) — opening
+     Send/Receive/the persona picker from inside a drawer must still land
+     on top of it. */
+  z-index: 50;
   background: rgba(10, 15, 25, 0.5);
   display: flex;
   align-items: center;
@@ -815,6 +821,17 @@
 }
 
 .fieldInput {
+  /*
+   * -webkit-appearance/appearance: none is what actually fixed this on
+   * iOS Safari — reported twice as a black background on real phones
+   * after the earlier color-scheme fix (which only addressed Chromium's
+   * separate "auto dark for forms" behavior). Safari's <input> keeps its
+   * own native capsule chrome — which follows system Dark Mode regardless
+   * of page theme — unless appearance is reset; <textarea> never had this
+   * chrome, which is why it always looked right while <input> didn't.
+   */
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   background: color-mix(in srgb, var(--wallet-text) 5%, var(--wallet-panel));
   border: 1px solid var(--wallet-border);
@@ -836,6 +853,17 @@
   outline: none;
   border-color: var(--wallet-accent-dim);
   box-shadow: 0 0 0 3px var(--wallet-accent-soft);
+}
+
+/* appearance:none above also strips <select>'s native arrow — replace it
+   with a plain CSS chevron so a dropdown still reads as one. */
+select.fieldInput {
+  background-image: linear-gradient(45deg, transparent 50%, var(--wallet-muted) 50%),
+    linear-gradient(135deg, var(--wallet-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
 }
 
 .qrWrap {
@@ -874,4 +902,94 @@
   color: var(--wallet-danger);
   font-size: 12px;
   margin-top: 8px;
+}
+
+/*
+ * Mobile layout — below this width the three-column desktop layout
+ * (sidebar / chat / wallet panel, all always visible side by side) no
+ * longer fits: on a phone it rendered as three squeezed, overlapping
+ * columns with the wallet panel's content clipped off-screen. Sidebar and
+ * panel become slide-in drawers instead, toggled by the two buttons
+ * added to .chatHeader (hidden on desktop, shown here) and closed by
+ * tapping the scrim or by picking something inside them.
+ */
+.mobileOnlyBtn {
+  display: none;
+}
+
+.chatHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(10, 15, 25, 0.45);
+}
+
+@media (max-width: 860px) {
+  .mobileOnlyBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--wallet-border);
+    border-radius: 8px;
+    color: var(--wallet-text);
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .chatHeader {
+    justify-content: space-between;
+    padding: 12px 14px 0;
+  }
+
+  .messages {
+    padding: 18px 14px;
+  }
+
+  .composer {
+    padding: 10px 14px 16px;
+  }
+
+  .sidebar,
+  .panel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    background: var(--wallet-panel);
+    transition: transform 0.25s ease;
+  }
+
+  .sidebar {
+    left: 0;
+    width: min(280px, 82vw);
+    border-right: 1px solid var(--wallet-border);
+    transform: translateX(-100%);
+    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.18);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .panel {
+    right: 0;
+    width: min(340px, 88vw);
+    border-left: 1px solid var(--wallet-border);
+    transform: translateX(100%);
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.18);
+  }
+
+  .panelOpen {
+    transform: translateX(0);
+  }
 }

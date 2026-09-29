@@ -266,6 +266,10 @@ function WalletApp({
   const [showSend, setShowSend] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
+  // Mobile-only drawers (see the @media block in wallet.module.css) — on
+  // desktop the sidebar/panel are always visible and these stay false.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -340,6 +344,7 @@ function WalletApp({
     await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
     setSelectedChatId(chat.id);
     setShowPersonaPicker(false);
+    setSidebarOpen(false);
   }
 
   async function sendMessage() {
@@ -383,7 +388,7 @@ function WalletApp({
 
   return (
     <Shell theme={theme}>
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.brand}>
           <AuevoMark />
           AUEVO
@@ -414,7 +419,10 @@ function WalletApp({
                   <button
                     key={c.id}
                     className={c.id === effectiveChatId ? styles.chatListItemActive : styles.chatListItem}
-                    onClick={() => setSelectedChatId(c.id)}
+                    onClick={() => {
+                      setSelectedChatId(c.id);
+                      setSidebarOpen(false);
+                    }}
                   >
                     {agent?.emoji ? `${agent.emoji} ` : ""}
                     {c.title ?? "New chat"}
@@ -447,8 +455,16 @@ function WalletApp({
           return (
             <>
               <div className={styles.chatHeader}>
-                <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} />
-                <span>{activeAgent ? activeAgent.name : "AUEVO"}</span>
+                <button className={styles.mobileOnlyBtn} onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+                  ☰
+                </button>
+                <span className={styles.chatHeaderTitle}>
+                  <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} />
+                  <span>{activeAgent ? activeAgent.name : "AUEVO"}</span>
+                </span>
+                <button className={styles.mobileOnlyBtn} onClick={() => setPanelOpen(true)} aria-label="Open wallet">
+                  👛
+                </button>
               </div>
               <div className={styles.messages}>
                 {(messagesQuery.data ?? []).length === 0 && !streamingText && (
@@ -493,6 +509,16 @@ function WalletApp({
         </form>
       </main>
 
+      {(sidebarOpen || panelOpen) && (
+        <div
+          className={styles.scrim}
+          onClick={() => {
+            setSidebarOpen(false);
+            setPanelOpen(false);
+          }}
+        />
+      )}
+
       <WalletPanel
         address={address}
         balances={balancesQuery.data ?? []}
@@ -501,6 +527,8 @@ function WalletApp({
         onReceive={() => setShowReceive(true)}
         theme={theme}
         setTheme={setTheme}
+        mobileOpen={panelOpen}
+        onMobileClose={() => setPanelOpen(false)}
       />
 
       {showSend && <SendModal onClose={() => setShowSend(false)} />}
@@ -670,6 +698,8 @@ function WalletPanel({
   onReceive,
   theme,
   setTheme,
+  mobileOpen,
+  onMobileClose,
 }: {
   address: string;
   balances: WalletBalance[];
@@ -678,6 +708,8 @@ function WalletPanel({
   onReceive: () => void;
   theme: string;
   setTheme: (id: string) => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
 }) {
   const [tab, setTab] = useState<"assets" | "activity">("assets");
   const [buyBusy, setBuyBusy] = useState(false);
@@ -703,8 +735,11 @@ function WalletPanel({
   }
 
   return (
-    <aside className={styles.panel}>
+    <aside className={`${styles.panel} ${mobileOpen ? styles.panelOpen : ""}`}>
       <div className={styles.panelHeader}>
+        <button className={styles.mobileOnlyBtn} onClick={onMobileClose} aria-label="Close wallet">
+          ✕
+        </button>
         <span className={styles.panelTitle}>My wallet</span>
         <ThemePicker theme={theme} onChange={setTheme} />
       </div>
