@@ -140,13 +140,13 @@ function PersonaAvatar({ mood, color, size = 36, name }: { mood: Mood; color: st
  * per-viewer display preference, never something the server needs to know
  * or that other people should see.
  */
-const THEMES: { id: string; label: string; swatch: string }[] = [
-  { id: "cosmic", label: "Cosmic", swatch: "#52bdff" },
-  { id: "blue-light", label: "Light (site default)", swatch: "#2458e8" },
-  { id: "sky-light", label: "Sky", swatch: "#0fb3d6" },
-  { id: "violet-light", label: "Violet", swatch: "#7c4dff" },
-  { id: "green-dark", label: "Midnight", swatch: "#5fe6a3" },
-  { id: "violet-dark", label: "Violet Dark", swatch: "#b98bff" },
+const THEMES: { id: string; label: string; description: string; swatch: string }[] = [
+  { id: "cosmic", label: "Deep Orbit", description: "Cobalt planet", swatch: "#52bdff" },
+  { id: "blue-light", label: "Lunar Glass", description: "Silver daylight", swatch: "#2458e8" },
+  { id: "sky-light", label: "Ice Nebula", description: "Frozen cyan", swatch: "#0fb3d6" },
+  { id: "violet-light", label: "Aurora Pearl", description: "Soft stellar veil", swatch: "#7c4dff" },
+  { id: "green-dark", label: "Bio Cosmos", description: "Emerald life", swatch: "#5fe6a3" },
+  { id: "violet-dark", label: "Event Horizon", description: "Dark singularity", swatch: "#b98bff" },
 ];
 const THEME_STORAGE_KEY = "auevo-wallet-theme";
 const THEME_CHANGE_EVENT = "auevo-wallet-theme-change";
@@ -248,6 +248,8 @@ function Shell({ children, theme }: { children: React.ReactNode; theme: string }
   return (
     <div className={styles.walletRoot} data-theme={theme}>
       <div className={styles.spaceBg}>
+        <span className={styles.scenePlanet} />
+        <span className={styles.sceneOrbit} />
         {COMETS.map((c, i) => (
           <span
             key={i}
@@ -299,6 +301,8 @@ function WalletApp({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [chatStartBusy, setChatStartBusy] = useState(false);
+  const [chatStartError, setChatStartError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -352,27 +356,38 @@ function WalletApp({
    * name), so a re-pick just reuses the same row.
    */
   async function startChat(agent?: { name: string; persona: string; accent: string; emoji: string } | Agent) {
-    let agentId: string | null = null;
-    if (agent) {
-      const created = await walletFetchJson<Agent>("/api/wallet/agents", {
+    if (chatStartBusy) return;
+    setChatStartBusy(true);
+    setChatStartError(null);
+    try {
+      let agentId: string | null = null;
+      if (agent) {
+        const created = await walletFetchJson<Agent>("/api/wallet/agents", {
+          method: "POST",
+          body: JSON.stringify(
+            "id" in agent
+              ? { name: agent.name, persona: agent.persona, accentColor: agent.accent_color, emoji: agent.emoji }
+              : { name: agent.name, persona: agent.persona, accentColor: agent.accent, emoji: agent.emoji }
+          ),
+        });
+        agentId = created.id;
+        await qc.invalidateQueries({ queryKey: ["wallet-agents"] });
+      }
+      const chat = await walletFetchJson<Chat>("/api/wallet/chats", {
         method: "POST",
-        body: JSON.stringify(
-          "id" in agent
-            ? { name: agent.name, persona: agent.persona, accentColor: agent.accent_color, emoji: agent.emoji }
-            : { name: agent.name, persona: agent.persona, accentColor: agent.accent, emoji: agent.emoji }
-        ),
+        body: JSON.stringify({ agentId, title: agent?.name ?? "Blank chat" }),
       });
-      agentId = created.id;
-      await qc.invalidateQueries({ queryKey: ["wallet-agents"] });
+      setSelectedChatId(chat.id);
+      setTab("chats");
+      setShowPersonaPicker(false);
+      setSidebarOpen(false);
+      setPanelOpen(false);
+      await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
+    } catch (error) {
+      setChatStartError(error instanceof Error ? error.message : "Could not create the chat. Please try again.");
+    } finally {
+      setChatStartBusy(false);
     }
-    const chat = await walletFetchJson<Chat>("/api/wallet/chats", {
-      method: "POST",
-      body: JSON.stringify({ agentId, title: agent?.name ?? null }),
-    });
-    await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
-    setSelectedChatId(chat.id);
-    setShowPersonaPicker(false);
-    setSidebarOpen(false);
   }
 
   async function sendMessage() {
@@ -570,6 +585,8 @@ function WalletApp({
           onPick={(agent) => startChat(agent)}
           onBlank={() => startChat()}
           onClose={() => setShowPersonaPicker(false)}
+          busy={chatStartBusy}
+          error={chatStartError}
         />
       )}
     </Shell>
@@ -670,11 +687,15 @@ function PersonaPicker({
   onPick,
   onBlank,
   onClose,
+  busy,
+  error,
 }: {
   customAgents: Agent[];
   onPick: (agent: { name: string; persona: string; accent: string; emoji: string } | Agent) => void;
   onBlank: () => void;
   onClose: () => void;
+  busy: boolean;
+  error: string | null;
 }) {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -691,7 +712,7 @@ function PersonaPicker({
 
         <div className={styles.personaGrid}>
           {PRESET_AGENTS.map((p) => (
-            <button key={p.name} className={styles.personaCard} onClick={() => onPick(p)}>
+            <button type="button" key={p.name} className={styles.personaCard} onClick={() => onPick(p)} disabled={busy}>
               <AgentPortrait name={p.name} className={styles.personaArt} size={120} />
               <span className={styles.personaName}>{p.name}</span>
               <span className={styles.personaRole}>{p.role}</span>
@@ -700,7 +721,7 @@ function PersonaPicker({
           {customAgents.filter((a) => !PRESET_AGENTS.some((p) => p.name === a.name)).map((a) => {
             const mood = moodForAgentName(a.name);
             return (
-              <button key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)}>
+              <button type="button" key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)} disabled={busy}>
                 {mood ? (
                   <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={44} />
                 ) : (
@@ -714,8 +735,9 @@ function PersonaPicker({
           })}
         </div>
 
-        <button className={styles.primaryBtn} style={{ marginTop: 14, background: "transparent", border: "1px solid var(--wallet-border)", color: "var(--wallet-text)" }} onClick={onBlank}>
-          Start blank chat
+        {error && <div className={styles.pickerError} role="alert">{error}</div>}
+        <button type="button" className={`${styles.primaryBtn} ${styles.blankChatBtn}`} onClick={onBlank} disabled={busy}>
+          {busy ? "Creating chat…" : "Start blank chat"}
         </button>
       </div>
     </div>
@@ -864,7 +886,7 @@ function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string
               }}
             >
               <span className={styles.themeSwatch} style={{ background: t.swatch }} />
-              {t.label}
+              <span><b>{t.label}</b><small>{t.description}</small></span>
             </button>
           ))}
         </div>
