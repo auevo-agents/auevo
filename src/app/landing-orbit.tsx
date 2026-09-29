@@ -1,13 +1,45 @@
+"use client";
+
 import Link from "next/link";
+import { useRef, type PointerEvent } from "react";
 import { BrandIcon } from "./brand-icon";
+import { AuevoLogo } from "./auevo-logo";
 
 /** A product preview in the hero. Its rows are examples, not live quotes. */
 export function LandingOrbit() {
+  const visualRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<number | null>(null);
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const visual = visualRef.current;
+    if (!visual) return;
+    const bounds = visual.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = requestAnimationFrame(() => {
+      visual.style.setProperty("--preview-x", `${(x * 13).toFixed(2)}deg`);
+      visual.style.setProperty("--preview-y", `${(-y * 11).toFixed(2)}deg`);
+      visual.style.setProperty("--preview-glow-x", `${((x + 0.5) * 100).toFixed(1)}%`);
+      visual.style.setProperty("--preview-glow-y", `${((y + 0.5) * 100).toFixed(1)}%`);
+    });
+  }
+
+  function onPointerLeave() {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    visualRef.current?.style.removeProperty("--preview-x");
+    visualRef.current?.style.removeProperty("--preview-y");
+    visualRef.current?.style.removeProperty("--preview-glow-x");
+    visualRef.current?.style.removeProperty("--preview-glow-y");
+  }
+
   return (
-    <div className="hybrid-hero-visual">
+    <div className="hybrid-hero-visual" ref={visualRef} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
       <div className="hybrid-preview" aria-label="Preview of the Auevo asset explorer">
         <div className="hybrid-preview-top">
-          <span className="hybrid-preview-brand"><span className="hybrid-preview-mark">A</span> AUEVO <small>/ Markets</small></span>
+          <span className="hybrid-preview-brand"><AuevoLogo /> <small>/ Markets</small></span>
           <span className="hybrid-preview-status"><i /> Registry overview</span>
         </div>
         <div className="hybrid-preview-heading">

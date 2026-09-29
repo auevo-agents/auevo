@@ -126,6 +126,39 @@
   color-scheme: dark;
 }
 
+/* AUEVO's new wallet look: quiet cosmic depth behind crisp glass surfaces. */
+.walletRoot[data-theme="cosmic"] {
+  --wallet-bg: #061226;
+  --wallet-panel: rgba(13, 31, 57, .88);
+  --wallet-border: rgba(121, 174, 239, .22);
+  --wallet-accent: #56c6ff;
+  --wallet-accent-dim: rgba(86, 198, 255, .55);
+  --wallet-accent-soft: rgba(66, 146, 239, .18);
+  --wallet-accent-soft-2: rgba(66, 146, 239, .27);
+  --wallet-text: #f3f8ff;
+  --wallet-muted: #9eb4d2;
+  --wallet-on-accent: #04142a;
+  --wallet-danger: #ffb1b7;
+  --wallet-bg-image: radial-gradient(ellipse 75% 70% at 51% 75%, rgba(32, 95, 187, .26), transparent 65%), radial-gradient(ellipse 44% 48% at 80% 12%, rgba(31, 107, 196, .22), transparent 70%), linear-gradient(150deg, #041023, #0a2341 55%, #050d1e);
+  --wallet-star-color: rgba(189, 224, 255, .72);
+  --wallet-comet-color: rgba(97, 203, 255, .92);
+  color-scheme: dark;
+}
+.walletRoot[data-theme="cosmic"] .sidebar,
+.walletRoot[data-theme="cosmic"] .panel { background: linear-gradient(160deg, rgba(9, 25, 48, .93), rgba(11, 31, 59, .82)); backdrop-filter: blur(20px); }
+.walletRoot[data-theme="cosmic"] .main { background: radial-gradient(ellipse 75% 54% at 52% 72%, rgba(44, 105, 193, .15), transparent); }
+.walletRoot[data-theme="cosmic"] .navItemActive,
+.walletRoot[data-theme="cosmic"] .chatListItemActive { box-shadow: inset 0 0 0 1px rgba(117, 177, 245, .16), 0 9px 28px rgba(0, 0, 0, .12); }
+.walletRoot[data-theme="cosmic"] .composerInput,
+.walletRoot[data-theme="cosmic"] .fieldInput { background: rgba(21, 45, 77, .94); border-color: rgba(145, 191, 245, .3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 8px 26px rgba(0, 0, 0, .14); }
+.walletRoot[data-theme="cosmic"] .composerInput::placeholder,
+.walletRoot[data-theme="cosmic"] .fieldInput::placeholder { color: #a6b9d3; }
+.walletRoot[data-theme="cosmic"] .composerInput:focus,
+.walletRoot[data-theme="cosmic"] .fieldInput:focus { border-color: #72cbff; box-shadow: 0 0 0 3px rgba(86, 198, 255, .18), 0 14px 30px rgba(0, 0, 0, .18); }
+.walletRoot[data-theme="cosmic"] .actionBtn { background: linear-gradient(155deg, rgba(26, 57, 96, .98), rgba(13, 34, 63, .9)); border-color: rgba(139, 194, 252, .3); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 12px 28px rgba(0,0,0,.14); border-radius: 14px; }
+.walletRoot[data-theme="cosmic"] .actionBtn:hover { border-color: #6bc8ff; transform: translateY(-3px); box-shadow: 0 18px 32px rgba(4, 14, 34, .27), 0 0 22px rgba(66, 146, 239, .16); }
+.walletRoot[data-theme="cosmic"] .modal { background: linear-gradient(145deg, rgba(16, 37, 67, .98), rgba(8, 23, 45, .98)); box-shadow: 0 35px 100px rgba(0,0,0,.48); }
+
 .spaceBg {
   position: fixed;
   inset: 0;
@@ -380,25 +413,38 @@
 
 .personaGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
+
+.personaModal { width: min(900px, calc(100vw - 32px)); max-height: min(92vh, 900px); overflow-y: auto; }
+.agentPortrait { display: inline-block; flex-shrink: 0; border-radius: 50%; background: #0c2240 url('/images/wallet/agents.webp') no-repeat; background-size: 400% 200%; border: 1px solid rgba(135, 197, 255, .42); box-shadow: 0 0 0 2px rgba(62, 135, 235, .12); }
+.personaArt { width: 100% !important; height: auto !important; aspect-ratio: 3 / 4; border: 0; border-radius: 10px; background-size: 400% 200%; box-shadow: none; }
 
 .personaCard {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 14px 8px;
+  padding: 8px 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--wallet-border);
   background: color-mix(in srgb, var(--wallet-text) 3%, transparent);
   cursor: pointer;
+  text-align: center;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
 
 .personaCard:hover {
   background: color-mix(in srgb, var(--wallet-text) 6%, transparent);
+  transform: translateY(-4px);
+  border-color: var(--wallet-accent);
+  box-shadow: 0 15px 28px rgba(0,0,0,.24), 0 0 24px rgba(86, 198, 255, .14);
 }
+.personaCard:focus-visible { outline: 2px solid var(--wallet-accent); outline-offset: 2px; }
+.personaRole { color: var(--wallet-muted); font-size: 11px; line-height: 1.25; }
+@media (max-width: 620px) { .personaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .personaModal { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { .personaCard, .actionBtn { transition: none; } .personaCard:hover, .walletRoot[data-theme="cosmic"] .actionBtn:hover { transform: none; } }
 
 .personaEmoji {
   width: 44px;
@@ -471,8 +517,14 @@
   margin: auto;
   text-align: center;
   color: var(--wallet-muted);
-  max-width: 360px;
+  max-width: 440px;
 }
+.emptyState h2 { margin: 18px 0 10px; color: var(--wallet-text); font-size: clamp(24px, 3vw, 34px); letter-spacing: -.045em; }
+.emptyState p { line-height: 1.65; }
+.emptyOrbit { width: 82px; height: 82px; margin: 0 auto; display: grid; place-items: center; border-radius: 24px; color: var(--wallet-accent); background: radial-gradient(circle at 30% 20%, rgba(114, 205, 255, .25), rgba(33, 96, 181, .13)); border: 1px solid var(--wallet-accent-dim); box-shadow: 0 0 50px rgba(72, 156, 246, .24), inset 0 1px 0 rgba(255,255,255,.18); transform: rotate(-7deg); }
+.chooseAgentBtn { margin-top: 16px; display: inline-flex; align-items: center; gap: 26px; padding: 13px 17px; border-radius: 12px; border: 1px solid rgba(134,204,255,.58); color: #fff; background: linear-gradient(115deg, #285de0, #188fda); box-shadow: 0 13px 32px rgba(19, 91, 200, .3); cursor: pointer; font-weight: 700; }
+.chooseAgentBtn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+.chooseAgentBtn:focus-visible { outline: 2px solid #b4e8ff; outline-offset: 3px; }
 
 .msgRow {
   display: flex;
