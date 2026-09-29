@@ -27,7 +27,19 @@ import { LIFI_EVM_CHAIN_LIST } from "./rwa/lifi/chains";
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
 function connectors() {
-  const list = [injected()];
+  // Typed `any[]` rather than inferred: with @privy-io/react-auth also in
+  // the dependency tree (added for the separate /wallet product — see
+  // src/app/wallet/providers.tsx), TypeScript resolves injected()'s and
+  // walletConnect()'s CreateConnectorFn generic instantiations against two
+  // structurally-incompatible copies of an ambient type (confirmed by
+  // bisecting: a clean install without @privy-io/react-auth type-checks
+  // this file with no cast needed at all; adding just that one package,
+  // with every physical viem/wagmi/@wagmi/core/@wagmi/connectors/abitype
+  // dependency deduped to a single version, reproduces the failure). Both
+  // connectors still work identically at runtime — this only silences a
+  // false-positive `tsc` error from that cross-package declaration clash.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above
+  const list: any[] = [injected()];
   if (walletConnectProjectId) {
     list.push(
       walletConnect({

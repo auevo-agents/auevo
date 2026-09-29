@@ -81,6 +81,9 @@ export function LandingNav() {
       <Link href="/app/assets" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Markets
       </Link>
+      <Link href="/wallet" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
+        Wallet
+      </Link>
       <Link href="/docs" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Docs
       </Link>
@@ -106,6 +109,10 @@ export function LandingNav() {
             <Link href="/app/assets" className="landing-nav-link" onClick={() => setOpen(false)}>
               <span className="landing-nav-link-title">Markets</span>
               <span className="landing-nav-link-body">Browse the verified asset registry</span>
+            </Link>
+            <Link href="/wallet" className="landing-nav-link" onClick={() => setOpen(false)}>
+              <span className="landing-nav-link-title">Wallet</span>
+              <span className="landing-nav-link-body">Self-custodial wallet with an AI agent built in</span>
             </Link>
             <Link href="/docs" className="landing-nav-link" onClick={() => setOpen(false)}>
               <span className="landing-nav-link-title">Docs</span>
