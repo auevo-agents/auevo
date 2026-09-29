@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePrivy, useSendTransaction, useFundWallet } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { encodeFunctionData, erc20Abi, parseEther, parseUnits } from "viem";
+import { AuevoMark } from "@/app/auevo-logo";
 import styles from "./wallet.module.css";
 import { fetchWalletBalances, type WalletBalance } from "@/lib/wallet/balances";
 import { USDC_ADDRESS, WALLET_CHAINS } from "@/lib/wallet/tokens";
@@ -51,7 +52,73 @@ const PRESET_AGENTS: { name: string; persona: string; accent: string; emoji: str
   },
 ];
 
+/**
+ * Named color schemes — default matches the main site's own light design
+ * (hybrid.css's --hy-blue etc.), plus a few others so a viewer isn't stuck
+ * with just that one. Persisted client-side only (localStorage): it's a
+ * per-viewer display preference, never something the server needs to know
+ * or that other people should see.
+ */
+const THEMES: { id: string; label: string; swatch: string }[] = [
+  { id: "blue-light", label: "Light (site default)", swatch: "#2458e8" },
+  { id: "sky-light", label: "Sky", swatch: "#0fb3d6" },
+  { id: "violet-light", label: "Violet", swatch: "#7c4dff" },
+  { id: "green-dark", label: "Midnight", swatch: "#5fe6a3" },
+  { id: "violet-dark", label: "Violet Dark", swatch: "#b98bff" },
+];
+const THEME_STORAGE_KEY = "auevo-wallet-theme";
+const THEME_CHANGE_EVENT = "auevo-wallet-theme-change";
+
+/**
+ * Reads/writes the theme via useSyncExternalStore rather than
+ * useState+useEffect: localStorage is state that lives outside React, and
+ * this is the pattern React itself recommends for that (also sidesteps a
+ * server/client snapshot mismatch — getServerSnapshot below always returns
+ * the default, matching what SSR/prerendering sees with no localStorage).
+ * A custom event covers same-tab updates; the native "storage" event only
+ * fires in *other* tabs.
+ */
+function subscribeToTheme(callback: () => void) {
+  window.addEventListener(THEME_CHANGE_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(THEME_CHANGE_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function getThemeSnapshot(): string {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    return saved && THEMES.some((t) => t.id === saved) ? saved : "blue-light";
+  } catch {
+    return "blue-light";
+  }
+}
+
+function getThemeServerSnapshot(): string {
+  return "blue-light";
+}
+
+function useWalletTheme(): [string, (id: string) => void] {
+  const theme = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getThemeServerSnapshot);
+
+  function setTheme(id: string) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, id);
+    } catch {
+      // Private mode / blocked storage — the dispatch below still applies
+      // the pick for the current tab, it just won't persist across visits.
+    }
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+  }
+
+  return [theme, setTheme];
+}
+
 export default function WalletPage() {
+  const [theme, setTheme] = useWalletTheme();
+
   // Guards calling usePrivy() below: WalletProviders only mounts
   // PrivyProvider when this env var is set (see providers.tsx), so
   // calling the hook without it throws — not caught by anything, which
@@ -60,7 +127,7 @@ export default function WalletPage() {
   // build time, so this reads identically on the server and the client.
   if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
     return (
-      <Shell>
+      <Shell theme={theme}>
         <div className={styles.loginGate}>
           <h1>AUEVO Wallet</h1>
           <p>Not configured yet — NEXT_PUBLIC_PRIVY_APP_ID and PRIVY_APP_SECRET need to be set for this environment.</p>
@@ -68,31 +135,36 @@ export default function WalletPage() {
       </Shell>
     );
   }
-  return <PrivyGate />;
+  return <PrivyGate theme={theme} setTheme={setTheme} />;
 }
 
-function PrivyGate() {
+function PrivyGate({ theme, setTheme }: { theme: string; setTheme: (id: string) => void }) {
   const { ready, authenticated, user, login, logout } = usePrivy();
   const address = user?.wallet?.address as `0x${string}` | undefined;
 
-  if (!ready) return <Shell><div className={styles.emptyState}>Loading…</div></Shell>;
-  if (!authenticated || !address) return <LoginGate onLogin={login} />;
+  if (!ready)
+    return (
+      <Shell theme={theme}>
+        <div className={styles.emptyState}>Loading…</div>
+      </Shell>
+    );
+  if (!authenticated || !address) return <LoginGate theme={theme} onLogin={login} />;
 
-  return <WalletApp address={address} onLogout={logout} />;
+  return <WalletApp address={address} onLogout={logout} theme={theme} setTheme={setTheme} />;
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, theme }: { children: React.ReactNode; theme: string }) {
   return (
-    <div className={styles.walletRoot}>
+    <div className={styles.walletRoot} data-theme={theme}>
       <div className={styles.spaceBg} />
       {children}
     </div>
   );
 }
 
-function LoginGate({ onLogin }: { onLogin: () => void }) {
+function LoginGate({ theme, onLogin }: { theme: string; onLogin: () => void }) {
   return (
-    <Shell>
+    <Shell theme={theme}>
       <div className={styles.loginGate}>
         <h1>AUEVO Wallet</h1>
         <p>Sign in with email, phone or X. No seed phrase to write down — you can always recover access the same way.</p>
@@ -104,7 +176,17 @@ function LoginGate({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: () => void }) {
+function WalletApp({
+  address,
+  onLogout,
+  theme,
+  setTheme,
+}: {
+  address: `0x${string}`;
+  onLogout: () => void;
+  theme: string;
+  setTheme: (id: string) => void;
+}) {
   const qc = useQueryClient();
   const [tab, setTab] = useState<"chats" | "agents">("chats");
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -227,10 +309,10 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
   }
 
   return (
-    <Shell>
+    <Shell theme={theme}>
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
-          <img src="/logos/auevo.png" alt="" />
+          <AuevoMark />
           AUEVO
         </div>
 
@@ -346,6 +428,8 @@ function WalletApp({ address, onLogout }: { address: `0x${string}`; onLogout: ()
         loading={balancesQuery.isLoading}
         onSend={() => setShowSend(true)}
         onReceive={() => setShowReceive(true)}
+        theme={theme}
+        setTheme={setTheme}
       />
 
       {showSend && <SendModal onClose={() => setShowSend(false)} />}
@@ -506,12 +590,16 @@ function WalletPanel({
   loading,
   onSend,
   onReceive,
+  theme,
+  setTheme,
 }: {
   address: string;
   balances: WalletBalance[];
   loading: boolean;
   onSend: () => void;
   onReceive: () => void;
+  theme: string;
+  setTheme: (id: string) => void;
 }) {
   const [tab, setTab] = useState<"assets" | "activity">("assets");
   const [buyBusy, setBuyBusy] = useState(false);
@@ -540,6 +628,7 @@ function WalletPanel({
     <aside className={styles.panel}>
       <div className={styles.panelHeader}>
         <span className={styles.panelTitle}>My wallet</span>
+        <ThemePicker theme={theme} onChange={setTheme} />
       </div>
       <div className={styles.address}>
         {address.slice(0, 6)}…{address.slice(-4)}
@@ -597,6 +686,45 @@ function WalletPanel({
 
       {tab === "activity" && <div className={styles.hint}>Transaction history is coming — this reads from a chain indexer we haven&apos;t wired up for this wallet yet.</div>}
     </aside>
+  );
+}
+
+function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  return (
+    <div style={{ position: "relative" }} ref={rootRef}>
+      <button className={styles.themeBtn} onClick={() => setOpen((v) => !v)} title="Color scheme" aria-label="Change color scheme">
+        🎨
+      </button>
+      {open && (
+        <div className={styles.themePanel} style={{ position: "absolute", right: 0, top: 36, zIndex: 5, minWidth: 180 }}>
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              className={t.id === theme ? styles.themeRowActive : styles.themeRow}
+              onClick={() => {
+                onChange(t.id);
+                setOpen(false);
+              }}
+            >
+              <span className={styles.themeSwatch} style={{ background: t.swatch }} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
