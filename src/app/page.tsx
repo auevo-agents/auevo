@@ -238,10 +238,20 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               <em>everything</em> tokenized.
             </h1>
             <p className="landing2-hero-copy">
-              Search every tokenized stock, ETF, treasury, commodity and credit claim.
-              Compare issuers, check contract risk, trade in one signature, earn on pools
-              and baskets, track your portfolio — all without leaving Auevo.
+              Discover tokenized stocks, ETFs, treasuries and more. Compare issuers,
+              chains and contract risk, then choose how to trade — all in one place.
             </p>
+            <Link href="/app/assets" className="hybrid-hero-search">
+              <span aria-hidden="true" className="hybrid-search-icon">⌕</span>
+              <span>Search assets, issuers or chains</span>
+              <span className="hybrid-search-key" aria-hidden="true">↗</span>
+            </Link>
+            <div className="hybrid-hero-categories" aria-label="Explore by category">
+              <Link href="/app/assets">Stocks</Link>
+              <Link href="/app/assets">ETFs</Link>
+              <Link href="/app/assets">Treasuries</Link>
+              <Link href="/app/baskets">Baskets</Link>
+            </div>
             <div className="landing2-cta-row">
               <Link href="/app/assets" className="landing2-cta">
                 Explore markets
