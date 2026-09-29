@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePrivy, useSendTransaction, useFundWallet } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
@@ -27,36 +27,60 @@ const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name }));
  */
 type Mood = "neutral" | "wise" | "excited" | "calm";
 
-const PRESET_AGENTS: { name: string; persona: string; accent: string; emoji: string; mood: Mood }[] = [
+const PRESET_AGENTS: { name: string; role: string; persona: string; accent: string; emoji: string; mood: Mood }[] = [
   {
-    name: "Ruslt",
-    persona: "Neutral, precise, professional. Get straight to the point, no filler.",
-    accent: "#5fe6a3",
-    emoji: "◆",
+    name: "Navigator", role: "Market explorer",
+    persona: "A thoughtful market navigator. Help discover assets and compare opportunities using only available verified information. Explain uncertainty plainly. Read-only: never claim to execute trades.",
+    accent: "#54bdff", emoji: "✧",
     mood: "neutral",
   },
   {
-    name: "Sage",
-    persona: "Calm and analytical. Explain your reasoning before conclusions, measured and thorough tone.",
-    accent: "#6fb7ff",
-    emoji: "🦉",
+    name: "Sentinel", role: "Risk guardian",
+    persona: "A precise, vigilant risk analyst. Examine wallet exposure and explain relevant risks with evidence and limitations. Read-only: never claim to protect funds or execute transactions.",
+    accent: "#78a6ff", emoji: "◇",
     mood: "wise",
   },
   {
-    name: "Bolt",
-    persona: "Energetic and casual. Short, punchy, upbeat — talk like a sharp friend, not a bank. Light use of emoji is fine.",
-    accent: "#ff9d4d",
-    emoji: "⚡",
-    mood: "excited",
-  },
-  {
-    name: "Zen",
-    persona: "Minimalist. One or two sentences, max. No pleasantries, no filler — just the answer.",
-    accent: "#b98bff",
-    emoji: "◯",
+    name: "Architect", role: "Portfolio strategist",
+    persona: "A measured systems thinker. Break down portfolio structure and scenario tradeoffs in plain language, using only the data visible here. Read-only: never claim to rebalance funds.",
+    accent: "#9dbbff", emoji: "⬡",
     mood: "calm",
   },
+  {
+    name: "Vanguard", role: "Fast briefing",
+    persona: "An energetic but careful research scout. Give concise market briefings and highlight what needs checking next. Do not invent real-time facts. Read-only: never claim to place orders.",
+    accent: "#5a8ff4", emoji: "↗",
+    mood: "excited",
+  },
+  { name: "Oracle", role: "Data intelligence", persona: "A calm data analyst. Interpret on-chain and wallet information with context, caveats and transparent reasoning. Read-only: never claim to predict prices or move assets.", accent: "#a8d7ff", emoji: "✦", mood: "wise" },
+  { name: "Nova", role: "Discovery scout", persona: "An adventurous but grounded guide to new listings and ecosystems. Separate verified facts from possibilities. Read-only: never claim to make transactions.", accent: "#4edbff", emoji: "✳", mood: "excited" },
+  { name: "Astra", role: "Research companion", persona: "A patient researcher. Compare issuers, chains and asset details, explaining methodology and uncertainty. Read-only: never claim to execute trades.", accent: "#8dafff", emoji: "✧", mood: "calm" },
+  { name: "Cipher", role: "On-chain analyst", persona: "A meticulous on-chain analyst. Trace patterns in the available wallet data and flag anomalies without speculation. Read-only: never claim to send transactions.", accent: "#56b4ff", emoji: "⌁", mood: "neutral" },
 ];
+
+function AgentPortrait({ name, className = "", size = 36 }: { name: string; className?: string; size?: number }) {
+  const index = PRESET_AGENTS.findIndex((agent) => agent.name === name);
+  if (index < 0) return null;
+  const x = (index % 4) * 100 / 3;
+  const y = index < 4 ? 0 : 100;
+  return <span className={`${styles.agentPortrait} ${className}`} role="img" aria-label={`${name} portrait`} style={{ backgroundPosition: `${x}% ${y}%`, width: size, height: size }} />;
+}
+
+type WalletIconName = "chat" | "agents" | "wallet" | "send" | "swap" | "receive" | "buy" | "theme" | "menu";
+function WalletIcon({ name, size = 20 }: { name: WalletIconName; size?: number }) {
+  const paths: Record<WalletIconName, ReactNode> = {
+    chat: <><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-9.5a7.5 7.5 0 1 1 17 0Z" /><path d="M7 11.5h9M7 15h5" /></>,
+    agents: <><path d="m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2L12 2Z" /><path d="M12 8v8M8 12h8" /></>,
+    wallet: <><rect x="3" y="5" width="18" height="15" rx="3" /><path d="M3 9h18M16 15h2" /></>,
+    send: <><path d="M5 19 19 5M9 5h10v10" /></>,
+    swap: <><path d="M4 8h15l-3-3M20 16H5l3 3" /></>,
+    receive: <><path d="M12 3v16m-6-6 6 6 6-6M4 21h16" /></>,
+    buy: <><circle cx="12" cy="12" r="9" /><path d="M12 7v10M7 12h10" /></>,
+    theme: <><path d="M12 3a9 9 0 1 0 0 18h1.5a2.2 2.2 0 0 0 1.7-3.6 1.6 1.6 0 0 1 1.2-2.6H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z" /><path d="M7.5 11h.01M10 7h.01M15 7.5h.01M17 11h.01" /></>,
+    menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
 
 /** A preset's mood by name, for agents already saved to the DB (which only
  * carries name/persona/accent/emoji — see migration 0018) — lets the chat
@@ -72,7 +96,8 @@ function moodForAgentName(name: string): Mood | null {
  * "Bolt" read as different characters at a glance, not the same dot in a
  * different shade. Pure inline SVG: no image assets, crisp at any size.
  */
-function PersonaAvatar({ mood, color, size = 36 }: { mood: Mood; color: string; size?: number }) {
+function PersonaAvatar({ mood, color, size = 36, name }: { mood: Mood; color: string; size?: number; name?: string }) {
+  if (name && PRESET_AGENTS.some((p) => p.name === name)) return <AgentPortrait name={name} size={size} />;
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" style={{ flexShrink: 0 }}>
       <circle cx="20" cy="20" r="20" fill={color} />
@@ -116,6 +141,7 @@ function PersonaAvatar({ mood, color, size = 36 }: { mood: Mood; color: string; 
  * or that other people should see.
  */
 const THEMES: { id: string; label: string; swatch: string }[] = [
+  { id: "cosmic", label: "Cosmic", swatch: "#52bdff" },
   { id: "blue-light", label: "Light (site default)", swatch: "#2458e8" },
   { id: "sky-light", label: "Sky", swatch: "#0fb3d6" },
   { id: "violet-light", label: "Violet", swatch: "#7c4dff" },
@@ -146,14 +172,14 @@ function subscribeToTheme(callback: () => void) {
 function getThemeSnapshot(): string {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return saved && THEMES.some((t) => t.id === saved) ? saved : "blue-light";
+    return saved && THEMES.some((t) => t.id === saved) ? saved : "cosmic";
   } catch {
-    return "blue-light";
+    return "cosmic";
   }
 }
 
 function getThemeServerSnapshot(): string {
-  return "blue-light";
+  return "cosmic";
 }
 
 function useWalletTheme(): [string, (id: string) => void] {
@@ -396,10 +422,10 @@ function WalletApp({
 
         <div className={styles.navList}>
           <button className={tab === "chats" ? styles.navItemActive : styles.navItem} onClick={() => setTab("chats")}>
-            💬 Chats
+            <WalletIcon name="chat" size={19} /> Chats
           </button>
           <button className={tab === "agents" ? styles.navItemActive : styles.navItem} onClick={() => setTab("agents")}>
-            ✦ Agents
+            <WalletIcon name="agents" size={19} /> Agents
           </button>
         </div>
 
@@ -456,31 +482,34 @@ function WalletApp({
             <>
               <div className={styles.chatHeader}>
                 <button className={styles.mobileOnlyBtn} onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-                  ☰
+                  <WalletIcon name="menu" />
                 </button>
                 <span className={styles.chatHeaderTitle}>
-                  <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} />
+                  <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} name={activeAgent?.name} />
                   <span>{activeAgent ? activeAgent.name : "AUEVO"}</span>
                 </span>
                 <button className={styles.mobileOnlyBtn} onClick={() => setPanelOpen(true)} aria-label="Open wallet">
-                  👛
+                  <WalletIcon name="wallet" />
                 </button>
               </div>
               <div className={styles.messages}>
                 {(messagesQuery.data ?? []).length === 0 && !streamingText && (
                   <div className={styles.emptyState}>
-                    <p>Ask about your balances, or anything else. This agent can only read what you see here — it can&apos;t send transactions.</p>
+                    <div className={styles.emptyOrbit} aria-hidden="true"><WalletIcon name="agents" size={34} /></div>
+                    <h2>Your universe, your guide.</h2>
+                    <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
+                    <button type="button" className={styles.chooseAgentBtn} onClick={() => setShowPersonaPicker(true)}>Choose an agent <span aria-hidden="true">↗</span></button>
                   </div>
                 )}
                 {(messagesQuery.data ?? []).map((m) => (
                   <div key={m.id} className={m.role === "user" ? styles.msgRowUser : styles.msgRow}>
-                    {m.role === "assistant" && <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} />}
+                    {m.role === "assistant" && <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} name={activeAgent?.name} />}
                     <div className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}>{m.content}</div>
                   </div>
                 ))}
                 {streamingText !== null && (
                   <div className={styles.msgRow}>
-                    <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} />
+                    <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} name={activeAgent?.name} />
                     <div className={styles.msgBubble}>{streamingText || "…"}</div>
                   </div>
                 )}
@@ -504,7 +533,7 @@ function WalletApp({
             onChange={(e) => setInput(e.target.value)}
           />
           <button type="submit" className={styles.sendBtn} disabled={!input.trim() || streamingText !== null}>
-            ↑
+            <WalletIcon name="send" />
           </button>
         </form>
       </main>
@@ -585,7 +614,7 @@ function AgentsPanel({
         return (
           <button key={a.id} className={styles.agentRow} onClick={() => onStartChat(a)} title="Start a chat with this agent">
             {mood ? (
-              <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} />
+              <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} name={a.name} />
             ) : (
               <span className={styles.agentRowEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
                 {a.emoji ?? "✦"}
@@ -647,11 +676,11 @@ function PersonaPicker({
 }) {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles.modal} ${styles.personaModal}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div>
             <div className={styles.modalEyebrow}>NEW CHAT</div>
-            <div className={styles.modalTitle}>Pick a personality</div>
+            <div className={styles.modalTitle}>Choose your agent</div>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>
             ✕
@@ -660,12 +689,13 @@ function PersonaPicker({
 
         <div className={styles.personaGrid}>
           {PRESET_AGENTS.map((p) => (
-            <button key={p.name} className={styles.personaCard} style={{ borderColor: p.accent }} onClick={() => onPick(p)}>
-              <PersonaAvatar mood={p.mood} color={p.accent} size={44} />
+            <button key={p.name} className={styles.personaCard} onClick={() => onPick(p)}>
+              <AgentPortrait name={p.name} className={styles.personaArt} size={120} />
               <span className={styles.personaName}>{p.name}</span>
+              <span className={styles.personaRole}>{p.role}</span>
             </button>
           ))}
-          {customAgents.map((a) => {
+          {customAgents.filter((a) => !PRESET_AGENTS.some((p) => p.name === a.name)).map((a) => {
             const mood = moodForAgentName(a.name);
             return (
               <button key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)}>
@@ -755,16 +785,16 @@ function WalletPanel({
 
       <div className={styles.actionRow}>
         <button className={styles.actionBtn} onClick={onSend}>
-          ↗<span>Send</span>
+          <WalletIcon name="send" size={23} /><span>Send</span>
         </button>
         <button className={styles.actionBtn} disabled title="Coming soon">
-          ⇄<span>Swap</span>
+          <WalletIcon name="swap" size={23} /><span>Swap</span>
         </button>
         <button className={styles.actionBtn} onClick={onReceive}>
-          ↓<span>Receive</span>
+          <WalletIcon name="receive" size={23} /><span>Receive</span>
         </button>
         <button className={styles.actionBtn} onClick={handleBuy} disabled={buyBusy}>
-          +<span>Buy</span>
+          <WalletIcon name="buy" size={23} /><span>Buy</span>
         </button>
       </div>
       {buyError && <div className={styles.errorText}>{buyError}</div>}
@@ -818,7 +848,7 @@ function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string
   return (
     <div style={{ position: "relative" }} ref={rootRef}>
       <button className={styles.themeBtn} onClick={() => setOpen((v) => !v)} title="Color scheme" aria-label="Change color scheme">
-        🎨
+        <WalletIcon name="theme" size={19} />
       </button>
       {open && (
         <div className={styles.themePanel} style={{ position: "absolute", right: 0, top: 36, zIndex: 5, minWidth: 180 }}>

@@ -127,7 +127,7 @@
 .landing2 .landing-status { color: #8b96a8; }
 
 /* A real interface preview takes the place of the old orbit image. */
-.hybrid-hero-visual { position: relative; display: grid; align-items: center; min-height: 490px; padding: 20px 12px 20px 4px; }
+.hybrid-hero-visual { position: relative; display: grid; align-items: center; min-height: 490px; padding: 20px 12px 20px 4px; perspective: 1200px; isolation: isolate; }
 .hybrid-preview {
   position: relative;
   width: min(100%, 610px);
@@ -136,9 +136,17 @@
   border: 1px solid #dbe5f5;
   border-radius: 17px;
   background: #fff;
-  box-shadow: 0 33px 75px rgba(38,76,140,.15), 0 3px 15px rgba(38,76,140,.07);
-  transform: perspective(1100px) rotateY(-4deg) rotateX(2deg);
+  box-shadow: 0 45px 85px rgba(38,76,140,.22), 0 10px 24px rgba(38,76,140,.09), inset 0 1px 0 #fff;
+  transform: rotateY(var(--preview-x, -4deg)) rotateX(var(--preview-y, 2deg)) translateZ(24px);
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform .42s cubic-bezier(.2,.8,.2,1), box-shadow .42s ease;
 }
+.hybrid-preview::before { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit; background: radial-gradient(circle at var(--preview-glow-x, 25%) var(--preview-glow-y, 15%), rgba(255,255,255,.5), transparent 36%); mix-blend-mode: screen; }
+.hybrid-hero-visual:hover .hybrid-preview { box-shadow: 0 58px 100px rgba(38,76,140,.27), 0 12px 28px rgba(38,76,140,.1), inset 0 1px 0 #fff; }
+.hybrid-preview .auevo-logo { gap: 5px; }
+.hybrid-preview .auevo-mark { width: 27px; height: 27px; }
+.hybrid-preview .auevo-wordmark { font-size: 12px; }
 .hybrid-preview-top,
 .hybrid-preview-heading,
 .hybrid-preview-row,
@@ -166,7 +174,9 @@
 .hybrid-preview-asset small { color: #9aa6b6; }
 .hybrid-preview-listed { color: #5c7186; }
 .hybrid-preview-bottom { justify-content: space-between; padding: 17px 24px 20px; color: var(--hy-blue); font-size: 11px; font-weight: 700; text-decoration: none; }
-.hybrid-float-tag { position: absolute; z-index: 2; padding: 11px 14px; border: 1px solid #d8e4f7; border-radius: 9px; background: rgba(255,255,255,.96); color: #426183; font-size: 10px; box-shadow: 0 12px 32px rgba(36,78,145,.12); }
+.hybrid-float-tag { position: absolute; z-index: 2; padding: 11px 14px; border: 1px solid #d8e4f7; border-radius: 9px; background: rgba(255,255,255,.96); color: #426183; font-size: 10px; box-shadow: 0 12px 32px rgba(36,78,145,.12); transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease; }
+.hybrid-hero-visual:hover .hybrid-float-tag-top { transform: translate3d(12px,-10px,0); box-shadow: 0 22px 42px rgba(36,78,145,.2); }
+.hybrid-hero-visual:hover .hybrid-float-tag-bottom { transform: translate3d(-11px,10px,0); box-shadow: 0 22px 42px rgba(36,78,145,.2); }
 .hybrid-float-tag-top { right: -10px; top: 40px; }
 .hybrid-float-tag-bottom { left: -20px; bottom: 30px; }
 
@@ -705,7 +715,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .hybrid-hero-search,
-  .hybrid-preview { transition: none; transform: none; }
+  .hybrid-preview,
+  .hybrid-float-tag { transition: none; transform: none !important; }
 }
 
 /* Standalone public pages share the same light discovery and dark workspace systems. */
