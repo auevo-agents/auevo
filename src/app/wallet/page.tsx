@@ -17,6 +17,26 @@ type Message = { id: string; role: "user" | "assistant"; content: string };
 const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name }));
 
 export default function WalletPage() {
+  // Guards calling usePrivy() below: WalletProviders only mounts
+  // PrivyProvider when this env var is set (see providers.tsx), so
+  // calling the hook without it throws — not caught by anything, which
+  // is what was rendering this page as a blank screen in production
+  // before this check existed. NEXT_PUBLIC_-prefixed vars are inlined at
+  // build time, so this reads identically on the server and the client.
+  if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+    return (
+      <Shell>
+        <div className={styles.loginGate}>
+          <h1>AUEVO Wallet</h1>
+          <p>Not configured yet — NEXT_PUBLIC_PRIVY_APP_ID and PRIVY_APP_SECRET need to be set for this environment.</p>
+        </div>
+      </Shell>
+    );
+  }
+  return <PrivyGate />;
+}
+
+function PrivyGate() {
   const { ready, authenticated, user, login, logout } = usePrivy();
   const address = user?.wallet?.address as `0x${string}` | undefined;
 
