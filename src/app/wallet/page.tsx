@@ -603,7 +603,7 @@ function WalletApp({
                     <div className={styles.emptyOrbit} aria-hidden="true"><WalletIcon name="agents" size={34} /></div>
                     <h2>Your universe, your guide.</h2>
                     <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
-                    <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent <span aria-hidden="true">↗</span></button>
+                    <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent</button>
                   </div>
                 )}
                 {(messagesQuery.data ?? []).map((m) => (
@@ -681,8 +681,6 @@ function WalletApp({
   );
 }
 
-const SWATCHES = ["#5fe6a3", "#6fb7ff", "#ff9d4d", "#b98bff", "#ff7a9c", "#ffe066"];
-
 function AgentsPanel({
   agents,
   onCreated,
@@ -694,8 +692,6 @@ function AgentsPanel({
 }) {
   const [name, setName] = useState("");
   const [persona, setPersona] = useState("");
-  const [emoji, setEmoji] = useState("✦");
-  const [accent, setAccent] = useState(SWATCHES[0]);
   const [busy, setBusy] = useState(false);
 
   async function create() {
@@ -704,7 +700,7 @@ function AgentsPanel({
     try {
       await walletFetchJson("/api/wallet/agents", {
         method: "POST",
-        body: JSON.stringify({ name, persona, emoji, accentColor: accent }),
+        body: JSON.stringify({ name, persona }),
       });
       setName("");
       setPersona("");
@@ -732,36 +728,20 @@ function AgentsPanel({
         );
       })}
       <div className={styles.field} style={{ marginTop: 8 }}>
-        <label className={styles.fieldLabel}>Name</label>
-        <input className={styles.fieldInput} placeholder="Agent name" value={name} onChange={(e) => setName(e.target.value)} />
+        <label className={styles.fieldLabel} htmlFor="agent-name">Name</label>
+        <input id="agent-name" className={styles.fieldInput} placeholder="Agent name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel}>Persona</label>
+        <label className={styles.fieldLabel} htmlFor="agent-persona">Persona</label>
         <textarea
+          id="agent-persona"
           className={styles.fieldInput}
-          placeholder="Persona / instructions (optional)"
+          placeholder="E.g. Explain wallet activity clearly and keep answers concise."
           value={persona}
           onChange={(e) => setPersona(e.target.value)}
           rows={3}
         />
-      </div>
-      <div className={styles.field}>
-        <label className={styles.fieldLabel}>Emoji / glyph</label>
-        <input className={styles.fieldInput} placeholder="✦" value={emoji} maxLength={4} onChange={(e) => setEmoji(e.target.value)} />
-      </div>
-      <div className={styles.field}>
-        <label className={styles.fieldLabel}>Color</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          {SWATCHES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setAccent(c)}
-              aria-label={`Pick color ${c}`}
-              className={styles.colorSwatch}
-              style={{ background: c, outline: accent === c ? "2px solid var(--wallet-text)" : "2px solid transparent" }}
-            />
-          ))}
-        </div>
+        <span className={styles.fieldHint}>These instructions shape how your agent responds in chat. Optional.</span>
       </div>
       <button className={styles.primaryBtn} onClick={create} disabled={busy || !name.trim()}>
         Create agent

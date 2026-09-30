@@ -24,6 +24,8 @@
   --wallet-text: #121b2d;
   --wallet-muted: #626e82;
   --wallet-on-accent: #ffffff;
+  --wallet-input-bg: #f7faff;
+  --wallet-input-border: #ced9ea;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(36, 88, 232, 0.09), transparent 60%), #f7f9fd;
   --wallet-star-color: rgba(18, 27, 45, 0.4);
@@ -31,14 +33,7 @@
   --scene-core: #dce8ff;
   --scene-glow: rgba(45, 105, 235, .28);
 
-  /*
-   * Without this, a system/browser in dark mode paints native form
-   * controls (input/textarea/select) with its own dark UA background
-   * instead of the near-transparent one set below on .fieldInput —
-   * Chromium's "auto dark" for forms overrides low-alpha author
-   * backgrounds it doesn't consider "real". This is what fixed the
-   * black Agent-name/emoji fields reported live.
-   */
+  /* Native controls follow the selected wallet theme. */
   color-scheme: light;
 
   min-height: 100vh;
@@ -62,6 +57,8 @@
   --wallet-text: #0f2b30;
   --wallet-muted: #547479;
   --wallet-on-accent: #ffffff;
+  --wallet-input-bg: #f1fbfd;
+  --wallet-input-border: #bedfe8;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 58% 46% at 75% 15%, rgba(53, 217, 231, .22), transparent 62%), linear-gradient(145deg, #effcff, #e7f7fb 52%, #f7feff);
   --wallet-star-color: rgba(15, 43, 48, 0.35);
@@ -83,6 +80,8 @@
   --wallet-text: #1e1730;
   --wallet-muted: #6a6180;
   --wallet-on-accent: #ffffff;
+  --wallet-input-bg: #f8f5ff;
+  --wallet-input-border: #d9ccf6;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 68% 52% at 72% 18%, rgba(167, 129, 255, .2), transparent 64%), linear-gradient(145deg, #fbf8ff, #eee9fb 52%, #fff);
   --wallet-star-color: rgba(30, 23, 48, 0.35);
@@ -104,6 +103,8 @@
   --wallet-text: #eafff3;
   --wallet-muted: #7fa694;
   --wallet-on-accent: #06140d;
+  --wallet-input-bg: #12241b;
+  --wallet-input-border: #355c49;
   --wallet-danger: #ff9b9b;
   --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(95, 230, 163, 0.16), transparent 60%),
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%), #050a08;
@@ -126,6 +127,8 @@
   --wallet-text: #f1ebff;
   --wallet-muted: #9b8fc2;
   --wallet-on-accent: #180f2e;
+  --wallet-input-bg: #211a37;
+  --wallet-input-border: #554376;
   --wallet-danger: #ff9b9b;
   --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(185, 139, 255, 0.16), transparent 60%),
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(124, 77, 255, 0.08), transparent 60%), #0a0716;
@@ -148,6 +151,8 @@
   --wallet-text: #f3f8ff;
   --wallet-muted: #9eb4d2;
   --wallet-on-accent: #04142a;
+  --wallet-input-bg: #152d4d;
+  --wallet-input-border: #42648b;
   --wallet-danger: #ffb1b7;
   --wallet-bg-image: radial-gradient(ellipse 75% 70% at 51% 75%, rgba(32, 95, 187, .26), transparent 65%), radial-gradient(ellipse 44% 48% at 80% 12%, rgba(31, 107, 196, .22), transparent 70%), linear-gradient(150deg, #041023, #0a2341 55%, #050d1e);
   --wallet-star-color: rgba(189, 224, 255, .72);
@@ -164,7 +169,7 @@
 .walletRoot[data-theme="cosmic"] .navItemActive,
 .walletRoot[data-theme="cosmic"] .chatListItemActive { box-shadow: inset 0 0 0 1px rgba(117, 177, 245, .16), 0 9px 28px rgba(0, 0, 0, .12); }
 .walletRoot[data-theme="cosmic"] .composerInput,
-.walletRoot[data-theme="cosmic"] .fieldInput { background: rgba(21, 45, 77, .94); border-color: rgba(145, 191, 245, .3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 8px 26px rgba(0, 0, 0, .14); }
+.walletRoot[data-theme="cosmic"] .fieldInput { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 8px 26px rgba(0, 0, 0, .14); }
 .walletRoot[data-theme="cosmic"] .composerInput::placeholder,
 .walletRoot[data-theme="cosmic"] .fieldInput::placeholder { color: #a6b9d3; }
 .walletRoot[data-theme="cosmic"] .composerInput:focus,
@@ -571,16 +576,6 @@
   flex-shrink: 0;
 }
 
-.colorSwatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  outline-offset: 2px;
-  cursor: pointer;
-  padding: 0;
-}
-
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -599,9 +594,9 @@
 .emptyState h2 { margin: 18px 0 10px; color: var(--wallet-text); font-size: clamp(24px, 3vw, 34px); letter-spacing: -.045em; }
 .emptyState p { line-height: 1.65; }
 .emptyOrbit { width: 82px; height: 82px; margin: 0 auto; display: grid; place-items: center; border-radius: 24px; color: var(--wallet-accent); background: radial-gradient(circle at 30% 20%, rgba(114, 205, 255, .25), rgba(33, 96, 181, .13)); border: 1px solid var(--wallet-accent-dim); box-shadow: 0 0 50px rgba(72, 156, 246, .24), inset 0 1px 0 rgba(255,255,255,.18); transform: rotate(-7deg); }
-.chooseAgentBtn { margin-top: 16px; display: inline-flex; align-items: center; gap: 26px; padding: 13px 17px; border-radius: 12px; border: 1px solid rgba(134,204,255,.58); color: #fff; background: linear-gradient(115deg, #285de0, #188fda); box-shadow: 0 13px 32px rgba(19, 91, 200, .3); cursor: pointer; font-weight: 700; }
+.chooseAgentBtn { margin-top: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 13px 22px; border-radius: 14px; border: 1px solid var(--wallet-accent); color: var(--wallet-on-accent); background: var(--wallet-accent); box-shadow: 0 12px 30px var(--wallet-accent-dim); cursor: pointer; font-weight: 700; transition: transform .2s, box-shadow .2s, filter .2s; }
 .chooseAgentBtn:hover { filter: brightness(1.12); transform: translateY(-2px); }
-.chooseAgentBtn:focus-visible { outline: 2px solid #b4e8ff; outline-offset: 3px; }
+.chooseAgentBtn:focus-visible { outline: 2px solid var(--wallet-accent); outline-offset: 3px; }
 
 .msgRow {
   display: flex;
@@ -638,23 +633,29 @@
   gap: 10px;
 }
 
-.composerInput {
+.walletRoot .composerInput.composerInput {
   -webkit-appearance: none;
   appearance: none;
   flex: 1;
-  background: var(--wallet-panel);
-  border: 1px solid var(--wallet-border);
-  border-radius: 12px;
+  background-color: var(--wallet-input-bg);
+  border: 1px solid var(--wallet-input-border);
+  border-radius: 16px;
   color: var(--wallet-text);
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
+  color-scheme: inherit;
   resize: none;
+  min-height: 46px;
+  box-shadow: inset 0 1px 2px rgba(28, 52, 90, .04), 0 5px 16px var(--wallet-accent-soft);
 }
+
+.composerInput::placeholder { color: var(--wallet-muted); opacity: .8; }
 
 .composerInput:focus {
   outline: none;
-  border-color: var(--wallet-accent-dim);
+  border-color: var(--wallet-accent);
+  box-shadow: 0 0 0 3px var(--wallet-accent-soft);
 }
 
 .sendBtn {
@@ -971,29 +972,30 @@
   display: block;
 }
 
-.fieldInput {
-  /*
-   * -webkit-appearance/appearance: none is what actually fixed this on
-   * iOS Safari — reported twice as a black background on real phones
-   * after the earlier color-scheme fix (which only addressed Chromium's
-   * separate "auto dark for forms" behavior). Safari's <input> keeps its
-   * own native capsule chrome — which follows system Dark Mode regardless
-   * of page theme — unless appearance is reset; <textarea> never had this
-   * chrome, which is why it always looked right while <input> didn't.
-   */
+.fieldHint { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; color: var(--wallet-muted); }
+
+.walletRoot .fieldInput.fieldInput {
+  /* globals.css has input:not([type="checkbox"]):not([type="radio"]),
+     which outranks a single class selector and painted these fields black. */
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  background: color-mix(in srgb, var(--wallet-text) 5%, var(--wallet-panel));
-  border: 1px solid var(--wallet-border);
-  border-radius: 10px;
+  background-color: var(--wallet-input-bg);
+  border: 1px solid var(--wallet-input-border);
+  border-radius: 14px;
   color: var(--wallet-text);
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 12px 14px;
+  font-size: 16px;
   font-family: inherit;
+  color-scheme: inherit;
   box-sizing: border-box;
+  height: auto;
+  min-height: 46px;
+  box-shadow: inset 0 1px 2px rgba(28, 52, 90, .04), 0 5px 16px var(--wallet-accent-soft);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
+
+textarea.fieldInput { resize: vertical; min-height: 92px; line-height: 1.45; }
 
 .fieldInput::placeholder {
   color: var(--wallet-muted);
@@ -1002,7 +1004,7 @@
 
 .fieldInput:focus {
   outline: none;
-  border-color: var(--wallet-accent-dim);
+  border-color: var(--wallet-accent);
   box-shadow: 0 0 0 3px var(--wallet-accent-soft);
 }
 
