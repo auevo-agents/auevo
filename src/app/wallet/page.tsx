@@ -883,6 +883,10 @@ function WalletApp({
           <AgentsPanel
             agents={agentsQuery.data ?? []}
             onCreated={() => qc.invalidateQueries({ queryKey: ["wallet-agents"] })}
+            onDeleted={() => {
+              void qc.invalidateQueries({ queryKey: ["wallet-agents"] });
+              void qc.invalidateQueries({ queryKey: ["wallet-chats"] });
+            }}
             onStartChat={(agent) => startChat(agent)}
           />
         )}
@@ -1030,15 +1034,19 @@ function WalletApp({
 function AgentsPanel({
   agents,
   onCreated,
+  onDeleted,
   onStartChat,
 }: {
   agents: Agent[];
   onCreated: () => void;
+  onDeleted: () => void;
   onStartChat: (agent: Agent) => void;
 }) {
   const [name, setName] = useState("");
   const [persona, setPersona] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function create() {
     if (!name.trim()) return;
@@ -1056,23 +1064,49 @@ function AgentsPanel({
     }
   }
 
+  async function deleteAgent(agent: Agent) {
+    if (!window.confirm(`Delete ${agent.name}? Existing chats will stay, but will no longer use this agent's persona.`)) return;
+    setDeletingId(agent.id);
+    setDeleteError(null);
+    try {
+      const response = await walletFetch(`/api/wallet/agents/${agent.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? `Could not delete ${agent.name}.`);
+      }
+      onDeleted();
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Could not delete the agent.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className={styles.chatList}>
       {agents.map((a) => {
         const mood = moodForAgentName(a.name);
         return (
-          <button key={a.id} className={styles.agentRow} onClick={() => onStartChat(a)} title="Start a chat with this agent">
-            {mood ? (
-              <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} name={a.name} />
-            ) : (
-              <span className={styles.agentRowEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
-                {a.emoji ?? "✦"}
-              </span>
+          <div key={a.id} className={styles.agentListRow}>
+            <button type="button" className={styles.agentRow} onClick={() => onStartChat(a)} title="Start a chat with this agent">
+              {mood ? (
+                <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} name={a.name} />
+              ) : (
+                <span className={styles.agentRowEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
+                  {a.emoji ?? "✦"}
+                </span>
+              )}
+              <span className={styles.agentRowName}>{a.name}</span>
+            </button>
+            {!mood && (
+              <button type="button" className={styles.agentDeleteBtn} onClick={() => deleteAgent(a)} disabled={deletingId === a.id} aria-label={`Delete ${a.name}`} title={`Delete ${a.name}`}>
+                <WalletIcon name="trash" size={17} />
+              </button>
             )}
-            {a.name}
-          </button>
+          </div>
         );
       })}
+      {deleteError && <div className={styles.chatListError} role="alert">{deleteError}</div>}
       <div className={styles.field} style={{ marginTop: 8 }}>
         <label className={styles.fieldLabel} htmlFor="agent-name">Name</label>
         <input id="agent-name" className={styles.fieldInput} placeholder="Agent name" value={name} onChange={(e) => setName(e.target.value)} />
