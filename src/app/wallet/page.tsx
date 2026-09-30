@@ -5,18 +5,40 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePrivy, useSendTransaction, useFundWallet } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { encodeFunctionData, erc20Abi, formatUnits, parseEther, parseUnits } from "viem";
+import { mainnet, base } from "viem/chains";
 import { AuevoMark } from "@/app/auevo-logo";
 import styles from "./wallet.module.css";
 import { fetchWalletBalances, publicClientForChain, type WalletBalance } from "@/lib/wallet/balances";
 import { chainById, USDC_ADDRESS, USDC_DECIMALS, WALLET_CHAINS } from "@/lib/wallet/tokens";
 import { walletFetch, walletFetchJson } from "@/lib/wallet/api-client";
 import { ZEROX_NATIVE_TOKEN, type ZeroXQuote } from "@/lib/wallet/zerox";
+import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
 
 type Chat = { id: string; agent_id: string | null; title: string | null };
 type Agent = { id: string; name: string; persona: string; accent_color: string | null; emoji: string | null };
 type Message = { id: string; role: "user" | "assistant"; content: string };
 
-const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name }));
+type AssetSymbol = "ETH" | "USDC";
+
+const NETWORK_ICON: Record<number, string> = {
+  [mainnet.id]: "/logos/ethereum.svg",
+  [base.id]: "/logos/base.svg",
+  [ROBINHOOD_CHAIN_ID]: "/logos/robinhood.svg",
+};
+
+const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name, icon: NETWORK_ICON[c.id] ?? "/logos/ethereum.svg" }));
+
+const ASSET_META: Record<AssetSymbol, { name: string; icon: string }> = {
+  ETH: { name: "Ethereum", icon: "/logos/ethereum.svg" },
+  USDC: { name: "USD Coin", icon: "/logos/usdc.svg" },
+};
+
+/** USDC only exists on chains listed in USDC_ADDRESS (see tokens.ts) — e.g.
+ * Robinhood Chain isn't, so it shows up as an ETH-only network everywhere
+ * an asset picker reads this instead of hardcoding the two-asset list. */
+function availableAssets(chainId: number): AssetSymbol[] {
+  return USDC_ADDRESS[chainId] ? ["ETH", "USDC"] : ["ETH"];
+}
 
 /**
  * Ready-made assistant personalities — different mood, tone and accent
@@ -680,9 +702,9 @@ function WalletApp({
         onMobileClose={() => setPanelOpen(false)}
       />
 
-      {showSend && <SendModal onClose={() => setShowSend(false)} />}
+      {showSend && <SendModal balances={balancesQuery.data ?? []} onClose={() => setShowSend(false)} />}
       {showReceive && <ReceiveModal address={address} onClose={() => setShowReceive(false)} />}
-      {showSwap && <SwapModal address={address} onClose={() => setShowSwap(false)} />}
+      {showSwap && <SwapModal address={address} balances={balancesQuery.data ?? []} onClose={() => setShowSwap(false)} />}
       {showPersonaPicker && (
         <PersonaPicker
           customAgents={agentsQuery.data ?? []}
@@ -925,7 +947,7 @@ function WalletPanel({
           {balances.map((b) => (
             <div className={styles.assetRow} key={`${b.chainId}-${b.symbol}`}>
               <div className={styles.assetLeft}>
-                <img src="/logos/ethereum.svg" alt="" className={styles.assetIcon} />
+                <img src={ASSET_META[b.symbol].icon} alt="" className={styles.assetIcon} />
                 <div>
                   <div className={styles.assetName}>{b.symbol}</div>
                   <div className={styles.assetSub}>{b.chainName}</div>
@@ -981,14 +1003,179 @@ function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string
   );
 }
 
-function SendModal({ onClose }: { onClose: () => void }) {
+/** Outside-click-to-close for the small absolute-positioned dropdowns
+ * below (NetworkPicker/AssetPicker) — same pattern ThemePicker above
+ * already uses. */
+function useCloseOnOutsideClick(open: boolean, onClose: () => void) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open, onClose]);
+  return rootRef;
+}
+
+/** Network selector: an icon+name pill that expands into a dropdown of
+ * every wallet chain, each row showing that chain's own gas balance when
+ * `balances` is passed (Send/Swap have it; Receive doesn't need it). */
+function NetworkPicker({
+  chainId,
+  onChange,
+  balances,
+}: {
+  chainId: number;
+  onChange: (id: number) => void;
+  balances?: WalletBalance[];
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useCloseOnOutsideClick(open, () => setOpen(false));
+  const current = NETWORKS.find((n) => n.id === chainId) ?? NETWORKS[0];
+
+  return (
+    <div className={styles.pickerWrap} ref={rootRef}>
+      <button type="button" className={styles.networkPill} onClick={() => setOpen((v) => !v)}>
+        <span className={styles.pillLeft}>
+          <img src={current.icon} alt="" className={styles.pillIcon} />
+          {current.label.toUpperCase()}
+        </span>
+        <span className={styles.pillChevron}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className={styles.pickerPanel}>
+          {NETWORKS.map((n) => {
+            const bal = balances?.find((b) => b.chainId === n.id && b.symbol === "ETH");
+            return (
+              <button
+                key={n.id}
+                type="button"
+                className={n.id === chainId ? styles.pickerRowActive : styles.pickerRow}
+                onClick={() => {
+                  onChange(n.id);
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.pickerRowLeft}>
+                  <img src={n.icon} alt="" className={styles.pickerRowIcon} />
+                  <span className={styles.pickerRowName}>{n.label}</span>
+                </span>
+                {bal && <span className={styles.pickerRowValue}>{Number(bal.formatted).toFixed(4)} ETH</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Asset selector, shared by Send (a full-width row, `variant="full"`) and
+ * Swap (a small inline pill next to the amount, `variant="compact"`).
+ * Lists only what `availableAssets(chainId)` actually offers on this
+ * chain — e.g. Robinhood Chain has no USDC entry, so it only lists ETH
+ * there rather than a token picker that would send to nowhere. A row's
+ * "≈ $" is shown only for USDC: it's a USD stablecoin by definition, not
+ * a guessed conversion the way an ETH price would be.
+ */
+function AssetPicker({
+  variant,
+  chainId,
+  chainName,
+  value,
+  onChange,
+  balances,
+}: {
+  variant: "full" | "compact";
+  chainId: number;
+  chainName: string;
+  value: AssetSymbol;
+  onChange: (a: AssetSymbol) => void;
+  balances: WalletBalance[];
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useCloseOnOutsideClick(open, () => setOpen(false));
+  const options = availableAssets(chainId);
+  const meta = ASSET_META[value];
+
+  return (
+    <div className={styles.pickerWrap} ref={rootRef}>
+      <button type="button" className={variant === "full" ? styles.assetPill : styles.swapTokenBtn} onClick={() => setOpen((v) => !v)}>
+        <img src={meta.icon} alt="" className={styles.pillIcon} />
+        {value}
+        <span className={styles.pillChevron}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className={styles.pickerPanel}>
+          <div className={styles.pickerSectionLabel}>YOUR ASSETS · {chainName}</div>
+          {options.map((sym) => {
+            const bal = balances.find((b) => b.chainId === chainId && b.symbol === sym);
+            const symMeta = ASSET_META[sym];
+            const formatted = bal ? Number(bal.formatted).toFixed(sym === "ETH" ? 5 : 2) : "0";
+            return (
+              <button
+                key={sym}
+                type="button"
+                className={sym === value ? styles.pickerRowActive : styles.pickerRow}
+                onClick={() => {
+                  onChange(sym);
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.pickerRowLeft}>
+                  <img src={symMeta.icon} alt="" className={styles.pickerRowIcon} />
+                  <span>
+                    <div className={styles.pickerRowName}>{sym}</div>
+                    <div className={styles.pickerRowSub}>
+                      {formatted} {sym}
+                      {sym === "USDC" ? ` · ≈ $${formatted}` : ""}
+                    </div>
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SendModal({
+  balances,
+  onClose,
+}: {
+  balances: WalletBalance[];
+  onClose: () => void;
+}) {
   const { sendTransaction } = useSendTransaction();
   const [chainId, setChainId] = useState<number>(NETWORKS[0].id);
-  const [asset, setAsset] = useState<"ETH" | "USDC">("ETH");
+  const [asset, setAsset] = useState<AssetSymbol>("ETH");
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const network = NETWORKS.find((n) => n.id === chainId) ?? NETWORKS[0];
+  const balance = balances.find((b) => b.chainId === chainId && b.symbol === asset);
+
+  function changeChain(id: number) {
+    setChainId(id);
+    if (!availableAssets(id).includes(asset)) setAsset("ETH");
+  }
+
+  function handleMax() {
+    if (!balance) return;
+    if (asset === "ETH") {
+      const buffer = parseEther("0.002");
+      setAmount(formatUnits(balance.raw > buffer ? balance.raw - buffer : 0n, 18));
+    } else {
+      setAmount(balance.formatted);
+    }
+  }
 
   async function submit() {
     setError(null);
@@ -1007,7 +1194,7 @@ function SendModal({ onClose }: { onClose: () => void }) {
         await sendTransaction({ to, value: `0x${value.toString(16)}`, chainId });
       } else {
         const usdc = USDC_ADDRESS[chainId];
-        const value = parseUnits(amount, 6);
+        const value = parseUnits(amount, USDC_DECIMALS);
         const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [to as `0x${string}`, value] });
         await sendTransaction({ to: usdc, data, chainId });
       }
@@ -1034,21 +1221,12 @@ function SendModal({ onClose }: { onClose: () => void }) {
 
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Network</label>
-          <select className={styles.fieldInput} value={chainId} onChange={(e) => setChainId(Number(e.target.value))}>
-            {NETWORKS.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.label}
-              </option>
-            ))}
-          </select>
+          <NetworkPicker chainId={chainId} onChange={changeChain} balances={balances} />
         </div>
 
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Asset</label>
-          <select className={styles.fieldInput} value={asset} onChange={(e) => setAsset(e.target.value as "ETH" | "USDC")}>
-            <option value="ETH">ETH</option>
-            <option value="USDC">USDC</option>
-          </select>
+          <AssetPicker variant="full" chainId={chainId} chainName={network.label} value={asset} onChange={setAsset} balances={balances} />
         </div>
 
         <div className={styles.field}>
@@ -1059,6 +1237,14 @@ function SendModal({ onClose }: { onClose: () => void }) {
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Amount</label>
           <input className={styles.fieldInput} placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <div className={styles.swapBalanceRow}>
+            <span>
+              Balance: {balance ? Number(balance.formatted).toFixed(asset === "ETH" ? 5 : 2) : "0"} {asset}
+            </span>
+            <button type="button" className={styles.maxBtn} onClick={handleMax} disabled={!balance}>
+              MAX
+            </button>
+          </div>
         </div>
 
         {error && <div className={styles.errorText}>{error}</div>}
@@ -1090,13 +1276,7 @@ function ReceiveModal({ address, onClose }: { address: string; onClose: () => vo
 
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Network</label>
-          <select className={styles.fieldInput} value={chainId} onChange={(e) => setChainId(Number(e.target.value))}>
-            {NETWORKS.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.label}
-              </option>
-            ))}
-          </select>
+          <NetworkPicker chainId={chainId} onChange={setChainId} />
         </div>
 
         <div className={styles.qrWrap}>
@@ -1127,7 +1307,7 @@ function ReceiveModal({ address, onClose }: { address: string; onClose: () => vo
   );
 }
 
-function swapTokenAddress(asset: "ETH" | "USDC", chainId: number): `0x${string}` {
+function swapTokenAddress(asset: AssetSymbol, chainId: number): `0x${string}` {
   return asset === "ETH" ? ZEROX_NATIVE_TOKEN : USDC_ADDRESS[chainId];
 }
 
@@ -1141,10 +1321,19 @@ function swapTokenAddress(asset: "ETH" | "USDC", chainId: number): `0x${string}`
  * before sending the swap transaction — two separate wallet confirmations,
  * same as any other AllowanceHolder-flow swap UI.
  */
-function SwapModal({ address, onClose }: { address: `0x${string}`; onClose: () => void }) {
+function SwapModal({
+  address,
+  balances,
+  onClose,
+}: {
+  address: `0x${string}`;
+  balances: WalletBalance[];
+  onClose: () => void;
+}) {
   const { sendTransaction } = useSendTransaction();
   const [chainId, setChainId] = useState<number>(NETWORKS[0].id);
-  const [sellAsset, setSellAsset] = useState<"ETH" | "USDC">("ETH");
+  const [sellAsset, setSellAsset] = useState<AssetSymbol>("ETH");
+  const [buyAsset, setBuyAsset] = useState<AssetSymbol>("USDC");
   const [amount, setAmount] = useState("");
   const [quote, setQuote] = useState<ZeroXQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
@@ -1152,25 +1341,61 @@ function SwapModal({ address, onClose }: { address: `0x${string}`; onClose: () =
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const buyAsset: "ETH" | "USDC" = sellAsset === "ETH" ? "USDC" : "ETH";
+  const network = NETWORKS.find((n) => n.id === chainId) ?? NETWORKS[0];
+  const options = availableAssets(chainId);
   const sellDecimals = sellAsset === "ETH" ? 18 : USDC_DECIMALS;
   const buyDecimals = buyAsset === "ETH" ? 18 : USDC_DECIMALS;
+  const sellBalance = balances.find((b) => b.chainId === chainId && b.symbol === sellAsset);
 
-  function resetQuote() {
+  function changeChain(id: number) {
+    setChainId(id);
+    const opts = availableAssets(id);
+    const nextSell = opts.includes(sellAsset) ? sellAsset : opts[0];
+    const nextBuy = opts.find((o) => o !== nextSell) ?? nextSell;
+    setSellAsset(nextSell);
+    setBuyAsset(nextBuy);
+    setAmount("");
     setQuote(null);
     setError(null);
   }
 
-  async function getQuote() {
-    setError(null);
-    if (!amount || Number(amount) <= 0) {
-      setError("Enter an amount");
-      return;
-    }
-    setQuoting(true);
+  function pickSell(next: AssetSymbol) {
+    if (next === buyAsset) setBuyAsset(sellAsset);
+    setSellAsset(next);
     setQuote(null);
+    setError(null);
+  }
+
+  function pickBuy(next: AssetSymbol) {
+    if (next === sellAsset) setSellAsset(buyAsset);
+    setBuyAsset(next);
+    setQuote(null);
+    setError(null);
+  }
+
+  function flip() {
+    setSellAsset(buyAsset);
+    setBuyAsset(sellAsset);
+    setAmount("");
+    setQuote(null);
+    setError(null);
+  }
+
+  function handleMax() {
+    if (!sellBalance) return;
+    if (sellAsset === "ETH") {
+      const buffer = parseEther("0.002");
+      setAmount(formatUnits(sellBalance.raw > buffer ? sellBalance.raw - buffer : 0n, 18));
+    } else {
+      setAmount(sellBalance.formatted);
+    }
+  }
+
+  async function fetchQuote(forAmount: string) {
+    setQuoting(true);
+    setError(null);
     try {
-      const sellAmount = parseUnits(amount, sellDecimals).toString();
+      const sellAmount = parseUnits(forAmount, sellDecimals).toString();
       const q = await walletFetchJson<ZeroXQuote>("/api/wallet/swap/quote", {
         method: "POST",
         body: JSON.stringify({
@@ -1188,6 +1413,24 @@ function SwapModal({ address, onClose }: { address: `0x${string}`; onClose: () =
       setQuoting(false);
     }
   }
+
+  // Auto-quotes as the user types, debounced — 0x quotes go stale in
+  // seconds anyway, so refetching in the background costs nothing extra
+  // and means "Review Swap" is usually ready the moment they look at it.
+  // Every place that changes amount/sellAsset/buyAsset/chainId already
+  // clears the previous quote itself (in its own event handler, not here)
+  // so this effect only ever schedules the next fetch — it never calls
+  // setState synchronously in its own body.
+  useEffect(() => {
+    if (!amount || Number(amount) <= 0 || sellAsset === buyAsset) return;
+    const handle = setTimeout(() => {
+      fetchQuote(amount);
+    }, 600);
+    return () => clearTimeout(handle);
+    // fetchQuote closes over chainId/sellAsset/buyAsset/address, all of
+    // which are already effect deps via the values below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, sellAsset, buyAsset, chainId]);
 
   async function executeSwap() {
     if (!quote) return;
@@ -1232,10 +1475,18 @@ function SwapModal({ address, onClose }: { address: `0x${string}`; onClose: () =
   }
 
   const receiveAmount = quote ? formatUnits(BigInt(quote.buyAmount), buyDecimals) : null;
+  const hasAmount = !!amount && Number(amount) > 0;
+
+  let buttonLabel = "Enter an amount";
+  if (hasAmount && swapping) buttonLabel = step ?? "Swapping…";
+  else if (hasAmount && quoting) buttonLabel = "Getting quote…";
+  else if (hasAmount && quote) buttonLabel = "Review Swap";
+  else if (hasAmount && error) buttonLabel = "Retry quote";
+  else if (hasAmount) buttonLabel = "Getting quote…";
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles.modal} ${styles.swapModal}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div>
             <div className={styles.modalEyebrow}>YOUR AUEVO WALLET</div>
@@ -1248,72 +1499,65 @@ function SwapModal({ address, onClose }: { address: `0x${string}`; onClose: () =
 
         <div className={styles.field}>
           <label className={styles.fieldLabel}>Network</label>
-          <select
-            className={styles.fieldInput}
-            value={chainId}
-            onChange={(e) => {
-              setChainId(Number(e.target.value));
-              resetQuote();
-            }}
-          >
-            {NETWORKS.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.label}
-              </option>
-            ))}
-          </select>
+          <NetworkPicker chainId={chainId} onChange={changeChain} balances={balances} />
         </div>
 
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>From</label>
-          <select
-            className={styles.fieldInput}
-            value={sellAsset}
-            onChange={(e) => {
-              setSellAsset(e.target.value as "ETH" | "USDC");
-              resetQuote();
-            }}
-          >
-            <option value="ETH">ETH</option>
-            <option value="USDC">USDC</option>
-          </select>
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>Amount</label>
-          <input
-            className={styles.fieldInput}
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => {
-              setAmount(e.target.value);
-              resetQuote();
-            }}
-          />
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.fieldLabel}>To</label>
-          <input className={styles.fieldInput} value={buyAsset} readOnly />
-        </div>
-
-        {quote && receiveAmount && (
-          <div className={styles.hint}>
-            Estimated receive: {Number(receiveAmount).toFixed(buyAsset === "ETH" ? 5 : 2)} {buyAsset}. Confirmed only once you tap Swap below —
-            0x quotes expire within seconds.
-          </div>
-        )}
-
-        {error && <div className={styles.errorText}>{error}</div>}
-
-        {!quote ? (
-          <button className={styles.primaryBtn} onClick={getQuote} disabled={quoting}>
-            {quoting ? "Getting quote…" : "Get quote"}
-          </button>
+        {options.length < 2 ? (
+          <div className={styles.hint}>{network.label} only has one asset in this wallet right now (ETH) — nothing to swap it into yet.</div>
         ) : (
-          <button className={styles.primaryBtn} onClick={executeSwap} disabled={swapping}>
-            {swapping ? step ?? "Swapping…" : `Swap ${sellAsset} → ${buyAsset}`}
-          </button>
+          <>
+            <div className={styles.swapBox}>
+              <div className={styles.swapBoxLabel}>You pay</div>
+              <div className={styles.swapAmountRow}>
+                <input
+                  className={styles.swapAmountInput}
+                  placeholder="0.00"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setQuote(null);
+                    setError(null);
+                  }}
+                />
+                <AssetPicker variant="compact" chainId={chainId} chainName={network.label} value={sellAsset} onChange={pickSell} balances={balances} />
+              </div>
+              <div className={styles.swapBalanceRow}>
+                <span>
+                  Balance: {sellBalance ? Number(sellBalance.formatted).toFixed(sellAsset === "ETH" ? 5 : 2) : "0"} {sellAsset}
+                </span>
+                <button type="button" className={styles.maxBtn} onClick={handleMax} disabled={!sellBalance}>
+                  MAX
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.swapDirectionWrap}>
+              <button type="button" className={styles.swapDirectionBtn} onClick={flip} aria-label="Swap direction" title="Swap direction">
+                ⇅
+              </button>
+            </div>
+
+            <div className={styles.swapBox}>
+              <div className={styles.swapBoxLabel}>You receive</div>
+              <div className={styles.swapAmountRow}>
+                <div className={styles.swapAmountInput}>{receiveAmount ? Number(receiveAmount).toFixed(buyAsset === "ETH" ? 5 : 2) : "0.00"}</div>
+                <AssetPicker variant="compact" chainId={chainId} chainName={network.label} value={buyAsset} onChange={pickBuy} balances={balances} />
+              </div>
+              <div className={styles.hint}>Estimated after network and route fees. 0x quotes expire within seconds — confirmed only once you swap.</div>
+            </div>
+
+            {error && <div className={styles.errorText}>{error}</div>}
+
+            <button
+              className={styles.primaryBtn}
+              onClick={() => (quote ? executeSwap() : hasAmount && fetchQuote(amount))}
+              disabled={!hasAmount || quoting || swapping}
+            >
+              {buttonLabel}
+            </button>
+            <div className={styles.hint}>Max leaves a small ETH buffer for gas. Review and confirm in your Privy wallet.</div>
+          </>
         )}
       </div>
     </div>
