@@ -558,10 +558,14 @@
   color: var(--wallet-text);
 }
 
+.agentListRow { display: flex; align-items: center; min-height: 42px; border-radius: 10px; }
+.agentListRow:hover { background: var(--wallet-accent-soft); }
 .agentRow {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
   padding: 6px 8px;
   border-radius: 8px;
   font-size: 13px;
@@ -575,6 +579,10 @@
 .agentRow:hover {
   background: var(--wallet-accent-soft);
 }
+.agentRowName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agentDeleteBtn { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--wallet-muted); cursor: pointer; }
+.agentDeleteBtn:hover, .agentDeleteBtn:focus-visible { color: var(--wallet-danger); background: color-mix(in srgb, var(--wallet-danger) 10%, transparent); }
+.agentDeleteBtn:disabled { opacity: .5; cursor: wait; }
 
 .agentRowEmoji {
   width: 26px;
