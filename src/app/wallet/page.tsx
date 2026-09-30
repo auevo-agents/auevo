@@ -66,6 +66,15 @@ function AgentPortrait({ name, className = "", size = 36 }: { name: string; clas
   return <span className={`${styles.agentPortrait} ${className}`} role="img" aria-label={`${name} portrait`} style={{ backgroundPosition: `${x}% ${y}%`, width: size, height: size }} />;
 }
 
+/** Custom agents have no uploaded portrait yet; assign a stable character
+ * from the existing eight so their welcome view still has a visual identity. */
+function portraitForAgent(name?: string): string {
+  if (!name) return PRESET_AGENTS[0].name;
+  if (PRESET_AGENTS.some((agent) => agent.name === name)) return name;
+  const index = Array.from(name).reduce((sum, char) => sum + (char.codePointAt(0) ?? 0), 0) % PRESET_AGENTS.length;
+  return PRESET_AGENTS[index].name;
+}
+
 type WalletIconName = "chat" | "agents" | "wallet" | "send" | "swap" | "receive" | "buy" | "theme" | "menu" | "more" | "pin" | "trash";
 function WalletIcon({ name, size = 20 }: { name: WalletIconName; size?: number }) {
   const paths: Record<WalletIconName, ReactNode> = {
@@ -600,7 +609,10 @@ function WalletApp({
               <div className={styles.messages}>
                 {(messagesQuery.data ?? []).length === 0 && !streamingText && (
                   <div className={styles.emptyState}>
-                    <div className={styles.emptyOrbit} aria-hidden="true"><WalletIcon name="agents" size={34} /></div>
+                    <div className={styles.agentStage}>
+                      <div className={styles.agentStageHalo} aria-hidden="true" />
+                      <AgentPortrait name={portraitForAgent(activeAgent?.name)} className={styles.heroPortrait} size={180} />
+                    </div>
                     <h2>Your universe, your guide.</h2>
                     <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
                     <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent</button>
