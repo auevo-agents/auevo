@@ -651,29 +651,8 @@
   overflow: hidden;
   border-radius: 25px;
   border: 1px solid var(--wallet-accent-dim);
-  background: #0c2240;
+  background: #0c2240 url('/images/wallet/agents.webp') var(--portrait-position) / 400% 200% no-repeat;
   box-shadow: 0 18px 36px rgba(3, 15, 40, .32), inset 0 1px 0 rgba(255,255,255,.2);
-  animation: agent-float 5s ease-in-out infinite;
-}
-.agentFigureBody,
-.agentFigureHead {
-  position: absolute;
-  inset: 0;
-  display: block;
-  background: url('/images/wallet/agents.webp') var(--portrait-position) / 400% 200% no-repeat;
-}
-.agentFigureBody {
-  -webkit-mask-image: radial-gradient(ellipse var(--head-rx) var(--head-ry) at var(--head-x) var(--head-y), transparent 78%, #000 100%);
-  mask-image: radial-gradient(ellipse var(--head-rx) var(--head-ry) at var(--head-x) var(--head-y), transparent 78%, #000 100%);
-}
-.agentHeadMover {
-  position: absolute;
-  inset: 0;
-  display: block;
-  -webkit-mask-image: radial-gradient(ellipse var(--head-rx) var(--head-ry) at var(--head-x) var(--head-y), #000 78%, transparent 100%);
-  mask-image: radial-gradient(ellipse var(--head-rx) var(--head-ry) at var(--head-x) var(--head-y), #000 78%, transparent 100%);
-  transform-origin: var(--head-x) var(--head-y);
-  animation: agent-head-idle 5s ease-in-out infinite;
 }
 .agentEye {
   position: absolute;
@@ -689,15 +668,11 @@
 }
 .agentStage:hover { transform: rotate(1deg) rotateY(-8deg) rotateX(5deg) translateY(-6px); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 30px 70px var(--wallet-accent-dim), 0 0 70px var(--wallet-accent-soft-2); }
 .agentStage:hover .agentStageHalo { opacity: .28; transform: scale(1.2); }
-.agentStage:hover .agentHeadMover { animation: agent-head-look 1.25s ease-in-out both; }
 .agentStage:hover .agentEye { animation: agent-eye-glow 1.4s ease-in-out infinite alternate; }
-@keyframes agent-float { 0%, 100% { transform: translateY(0) rotateZ(0); } 50% { transform: translateY(-5px) rotateZ(1deg); } }
-@keyframes agent-head-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-@keyframes agent-head-look { 0% { transform: perspective(520px) translate(0, 0) rotateY(0) rotate(0); } 28% { transform: perspective(520px) translate(4px, -5px) rotateY(-9deg) rotate(3deg); } 65% { transform: perspective(520px) translate(-3px, -3px) rotateY(7deg) rotate(-4deg); } 100% { transform: perspective(520px) translate(3px, -4px) rotateY(-5deg) rotate(2deg); } }
 @keyframes agent-eye-glow { from { opacity: .38; transform: translate(-50%, -50%) scale(.75); filter: drop-shadow(0 0 4px #74dfff); } to { opacity: .94; transform: translate(-50%, -50%) scale(1.18); filter: drop-shadow(0 0 12px #74dfff); } }
 @media (prefers-reduced-motion: reduce) {
   .agentStage, .agentStageHalo { transition: none; }
-  .agentFigure, .agentHeadMover, .agentStage:hover .agentHeadMover, .agentStage:hover .agentEye { animation: none; }
+  .agentStage:hover .agentEye { animation: none; }
   .agentStage:hover { transform: rotate(-3deg); }
   .agentStage:hover .agentEye { opacity: .6; transform: translate(-50%, -50%); }
 }
