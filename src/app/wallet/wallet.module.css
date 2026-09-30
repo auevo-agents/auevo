@@ -36,7 +36,12 @@
   /* Native controls follow the selected wallet theme. */
   color-scheme: light;
 
-  min-height: 100vh;
+  /* height, not min-height: a flex child's overflow-y:auto (.messages,
+     .chatList, .panel below) only ever kicks in when its ancestor chain is
+     actually height-bound. With min-height the whole box just grew past
+     100vh to fit the chat history and the page scrolled instead of the
+     message list scrolling internally. */
+  height: 100vh;
   background: var(--wallet-bg);
   color: var(--wallet-text);
   font-family: Arial, Helvetica, sans-serif;
@@ -350,6 +355,7 @@
   z-index: 1;
   width: 240px;
   flex-shrink: 0;
+  min-height: 0;
   border-right: 1px solid var(--wallet-border);
   padding: 20px 16px;
   display: flex;
@@ -417,6 +423,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 3px;
@@ -478,6 +486,10 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* A flex item's default min-height is its content size, not 0 — without
+     this it never shrinks to the parent's bound height, so .messages
+     below never actually needs to scroll. */
+  min-height: 0;
 }
 
 .chatHeader {
@@ -578,6 +590,7 @@
 
 .messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 28px;
   display: flex;
@@ -719,6 +732,90 @@
   composes: msgBubble;
   background: var(--wallet-accent-soft-2);
   box-shadow: none;
+}
+
+/* Agent replies (renderAgentMessage in page.tsx) render as real elements
+   instead of literal "**"/"|---|" markdown syntax. */
+.msgParagraph {
+  margin: 0;
+}
+
+.msgParagraph + .msgParagraph,
+.msgHeading + *,
+* + .msgHeading,
+.msgList + *,
+.msgTableWrap + * {
+  margin-top: 8px;
+}
+
+.msgHeading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--wallet-accent);
+}
+
+.msgHeadingIcon {
+  font-size: 11px;
+}
+
+.msgList {
+  margin: 0;
+  padding-left: 2px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msgListItem {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.msgBullet {
+  color: var(--wallet-accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.msgCode {
+  background: color-mix(in srgb, var(--wallet-text) 8%, transparent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.msgTableWrap {
+  overflow-x: auto;
+}
+
+.msgTable {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: 100%;
+}
+
+.msgTable th,
+.msgTable td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--wallet-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.msgTable th {
+  color: var(--wallet-muted);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.msgTable tr:last-child td {
+  border-bottom: none;
 }
 
 .composer {
@@ -1227,6 +1324,18 @@ select.fieldInput {
   gap: 2px;
   max-height: 260px;
   overflow-y: auto;
+}
+
+/* The compact swap token pill (just an icon+symbol) is much narrower than
+   its dropdown content ("YOUR ASSETS · Ethereum", balance rows) — with
+   left:0/right:0 above, the panel inherited the pill's own narrow width
+   and every row wrapped/clipped. Anchor it to the trigger's right edge
+   with its own fixed width instead of stretching to match the trigger. */
+.pickerPanelCompact {
+  composes: pickerPanel;
+  left: auto;
+  right: 0;
+  width: 230px;
 }
 
 .pickerSectionLabel {

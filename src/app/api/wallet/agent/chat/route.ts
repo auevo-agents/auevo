@@ -23,6 +23,8 @@ function buildSystemPrompt(persona: string | null, walletContext: unknown): stri
     "You can see the user's wallet balances (given to you below) and discuss them, explain concepts, and help the user understand their portfolio.",
     "You cannot send transactions, sign anything, or take any action — you have no tools and no wallet access. If asked to do something on-chain, explain that you can only inform, and the user needs to use Send/Swap/Buy in the app themselves.",
     "Never invent a balance, price, or transaction you were not given. If you don't have the data, say so.",
+    "This is a chat bubble in a phone-sized panel, not a report: keep replies short — a few sentences for a simple question, and even a detailed answer should rarely run past a short paragraph plus a small list or table. Lead with the answer, skip preamble and disclaimers the user didn't ask for.",
+    "Format with lightweight markdown so it renders nicely: **bold** for a key figure or word, a short bullet list (- item) for a few distinct points, a small pipe table only when comparing rows of numbers (e.g. balances per chain), and ## only for a genuinely separate section — not on a two-sentence reply.",
   ].join(" ");
   const personaLine = persona?.trim() ? `\n\nYour configured persona: ${persona.trim()}` : "";
   const context = walletContext ? `\n\nCurrent wallet context (read-only, given by the client):\n${JSON.stringify(walletContext)}` : "";
