@@ -268,43 +268,34 @@ function portraitForAgent(name?: string): string {
   return PRESET_AGENTS[index].name;
 }
 
-// Coordinates are percentages within each 3:4 portrait tile. The moving
-// head and the still body reuse the same atlas image, so they stay aligned.
-const AGENT_FACE_POINTS = [
-  { head: [54, 38, 33, 25], eyes: [[56, 35], [77, 36]] },
-  { head: [51, 32, 29, 27], eyes: [[44, 34], [63, 35]] },
-  { head: [50, 35, 31, 27], eyes: [[41, 35], [64, 35]] },
-  { head: [62, 34, 30, 27], eyes: [[60, 31]] },
-  { head: [54, 41, 27, 24], eyes: [[49, 37], [66, 38]] },
-  { head: [53, 43, 30, 26], eyes: [[48, 40], [69, 43]] },
-  { head: [54, 39, 28, 27], eyes: [[44, 36], [68, 36]] },
-  { head: [55, 35, 34, 27], eyes: [[53, 31]] },
+// Eye positions in each 3:4 portrait tile; the portrait itself remains whole.
+const AGENT_EYE_POINTS = [
+  [[56, 35], [77, 36]],
+  [[44, 34], [63, 35]],
+  [[41, 35], [64, 35]],
+  [[60, 31]],
+  [[49, 37], [66, 38]],
+  [[48, 40], [69, 43]],
+  [[44, 36], [68, 36]],
+  [[53, 31]],
 ] as const;
 
 function AnimatedAgentPortrait({ agentName }: { agentName?: string }) {
   const portraitName = portraitForAgent(agentName);
   const index = PRESET_AGENTS.findIndex((agent) => agent.name === portraitName);
-  const face = AGENT_FACE_POINTS[index];
+  const eyes = AGENT_EYE_POINTS[index];
   const position = `${(index % 4) * 100 / 3}% ${index < 4 ? 0 : 100}%`;
   const portraitStyle = {
     "--portrait-position": position,
-    "--head-x": `${face.head[0]}%`,
-    "--head-y": `${face.head[1]}%`,
-    "--head-rx": `${face.head[2]}%`,
-    "--head-ry": `${face.head[3]}%`,
   } as CSSProperties;
 
   return (
     <div className={styles.agentStage} style={portraitStyle}>
       <div className={styles.agentStageHalo} aria-hidden="true" />
       <span className={styles.agentFigure} role="img" aria-label={`${agentName ?? portraitName} portrait`}>
-        <span className={styles.agentFigureBody} />
-        <span className={styles.agentHeadMover}>
-          <span className={styles.agentFigureHead} />
-          {face.eyes.map(([x, y], eyeIndex) => (
-            <span key={eyeIndex} className={styles.agentEye} style={{ left: `${x}%`, top: `${y}%` }} />
-          ))}
-        </span>
+        {eyes.map(([x, y], eyeIndex) => (
+          <span key={eyeIndex} className={styles.agentEye} style={{ left: `${x}%`, top: `${y}%` }} />
+        ))}
       </span>
     </div>
   );
