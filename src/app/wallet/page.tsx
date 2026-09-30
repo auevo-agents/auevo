@@ -40,6 +40,176 @@ function availableAssets(chainId: number): AssetSymbol[] {
   return USDC_ADDRESS[chainId] ? ["ETH", "USDC"] : ["ETH"];
 }
 
+type MdBlock =
+  | { type: "heading"; text: string }
+  | { type: "list"; ordered: boolean; items: string[] }
+  | { type: "table"; header: string[]; rows: string[][] }
+  | { type: "paragraph"; text: string };
+
+const TABLE_ROW_RE = /^\s*\|/;
+const TABLE_SEP_RE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+const HEADING_RE = /^#{1,4}\s+(.*)$/;
+const LIST_ITEM_RE = /^\s*(?:[-*]|\d+\.)\s+(.*)$/;
+const ORDERED_ITEM_RE = /^\s*\d+\./;
+
+function splitTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+/**
+ * A small hand-rolled markdown subset — headings, bullet/numbered lists,
+ * pipe tables, **bold** and `code` — covering what the wallet agent
+ * actually produces (see the system prompt in api/wallet/agent/chat).
+ * Deliberately not a full CommonMark parser or a new dependency: the
+ * agent's replies are short, structured chat messages, not documents.
+ */
+function parseMarkdownBlocks(src: string): MdBlock[] {
+  const lines = src.replace(/\r\n/g, "\n").split("\n");
+  const blocks: MdBlock[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) {
+      i++;
+      continue;
+    }
+
+    const heading = HEADING_RE.exec(line);
+    if (heading) {
+      blocks.push({ type: "heading", text: heading[1].trim() });
+      i++;
+      continue;
+    }
+
+    if (TABLE_ROW_RE.test(line) && lines[i + 1] !== undefined && TABLE_SEP_RE.test(lines[i + 1])) {
+      const header = splitTableRow(line);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && TABLE_ROW_RE.test(lines[i])) {
+        rows.push(splitTableRow(lines[i]));
+        i++;
+      }
+      blocks.push({ type: "table", header, rows });
+      continue;
+    }
+
+    if (LIST_ITEM_RE.test(line)) {
+      const ordered = ORDERED_ITEM_RE.test(line);
+      const items: string[] = [];
+      while (i < lines.length && LIST_ITEM_RE.test(lines[i])) {
+        items.push(LIST_ITEM_RE.exec(lines[i])![1]);
+        i++;
+      }
+      blocks.push({ type: "list", ordered, items });
+      continue;
+    }
+
+    const paraLines: string[] = [];
+    while (i < lines.length && lines[i].trim() && !HEADING_RE.test(lines[i]) && !LIST_ITEM_RE.test(lines[i]) && !TABLE_ROW_RE.test(lines[i])) {
+      paraLines.push(lines[i]);
+      i++;
+    }
+    blocks.push({ type: "paragraph", text: paraLines.join(" ") });
+  }
+  return blocks;
+}
+
+/** Inline **bold** and `code` within a block of text. */
+function renderInline(text: string, keyPrefix: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const re = /\*\*([^*]+)\*\*|`([^`]+)`/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let n = 0;
+  while ((match = re.exec(text))) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    if (match[1] !== undefined) {
+      parts.push(<strong key={`${keyPrefix}-b${n}`}>{match[1]}</strong>);
+    } else {
+      parts.push(
+        <code key={`${keyPrefix}-c${n}`} className={styles.msgCode}>
+          {match[2]}
+        </code>
+      );
+    }
+    n++;
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
+/** Renders an assistant message's markdown as real elements (headings,
+ * lists, tables) instead of showing literal "**"/"|---|" syntax. User
+ * messages skip this — they're plain typed text, not agent output. */
+function renderAgentMessage(content: string): ReactNode {
+  return (
+    <>
+      {parseMarkdownBlocks(content).map((block, bi) => {
+        if (block.type === "heading") {
+          return (
+            <div key={bi} className={styles.msgHeading}>
+              <span className={styles.msgHeadingIcon}>✦</span>
+              {renderInline(block.text, `h${bi}`)}
+            </div>
+          );
+        }
+        if (block.type === "list") {
+          const items = block.items.map((item, ii) => (
+            <li key={ii} className={styles.msgListItem}>
+              {!block.ordered && <span className={styles.msgBullet}>›</span>}
+              {renderInline(item, `l${bi}-${ii}`)}
+            </li>
+          ));
+          return block.ordered ? (
+            <ol key={bi} className={styles.msgList}>
+              {items}
+            </ol>
+          ) : (
+            <ul key={bi} className={styles.msgList}>
+              {items}
+            </ul>
+          );
+        }
+        if (block.type === "table") {
+          return (
+            <div key={bi} className={styles.msgTableWrap}>
+              <table className={styles.msgTable}>
+                <thead>
+                  <tr>
+                    {block.header.map((h, hi) => (
+                      <th key={hi}>{renderInline(h, `th${bi}-${hi}`)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, ri) => (
+                    <tr key={ri}>
+                      {row.map((cell, ci) => (
+                        <td key={ci}>{renderInline(cell, `td${bi}-${ri}-${ci}`)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+        return (
+          <p key={bi} className={styles.msgParagraph}>
+            {renderInline(block.text, `p${bi}`)}
+          </p>
+        );
+      })}
+    </>
+  );
+}
+
 /**
  * Ready-made assistant personalities — different mood, tone and accent
  * color, picked once per chat rather than being a single fixed voice.
@@ -684,13 +854,15 @@ function WalletApp({
                 {(messagesQuery.data ?? []).map((m) => (
                   <div key={m.id} className={m.role === "user" ? styles.msgRowUser : styles.msgRow}>
                     {m.role === "assistant" && <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} name={activeAgent?.name} />}
-                    <div className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}>{m.content}</div>
+                    <div className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}>
+                      {m.role === "assistant" ? renderAgentMessage(m.content) : m.content}
+                    </div>
                   </div>
                 ))}
                 {streamingText !== null && (
                   <div className={styles.msgRow}>
                     <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} name={activeAgent?.name} />
-                    <div className={styles.msgBubble}>{streamingText || "…"}</div>
+                    <div className={styles.msgBubble}>{streamingText ? renderAgentMessage(streamingText) : "…"}</div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -1148,7 +1320,7 @@ function AssetPicker({
         <span className={styles.pillChevron}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
-        <div className={styles.pickerPanel}>
+        <div className={variant === "full" ? styles.pickerPanel : styles.pickerPanelCompact}>
           <div className={styles.pickerSectionLabel}>YOUR ASSETS · {chainName}</div>
           {options.map((sym) => {
             const bal = balances.find((b) => b.chainId === chainId && b.symbol === sym);
