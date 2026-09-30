@@ -6,7 +6,13 @@ import { PrivyAuthError, requirePrivyUserId } from "@/lib/wallet/privy-server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "claude-opus-5";
+// Haiku 4.5 — a read-only balance-and-chat agent with no tool access
+// doesn't need Opus-tier reasoning, and Opus 5 runs adaptive thinking by
+// default (no `thinking`/`effort` was set below), which was adding real
+// latency before the first token on top of Opus simply being the
+// slowest tier. Haiku 4.5 has no thinking unless explicitly enabled with
+// a budget_tokens, so this also removes that delay outright.
+const MODEL = "claude-haiku-4-5";
 
 /**
  * The wallet agent's only job is to talk about what it's shown — it has no
