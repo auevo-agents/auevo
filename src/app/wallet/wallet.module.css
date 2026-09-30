@@ -858,6 +858,13 @@
   align-items: center;
 }
 
+.panelHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
 .panelTitle {
   font-weight: 600;
   font-size: 15px;
@@ -1478,6 +1485,125 @@ select.fieldInput {
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   font-size: 14px;
+}
+
+/* Settings modal (SettingsModal in page.tsx) — Account / Appearance /
+   Security & wallet / Network sections. */
+.settingsSection {
+  margin-top: 20px;
+}
+
+.settingsSection:first-of-type {
+  margin-top: 0;
+}
+
+.settingsSectionLabel {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wallet-muted);
+  margin-bottom: 10px;
+}
+
+.settingsAccountRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settingsAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--wallet-accent-soft-2);
+  color: var(--wallet-accent);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.settingsAccountName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settingsAccountSub {
+  font-size: 11px;
+  color: var(--wallet-muted);
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--wallet-text) 6%, transparent);
+}
+
+.settingsSection > .settingsRow:first-of-type {
+  border-top: none;
+}
+
+.settingsRowLabel {
+  font-size: 13px;
+}
+
+.settingsRowSub {
+  font-size: 11px;
+  color: var(--wallet-muted);
+  margin-top: 2px;
+}
+
+.settingsRowValue {
+  font-size: 12px;
+  color: var(--wallet-muted);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.settingsLinkBtn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--wallet-border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wallet-text);
+  cursor: pointer;
+}
+
+.settingsLinkBtn:hover {
+  border-color: var(--wallet-accent-dim);
+}
+
+.settingsLinkBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.settingsThemeGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settingsThemeBtn {
+  background: none;
+  border: none;
+  padding: 3px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.settingsThemeBtnActive {
+  composes: settingsThemeBtn;
+  outline: 2px solid var(--wallet-accent);
+  outline-offset: 2px;
 }
 
 /*
