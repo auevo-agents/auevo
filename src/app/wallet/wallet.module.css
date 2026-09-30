@@ -1116,6 +1116,251 @@ select.fieldInput {
 }
 
 /*
+ * Network/asset pickers (NetworkPicker/AssetPicker in page.tsx) and the
+ * Swap pay/receive boxes — icon pills that expand into an absolute
+ * dropdown, shared by Send/Receive/Swap so all three modals read as one
+ * design language instead of three different native <select>s.
+ */
+.pickerWrap {
+  position: relative;
+}
+
+.networkPill {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--wallet-input-bg);
+  border: 1px solid var(--wallet-input-border);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--wallet-text);
+  cursor: pointer;
+}
+
+.networkPill:hover {
+  border-color: var(--wallet-accent-dim);
+}
+
+.assetPill {
+  composes: networkPill;
+  border-radius: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  font-size: 14px;
+}
+
+.pillLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pillIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pillChevron {
+  color: var(--wallet-muted);
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+.pickerPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--wallet-panel) 97%, transparent);
+  backdrop-filter: blur(24px) saturate(1.25);
+  border: 1px solid var(--wallet-border);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 24px 65px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pickerSectionLabel {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--wallet-muted);
+  padding: 8px 10px 4px;
+}
+
+.pickerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: none;
+  border: none;
+  color: var(--wallet-text);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.pickerRow:hover {
+  background: color-mix(in srgb, var(--wallet-text) 5%, transparent);
+}
+
+.pickerRowActive {
+  composes: pickerRow;
+  background: var(--wallet-accent-soft);
+}
+
+.pickerRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pickerRowIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pickerRowName {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pickerRowSub {
+  font-size: 11px;
+  color: var(--wallet-muted);
+}
+
+.pickerRowValue {
+  font-size: 12px;
+  color: var(--wallet-muted);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.swapModal {
+  width: 400px;
+}
+
+.swapBox {
+  background: var(--wallet-input-bg);
+  border: 1px solid var(--wallet-input-border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.swapBoxLabel {
+  font-size: 12px;
+  color: var(--wallet-muted);
+  margin-bottom: 8px;
+}
+
+.swapAmountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.swapAmountInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--wallet-text);
+  font-family: inherit;
+  padding: 0;
+}
+
+.swapAmountInput::placeholder {
+  color: var(--wallet-muted);
+  opacity: 0.5;
+}
+
+.swapTokenBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--wallet-panel);
+  border: 1px solid var(--wallet-border);
+  border-radius: 999px;
+  padding: 6px 10px 6px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--wallet-text);
+  cursor: pointer;
+}
+
+.swapBalanceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--wallet-muted);
+}
+
+.maxBtn {
+  background: none;
+  border: none;
+  color: var(--wallet-accent);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0;
+}
+
+.maxBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.swapDirectionWrap {
+  display: flex;
+  justify-content: center;
+  margin: -8px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.swapDirectionBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--wallet-panel);
+  border: 1px solid var(--wallet-border);
+  color: var(--wallet-accent);
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+}
+
+/*
  * Mobile layout — below this width the three-column desktop layout
  * (sidebar / chat / wallet panel, all always visible side by side) no
  * longer fits: on a phone it rendered as three squeezed, overlapping

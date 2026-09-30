@@ -1,15 +1,17 @@
 import { base, mainnet } from "viem/chains";
 import type { Chain } from "viem";
+import { robinhoodChain } from "@/lib/chains";
 
 /**
- * The two chains AUEVO Wallet reads balances on, per HANDOFF.md's MVP
- * scope: Ethereum mainnet and Base. Robinhood Chain (the RWA platform's
- * own chain — see src/lib/chains.ts) is deliberately NOT in this list yet;
- * the wallet's job right now is a general-purpose ETH/USDC wallet, not an
- * RWA trading terminal, and adding chains here is a config change, not a
- * rewrite (mirrors the pattern already used by LIFI_EVM_CHAIN_LIST).
+ * The chains AUEVO Wallet reads balances on: Ethereum, Base, and Robinhood
+ * Chain (the RWA platform's own chain — see src/lib/chains.ts), so a user
+ * on Robinhood Chain can send/receive/swap the same native gas token they
+ * already hold there. USDC has no confirmed deployment on Robinhood Chain
+ * (see the comment on USDC_ADDRESS below) — chainById callers that key off
+ * USDC_ADDRESS already treat a missing entry as "not available here"
+ * rather than guessing, so this chain just shows up as ETH-only for now.
  */
-export const WALLET_CHAINS = [mainnet, base] as const satisfies readonly [Chain, ...Chain[]];
+export const WALLET_CHAINS = [mainnet, base, robinhoodChain] as const satisfies readonly [Chain, ...Chain[]];
 
 export type WalletChain = (typeof WALLET_CHAINS)[number];
 
@@ -22,6 +24,13 @@ export type WalletChain = (typeof WALLET_CHAINS)[number];
  * per-project addresses that could be wrong the way an unverified RWA pool
  * address could be) — the same standing this app already gives USDG's
  * address to price RWA pools.
+ *
+ * Robinhood Chain deliberately has no entry here: its own stable asset is
+ * USDG (src/lib/rwa/dex/addresses.ts), a different token than USDC, and
+ * this wallet's "USDC" asset slot is specifically USDC — not a generic
+ * "whatever stablecoin this chain uses" slot. Every read keys off this map
+ * and already treats a missing chain as "no USDC asset here" rather than
+ * falling back to a different token under the same label.
  */
 export const USDC_ADDRESS: Record<number, `0x${string}`> = {
   [mainnet.id]: "0xA0b86991c6218b36c1D19D4a2e9Eb0cE3606eB48",
