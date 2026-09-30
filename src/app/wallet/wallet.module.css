@@ -24,19 +24,16 @@
   --wallet-text: #121b2d;
   --wallet-muted: #626e82;
   --wallet-on-accent: #ffffff;
+  --wallet-input-bg: #f7faff;
+  --wallet-input-border: #ced9ea;
   --wallet-danger: #c22a2a;
   --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(36, 88, 232, 0.09), transparent 60%), #f7f9fd;
   --wallet-star-color: rgba(18, 27, 45, 0.4);
   --wallet-comet-color: rgba(36, 88, 232, 0.6);
+  --scene-core: #dce8ff;
+  --scene-glow: rgba(45, 105, 235, .28);
 
-  /*
-   * Without this, a system/browser in dark mode paints native form
-   * controls (input/textarea/select) with its own dark UA background
-   * instead of the near-transparent one set below on .fieldInput —
-   * Chromium's "auto dark" for forms overrides low-alpha author
-   * backgrounds it doesn't consider "real". This is what fixed the
-   * black Agent-name/emoji fields reported live.
-   */
+  /* Native controls follow the selected wallet theme. */
   color-scheme: light;
 
   min-height: 100vh;
@@ -60,10 +57,14 @@
   --wallet-text: #0f2b30;
   --wallet-muted: #547479;
   --wallet-on-accent: #ffffff;
+  --wallet-input-bg: #f1fbfd;
+  --wallet-input-border: #bedfe8;
   --wallet-danger: #c22a2a;
-  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(15, 179, 214, 0.1), transparent 60%), #f4fbfd;
+  --wallet-bg-image: radial-gradient(ellipse 58% 46% at 75% 15%, rgba(53, 217, 231, .22), transparent 62%), linear-gradient(145deg, #effcff, #e7f7fb 52%, #f7feff);
   --wallet-star-color: rgba(15, 43, 48, 0.35);
   --wallet-comet-color: rgba(15, 179, 214, 0.65);
+  --scene-core: #b9f7ff;
+  --scene-glow: rgba(24, 194, 220, .3);
   color-scheme: light;
 }
 
@@ -79,10 +80,14 @@
   --wallet-text: #1e1730;
   --wallet-muted: #6a6180;
   --wallet-on-accent: #ffffff;
+  --wallet-input-bg: #f8f5ff;
+  --wallet-input-border: #d9ccf6;
   --wallet-danger: #c22a2a;
-  --wallet-bg-image: radial-gradient(ellipse 55% 40% at 78% 8%, rgba(124, 77, 255, 0.1), transparent 60%), #f9f7fd;
+  --wallet-bg-image: radial-gradient(ellipse 68% 52% at 72% 18%, rgba(167, 129, 255, .2), transparent 64%), linear-gradient(145deg, #fbf8ff, #eee9fb 52%, #fff);
   --wallet-star-color: rgba(30, 23, 48, 0.35);
   --wallet-comet-color: rgba(124, 77, 255, 0.65);
+  --scene-core: #e2d7ff;
+  --scene-glow: rgba(133, 83, 246, .28);
   color-scheme: light;
 }
 
@@ -98,11 +103,15 @@
   --wallet-text: #eafff3;
   --wallet-muted: #7fa694;
   --wallet-on-accent: #06140d;
+  --wallet-input-bg: #12241b;
+  --wallet-input-border: #355c49;
   --wallet-danger: #ff9b9b;
   --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(95, 230, 163, 0.16), transparent 60%),
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(95, 230, 163, 0.08), transparent 60%), #050a08;
   --wallet-star-color: rgba(255, 255, 255, 0.85);
   --wallet-comet-color: rgba(95, 230, 163, 0.95);
+  --scene-core: #61ffb0;
+  --scene-glow: rgba(48, 237, 146, .32);
   color-scheme: dark;
 }
 
@@ -118,13 +127,56 @@
   --wallet-text: #f1ebff;
   --wallet-muted: #9b8fc2;
   --wallet-on-accent: #180f2e;
+  --wallet-input-bg: #211a37;
+  --wallet-input-border: #554376;
   --wallet-danger: #ff9b9b;
   --wallet-bg-image: radial-gradient(ellipse 60% 40% at 75% 20%, rgba(185, 139, 255, 0.16), transparent 60%),
     radial-gradient(ellipse 40% 60% at 15% 80%, rgba(124, 77, 255, 0.08), transparent 60%), #0a0716;
   --wallet-star-color: rgba(255, 255, 255, 0.8);
   --wallet-comet-color: rgba(185, 139, 255, 0.95);
+  --scene-core: #ae82ff;
+  --scene-glow: rgba(139, 86, 255, .35);
   color-scheme: dark;
 }
+
+/* AUEVO's new wallet look: quiet cosmic depth behind crisp glass surfaces. */
+.walletRoot[data-theme="cosmic"] {
+  --wallet-bg: #061226;
+  --wallet-panel: rgba(13, 31, 57, .88);
+  --wallet-border: rgba(121, 174, 239, .22);
+  --wallet-accent: #56c6ff;
+  --wallet-accent-dim: rgba(86, 198, 255, .55);
+  --wallet-accent-soft: rgba(66, 146, 239, .18);
+  --wallet-accent-soft-2: rgba(66, 146, 239, .27);
+  --wallet-text: #f3f8ff;
+  --wallet-muted: #9eb4d2;
+  --wallet-on-accent: #04142a;
+  --wallet-input-bg: #152d4d;
+  --wallet-input-border: #42648b;
+  --wallet-danger: #ffb1b7;
+  --wallet-bg-image: radial-gradient(ellipse 75% 70% at 51% 75%, rgba(32, 95, 187, .26), transparent 65%), radial-gradient(ellipse 44% 48% at 80% 12%, rgba(31, 107, 196, .22), transparent 70%), linear-gradient(150deg, #041023, #0a2341 55%, #050d1e);
+  --wallet-star-color: rgba(189, 224, 255, .72);
+  --wallet-comet-color: rgba(97, 203, 255, .92);
+  --scene-core: #57c9ff;
+  --scene-glow: rgba(54, 143, 255, .38);
+  color-scheme: dark;
+}
+.sidebar,
+.panel { background: color-mix(in srgb, var(--wallet-panel) 88%, transparent); backdrop-filter: blur(22px) saturate(1.25); }
+.walletRoot[data-theme="cosmic"] .sidebar,
+.walletRoot[data-theme="cosmic"] .panel { background: linear-gradient(160deg, rgba(9, 25, 48, .93), rgba(11, 31, 59, .82)); }
+.walletRoot[data-theme="cosmic"] .main { background: radial-gradient(ellipse 75% 54% at 52% 72%, rgba(44, 105, 193, .15), transparent); }
+.walletRoot[data-theme="cosmic"] .navItemActive,
+.walletRoot[data-theme="cosmic"] .chatListItemActive { box-shadow: inset 0 0 0 1px rgba(117, 177, 245, .16), 0 9px 28px rgba(0, 0, 0, .12); }
+.walletRoot[data-theme="cosmic"] .composerInput,
+.walletRoot[data-theme="cosmic"] .fieldInput { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 8px 26px rgba(0, 0, 0, .14); }
+.walletRoot[data-theme="cosmic"] .composerInput::placeholder,
+.walletRoot[data-theme="cosmic"] .fieldInput::placeholder { color: #a6b9d3; }
+.walletRoot[data-theme="cosmic"] .composerInput:focus,
+.walletRoot[data-theme="cosmic"] .fieldInput:focus { border-color: #72cbff; box-shadow: 0 0 0 3px rgba(86, 198, 255, .18), 0 14px 30px rgba(0, 0, 0, .18); }
+.walletRoot[data-theme="cosmic"] .actionBtn { background: linear-gradient(155deg, rgba(26, 57, 96, .98), rgba(13, 34, 63, .9)); border-color: rgba(139, 194, 252, .3); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 12px 28px rgba(0,0,0,.14); border-radius: 14px; }
+.walletRoot[data-theme="cosmic"] .actionBtn:hover { border-color: #6bc8ff; transform: translateY(-3px); box-shadow: 0 18px 32px rgba(4, 14, 34, .27), 0 0 22px rgba(66, 146, 239, .16); }
+.walletRoot[data-theme="cosmic"] .modal { background: linear-gradient(145deg, rgba(16, 37, 67, .98), rgba(8, 23, 45, .98)); box-shadow: 0 35px 100px rgba(0,0,0,.48); }
 
 .spaceBg {
   position: fixed;
@@ -151,6 +203,38 @@
   inset: -20%;
   background-repeat: repeat;
 }
+
+.scenePlanet,
+.sceneOrbit { position: absolute; display: block; pointer-events: none; }
+.scenePlanet {
+  right: 16%;
+  bottom: -34vw;
+  width: min(72vw, 980px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 26%, rgba(255,255,255,.9), var(--scene-core) 15%, color-mix(in srgb, var(--scene-core) 45%, #07152b) 48%, #030914 75%);
+  box-shadow: inset -70px -80px 110px rgba(0,0,0,.55), inset 18px 12px 38px rgba(255,255,255,.24), 0 0 100px var(--scene-glow), 0 0 260px var(--scene-glow);
+  opacity: .62;
+  transform: rotate(-14deg);
+  animation: planet-breathe 9s ease-in-out infinite;
+}
+.scenePlanet::before { content: ""; position: absolute; inset: 5%; border-radius: 50%; background: radial-gradient(ellipse 18% 12% at 28% 22%, rgba(255,255,255,.88), rgba(255,255,255,.18) 48%, transparent 72%); mix-blend-mode: screen; animation: planet-glimmer 5.5s ease-in-out infinite; }
+.scenePlanet::after { content: ""; position: absolute; inset: -2%; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--scene-core) 58%, transparent); filter: blur(1px); box-shadow: 0 -7px 28px var(--scene-glow), 0 -18px 64px var(--scene-glow); animation: atmosphere-shimmer 4.5s ease-in-out infinite; }
+.sceneOrbit { right: 6%; bottom: 1%; width: min(92vw, 1250px); height: min(24vw, 310px); border: 1px solid color-mix(in srgb, var(--scene-core) 46%, transparent); border-radius: 50%; transform: rotate(-9deg); box-shadow: 0 0 18px var(--scene-glow), inset 0 0 20px var(--scene-glow); opacity: .55; animation: orbit-shimmer 7s ease-in-out infinite; }
+@keyframes planet-breathe { 0%,100% { transform: rotate(-14deg) scale(1); } 50% { transform: rotate(-14deg) scale(1.018); } }
+@keyframes planet-glimmer { 0%,100% { opacity: .5; transform: translate(-2%,-1%) scale(.95); } 50% { opacity: 1; transform: translate(3%,2%) scale(1.08); } }
+@keyframes atmosphere-shimmer { 0%,100% { opacity: .55; filter: blur(1px) brightness(.9); } 50% { opacity: 1; filter: blur(1px) brightness(1.4); } }
+@keyframes orbit-shimmer { 0%,100% { filter: brightness(.75); } 50% { filter: brightness(1.45); } }
+.walletRoot[data-theme="blue-light"] .scenePlanet { right: -8%; bottom: -38vw; opacity: .3; filter: saturate(.8); }
+.walletRoot[data-theme="blue-light"] .sceneOrbit { right: -4%; opacity: .3; }
+.walletRoot[data-theme="sky-light"] .scenePlanet { width: min(50vw, 680px); right: 23%; bottom: -29vw; opacity: .34; }
+.walletRoot[data-theme="sky-light"] .sceneOrbit { transform: rotate(8deg); opacity: .42; }
+.walletRoot[data-theme="violet-light"] .scenePlanet { width: min(55vw, 760px); right: auto; left: -15%; bottom: -20vw; opacity: .3; }
+.walletRoot[data-theme="violet-light"] .sceneOrbit { right: auto; left: -8%; transform: rotate(16deg); opacity: .33; }
+.walletRoot[data-theme="green-dark"] .scenePlanet { width: min(58vw, 790px); right: -10%; bottom: -20vw; opacity: .55; filter: hue-rotate(10deg); }
+.walletRoot[data-theme="green-dark"] .sceneOrbit { right: -14%; transform: rotate(-18deg); opacity: .65; }
+.walletRoot[data-theme="violet-dark"] .scenePlanet { width: min(48vw, 660px); right: 25%; bottom: -24vw; background: radial-gradient(circle at 50% 50%, #010207 0 40%, #3b177b 54%, #bd8aff 57%, transparent 60%); box-shadow: 0 0 85px rgba(144,81,255,.42), 0 0 220px rgba(87,32,181,.28); opacity: .92; }
+.walletRoot[data-theme="violet-dark"] .sceneOrbit { right: 13%; bottom: 4%; transform: rotate(-4deg); opacity: .75; }
 
 .spaceBg::before {
   background-image: radial-gradient(1.6px 1.6px at 12% 22%, var(--wallet-star-color), transparent 100%),
@@ -204,12 +288,12 @@
  */
 .comet {
   position: absolute;
-  top: -5%;
-  width: 3px;
-  height: 3px;
+  top: -8%;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--wallet-comet-color);
-  box-shadow: 0 0 8px 1.5px var(--wallet-comet-color);
+  background: #fff;
+  box-shadow: 0 0 5px 2px #fff, 0 0 16px 5px var(--wallet-comet-color);
   opacity: 0;
   animation: wallet-comet-fly linear infinite;
 }
@@ -219,26 +303,29 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 110px;
-  height: 1.5px;
-  background: linear-gradient(90deg, var(--wallet-comet-color), transparent);
+  width: clamp(110px, 13vw, 210px);
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,.95), var(--wallet-comet-color) 20%, transparent 100%);
   transform-origin: left center;
-  transform: translateY(-50%) rotate(148deg);
+  transform: translateY(-50%) rotate(-48deg);
+  filter: blur(.25px);
 }
+.comet::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--wallet-comet-color) 32%, transparent 70%); animation: meteor-spark .7s ease-in-out infinite alternate; }
+@keyframes meteor-spark { from { transform: scale(.72); opacity: .65; } to { transform: scale(1.25); opacity: 1; } }
 
 @keyframes wallet-comet-fly {
   0% {
     transform: translate(0, 0);
     opacity: 0;
   }
-  4% {
+  3% {
     opacity: 1;
   }
-  30% {
+  18% {
     opacity: 1;
   }
-  38% {
-    transform: translate(-55vw, 62vh);
+  27% {
+    transform: translate(-48vw, 54vh);
     opacity: 0;
   }
   100% {
@@ -249,7 +336,11 @@
 @media (prefers-reduced-motion: reduce) {
   .spaceBg::before,
   .spaceBg::after,
-  .comet {
+  .comet,
+  .scenePlanet,
+  .scenePlanet::before,
+  .scenePlanet::after,
+  .sceneOrbit {
     animation: none;
   }
 }
@@ -327,10 +418,21 @@
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3px;
 }
 
+.chatListRow { position: relative; display: flex; flex-wrap: wrap; align-items: center; border-radius: 10px; border: 1px solid transparent; }
+.chatListRow:hover { background: color-mix(in srgb, var(--wallet-text) 5%, transparent); }
+.chatListRowActive { background: var(--wallet-accent-soft); border-color: color-mix(in srgb, var(--wallet-accent) 22%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+
 .chatListItem {
-  padding: 8px 10px;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 4px 9px 9px;
   border-radius: 8px;
   font-size: 13px;
   color: var(--wallet-muted);
@@ -340,8 +442,8 @@
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
+.chatListItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .chatListItem:hover {
   color: var(--wallet-text);
@@ -352,6 +454,16 @@
   background: var(--wallet-accent-soft);
   color: var(--wallet-text);
 }
+.chatMoreBtn { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--wallet-muted); cursor: pointer; opacity: 0; }
+.chatListRow:hover .chatMoreBtn,
+.chatMoreBtn[aria-expanded="true"] { opacity: 1; }
+.chatMoreBtn:hover { color: var(--wallet-text); background: var(--wallet-accent-soft); }
+.chatActionMenu { flex: 0 0 calc(100% - 8px); margin: 0 4px 5px; padding: 5px; border: 1px solid var(--wallet-border); border-radius: 10px; background: color-mix(in srgb, var(--wallet-panel) 97%, transparent); backdrop-filter: blur(22px); box-shadow: 0 12px 30px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08); }
+.chatActionMenu button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 9px; border: 0; border-radius: 7px; background: transparent; color: var(--wallet-text); cursor: pointer; font-size: 12px; text-align: left; }
+.chatActionMenu button:hover { background: var(--wallet-accent-soft); }
+.chatActionMenu .chatDeleteAction { color: var(--wallet-danger); }
+.chatActionMenu button:disabled { opacity: .6; cursor: wait; }
+.chatListError { margin: 4px 2px; padding: 8px; border: 1px solid color-mix(in srgb, var(--wallet-danger) 45%, transparent); border-radius: 8px; color: var(--wallet-danger); background: color-mix(in srgb, var(--wallet-danger) 8%, transparent); font-size: 11px; line-height: 1.35; }
 
 .sidebarFooter {
   margin-top: auto;
@@ -380,25 +492,41 @@
 
 .personaGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
+
+.personaModal { width: min(900px, calc(100vw - 32px)); max-height: min(92vh, 900px); overflow-y: auto; }
+.agentPortrait { display: inline-block; flex-shrink: 0; border-radius: 50%; background: #0c2240 url('/images/wallet/agents.webp') no-repeat; background-size: 400% 200%; border: 1px solid rgba(135, 197, 255, .42); box-shadow: 0 0 0 2px rgba(62, 135, 235, .12); }
+.personaArt { width: 100% !important; height: auto !important; aspect-ratio: 3 / 4; border: 0; border-radius: 10px; background-size: 400% 200%; box-shadow: none; }
 
 .personaCard {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 14px 8px;
+  padding: 8px 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--wallet-border);
   background: color-mix(in srgb, var(--wallet-text) 3%, transparent);
   cursor: pointer;
+  text-align: center;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
 
 .personaCard:hover {
   background: color-mix(in srgb, var(--wallet-text) 6%, transparent);
+  transform: translateY(-4px);
+  border-color: var(--wallet-accent);
+  box-shadow: 0 15px 28px rgba(0,0,0,.24), 0 0 24px rgba(86, 198, 255, .14);
 }
+.personaCard:disabled { cursor: wait; opacity: .72; }
+.personaCard:focus-visible { outline: 2px solid var(--wallet-accent); outline-offset: 2px; }
+.personaRole { color: var(--wallet-muted); font-size: 11px; line-height: 1.25; }
+.blankChatBtn { margin-top: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--wallet-panel) 86%, var(--wallet-accent)), var(--wallet-panel)); border: 1px solid var(--wallet-border); color: var(--wallet-text); box-shadow: inset 0 1px 0 rgba(255,255,255,.09); }
+.pickerError { margin-top: 12px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--wallet-danger) 55%, transparent); border-radius: 10px; color: var(--wallet-danger); background: color-mix(in srgb, var(--wallet-danger) 9%, transparent); font-size: 12px; line-height: 1.4; }
+@media (max-width: 620px) { .personaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .personaModal { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { .personaCard, .actionBtn { transition: none; } .personaCard:hover, .walletRoot[data-theme="cosmic"] .actionBtn:hover { transform: none; } }
 
 .personaEmoji {
   width: 44px;
@@ -448,16 +576,6 @@
   flex-shrink: 0;
 }
 
-.colorSwatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  outline-offset: 2px;
-  cursor: pointer;
-  padding: 0;
-}
-
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -471,8 +589,72 @@
   margin: auto;
   text-align: center;
   color: var(--wallet-muted);
-  max-width: 360px;
+  max-width: 440px;
 }
+.emptyState h2 { margin: 18px 0 10px; color: var(--wallet-text); font-size: clamp(24px, 3vw, 34px); letter-spacing: -.045em; }
+.emptyState p { line-height: 1.65; }
+.agentStage {
+  position: relative;
+  isolation: isolate;
+  width: 216px;
+  height: 264px;
+  margin: 0 auto 22px;
+  display: grid;
+  place-items: center;
+  perspective: 800px;
+  border-radius: 34px;
+  background: radial-gradient(circle at 28% 15%, var(--wallet-accent-soft-2), transparent 55%),
+    linear-gradient(145deg, var(--wallet-accent-soft), var(--wallet-panel));
+  border: 1px solid var(--wallet-accent-dim);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), inset 0 -12px 24px var(--wallet-accent-soft),
+    0 22px 54px var(--wallet-accent-soft-2), 0 0 60px var(--wallet-accent-soft);
+  transform: rotate(-3deg);
+  transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s;
+}
+.agentStage::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 27px;
+  border: 1px solid var(--wallet-accent-soft-2);
+  pointer-events: none;
+  z-index: 2;
+}
+.agentStageHalo {
+  position: absolute;
+  inset: 15% -12%;
+  border-radius: 50%;
+  background: var(--wallet-accent);
+  opacity: .15;
+  filter: blur(38px);
+  transition: opacity .45s, transform .45s;
+}
+.agentStage .heroPortrait {
+  width: 180px !important;
+  height: 240px !important;
+  position: relative;
+  z-index: 1;
+  display: block;
+  border-radius: 25px;
+  border: 1px solid var(--wallet-accent-dim);
+  background-size: 400% 200%;
+  box-shadow: 0 18px 36px rgba(3, 15, 40, .32), inset 0 1px 0 rgba(255,255,255,.2);
+  transform-origin: 50% 38%;
+  animation: agent-float 5s ease-in-out infinite;
+}
+.agentStage:hover { transform: rotate(1deg) rotateY(-8deg) rotateX(5deg) translateY(-6px); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 30px 70px var(--wallet-accent-dim), 0 0 70px var(--wallet-accent-soft-2); }
+.agentStage:hover .agentStageHalo { opacity: .28; transform: scale(1.2); }
+.agentStage:hover .heroPortrait { animation: agent-greet 1.15s ease-in-out both; }
+@keyframes agent-float { 0%, 100% { transform: translateY(0) rotateZ(0); } 50% { transform: translateY(-5px) rotateZ(1deg); } }
+@keyframes agent-greet { 0% { transform: translateY(-3px) rotateZ(0); } 25% { transform: translateY(-10px) rotateZ(-4deg); } 55% { transform: translateY(-5px) rotateZ(3deg); } 80% { transform: translateY(-8px) rotateZ(-2deg); } 100% { transform: translateY(-6px) rotateZ(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .agentStage, .agentStageHalo { transition: none; }
+  .agentStage .heroPortrait, .agentStage:hover .heroPortrait { animation: none; }
+  .agentStage:hover { transform: rotate(-3deg); }
+}
+.chooseAgentBtn { margin-top: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 13px 22px; border-radius: 14px; border: 1px solid var(--wallet-accent); color: var(--wallet-on-accent); background: var(--wallet-accent); box-shadow: 0 12px 30px var(--wallet-accent-dim); cursor: pointer; font-weight: 700; transition: transform .2s, box-shadow .2s, filter .2s; }
+.chooseAgentBtn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+.chooseAgentBtn:focus-visible { outline: 2px solid var(--wallet-accent); outline-offset: 3px; }
 
 .msgRow {
   display: flex;
@@ -509,23 +691,29 @@
   gap: 10px;
 }
 
-.composerInput {
+.walletRoot .composerInput.composerInput {
   -webkit-appearance: none;
   appearance: none;
   flex: 1;
-  background: var(--wallet-panel);
-  border: 1px solid var(--wallet-border);
-  border-radius: 12px;
+  background-color: var(--wallet-input-bg);
+  border: 1px solid var(--wallet-input-border);
+  border-radius: 16px;
   color: var(--wallet-text);
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
+  color-scheme: inherit;
   resize: none;
+  min-height: 46px;
+  box-shadow: inset 0 1px 2px rgba(28, 52, 90, .04), 0 5px 16px var(--wallet-accent-soft);
 }
+
+.composerInput::placeholder { color: var(--wallet-muted); opacity: .8; }
 
 .composerInput:focus {
   outline: none;
-  border-color: var(--wallet-accent-dim);
+  border-color: var(--wallet-accent);
+  box-shadow: 0 0 0 3px var(--wallet-accent-soft);
 }
 
 .sendBtn {
@@ -568,12 +756,14 @@
 }
 
 .themeBtn {
-  background: none;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--wallet-panel) 92%, white), color-mix(in srgb, var(--wallet-panel) 86%, var(--wallet-accent)));
   border: 1px solid var(--wallet-border);
   border-radius: 8px;
   color: var(--wallet-muted);
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   font-size: 14px;
 }
@@ -586,8 +776,11 @@
 .themePanel {
   border: 1px solid var(--wallet-border);
   border-radius: 12px;
-  padding: 12px;
-  background: color-mix(in srgb, var(--wallet-text) 3%, transparent);
+  padding: 10px;
+  min-width: 232px !important;
+  background: color-mix(in srgb, var(--wallet-panel) 96%, transparent);
+  backdrop-filter: blur(24px) saturate(1.25);
+  box-shadow: 0 24px 65px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.12);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -597,7 +790,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 9px 10px;
   border-radius: 8px;
   background: none;
   border: none;
@@ -606,6 +799,9 @@
   font-size: 12px;
   text-align: left;
 }
+.themeRow > span:last-child { display: grid; gap: 2px; }
+.themeRow b { font-size: 12px; font-weight: 700; }
+.themeRow small { color: var(--wallet-muted); font-size: 10px; }
 
 .themeRow:hover {
   background: color-mix(in srgb, var(--wallet-text) 5%, transparent);
@@ -617,11 +813,12 @@
 }
 
 .themeSwatch {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset -7px -7px 9px rgba(0,0,0,.22), inset 4px 4px 7px rgba(255,255,255,.3), 0 3px 10px color-mix(in srgb, var(--wallet-accent) 35%, transparent);
 }
 
 .address {
@@ -729,23 +926,29 @@
   z-index: 1;
   margin: auto;
   text-align: center;
-  padding: 40px;
+  padding: 42px;
   border: 1px solid var(--wallet-border);
-  border-radius: 16px;
+  border-radius: 24px;
   background: var(--wallet-panel);
-  max-width: 360px;
-  box-shadow: 0 20px 60px color-mix(in srgb, var(--wallet-text) 8%, transparent);
+  max-width: 420px;
+  box-shadow: 0 35px 95px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .08);
 }
+.walletRoot[data-theme="cosmic"] .loginGate { background: linear-gradient(145deg, rgba(24, 50, 84, .88), rgba(8, 25, 50, .94)); backdrop-filter: blur(24px); }
+.loginMark { display: grid; place-items: center; width: 78px; height: 78px; margin: 0 auto 17px; border-radius: 23px; background: radial-gradient(circle, rgba(42, 114, 231, .32), rgba(18, 48, 93, .12)); box-shadow: 0 0 48px rgba(53, 147, 255, .26); }
+.loginMark img { width: 64px; height: 64px; object-fit: contain; }
+.loginEyebrow { color: var(--wallet-accent); letter-spacing: .2em; font-size: 10px; font-weight: 800; }
 
 .loginGate h1 {
-  font-size: 20px;
-  margin: 0 0 8px;
+  font-size: 29px;
+  letter-spacing: -.04em;
+  margin: 11px 0 10px;
 }
 
 .loginGate p {
   color: var(--wallet-muted);
-  font-size: 13px;
-  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 26px;
 }
 
 .loginBtn {
@@ -757,7 +960,14 @@
   font-weight: 700;
   cursor: pointer;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  box-shadow: 0 12px 30px rgba(25, 105, 211, .25);
 }
+.loginBtn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.loginBtn:focus-visible { outline: 2px solid #b3e8ff; outline-offset: 3px; }
 
 .modalOverlay {
   position: fixed;
@@ -820,29 +1030,30 @@
   display: block;
 }
 
-.fieldInput {
-  /*
-   * -webkit-appearance/appearance: none is what actually fixed this on
-   * iOS Safari — reported twice as a black background on real phones
-   * after the earlier color-scheme fix (which only addressed Chromium's
-   * separate "auto dark for forms" behavior). Safari's <input> keeps its
-   * own native capsule chrome — which follows system Dark Mode regardless
-   * of page theme — unless appearance is reset; <textarea> never had this
-   * chrome, which is why it always looked right while <input> didn't.
-   */
+.fieldHint { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; color: var(--wallet-muted); }
+
+.walletRoot .fieldInput.fieldInput {
+  /* globals.css has input:not([type="checkbox"]):not([type="radio"]),
+     which outranks a single class selector and painted these fields black. */
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  background: color-mix(in srgb, var(--wallet-text) 5%, var(--wallet-panel));
-  border: 1px solid var(--wallet-border);
-  border-radius: 10px;
+  background-color: var(--wallet-input-bg);
+  border: 1px solid var(--wallet-input-border);
+  border-radius: 14px;
   color: var(--wallet-text);
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 12px 14px;
+  font-size: 16px;
   font-family: inherit;
+  color-scheme: inherit;
   box-sizing: border-box;
+  height: auto;
+  min-height: 46px;
+  box-shadow: inset 0 1px 2px rgba(28, 52, 90, .04), 0 5px 16px var(--wallet-accent-soft);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
+
+textarea.fieldInput { resize: vertical; min-height: 92px; line-height: 1.45; }
 
 .fieldInput::placeholder {
   color: var(--wallet-muted);
@@ -851,7 +1062,7 @@
 
 .fieldInput:focus {
   outline: none;
-  border-color: var(--wallet-accent-dim);
+  border-color: var(--wallet-accent);
   box-shadow: 0 0 0 3px var(--wallet-accent-soft);
 }
 
@@ -931,6 +1142,12 @@ select.fieldInput {
 }
 
 @media (max-width: 860px) {
+  .agentStage { width: 180px; height: 226px; margin-bottom: 16px; }
+  .agentStage .heroPortrait { width: 150px !important; height: 200px !important; }
+  .scenePlanet { width: 120vw; right: -54vw; bottom: -37vw; opacity: .48; }
+  .sceneOrbit { width: 140vw; right: -63vw; bottom: 8%; }
+  .walletRoot[data-theme="violet-light"] .scenePlanet { left: -62vw; bottom: -28vw; }
+  .walletRoot[data-theme="violet-dark"] .scenePlanet { width: 105vw; right: -7vw; bottom: -53vw; }
   .mobileOnlyBtn {
     display: inline-flex;
     align-items: center;
@@ -945,6 +1162,7 @@ select.fieldInput {
     cursor: pointer;
     flex-shrink: 0;
   }
+  .chatMoreBtn { opacity: 1; }
 
   .chatHeader {
     justify-content: space-between;
@@ -992,4 +1210,10 @@ select.fieldInput {
   .panelOpen {
     transform: translateX(0);
   }
+
+  .personaModal { max-height: calc(100dvh - 20px); border-radius: 20px; }
+  .personaGrid { gap: 8px; }
+  .personaCard { min-width: 0; }
+  .personaArt { aspect-ratio: 1 / 1.12; }
+  .blankChatBtn { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -12px 30px var(--wallet-panel), inset 0 1px 0 rgba(255,255,255,.09); }
 }
