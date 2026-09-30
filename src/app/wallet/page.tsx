@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePrivy, useSendTransaction, useFundWallet } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
@@ -28,36 +28,85 @@ const NETWORKS = WALLET_CHAINS.map((c) => ({ id: c.id, label: c.name }));
  */
 type Mood = "neutral" | "wise" | "excited" | "calm";
 
-const PRESET_AGENTS: { name: string; persona: string; accent: string; emoji: string; mood: Mood }[] = [
+const PRESET_AGENTS: { name: string; role: string; persona: string; accent: string; emoji: string; mood: Mood }[] = [
   {
-    name: "Ruslt",
-    persona: "Neutral, precise, professional. Get straight to the point, no filler.",
-    accent: "#5fe6a3",
-    emoji: "◆",
+    name: "Navigator", role: "Market explorer",
+    persona: "A thoughtful market navigator. Help discover assets and compare opportunities using only available verified information. Explain uncertainty plainly. Read-only: never claim to execute trades.",
+    accent: "#54bdff", emoji: "✧",
     mood: "neutral",
   },
   {
-    name: "Sage",
-    persona: "Calm and analytical. Explain your reasoning before conclusions, measured and thorough tone.",
-    accent: "#6fb7ff",
-    emoji: "🦉",
+    name: "Sentinel", role: "Risk guardian",
+    persona: "A precise, vigilant risk analyst. Examine wallet exposure and explain relevant risks with evidence and limitations. Read-only: never claim to protect funds or execute transactions.",
+    accent: "#78a6ff", emoji: "◇",
     mood: "wise",
   },
   {
-    name: "Bolt",
-    persona: "Energetic and casual. Short, punchy, upbeat — talk like a sharp friend, not a bank. Light use of emoji is fine.",
-    accent: "#ff9d4d",
-    emoji: "⚡",
-    mood: "excited",
-  },
-  {
-    name: "Zen",
-    persona: "Minimalist. One or two sentences, max. No pleasantries, no filler — just the answer.",
-    accent: "#b98bff",
-    emoji: "◯",
+    name: "Architect", role: "Portfolio strategist",
+    persona: "A measured systems thinker. Break down portfolio structure and scenario tradeoffs in plain language, using only the data visible here. Read-only: never claim to rebalance funds.",
+    accent: "#9dbbff", emoji: "⬡",
     mood: "calm",
   },
+  {
+    name: "Vanguard", role: "Fast briefing",
+    persona: "An energetic but careful research scout. Give concise market briefings and highlight what needs checking next. Do not invent real-time facts. Read-only: never claim to place orders.",
+    accent: "#5a8ff4", emoji: "↗",
+    mood: "excited",
+  },
+  { name: "Oracle", role: "Data intelligence", persona: "A calm data analyst. Interpret on-chain and wallet information with context, caveats and transparent reasoning. Read-only: never claim to predict prices or move assets.", accent: "#a8d7ff", emoji: "✦", mood: "wise" },
+  { name: "Nova", role: "Discovery scout", persona: "An adventurous but grounded guide to new listings and ecosystems. Separate verified facts from possibilities. Read-only: never claim to make transactions.", accent: "#4edbff", emoji: "✳", mood: "excited" },
+  { name: "Astra", role: "Research companion", persona: "A patient researcher. Compare issuers, chains and asset details, explaining methodology and uncertainty. Read-only: never claim to execute trades.", accent: "#8dafff", emoji: "✧", mood: "calm" },
+  { name: "Cipher", role: "On-chain analyst", persona: "A meticulous on-chain analyst. Trace patterns in the available wallet data and flag anomalies without speculation. Read-only: never claim to send transactions.", accent: "#56b4ff", emoji: "⌁", mood: "neutral" },
 ];
+
+function AgentPortrait({ name, className = "", size = 36 }: { name: string; className?: string; size?: number }) {
+  const index = PRESET_AGENTS.findIndex((agent) => agent.name === name);
+  if (index < 0) return null;
+  const x = (index % 4) * 100 / 3;
+  const y = index < 4 ? 0 : 100;
+  return <span className={`${styles.agentPortrait} ${className}`} role="img" aria-label={`${name} portrait`} style={{ backgroundPosition: `${x}% ${y}%`, width: size, height: size }} />;
+}
+
+/** Custom agents have no uploaded portrait yet; assign a stable character
+ * from the existing eight so their welcome view still has a visual identity. */
+function portraitForAgent(name?: string): string {
+  if (!name) return PRESET_AGENTS[0].name;
+  if (PRESET_AGENTS.some((agent) => agent.name === name)) return name;
+  const index = Array.from(name).reduce((sum, char) => sum + (char.codePointAt(0) ?? 0), 0) % PRESET_AGENTS.length;
+  return PRESET_AGENTS[index].name;
+}
+
+type WalletIconName = "chat" | "agents" | "wallet" | "send" | "swap" | "receive" | "buy" | "theme" | "menu" | "more" | "pin" | "trash";
+function WalletIcon({ name, size = 20 }: { name: WalletIconName; size?: number }) {
+  const paths: Record<WalletIconName, ReactNode> = {
+    chat: <><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-9.5a7.5 7.5 0 1 1 17 0Z" /><path d="M7 11.5h9M7 15h5" /></>,
+    agents: <><path d="m12 2 2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2L12 2Z" /><path d="M12 8v8M8 12h8" /></>,
+    wallet: <><rect x="3" y="5" width="18" height="15" rx="3" /><path d="M3 9h18M16 15h2" /></>,
+    send: <><path d="M5 19 19 5M9 5h10v10" /></>,
+    swap: <><path d="M4 8h15l-3-3M20 16H5l3 3" /></>,
+    receive: <><path d="M12 3v16m-6-6 6 6 6-6M4 21h16" /></>,
+    buy: <><circle cx="12" cy="12" r="9" /><path d="M12 7v10M7 12h10" /></>,
+    theme: <><path d="M12 3a9 9 0 1 0 0 18h1.5a2.2 2.2 0 0 0 1.7-3.6 1.6 1.6 0 0 1 1.2-2.6H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z" /><path d="M7.5 11h.01M10 7h.01M15 7.5h.01M17 11h.01" /></>,
+    menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
+    more: <><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" /></>,
+    pin: <><path d="m14 4 6 6-3 1-4 4-1 5-2-6-5-5 5-1 4-4Z" /><path d="m9 15-5 5" /></>,
+    trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></>,
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
+
+const CHAT_PINS_EVENT = "auevo-wallet-chat-pins-change";
+function subscribeToChatPins(callback: () => void) {
+  window.addEventListener(CHAT_PINS_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(CHAT_PINS_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+function getChatPinsSnapshot(key: string) {
+  try { return localStorage.getItem(key) ?? "[]"; } catch { return "[]"; }
+}
 
 /** A preset's mood by name, for agents already saved to the DB (which only
  * carries name/persona/accent/emoji — see migration 0018) — lets the chat
@@ -73,7 +122,8 @@ function moodForAgentName(name: string): Mood | null {
  * "Bolt" read as different characters at a glance, not the same dot in a
  * different shade. Pure inline SVG: no image assets, crisp at any size.
  */
-function PersonaAvatar({ mood, color, size = 36 }: { mood: Mood; color: string; size?: number }) {
+function PersonaAvatar({ mood, color, size = 36, name }: { mood: Mood; color: string; size?: number; name?: string }) {
+  if (name && PRESET_AGENTS.some((p) => p.name === name)) return <AgentPortrait name={name} size={size} />;
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" style={{ flexShrink: 0 }}>
       <circle cx="20" cy="20" r="20" fill={color} />
@@ -116,12 +166,13 @@ function PersonaAvatar({ mood, color, size = 36 }: { mood: Mood; color: string; 
  * per-viewer display preference, never something the server needs to know
  * or that other people should see.
  */
-const THEMES: { id: string; label: string; swatch: string }[] = [
-  { id: "blue-light", label: "Light (site default)", swatch: "#2458e8" },
-  { id: "sky-light", label: "Sky", swatch: "#0fb3d6" },
-  { id: "violet-light", label: "Violet", swatch: "#7c4dff" },
-  { id: "green-dark", label: "Midnight", swatch: "#5fe6a3" },
-  { id: "violet-dark", label: "Violet Dark", swatch: "#b98bff" },
+const THEMES: { id: string; label: string; description: string; swatch: string }[] = [
+  { id: "cosmic", label: "Deep Orbit", description: "Cobalt planet", swatch: "#52bdff" },
+  { id: "blue-light", label: "Lunar Glass", description: "Silver daylight", swatch: "#2458e8" },
+  { id: "sky-light", label: "Ice Nebula", description: "Frozen cyan", swatch: "#0fb3d6" },
+  { id: "violet-light", label: "Aurora Pearl", description: "Soft stellar veil", swatch: "#7c4dff" },
+  { id: "green-dark", label: "Bio Cosmos", description: "Emerald life", swatch: "#5fe6a3" },
+  { id: "violet-dark", label: "Event Horizon", description: "Dark singularity", swatch: "#b98bff" },
 ];
 const THEME_STORAGE_KEY = "auevo-wallet-theme";
 const THEME_CHANGE_EVENT = "auevo-wallet-theme-change";
@@ -147,14 +198,14 @@ function subscribeToTheme(callback: () => void) {
 function getThemeSnapshot(): string {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return saved && THEMES.some((t) => t.id === saved) ? saved : "blue-light";
+    return saved && THEMES.some((t) => t.id === saved) ? saved : "cosmic";
   } catch {
-    return "blue-light";
+    return "cosmic";
   }
 }
 
 function getThemeServerSnapshot(): string {
-  return "blue-light";
+  return "cosmic";
 }
 
 function useWalletTheme(): [string, (id: string) => void] {
@@ -223,6 +274,8 @@ function Shell({ children, theme }: { children: React.ReactNode; theme: string }
   return (
     <div className={styles.walletRoot} data-theme={theme}>
       <div className={styles.spaceBg}>
+        <span className={styles.scenePlanet} />
+        <span className={styles.sceneOrbit} />
         {COMETS.map((c, i) => (
           <span
             key={i}
@@ -240,10 +293,12 @@ function LoginGate({ theme, onLogin }: { theme: string; onLogin: () => void }) {
   return (
     <Shell theme={theme}>
       <div className={styles.loginGate}>
-        <h1>AUEVO Wallet</h1>
-        <p>Sign in with email, phone or X. No seed phrase to write down — you can always recover access the same way.</p>
+        <div className={styles.loginMark}><AuevoMark /></div>
+        <span className={styles.loginEyebrow}>AUEVO WALLET</span>
+        <h1>Your universe starts here.</h1>
+        <p>Explore your assets with a cosmic AI guide. Sign in with email, phone or X; your access remains recoverable without a seed phrase to write down.</p>
         <button className={styles.loginBtn} onClick={onLogin}>
-          Sign up / Login
+          Enter the wallet <span aria-hidden="true">↗</span>
         </button>
       </div>
     </Shell>
@@ -273,8 +328,22 @@ function WalletApp({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [chatStartBusy, setChatStartBusy] = useState(false);
+  const [chatStartError, setChatStartError] = useState<string | null>(null);
+  const [chatMenuId, setChatMenuId] = useState<string | null>(null);
+  const [chatActionBusy, setChatActionBusy] = useState<string | null>(null);
+  const [chatListError, setChatListError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatPinsKey = `auevo-wallet-chat-pins:${address.toLowerCase()}`;
+  const chatPinsSnapshot = useSyncExternalStore(
+    subscribeToChatPins,
+    () => getChatPinsSnapshot(chatPinsKey),
+    () => "[]",
+  );
+  const pinnedChatIds = useMemo(() => {
+    try { return new Set<string>(JSON.parse(chatPinsSnapshot)); } catch { return new Set<string>(); }
+  }, [chatPinsSnapshot]);
 
   const profileSynced = useRef(false);
   useEffect(() => {
@@ -293,6 +362,10 @@ function WalletApp({
     queryKey: ["wallet-chats"],
     queryFn: () => walletFetchJson<Chat[]>("/api/wallet/chats"),
   });
+  const orderedChats = useMemo(
+    () => [...(chatsQuery.data ?? [])].sort((a, b) => Number(pinnedChatIds.has(b.id)) - Number(pinnedChatIds.has(a.id))),
+    [chatsQuery.data, pinnedChatIds],
+  );
 
   const agentsQuery = useQuery({
     queryKey: ["wallet-agents"],
@@ -318,6 +391,44 @@ function WalletApp({
   const activeChat = (chatsQuery.data ?? []).find((c) => c.id === effectiveChatId) ?? null;
   const activeAgent = (agentsQuery.data ?? []).find((a) => a.id === activeChat?.agent_id) ?? null;
 
+  function openPersonaPicker() {
+    setChatStartError(null);
+    setShowPersonaPicker(true);
+  }
+
+  function setChatPinned(chatId: string, pinned: boolean) {
+    const next = new Set(pinnedChatIds);
+    if (pinned) next.add(chatId);
+    else next.delete(chatId);
+    try { localStorage.setItem(chatPinsKey, JSON.stringify([...next])); } catch {}
+    window.dispatchEvent(new Event(CHAT_PINS_EVENT));
+    setChatMenuId(null);
+  }
+
+  async function deleteChat(chatId: string) {
+    if (!window.confirm("Delete this chat and its messages? This cannot be undone.")) return;
+    setChatActionBusy(chatId);
+    setChatListError(null);
+    try {
+      const response = await walletFetch(`/api/wallet/chats/${chatId}`, { method: "DELETE" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? `Could not delete chat (${response.status})`);
+      }
+      const remaining = orderedChats.filter((chat) => chat.id !== chatId);
+      qc.setQueryData<Chat[]>(["wallet-chats"], (current) => (current ?? []).filter((chat) => chat.id !== chatId));
+      qc.removeQueries({ queryKey: ["wallet-messages", chatId] });
+      setChatPinned(chatId, false);
+      if (effectiveChatId === chatId) setSelectedChatId(remaining[0]?.id ?? null);
+      await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
+    } catch (error) {
+      setChatListError(error instanceof Error ? error.message : "Could not delete the chat.");
+    } finally {
+      setChatActionBusy(null);
+      setChatMenuId(null);
+    }
+  }
+
   /**
    * Starts a chat with a given personality (a preset from PRESET_AGENTS,
    * or a user's own saved agent) — or a blank, agent-less chat when
@@ -326,27 +437,38 @@ function WalletApp({
    * name), so a re-pick just reuses the same row.
    */
   async function startChat(agent?: { name: string; persona: string; accent: string; emoji: string } | Agent) {
-    let agentId: string | null = null;
-    if (agent) {
-      const created = await walletFetchJson<Agent>("/api/wallet/agents", {
+    if (chatStartBusy) return;
+    setChatStartBusy(true);
+    setChatStartError(null);
+    try {
+      let agentId: string | null = null;
+      if (agent) {
+        const created = await walletFetchJson<Agent>("/api/wallet/agents", {
+          method: "POST",
+          body: JSON.stringify(
+            "id" in agent
+              ? { name: agent.name, persona: agent.persona, accentColor: agent.accent_color, emoji: agent.emoji }
+              : { name: agent.name, persona: agent.persona, accentColor: agent.accent, emoji: agent.emoji }
+          ),
+        });
+        agentId = created.id;
+        await qc.invalidateQueries({ queryKey: ["wallet-agents"] });
+      }
+      const chat = await walletFetchJson<Chat>("/api/wallet/chats", {
         method: "POST",
-        body: JSON.stringify(
-          "id" in agent
-            ? { name: agent.name, persona: agent.persona, accentColor: agent.accent_color, emoji: agent.emoji }
-            : { name: agent.name, persona: agent.persona, accentColor: agent.accent, emoji: agent.emoji }
-        ),
+        body: JSON.stringify({ agentId, title: agent?.name ?? "Blank chat" }),
       });
-      agentId = created.id;
-      await qc.invalidateQueries({ queryKey: ["wallet-agents"] });
+      setSelectedChatId(chat.id);
+      setTab("chats");
+      setShowPersonaPicker(false);
+      setSidebarOpen(false);
+      setPanelOpen(false);
+      await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
+    } catch (error) {
+      setChatStartError(error instanceof Error ? error.message : "Could not create the chat. Please try again.");
+    } finally {
+      setChatStartBusy(false);
     }
-    const chat = await walletFetchJson<Chat>("/api/wallet/chats", {
-      method: "POST",
-      body: JSON.stringify({ agentId, title: agent?.name ?? null }),
-    });
-    await qc.invalidateQueries({ queryKey: ["wallet-chats"] });
-    setSelectedChatId(chat.id);
-    setShowPersonaPicker(false);
-    setSidebarOpen(false);
   }
 
   async function sendMessage() {
@@ -398,10 +520,10 @@ function WalletApp({
 
         <div className={styles.navList}>
           <button className={tab === "chats" ? styles.navItemActive : styles.navItem} onClick={() => setTab("chats")}>
-            💬 Chats
+            <WalletIcon name="chat" size={19} /> Chats
           </button>
           <button className={tab === "agents" ? styles.navItemActive : styles.navItem} onClick={() => setTab("agents")}>
-            ✦ Agents
+            <WalletIcon name="agents" size={19} /> Agents
           </button>
         </div>
 
@@ -409,26 +531,44 @@ function WalletApp({
           <>
             <div className={styles.chatListLabel}>
               <span>RECENT CHATS</span>
-              <button onClick={() => setShowPersonaPicker(true)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
+              <button onClick={openPersonaPicker} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer" }}>
                 +
               </button>
             </div>
             <div className={styles.chatList}>
               {(chatsQuery.data ?? []).length === 0 && <span className={styles.chatListLabel}>Start a conversation.</span>}
-              {(chatsQuery.data ?? []).map((c) => {
+              {chatListError && <div className={styles.chatListError} role="alert">{chatListError}</div>}
+              {orderedChats.map((c) => {
                 const agent = (agentsQuery.data ?? []).find((a) => a.id === c.agent_id);
+                const pinned = pinnedChatIds.has(c.id);
                 return (
-                  <button
-                    key={c.id}
-                    className={c.id === effectiveChatId ? styles.chatListItemActive : styles.chatListItem}
-                    onClick={() => {
-                      setSelectedChatId(c.id);
-                      setSidebarOpen(false);
-                    }}
-                  >
-                    {agent?.emoji ? `${agent.emoji} ` : ""}
-                    {c.title ?? "New chat"}
-                  </button>
+                  <div key={c.id} className={`${styles.chatListRow} ${c.id === effectiveChatId ? styles.chatListRowActive : ""}`}>
+                    <button
+                      type="button"
+                      className={styles.chatListItem}
+                      onClick={() => {
+                        setSelectedChatId(c.id);
+                        setChatMenuId(null);
+                        setSidebarOpen(false);
+                      }}
+                    >
+                      {pinned && <WalletIcon name="pin" size={13} />}
+                      <span>{agent?.emoji ? `${agent.emoji} ` : ""}{c.title ?? "New chat"}</span>
+                    </button>
+                    <button type="button" className={styles.chatMoreBtn} aria-label={`Actions for ${c.title ?? "chat"}`} aria-expanded={chatMenuId === c.id} onClick={() => setChatMenuId((open) => open === c.id ? null : c.id)}>
+                      <WalletIcon name="more" size={18} />
+                    </button>
+                    {chatMenuId === c.id && (
+                      <div className={styles.chatActionMenu}>
+                        <button type="button" onClick={() => setChatPinned(c.id, !pinned)}>
+                          <WalletIcon name="pin" size={16} /> {pinned ? "Unpin" : "Pin chat"}
+                        </button>
+                        <button type="button" className={styles.chatDeleteAction} onClick={() => deleteChat(c.id)} disabled={chatActionBusy === c.id}>
+                          <WalletIcon name="trash" size={16} /> {chatActionBusy === c.id ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -458,31 +598,37 @@ function WalletApp({
             <>
               <div className={styles.chatHeader}>
                 <button className={styles.mobileOnlyBtn} onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-                  ☰
+                  <WalletIcon name="menu" />
                 </button>
                 <span className={styles.chatHeaderTitle}>
-                  <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} />
+                  <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={22} name={activeAgent?.name} />
                   <span>{activeAgent ? activeAgent.name : "AUEVO"}</span>
                 </span>
                 <button className={styles.mobileOnlyBtn} onClick={() => setPanelOpen(true)} aria-label="Open wallet">
-                  👛
+                  <WalletIcon name="wallet" />
                 </button>
               </div>
               <div className={styles.messages}>
                 {(messagesQuery.data ?? []).length === 0 && !streamingText && (
                   <div className={styles.emptyState}>
-                    <p>Ask about your balances, or anything else. This agent can only read what you see here — it can&apos;t send transactions.</p>
+                    <div className={styles.agentStage}>
+                      <div className={styles.agentStageHalo} aria-hidden="true" />
+                      <AgentPortrait name={portraitForAgent(activeAgent?.name)} className={styles.heroPortrait} size={180} />
+                    </div>
+                    <h2>Your universe, your guide.</h2>
+                    <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
+                    <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent</button>
                   </div>
                 )}
                 {(messagesQuery.data ?? []).map((m) => (
                   <div key={m.id} className={m.role === "user" ? styles.msgRowUser : styles.msgRow}>
-                    {m.role === "assistant" && <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} />}
+                    {m.role === "assistant" && <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} name={activeAgent?.name} />}
                     <div className={m.role === "user" ? styles.msgBubbleUser : styles.msgBubble}>{m.content}</div>
                   </div>
                 ))}
                 {streamingText !== null && (
                   <div className={styles.msgRow}>
-                    <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} />
+                    <PersonaAvatar mood={mood ?? "neutral"} color={avatarColor} size={28} name={activeAgent?.name} />
                     <div className={styles.msgBubble}>{streamingText || "…"}</div>
                   </div>
                 )}
@@ -506,7 +652,7 @@ function WalletApp({
             onChange={(e) => setInput(e.target.value)}
           />
           <button type="submit" className={styles.sendBtn} disabled={!input.trim() || streamingText !== null}>
-            ↑
+            <WalletIcon name="send" />
           </button>
         </form>
       </main>
@@ -543,13 +689,13 @@ function WalletApp({
           onPick={(agent) => startChat(agent)}
           onBlank={() => startChat()}
           onClose={() => setShowPersonaPicker(false)}
+          busy={chatStartBusy}
+          error={chatStartError}
         />
       )}
     </Shell>
   );
 }
-
-const SWATCHES = ["#5fe6a3", "#6fb7ff", "#ff9d4d", "#b98bff", "#ff7a9c", "#ffe066"];
 
 function AgentsPanel({
   agents,
@@ -562,8 +708,6 @@ function AgentsPanel({
 }) {
   const [name, setName] = useState("");
   const [persona, setPersona] = useState("");
-  const [emoji, setEmoji] = useState("✦");
-  const [accent, setAccent] = useState(SWATCHES[0]);
   const [busy, setBusy] = useState(false);
 
   async function create() {
@@ -572,7 +716,7 @@ function AgentsPanel({
     try {
       await walletFetchJson("/api/wallet/agents", {
         method: "POST",
-        body: JSON.stringify({ name, persona, emoji, accentColor: accent }),
+        body: JSON.stringify({ name, persona }),
       });
       setName("");
       setPersona("");
@@ -589,7 +733,7 @@ function AgentsPanel({
         return (
           <button key={a.id} className={styles.agentRow} onClick={() => onStartChat(a)} title="Start a chat with this agent">
             {mood ? (
-              <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} />
+              <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={26} name={a.name} />
             ) : (
               <span className={styles.agentRowEmoji} style={{ background: a.accent_color ?? "var(--wallet-accent)" }}>
                 {a.emoji ?? "✦"}
@@ -600,36 +744,20 @@ function AgentsPanel({
         );
       })}
       <div className={styles.field} style={{ marginTop: 8 }}>
-        <label className={styles.fieldLabel}>Name</label>
-        <input className={styles.fieldInput} placeholder="Agent name" value={name} onChange={(e) => setName(e.target.value)} />
+        <label className={styles.fieldLabel} htmlFor="agent-name">Name</label>
+        <input id="agent-name" className={styles.fieldInput} placeholder="Agent name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className={styles.field}>
-        <label className={styles.fieldLabel}>Persona</label>
+        <label className={styles.fieldLabel} htmlFor="agent-persona">Persona</label>
         <textarea
+          id="agent-persona"
           className={styles.fieldInput}
-          placeholder="Persona / instructions (optional)"
+          placeholder="E.g. Explain wallet activity clearly and keep answers concise."
           value={persona}
           onChange={(e) => setPersona(e.target.value)}
           rows={3}
         />
-      </div>
-      <div className={styles.field}>
-        <label className={styles.fieldLabel}>Emoji / glyph</label>
-        <input className={styles.fieldInput} placeholder="✦" value={emoji} maxLength={4} onChange={(e) => setEmoji(e.target.value)} />
-      </div>
-      <div className={styles.field}>
-        <label className={styles.fieldLabel}>Color</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          {SWATCHES.map((c) => (
-            <button
-              key={c}
-              onClick={() => setAccent(c)}
-              aria-label={`Pick color ${c}`}
-              className={styles.colorSwatch}
-              style={{ background: c, outline: accent === c ? "2px solid var(--wallet-text)" : "2px solid transparent" }}
-            />
-          ))}
-        </div>
+        <span className={styles.fieldHint}>These instructions shape how your agent responds in chat. Optional.</span>
       </div>
       <button className={styles.primaryBtn} onClick={create} disabled={busy || !name.trim()}>
         Create agent
@@ -643,19 +771,23 @@ function PersonaPicker({
   onPick,
   onBlank,
   onClose,
+  busy,
+  error,
 }: {
   customAgents: Agent[];
   onPick: (agent: { name: string; persona: string; accent: string; emoji: string } | Agent) => void;
   onBlank: () => void;
   onClose: () => void;
+  busy: boolean;
+  error: string | null;
 }) {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles.modal} ${styles.personaModal}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div>
             <div className={styles.modalEyebrow}>NEW CHAT</div>
-            <div className={styles.modalTitle}>Pick a personality</div>
+            <div className={styles.modalTitle}>Choose your agent</div>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>
             ✕
@@ -664,15 +796,16 @@ function PersonaPicker({
 
         <div className={styles.personaGrid}>
           {PRESET_AGENTS.map((p) => (
-            <button key={p.name} className={styles.personaCard} style={{ borderColor: p.accent }} onClick={() => onPick(p)}>
-              <PersonaAvatar mood={p.mood} color={p.accent} size={44} />
+            <button type="button" key={p.name} className={styles.personaCard} onClick={() => onPick(p)} disabled={busy}>
+              <AgentPortrait name={p.name} className={styles.personaArt} size={120} />
               <span className={styles.personaName}>{p.name}</span>
+              <span className={styles.personaRole}>{p.role}</span>
             </button>
           ))}
-          {customAgents.map((a) => {
+          {customAgents.filter((a) => !PRESET_AGENTS.some((p) => p.name === a.name)).map((a) => {
             const mood = moodForAgentName(a.name);
             return (
-              <button key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)}>
+              <button type="button" key={a.id} className={styles.personaCard} style={{ borderColor: a.accent_color ?? undefined }} onClick={() => onPick(a)} disabled={busy}>
                 {mood ? (
                   <PersonaAvatar mood={mood} color={a.accent_color ?? "var(--wallet-accent)"} size={44} />
                 ) : (
@@ -686,8 +819,9 @@ function PersonaPicker({
           })}
         </div>
 
-        <button className={styles.primaryBtn} style={{ marginTop: 14, background: "transparent", border: "1px solid var(--wallet-border)", color: "var(--wallet-text)" }} onClick={onBlank}>
-          Start blank chat
+        {error && <div className={styles.pickerError} role="alert">{error}</div>}
+        <button type="button" className={`${styles.primaryBtn} ${styles.blankChatBtn}`} onClick={onBlank} disabled={busy}>
+          {busy ? "Creating chat…" : "Start blank chat"}
         </button>
       </div>
     </div>
@@ -761,16 +895,16 @@ function WalletPanel({
 
       <div className={styles.actionRow}>
         <button className={styles.actionBtn} onClick={onSend}>
-          ↗<span>Send</span>
+          <WalletIcon name="send" size={23} /><span>Send</span>
         </button>
         <button className={styles.actionBtn} onClick={onSwap}>
-          ⇄<span>Swap</span>
+          <WalletIcon name="swap" size={23} /><span>Swap</span>
         </button>
         <button className={styles.actionBtn} onClick={onReceive}>
-          ↓<span>Receive</span>
+          <WalletIcon name="receive" size={23} /><span>Receive</span>
         </button>
         <button className={styles.actionBtn} onClick={handleBuy} disabled={buyBusy}>
-          +<span>Buy</span>
+          <WalletIcon name="buy" size={23} /><span>Buy</span>
         </button>
       </div>
       {buyError && <div className={styles.errorText}>{buyError}</div>}
@@ -824,7 +958,7 @@ function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string
   return (
     <div style={{ position: "relative" }} ref={rootRef}>
       <button className={styles.themeBtn} onClick={() => setOpen((v) => !v)} title="Color scheme" aria-label="Change color scheme">
-        🎨
+        <WalletIcon name="theme" size={19} />
       </button>
       {open && (
         <div className={styles.themePanel} style={{ position: "absolute", right: 0, top: 36, zIndex: 5, minWidth: 180 }}>
@@ -838,7 +972,7 @@ function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string
               }}
             >
               <span className={styles.themeSwatch} style={{ background: t.swatch }} />
-              {t.label}
+              <span><b>{t.label}</b><small>{t.description}</small></span>
             </button>
           ))}
         </div>
