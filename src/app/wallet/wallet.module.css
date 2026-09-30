@@ -1609,6 +1609,76 @@ select.fieldInput {
   outline-offset: 2px;
 }
 
+/* Add funds modal (AddFundsModal in page.tsx) — a picker of funding
+   methods instead of one opaque "Buy" button. */
+.fundList {
+  display: flex;
+  flex-direction: column;
+}
+
+.fundRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  border-top: 1px solid color-mix(in srgb, var(--wallet-text) 6%, transparent);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fundList > .fundRow:first-child {
+  border-top: none;
+}
+
+.fundRow:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.fundRow:not(:disabled):hover .fundRowTitle {
+  color: var(--wallet-accent);
+}
+
+.fundIconBox {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--wallet-accent-soft);
+  color: var(--wallet-accent);
+}
+
+.fundRowBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fundRowTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fundRowSub {
+  font-size: 12px;
+  color: var(--wallet-muted);
+  margin-top: 2px;
+}
+
+.fundChevron {
+  color: var(--wallet-muted);
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
 /*
  * Mobile layout — below this width the three-column desktop layout
  * (sidebar / chat / wallet panel, all always visible side by side) no
