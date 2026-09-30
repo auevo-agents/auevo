@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePrivy, useSendTransaction, useFundWallet } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
-import { encodeFunctionData, erc20Abi, parseEther, parseUnits } from "viem";
+import { encodeFunctionData, erc20Abi, formatUnits, parseEther, parseUnits } from "viem";
 import { AuevoMark } from "@/app/auevo-logo";
 import styles from "./wallet.module.css";
-import { fetchWalletBalances, type WalletBalance } from "@/lib/wallet/balances";
-import { USDC_ADDRESS, WALLET_CHAINS } from "@/lib/wallet/tokens";
+import { fetchWalletBalances, publicClientForChain, type WalletBalance } from "@/lib/wallet/balances";
+import { chainById, USDC_ADDRESS, USDC_DECIMALS, WALLET_CHAINS } from "@/lib/wallet/tokens";
 import { walletFetch, walletFetchJson } from "@/lib/wallet/api-client";
+import { ZEROX_NATIVE_TOKEN, type ZeroXQuote } from "@/lib/wallet/zerox";
 
 type Chat = { id: string; agent_id: string | null; title: string | null };
 type Agent = { id: string; name: string; persona: string; accent_color: string | null; emoji: string | null };
@@ -265,6 +266,7 @@ function WalletApp({
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showSend, setShowSend] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
+  const [showSwap, setShowSwap] = useState(false);
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   // Mobile-only drawers (see the @media block in wallet.module.css) — on
   // desktop the sidebar/panel are always visible and these stay false.
@@ -525,6 +527,7 @@ function WalletApp({
         loading={balancesQuery.isLoading}
         onSend={() => setShowSend(true)}
         onReceive={() => setShowReceive(true)}
+        onSwap={() => setShowSwap(true)}
         theme={theme}
         setTheme={setTheme}
         mobileOpen={panelOpen}
@@ -533,6 +536,7 @@ function WalletApp({
 
       {showSend && <SendModal onClose={() => setShowSend(false)} />}
       {showReceive && <ReceiveModal address={address} onClose={() => setShowReceive(false)} />}
+      {showSwap && <SwapModal address={address} onClose={() => setShowSwap(false)} />}
       {showPersonaPicker && (
         <PersonaPicker
           customAgents={agentsQuery.data ?? []}
@@ -696,6 +700,7 @@ function WalletPanel({
   loading,
   onSend,
   onReceive,
+  onSwap,
   theme,
   setTheme,
   mobileOpen,
@@ -706,6 +711,7 @@ function WalletPanel({
   loading: boolean;
   onSend: () => void;
   onReceive: () => void;
+  onSwap: () => void;
   theme: string;
   setTheme: (id: string) => void;
   mobileOpen: boolean;
@@ -757,7 +763,7 @@ function WalletPanel({
         <button className={styles.actionBtn} onClick={onSend}>
           ↗<span>Send</span>
         </button>
-        <button className={styles.actionBtn} disabled title="Coming soon">
+        <button className={styles.actionBtn} onClick={onSwap}>
           ⇄<span>Swap</span>
         </button>
         <button className={styles.actionBtn} onClick={onReceive}>
@@ -982,6 +988,199 @@ function ReceiveModal({ address, onClose }: { address: string; onClose: () => vo
           Send only assets on {network.label}. The same address exists on other networks too, but funds stay on whichever network you send them
           on.
         </div>
+      </div>
+    </div>
+  );
+}
+
+function swapTokenAddress(asset: "ETH" | "USDC", chainId: number): `0x${string}` {
+  return asset === "ETH" ? ZEROX_NATIVE_TOKEN : USDC_ADDRESS[chainId];
+}
+
+/**
+ * Real swap via 0x's AllowanceHolder API (src/lib/wallet/zerox.ts) — ETH
+ * <-> USDC only, same two assets Send/Receive already support. A quote is
+ * fetched on demand (never auto-refreshed: 0x quotes go stale in seconds
+ * and re-fetching silently out from under the user would show one number
+ * and execute another), then Execute does an approve() first when needed
+ * (USDC has no infinite allowance by default) and waits for its receipt
+ * before sending the swap transaction — two separate wallet confirmations,
+ * same as any other AllowanceHolder-flow swap UI.
+ */
+function SwapModal({ address, onClose }: { address: `0x${string}`; onClose: () => void }) {
+  const { sendTransaction } = useSendTransaction();
+  const [chainId, setChainId] = useState<number>(NETWORKS[0].id);
+  const [sellAsset, setSellAsset] = useState<"ETH" | "USDC">("ETH");
+  const [amount, setAmount] = useState("");
+  const [quote, setQuote] = useState<ZeroXQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
+  const [swapping, setSwapping] = useState(false);
+  const [step, setStep] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const buyAsset: "ETH" | "USDC" = sellAsset === "ETH" ? "USDC" : "ETH";
+  const sellDecimals = sellAsset === "ETH" ? 18 : USDC_DECIMALS;
+  const buyDecimals = buyAsset === "ETH" ? 18 : USDC_DECIMALS;
+
+  function resetQuote() {
+    setQuote(null);
+    setError(null);
+  }
+
+  async function getQuote() {
+    setError(null);
+    if (!amount || Number(amount) <= 0) {
+      setError("Enter an amount");
+      return;
+    }
+    setQuoting(true);
+    setQuote(null);
+    try {
+      const sellAmount = parseUnits(amount, sellDecimals).toString();
+      const q = await walletFetchJson<ZeroXQuote>("/api/wallet/swap/quote", {
+        method: "POST",
+        body: JSON.stringify({
+          chainId,
+          sellToken: swapTokenAddress(sellAsset, chainId),
+          buyToken: swapTokenAddress(buyAsset, chainId),
+          sellAmount,
+          taker: address,
+        }),
+      });
+      setQuote(q);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't get a quote");
+    } finally {
+      setQuoting(false);
+    }
+  }
+
+  async function executeSwap() {
+    if (!quote) return;
+    const chain = chainById(chainId);
+    if (!chain) return;
+    setError(null);
+    setSwapping(true);
+    try {
+      if (sellAsset === "USDC" && quote.issues.allowance) {
+        const spender = quote.issues.allowance.spender;
+        const sellAmount = BigInt(quote.sellAmount);
+        const client = publicClientForChain(chain);
+        const currentAllowance: bigint = await client.readContract({
+          address: USDC_ADDRESS[chainId],
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [address, spender],
+        });
+        if (currentAllowance < sellAmount) {
+          setStep("Approving USDC…");
+          const approveData = encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, sellAmount] });
+          const { hash } = await sendTransaction({ to: USDC_ADDRESS[chainId], data: approveData, chainId });
+          await client.waitForTransactionReceipt({ hash });
+        }
+      }
+
+      setStep("Swapping…");
+      const value = BigInt(quote.transaction.value || "0");
+      await sendTransaction({
+        to: quote.transaction.to,
+        data: quote.transaction.data,
+        chainId,
+        ...(value > 0n ? { value: `0x${value.toString(16)}` as `0x${string}` } : {}),
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Swap failed");
+    } finally {
+      setSwapping(false);
+      setStep(null);
+    }
+  }
+
+  const receiveAmount = quote ? formatUnits(BigInt(quote.buyAmount), buyDecimals) : null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalEyebrow}>YOUR AUEVO WALLET</div>
+            <div className={styles.modalTitle}>Swap</div>
+          </div>
+          <button className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>Network</label>
+          <select
+            className={styles.fieldInput}
+            value={chainId}
+            onChange={(e) => {
+              setChainId(Number(e.target.value));
+              resetQuote();
+            }}
+          >
+            {NETWORKS.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>From</label>
+          <select
+            className={styles.fieldInput}
+            value={sellAsset}
+            onChange={(e) => {
+              setSellAsset(e.target.value as "ETH" | "USDC");
+              resetQuote();
+            }}
+          >
+            <option value="ETH">ETH</option>
+            <option value="USDC">USDC</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>Amount</label>
+          <input
+            className={styles.fieldInput}
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              resetQuote();
+            }}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>To</label>
+          <input className={styles.fieldInput} value={buyAsset} readOnly />
+        </div>
+
+        {quote && receiveAmount && (
+          <div className={styles.hint}>
+            Estimated receive: {Number(receiveAmount).toFixed(buyAsset === "ETH" ? 5 : 2)} {buyAsset}. Confirmed only once you tap Swap below —
+            0x quotes expire within seconds.
+          </div>
+        )}
+
+        {error && <div className={styles.errorText}>{error}</div>}
+
+        {!quote ? (
+          <button className={styles.primaryBtn} onClick={getQuote} disabled={quoting}>
+            {quoting ? "Getting quote…" : "Get quote"}
+          </button>
+        ) : (
+          <button className={styles.primaryBtn} onClick={executeSwap} disabled={swapping}>
+            {swapping ? step ?? "Swapping…" : `Swap ${sellAsset} → ${buyAsset}`}
+          </button>
+        )}
       </div>
     </div>
   );
