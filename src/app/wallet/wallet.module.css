@@ -606,6 +606,9 @@
 }
 .emptyState h2 { margin: 18px 0 10px; color: var(--wallet-text); font-size: clamp(24px, 3vw, 34px); letter-spacing: -.045em; }
 .emptyState p { line-height: 1.65; }
+.agentWelcomeRole { display: inline-block; color: var(--wallet-accent); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.agentWelcomeTraits { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.agentWelcomeTraits span { padding: 7px 12px; border: 1px solid var(--wallet-accent-dim); border-radius: 999px; background: var(--wallet-accent-soft); color: var(--wallet-text); font-size: 12px; font-weight: 600; }
 .agentStage {
   position: relative;
   isolation: isolate;
