@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import styles from "./private-swap.module.css";
 
 type Token = {
@@ -105,6 +105,14 @@ export function PrivateSwapClient() {
   const selectedTo = useMemo(() => tokens.find((token) => token.id === toId), [tokens, toId]);
   const isTerminal = order ? terminalStatuses.has(order.status) : false;
 
+  // loadTokens reads these through a ref, not the closed-over state values,
+  // so it can stay a stable useCallback (deps: []) — the mount effect below
+  // that calls it must not re-fire every time the user picks a token.
+  const selectionRef = useRef({ fromId, toId });
+  useEffect(() => {
+    selectionRef.current = { fromId, toId };
+  }, [fromId, toId]);
+
   const loadTokens = useCallback(async (term: string) => {
     setLoadingTokens(true);
     setError("");
@@ -112,10 +120,17 @@ export function PrivateSwapClient() {
       const params = new URLSearchParams({ term });
       const data = await readJson<{ tokens?: Token[] }>(await fetch(`${API}/tokens?${params.toString()}`, { cache: "no-store", headers: houdiniHeaders() }));
       const nextTokens = Array.isArray(data.tokens) ? data.tokens.filter((token) => token?.id && token?.symbol) : [];
+      // Merge, not replace — a new search term's results shouldn't make the
+      // already-selected from/to token vanish from the list. But merging
+      // the FULL previous list (as this did before) means every past
+      // search's results stay in state forever, growing without bound the
+      // longer someone searches. Only the two tokens actually in use need
+      // keeping.
       setTokens((current) => {
+        const { fromId, toId } = selectionRef.current;
         const merged = [...nextTokens];
-        for (const token of current) if (!merged.some((item) => item.id === token.id)) merged.push(token);
-        return merged;
+        const keep = current.filter((token) => (token.id === fromId || token.id === toId) && !merged.some((item) => item.id === token.id));
+        return [...merged, ...keep];
       });
       setFromId((current) => current || nextTokens[0]?.id || "");
       setToId((current) => current || nextTokens.find((token) => token.id !== fromId)?.id || "");

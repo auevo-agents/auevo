@@ -350,6 +350,24 @@
   }
 }
 
+/* Page Visibility (data-hidden, set in Shell via useDocumentHidden in
+   page.tsx) — pauses every continuous animation while the tab is
+   backgrounded. These sit behind a blurred backdrop-filter glass panel
+   (.sidebar/.panel below), which forces the browser to keep re-compositing
+   the blur as long as anything behind it keeps moving — a real, ongoing
+   cost for as long as the tab is simply left open, not just a one-time
+   render cost. */
+.walletRoot[data-hidden] .spaceBg::before,
+.walletRoot[data-hidden] .spaceBg::after,
+.walletRoot[data-hidden] .comet,
+.walletRoot[data-hidden] .comet::after,
+.walletRoot[data-hidden] .scenePlanet,
+.walletRoot[data-hidden] .scenePlanet::before,
+.walletRoot[data-hidden] .scenePlanet::after,
+.walletRoot[data-hidden] .sceneOrbit {
+  animation-play-state: paused;
+}
+
 .sidebar {
   position: relative;
   z-index: 1;
