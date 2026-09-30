@@ -21,7 +21,10 @@ import { USDC_ADDRESS, USDC_DECIMALS, WALLET_CHAINS, type WalletChain } from "./
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above
 const clients = new Map<number, any>();
 
-function clientFor(chain: WalletChain) {
+/** Exported for SwapModal (page.tsx) — allowance reads and waiting for an
+ * approve/swap transaction's receipt need the same public client. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above
+export function publicClientForChain(chain: WalletChain): any {
   let client = clients.get(chain.id);
   if (!client) {
     client = createPublicClient({ chain, transport: http() });
@@ -40,7 +43,7 @@ export type WalletBalance = {
 
 export async function fetchWalletBalances(address: `0x${string}`): Promise<WalletBalance[]> {
   const reads = WALLET_CHAINS.flatMap((chain) => {
-    const client = clientFor(chain);
+    const client = publicClientForChain(chain);
 
     const eth = client.getBalance({ address }).then(
       (raw: bigint): WalletBalance => ({
