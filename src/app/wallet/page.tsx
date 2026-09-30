@@ -2,7 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePrivy, useSendTransaction, useFundWallet, useLinkAccount, useUnlinkOAuth, useExportWallet, type User } from "@privy-io/react-auth";
+import {
+  usePrivy,
+  useSendTransaction,
+  useLinkAccount,
+  useUnlinkOAuth,
+  useExportWallet,
+  useAddFunds,
+  useFundWalletWithBankDeposit,
+  useDepositAddress,
+  type User,
+} from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { encodeFunctionData, erc20Abi, formatUnits, parseEther, parseUnits } from "viem";
 import { mainnet, base } from "viem/chains";
@@ -612,6 +622,7 @@ function WalletApp({
   const [showSend, setShowSend] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [showSwap, setShowSwap] = useState(false);
+  const [showBuy, setShowBuy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [defaultChain, setDefaultChain] = useDefaultChain();
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
@@ -992,6 +1003,7 @@ function WalletApp({
         onSend={() => setShowSend(true)}
         onReceive={() => setShowReceive(true)}
         onSwap={() => setShowSwap(true)}
+        onBuy={() => setShowBuy(true)}
         onSettings={() => setShowSettings(true)}
         theme={theme}
         setTheme={setTheme}
@@ -1002,6 +1014,16 @@ function WalletApp({
       {showSend && <SendModal balances={balancesQuery.data ?? []} onClose={() => setShowSend(false)} />}
       {showReceive && <ReceiveModal address={address} onClose={() => setShowReceive(false)} />}
       {showSwap && <SwapModal address={address} balances={balancesQuery.data ?? []} onClose={() => setShowSwap(false)} />}
+      {showBuy && (
+        <AddFundsModal
+          address={address}
+          onReceive={() => {
+            setShowBuy(false);
+            setShowReceive(true);
+          }}
+          onClose={() => setShowBuy(false)}
+        />
+      )}
       {showSettings && (
         <SettingsModal
           address={address}
@@ -1165,6 +1187,7 @@ function WalletPanel({
   onSend,
   onReceive,
   onSwap,
+  onBuy,
   onSettings,
   theme,
   setTheme,
@@ -1177,6 +1200,7 @@ function WalletPanel({
   onSend: () => void;
   onReceive: () => void;
   onSwap: () => void;
+  onBuy: () => void;
   onSettings: () => void;
   theme: string;
   setTheme: (id: string) => void;
@@ -1184,27 +1208,8 @@ function WalletPanel({
   onMobileClose: () => void;
 }) {
   const [tab, setTab] = useState<"assets" | "activity">("assets");
-  const [buyBusy, setBuyBusy] = useState(false);
-  const [buyError, setBuyError] = useState<string | null>(null);
-  const { fundWallet } = useFundWallet();
 
   const usdcTotal = balances.filter((b) => b.symbol === "USDC").reduce((sum, b) => sum + Number(b.formatted), 0);
-
-  async function handleBuy() {
-    setBuyError(null);
-    setBuyBusy(true);
-    try {
-      await fundWallet({ address });
-    } catch (err) {
-      // fundWallet rejects silently (no visible UI) if Privy's dashboard
-      // hasn't enabled a funding method (MoonPay/Coinbase Onramp) for this
-      // app yet — surfacing the message here is what makes that visible
-      // instead of "the Buy button does nothing."
-      setBuyError(err instanceof Error ? err.message : "Buy isn't available yet");
-    } finally {
-      setBuyBusy(false);
-    }
-  }
 
   return (
     <aside className={`${styles.panel} ${mobileOpen ? styles.panelOpen : ""}`}>
@@ -1240,11 +1245,10 @@ function WalletPanel({
         <button className={styles.actionBtn} onClick={onReceive}>
           <WalletIcon name="receive" size={23} /><span>Receive</span>
         </button>
-        <button className={styles.actionBtn} onClick={handleBuy} disabled={buyBusy}>
+        <button className={styles.actionBtn} onClick={onBuy}>
           <WalletIcon name="buy" size={23} /><span>Buy</span>
         </button>
       </div>
-      {buyError && <div className={styles.errorText}>{buyError}</div>}
 
       <div className={styles.tabRow}>
         <button className={tab === "assets" ? styles.tabBtnActive : styles.tabBtn} onClick={() => setTab("assets")}>
@@ -1477,6 +1481,172 @@ function SettingsModal({
             <label className={styles.fieldLabel}>Default network for Send / Receive / Swap</label>
             <NetworkPicker chainId={defaultChain} onChange={setDefaultChain} />
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function caip2(chainId: number): `${string}:${string}` {
+  return `eip155:${chainId}`;
+}
+
+/**
+ * "Buy" used to be a single bare call to the deprecated useFundWallet with
+ * no fallback UI — this replaces it with Privy's current funding hooks
+ * (useAddFunds/useFundWalletWithBankDeposit/useDepositAddress), split into
+ * a picker the way most wallets present it instead of one opaque button.
+ * Card/bank/exchange all depend on funding providers enabled in this app's
+ * Privy Dashboard — not something this code can turn on, so a failure here
+ * surfaces Privy's own error rather than pretending it worked. Receive
+ * crypto never depends on that: it's just this wallet's own address/QR,
+ * so it hands off to the existing ReceiveModal.
+ */
+function AddFundsModal({
+  address,
+  onReceive,
+  onClose,
+}: {
+  address: `0x${string}`;
+  onReceive: () => void;
+  onClose: () => void;
+}) {
+  const [chainId, setChainId] = useState<number>(getDefaultChainSnapshot);
+  const { addFunds } = useAddFunds();
+  const { fund: fundByBank } = useFundWalletWithBankDeposit();
+  const { createDepositAddress } = useDepositAddress();
+  const [busyRow, setBusyRow] = useState<"card" | "bank" | "exchange" | null>(null);
+  const [rowError, setRowError] = useState<{ row: string; message: string } | null>(null);
+
+  const network = NETWORKS.find((n) => n.id === chainId) ?? NETWORKS[0];
+  const usdcAddress = USDC_ADDRESS[chainId];
+
+  async function handleCard() {
+    if (!usdcAddress) return;
+    setRowError(null);
+    setBusyRow("card");
+    try {
+      await addFunds({ destination: { address, chain: caip2(chainId), asset: usdcAddress }, fiat: { source: { defaultAsset: "usd" } } });
+      onClose();
+    } catch (err) {
+      setRowError({ row: "card", message: err instanceof Error ? err.message : "Card funding isn't available yet" });
+    } finally {
+      setBusyRow(null);
+    }
+  }
+
+  async function handleBank() {
+    if (!usdcAddress) return;
+    setRowError(null);
+    setBusyRow("bank");
+    try {
+      await fundByBank({
+        source: { assets: ["usd"], defaultAsset: "usd" },
+        destination: { asset: "usdc", chain: caip2(chainId), address },
+        provider: "bridge",
+      });
+      onClose();
+    } catch (err) {
+      setRowError({ row: "bank", message: err instanceof Error ? err.message : "Bank transfer isn't available yet" });
+    } finally {
+      setBusyRow(null);
+    }
+  }
+
+  async function handleExchange() {
+    if (!usdcAddress) return;
+    setRowError(null);
+    setBusyRow("exchange");
+    try {
+      await createDepositAddress({ destinationChain: caip2(chainId), destinationCurrency: usdcAddress, destinationAddress: address });
+      onClose();
+    } catch (err) {
+      setRowError({ row: "exchange", message: err instanceof Error ? err.message : "Couldn't start a deposit from an exchange" });
+    } finally {
+      setBusyRow(null);
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalEyebrow}>YOUR AUEVO WALLET</div>
+            <div className={styles.modalTitle}>Add funds</div>
+          </div>
+          <button className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>Network</label>
+          <NetworkPicker chainId={chainId} onChange={setChainId} />
+        </div>
+
+        <div className={styles.fieldLabel} style={{ marginBottom: 10 }}>
+          Choose how you&apos;d like to add funds.
+        </div>
+
+        <div className={styles.fundList}>
+          <button type="button" className={styles.fundRow} onClick={handleCard} disabled={!usdcAddress || busyRow !== null}>
+            <span className={styles.fundIconBox}>
+              <WalletIcon name="buy" size={19} />
+            </span>
+            <span className={styles.fundRowBody}>
+              <span className={styles.fundRowTitle}>Pay with card</span>
+              <span className={styles.fundRowSub}>
+                {busyRow === "card" ? "Opening…" : !usdcAddress ? `Not available on ${network.label}` : "Cards and digital payments"}
+              </span>
+            </span>
+            <span className={styles.fundChevron}>›</span>
+          </button>
+          {rowError?.row === "card" && <div className={styles.errorText}>{rowError.message}</div>}
+
+          <button type="button" className={styles.fundRow} onClick={handleBank} disabled={!usdcAddress || busyRow !== null}>
+            <span className={styles.fundIconBox}>
+              <WalletIcon name="wallet" size={19} />
+            </span>
+            <span className={styles.fundRowBody}>
+              <span className={styles.fundRowTitle}>Bank transfer</span>
+              <span className={styles.fundRowSub}>
+                {busyRow === "bank" ? "Opening…" : !usdcAddress ? `Not available on ${network.label}` : "Deposit from your bank"}
+              </span>
+            </span>
+            <span className={styles.fundChevron}>›</span>
+          </button>
+          {rowError?.row === "bank" && <div className={styles.errorText}>{rowError.message}</div>}
+
+          <button type="button" className={styles.fundRow} onClick={handleExchange} disabled={!usdcAddress || busyRow !== null}>
+            <span className={styles.fundIconBox}>
+              <WalletIcon name="swap" size={19} />
+            </span>
+            <span className={styles.fundRowBody}>
+              <span className={styles.fundRowTitle}>Transfer from exchange</span>
+              <span className={styles.fundRowSub}>
+                {busyRow === "exchange" ? "Opening…" : !usdcAddress ? `Not available on ${network.label}` : "Send crypto from your exchange"}
+              </span>
+            </span>
+            <span className={styles.fundChevron}>›</span>
+          </button>
+          {rowError?.row === "exchange" && <div className={styles.errorText}>{rowError.message}</div>}
+
+          <button type="button" className={styles.fundRow} onClick={onReceive}>
+            <span className={styles.fundIconBox}>
+              <WalletIcon name="receive" size={19} />
+            </span>
+            <span className={styles.fundRowBody}>
+              <span className={styles.fundRowTitle}>Receive crypto</span>
+              <span className={styles.fundRowSub}>Use your address or QR code</span>
+            </span>
+            <span className={styles.fundChevron}>›</span>
+          </button>
+        </div>
+
+        <div className={styles.hint}>
+          Card, bank transfer and exchange deposit go through funding providers enabled in this app&apos;s Privy Dashboard — if one errors, that&apos;s
+          where it gets turned on, not something fixable from this screen. Receive crypto always works — it&apos;s just your address.
         </div>
       </div>
     </div>
