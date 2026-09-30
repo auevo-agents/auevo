@@ -474,6 +474,32 @@ function useWalletTheme(): [string, (id: string) => void] {
   return [theme, setTheme];
 }
 
+function subscribeToVisibility(callback: () => void) {
+  document.addEventListener("visibilitychange", callback);
+  return () => document.removeEventListener("visibilitychange", callback);
+}
+
+function getVisibilitySnapshot(): boolean {
+  return document.hidden;
+}
+
+function getVisibilityServerSnapshot(): boolean {
+  return false;
+}
+
+/**
+ * The cosmic background (Shell below) runs two continuously-animating
+ * star layers plus several comets under a blurred glass sidebar/panel —
+ * backdrop-filter forces the browser to keep re-compositing that blur as
+ * the animation moves behind it, for as long as the tab exists, even
+ * backgrounded. Pausing the animations via CSS while the tab isn't
+ * visible (Page Visibility API) stops that recompute work outright
+ * instead of just reducing it, for every minute the tab sits unfocused.
+ */
+function useDocumentHidden(): boolean {
+  return useSyncExternalStore(subscribeToVisibility, getVisibilitySnapshot, getVisibilityServerSnapshot);
+}
+
 const DEFAULT_CHAIN_STORAGE_KEY = "auevo-wallet-default-chain";
 const DEFAULT_CHAIN_CHANGE_EVENT = "auevo-wallet-default-chain-change";
 
@@ -566,8 +592,9 @@ const COMETS = [
 ];
 
 function Shell({ children, theme }: { children: React.ReactNode; theme: string }) {
+  const hidden = useDocumentHidden();
   return (
-    <div className={styles.walletRoot} data-theme={theme}>
+    <div className={styles.walletRoot} data-theme={theme} data-hidden={hidden || undefined}>
       <div className={styles.spaceBg}>
         <span className={styles.scenePlanet} />
         <span className={styles.sceneOrbit} />
