@@ -272,11 +272,8 @@ const AGENT_WELCOME: Record<string, { intro: string; traits: [string, string] }>
   Cipher: { intro: "I trace on-chain patterns carefully and flag anomalies without jumping to conclusions.", traits: ["Precise", "On-chain analyst"] },
 };
 
-function customAgentIntro(persona: string): string {
-  const description = persona.trim().replace(/\s+/g, " ");
-  if (!description) return "I’m here to help you explore your wallet and markets with clarity.";
-  const summary = description.length > 140 ? `${description.slice(0, 137).replace(/\s+\S*$/, "")}…` : description;
-  return `I’ll follow the persona you created for me: ${summary}`;
+function customAgentIntro(): string {
+  return "I’ll follow the personality you created for me and help you explore your wallet and markets with clarity.";
 }
 
 function AgentPortrait({ name, className = "", size = 36 }: { name: string; className?: string; size?: number }) {
@@ -935,7 +932,7 @@ function WalletApp({
                       <>
                         <span className={styles.agentWelcomeRole}>{PRESET_AGENTS.find((a) => a.name === activeAgent.name)?.role ?? "Your custom agent"}</span>
                         <h2>Hi, I’m {activeAgent.name}.</h2>
-                        <p>{AGENT_WELCOME[activeAgent.name]?.intro ?? customAgentIntro(activeAgent.persona)}</p>
+                        <p>{AGENT_WELCOME[activeAgent.name]?.intro ?? customAgentIntro()}</p>
                         <div className={styles.agentWelcomeTraits} aria-label="Agent characteristics">
                           {(AGENT_WELCOME[activeAgent.name]?.traits ?? ["Personalized", "Read-only"]).map((trait) => <span key={trait}>{trait}</span>)}
                         </div>
