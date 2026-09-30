@@ -251,6 +251,24 @@ const PRESET_AGENTS: { name: string; role: string; persona: string; accent: stri
   { name: "Cipher", role: "On-chain analyst", persona: "A meticulous on-chain analyst. Trace patterns in the available wallet data and flag anomalies without speculation. Read-only: never claim to send transactions.", accent: "#56b4ff", emoji: "⌁", mood: "neutral" },
 ];
 
+const AGENT_WELCOME: Record<string, { intro: string; traits: [string, string] }> = {
+  Navigator: { intro: "I explore markets thoughtfully, compare opportunities using verified information, and explain uncertainty plainly.", traits: ["Thoughtful", "Market explorer"] },
+  Sentinel: { intro: "I watch for portfolio risks and explain what the available evidence can—and cannot—tell us.", traits: ["Vigilant", "Risk focused"] },
+  Architect: { intro: "I turn portfolio complexity into clear structures and practical scenarios you can understand.", traits: ["Measured", "Strategic"] },
+  Vanguard: { intro: "I deliver focused market briefings and point out what deserves a closer look next.", traits: ["Energetic", "Concise"] },
+  Oracle: { intro: "I make sense of wallet and on-chain data with calm, transparent reasoning.", traits: ["Calm", "Data minded"] },
+  Nova: { intro: "I’m your curious scout for new assets and ecosystems. I separate verified facts from possibilities.", traits: ["Curious", "Discovery scout"] },
+  Astra: { intro: "I research assets, issuers, and chains patiently, with a clear method and honest caveats.", traits: ["Patient", "Research led"] },
+  Cipher: { intro: "I trace on-chain patterns carefully and flag anomalies without jumping to conclusions.", traits: ["Precise", "On-chain analyst"] },
+};
+
+function customAgentIntro(persona: string): string {
+  const description = persona.trim().replace(/\s+/g, " ");
+  if (!description) return "I’m here to help you explore your wallet and markets with clarity.";
+  const summary = description.length > 140 ? `${description.slice(0, 137).replace(/\s+\S*$/, "")}…` : description;
+  return `I’ll follow the persona you created for me: ${summary}`;
+}
+
 function AgentPortrait({ name, className = "", size = 36 }: { name: string; className?: string; size?: number }) {
   const index = PRESET_AGENTS.findIndex((agent) => agent.name === name);
   if (index < 0) return null;
@@ -837,9 +855,24 @@ function WalletApp({
                 {(messagesQuery.data ?? []).length === 0 && !streamingText && (
                   <div className={styles.emptyState}>
                     <AnimatedAgentPortrait agentName={activeAgent?.name} />
-                    <h2>Your universe, your guide.</h2>
-                    <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
-                    <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent</button>
+                    {activeAgent ? (
+                      <>
+                        <span className={styles.agentWelcomeRole}>{PRESET_AGENTS.find((a) => a.name === activeAgent.name)?.role ?? "Your custom agent"}</span>
+                        <h2>Hi, I’m {activeAgent.name}.</h2>
+                        <p>{AGENT_WELCOME[activeAgent.name]?.intro ?? customAgentIntro(activeAgent.persona)}</p>
+                        <div className={styles.agentWelcomeTraits} aria-label="Agent characteristics">
+                          {(AGENT_WELCOME[activeAgent.name]?.traits ?? ["Personalized", "Read-only"]).map((trait) => <span key={trait}>{trait}</span>)}
+                        </div>
+                      </>
+                    ) : activeChat?.agent_id ? (
+                      <p>{agentsQuery.isPending ? "Loading your agent…" : "This agent is unavailable right now."}</p>
+                    ) : (
+                      <>
+                        <h2>Your universe, your guide.</h2>
+                        <p>Choose one of eight cosmic agents, or create your own. They can help you understand your wallet and markets; they can only read what you see here.</p>
+                        <button type="button" className={styles.chooseAgentBtn} onClick={openPersonaPicker}>Choose an agent</button>
+                      </>
+                    )}
                   </div>
                 )}
                 {(messagesQuery.data ?? []).map((m) => (
@@ -871,7 +904,7 @@ function WalletApp({
         >
           <input
             className={styles.composerInput}
-            placeholder="Message AUEVO Wallet…"
+            placeholder={activeAgent ? `Message ${activeAgent.name}…` : "Message AUEVO Wallet…"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
