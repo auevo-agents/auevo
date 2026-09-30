@@ -110,13 +110,19 @@ export async function POST(req: Request) {
         const msg = err instanceof Error ? err.message : "Agent error";
         controller.enqueue(encoder.encode(`\n\n[error: ${msg}]`));
       } finally {
-        controller.close();
+        // Persist BEFORE close(): close() is what makes the client's
+        // reader.read() resolve with done:true, which the client treats as
+        // "safe to invalidate the messages query now". Closing first meant
+        // the client could refetch before this insert had landed, getting
+        // back a list that didn't include the reply it just streamed —
+        // the reply would flash and then disappear.
         if (full) {
           await supabase
             .from("wallet_messages")
             .insert({ chat_id: chatId, role: "assistant", content: full });
           await supabase.from("wallet_chats").update({ updated_at: new Date().toISOString() }).eq("id", chatId);
         }
+        controller.close();
       }
     },
   });

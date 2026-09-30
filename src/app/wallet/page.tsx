@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePrivy, useSendTransaction, useFundWallet } from "@privy-io/react-auth";
+import { usePrivy, useSendTransaction, useFundWallet, useLinkAccount, useUnlinkOAuth, useExportWallet, type User } from "@privy-io/react-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { encodeFunctionData, erc20Abi, formatUnits, parseEther, parseUnits } from "viem";
 import { mainnet, base } from "viem/chains";
@@ -449,6 +449,51 @@ function useWalletTheme(): [string, (id: string) => void] {
   return [theme, setTheme];
 }
 
+const DEFAULT_CHAIN_STORAGE_KEY = "auevo-wallet-default-chain";
+const DEFAULT_CHAIN_CHANGE_EVENT = "auevo-wallet-default-chain-change";
+
+function subscribeToDefaultChain(callback: () => void) {
+  window.addEventListener(DEFAULT_CHAIN_CHANGE_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(DEFAULT_CHAIN_CHANGE_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+/** Also usable directly (not just via the hook below) as a plain lazy
+ * useState initializer — Send/Swap/Receive read this once at mount, since
+ * each is a freshly-mounted modal every time it opens. */
+function getDefaultChainSnapshot(): number {
+  try {
+    const saved = Number(localStorage.getItem(DEFAULT_CHAIN_STORAGE_KEY));
+    return NETWORKS.some((n) => n.id === saved) ? saved : NETWORKS[0].id;
+  } catch {
+    return NETWORKS[0].id;
+  }
+}
+
+function getDefaultChainServerSnapshot(): number {
+  return NETWORKS[0].id;
+}
+
+/** Same localStorage + useSyncExternalStore pattern as useWalletTheme —
+ * the Settings modal both reads and writes this reactively. */
+function useDefaultChain(): [number, (id: number) => void] {
+  const chainId = useSyncExternalStore(subscribeToDefaultChain, getDefaultChainSnapshot, getDefaultChainServerSnapshot);
+
+  function setChainId(id: number) {
+    try {
+      localStorage.setItem(DEFAULT_CHAIN_STORAGE_KEY, String(id));
+    } catch {
+      // Private mode / blocked storage — still applies for this tab below.
+    }
+    window.dispatchEvent(new Event(DEFAULT_CHAIN_CHANGE_EVENT));
+  }
+
+  return [chainId, setChainId];
+}
+
 export default function WalletPage() {
   const [theme, setTheme] = useWalletTheme();
 
@@ -481,9 +526,9 @@ function PrivyGate({ theme, setTheme }: { theme: string; setTheme: (id: string) 
         <div className={styles.emptyState}>Loading…</div>
       </Shell>
     );
-  if (!authenticated || !address) return <LoginGate theme={theme} onLogin={login} />;
+  if (!authenticated || !address || !user) return <LoginGate theme={theme} onLogin={login} />;
 
-  return <WalletApp address={address} onLogout={logout} theme={theme} setTheme={setTheme} />;
+  return <WalletApp address={address} user={user} onLogout={logout} theme={theme} setTheme={setTheme} />;
 }
 
 // Three comets, staggered so they never launch together — see .comet /
@@ -532,11 +577,13 @@ function LoginGate({ theme, onLogin }: { theme: string; onLogin: () => void }) {
 
 function WalletApp({
   address,
+  user,
   onLogout,
   theme,
   setTheme,
 }: {
   address: `0x${string}`;
+  user: User;
   onLogout: () => void;
   theme: string;
   setTheme: (id: string) => void;
@@ -547,6 +594,8 @@ function WalletApp({
   const [showSend, setShowSend] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [showSwap, setShowSwap] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [defaultChain, setDefaultChain] = useDefaultChain();
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   // Mobile-only drawers (see the @media block in wallet.module.css) — on
   // desktop the sidebar/panel are always visible and these stay false.
@@ -574,8 +623,17 @@ function WalletApp({
   useEffect(() => {
     if (profileSynced.current) return;
     profileSynced.current = true;
-    walletFetch("/api/wallet/profile", { method: "PATCH", body: JSON.stringify({}) }).catch(() => {});
-  }, []);
+    // Was posting {} every time (email/phone/xHandle always null) — the
+    // route exists specifically to mirror what's actually linked in Privy.
+    walletFetch("/api/wallet/profile", {
+      method: "PATCH",
+      body: JSON.stringify({
+        email: user.email?.address ?? null,
+        phone: user.phone?.number ?? null,
+        xHandle: user.twitter?.username ?? null,
+      }),
+    }).catch(() => {});
+  }, [user]);
 
   const balancesQuery = useQuery({
     queryKey: ["wallet-balances", address],
@@ -731,8 +789,11 @@ function WalletApp({
       full += decoder.decode(value, { stream: true });
       setStreamingText(full);
     }
-    setStreamingText(null);
+    // Load the persisted reply into the messages cache BEFORE dropping the
+    // streaming bubble — invalidateQueries' promise resolves once the
+    // refetch lands, so there's no gap where neither is showing the reply.
     await qc.invalidateQueries({ queryKey: ["wallet-messages", chatId] });
+    setStreamingText(null);
   }
 
   return (
@@ -898,6 +959,7 @@ function WalletApp({
         onSend={() => setShowSend(true)}
         onReceive={() => setShowReceive(true)}
         onSwap={() => setShowSwap(true)}
+        onSettings={() => setShowSettings(true)}
         theme={theme}
         setTheme={setTheme}
         mobileOpen={panelOpen}
@@ -907,6 +969,17 @@ function WalletApp({
       {showSend && <SendModal balances={balancesQuery.data ?? []} onClose={() => setShowSend(false)} />}
       {showReceive && <ReceiveModal address={address} onClose={() => setShowReceive(false)} />}
       {showSwap && <SwapModal address={address} balances={balancesQuery.data ?? []} onClose={() => setShowSwap(false)} />}
+      {showSettings && (
+        <SettingsModal
+          address={address}
+          user={user}
+          theme={theme}
+          setTheme={setTheme}
+          defaultChain={defaultChain}
+          setDefaultChain={setDefaultChain}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
       {showPersonaPicker && (
         <PersonaPicker
           customAgents={agentsQuery.data ?? []}
@@ -1059,6 +1132,7 @@ function WalletPanel({
   onSend,
   onReceive,
   onSwap,
+  onSettings,
   theme,
   setTheme,
   mobileOpen,
@@ -1070,6 +1144,7 @@ function WalletPanel({
   onSend: () => void;
   onReceive: () => void;
   onSwap: () => void;
+  onSettings: () => void;
   theme: string;
   setTheme: (id: string) => void;
   mobileOpen: boolean;
@@ -1105,7 +1180,12 @@ function WalletPanel({
           ✕
         </button>
         <span className={styles.panelTitle}>My wallet</span>
-        <ThemePicker theme={theme} onChange={setTheme} />
+        <span className={styles.panelHeaderActions}>
+          <button className={styles.themeBtn} onClick={onSettings} title="Settings" aria-label="Settings">
+            ⚙
+          </button>
+          <ThemePicker theme={theme} onChange={setTheme} />
+        </span>
       </div>
       <div className={styles.address}>
         {address.slice(0, 6)}…{address.slice(-4)}
@@ -1201,6 +1281,171 @@ function ThemePicker({ theme, onChange }: { theme: string; onChange: (id: string
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Account, appearance, wallet export and default-network preferences —
+ * everything here is either real Privy account state (email/phone/X,
+ * embedded wallet address, key export) or a local preference (theme,
+ * default network), never a fabricated "username"/social-profile concept
+ * this app's schema doesn't have.
+ */
+function SettingsModal({
+  address,
+  user,
+  theme,
+  setTheme,
+  defaultChain,
+  setDefaultChain,
+  onClose,
+}: {
+  address: `0x${string}`;
+  user: User;
+  theme: string;
+  setTheme: (id: string) => void;
+  defaultChain: number;
+  setDefaultChain: (id: number) => void;
+  onClose: () => void;
+}) {
+  const { linkTwitter } = useLinkAccount();
+  const { unlink } = useUnlinkOAuth();
+  const { exportWallet } = useExportWallet();
+  const [xBusy, setXBusy] = useState(false);
+  const [xError, setXError] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const identityLabel = user.email?.address ?? user.phone?.number ?? "Your Privy account";
+  const avatarInitial = identityLabel.slice(0, 1).toUpperCase();
+
+  async function handleUnlinkTwitter() {
+    if (!user.twitter) return;
+    setXError(null);
+    setXBusy(true);
+    try {
+      await unlink({ provider: "twitter", subject: user.twitter.subject });
+    } catch (err) {
+      setXError(err instanceof Error ? err.message : "Couldn't unlink X");
+    } finally {
+      setXBusy(false);
+    }
+  }
+
+  async function handleExport() {
+    setExportError(null);
+    setExportBusy(true);
+    try {
+      await exportWallet({ address });
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Couldn't open export");
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalEyebrow}>YOUR AUEVO WALLET</div>
+            <div className={styles.modalTitle}>Settings</div>
+          </div>
+          <button className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.settingsSection}>
+          <div className={styles.settingsSectionLabel}>Account</div>
+          <div className={styles.settingsAccountRow}>
+            <span className={styles.settingsAvatar}>{avatarInitial}</span>
+            <div>
+              <div className={styles.settingsAccountName}>{identityLabel}</div>
+              <div className={styles.settingsAccountSub}>Signed in with Privy</div>
+            </div>
+          </div>
+
+          <div className={styles.settingsRow}>
+            <div>
+              <div className={styles.settingsRowLabel}>Embedded wallet</div>
+              <div className={styles.settingsRowValue}>
+                {address.slice(0, 6)}…{address.slice(-4)}
+              </div>
+            </div>
+            <button
+              type="button"
+              className={styles.settingsLinkBtn}
+              onClick={() => {
+                navigator.clipboard?.writeText(address);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+
+          <div className={styles.settingsRow}>
+            <div>
+              <div className={styles.settingsRowLabel}>X account</div>
+              <div className={styles.settingsRowSub}>{user.twitter?.username ? `@${user.twitter.username}` : "Not linked"}</div>
+            </div>
+            <button
+              type="button"
+              className={styles.settingsLinkBtn}
+              onClick={user.twitter ? handleUnlinkTwitter : () => linkTwitter()}
+              disabled={xBusy}
+            >
+              {user.twitter ? (xBusy ? "Unlinking…" : "Unlink") : "Link X"}
+            </button>
+          </div>
+          {xError && <div className={styles.errorText}>{xError}</div>}
+        </div>
+
+        <div className={styles.settingsSection}>
+          <div className={styles.settingsSectionLabel}>Appearance</div>
+          <div className={styles.settingsThemeGrid}>
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={t.id === theme ? styles.settingsThemeBtnActive : styles.settingsThemeBtn}
+                onClick={() => setTheme(t.id)}
+                title={t.label}
+                aria-label={t.label}
+              >
+                <span className={styles.themeSwatch} style={{ background: t.swatch }} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.settingsSection}>
+          <div className={styles.settingsSectionLabel}>Security &amp; wallet</div>
+          <div className={styles.settingsRow}>
+            <div>
+              <div className={styles.settingsRowLabel}>Export wallet</div>
+              <div className={styles.settingsRowSub}>Export your key for use in another compatible wallet.</div>
+            </div>
+            <button type="button" className={styles.settingsLinkBtn} onClick={handleExport} disabled={exportBusy}>
+              {exportBusy ? "Opening…" : "Export"}
+            </button>
+          </div>
+          {exportError && <div className={styles.errorText}>{exportError}</div>}
+        </div>
+
+        <div className={styles.settingsSection}>
+          <div className={styles.settingsSectionLabel}>Network</div>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>Default network for Send / Receive / Swap</label>
+            <NetworkPicker chainId={defaultChain} onChange={setDefaultChain} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1354,7 +1599,7 @@ function SendModal({
   onClose: () => void;
 }) {
   const { sendTransaction } = useSendTransaction();
-  const [chainId, setChainId] = useState<number>(NETWORKS[0].id);
+  const [chainId, setChainId] = useState<number>(getDefaultChainSnapshot);
   const [asset, setAsset] = useState<AssetSymbol>("ETH");
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
@@ -1460,7 +1705,7 @@ function SendModal({
 }
 
 function ReceiveModal({ address, onClose }: { address: string; onClose: () => void }) {
-  const [chainId, setChainId] = useState<number>(NETWORKS[0].id);
+  const [chainId, setChainId] = useState<number>(getDefaultChainSnapshot);
   const network = useMemo(() => NETWORKS.find((n) => n.id === chainId)!, [chainId]);
 
   return (
@@ -1533,7 +1778,7 @@ function SwapModal({
   onClose: () => void;
 }) {
   const { sendTransaction } = useSendTransaction();
-  const [chainId, setChainId] = useState<number>(NETWORKS[0].id);
+  const [chainId, setChainId] = useState<number>(getDefaultChainSnapshot);
   const [sellAsset, setSellAsset] = useState<AssetSymbol>("ETH");
   const [buyAsset, setBuyAsset] = useState<AssetSymbol>("USDC");
   const [amount, setAmount] = useState("");
