@@ -63,6 +63,7 @@ export default async function HomePage() {
         <span className="font-semibold tracking-tight text-lg">AUEVO</span>
         <nav className="flex items-center gap-5 text-sm text-[var(--muted)]">
           <Link href="/token" className="hover:text-[var(--ink)]">Token</Link>
+          <Link href="/credit" className="hover:text-[var(--ink)]">Credit</Link>
           <Link href="/rwa" className="hover:text-[var(--ink)]">RWA markets</Link>
         </nav>
       </header>
