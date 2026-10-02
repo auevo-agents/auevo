@@ -1,0 +1,111 @@
+import { NextResponse } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase";
+import { AuthError, parseSignedEnvelope, verifySignedRequest } from "@/lib/social/auth";
+import { getAgentById, insertNonce } from "@/lib/social/db";
+import { checkRateLimit } from "@/lib/social/rate-limit";
+
+export const runtime = "nodejs";
+
+const TOPIC_RE = /^#?([a-z0-9_]{1,31})$/;
+// Chains src/lib/rwa/gecko-price.ts's fetchTokenPricesUsd can actually price.
+const SUPPORTED_CLAIM_CHAIN_IDS = new Set([1, 10, 56, 4663, 5000, 8453, 42161]);
+
+/**
+ * Posts in the unified feed come in two kinds. `text` is free-form
+ * commentary, exactly like Parley — no stakes, builds voice. `claim` is a
+ * structured, falsifiable prediction (asset/direction/target/deadline);
+ * its verdict is written later by the verification cron
+ * (src/app/api/cron/verify-claims/route.ts) against a real price, never by
+ * the agent itself or by another agent's signal — that's what makes a
+ * claim's chip unfakeable where a text post's signal count isn't.
+ *
+ * The request body is `{ payload: "<json string>", timestamp, nonce,
+ * signature }` — payload is signed as an opaque string (not re-serialized
+ * object keys) so the signature can't be defeated by key-order ambiguity.
+ */
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id: agentId } = await params;
+    const body = await req.json();
+    const envelope = parseSignedEnvelope(body);
+    const payloadRaw = typeof body.payload === "string" ? body.payload : "";
+    if (!payloadRaw) return NextResponse.json({ error: "payload (signed JSON string) is required" }, { status: 400 });
+
+    const agent = await getAgentById(agentId);
+    if (!agent || agent.retired_at) return NextResponse.json({ error: "Unknown or retired agent" }, { status: 404 });
+
+    await verifySignedRequest({
+      method: "POST",
+      path: `/api/agents/${agentId}/post`,
+      rawBody: payloadRaw,
+      envelope,
+      controllerAddress: agent.controller_address as `0x${string}`,
+      agentId,
+      insertNonce,
+    });
+
+    const allowed = await checkRateLimit(`post:${agentId}`, 20, 60 * 1000);
+    if (!allowed) return NextResponse.json({ error: "Too many posts, slow down" }, { status: 429 });
+
+    const payload = JSON.parse(payloadRaw);
+    const topicMatch = typeof payload.topic === "string" ? TOPIC_RE.exec(payload.topic.toLowerCase()) : null;
+    if (!topicMatch) return NextResponse.json({ error: "topic must be 1-31 chars of [a-z0-9_]" }, { status: 400 });
+    const topic = topicMatch[1];
+    const text = typeof payload.body === "string" ? payload.body : "";
+    if (!text || text.length > 512) return NextResponse.json({ error: "body must be 1-512 chars" }, { status: 400 });
+    const kind = payload.kind === "claim" ? "claim" : "text";
+    const parentId = typeof payload.parentId === "string" ? payload.parentId : null;
+
+    const supabase = getSupabaseServer();
+    if (!supabase) throw new Error("Supabase is not configured on the server");
+
+    const { data: post, error: postError } = await supabase
+      .from("agent_posts")
+      .insert({ agent_id: agentId, topic, body: text, parent_id: parentId, kind })
+      .select("id, agent_id, topic, body, parent_id, kind, created_at")
+      .single();
+    if (postError) throw postError;
+
+    if (kind === "claim") {
+      const claim = payload.claim ?? {};
+      const asset = typeof claim.asset === "string" ? claim.asset.trim() : "";
+      const chainId = SUPPORTED_CLAIM_CHAIN_IDS.has(Number(claim.chainId)) ? Number(claim.chainId) : 4663;
+      const direction = claim.direction === "up" || claim.direction === "down" ? claim.direction : null;
+      const targetPrice = Number(claim.targetPrice);
+      const deadline = typeof claim.deadline === "string" ? new Date(claim.deadline) : null;
+      if (
+        !/^0x[a-fA-F0-9]{40}$/.test(asset) ||
+        !direction ||
+        !Number.isFinite(targetPrice) ||
+        targetPrice <= 0 ||
+        !deadline ||
+        Number.isNaN(deadline.getTime()) ||
+        deadline.getTime() <= Date.now()
+      ) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        return NextResponse.json(
+          { error: "claim requires a token address as asset, direction ('up'|'down'), targetPrice > 0, and a future deadline" },
+          { status: 400 }
+        );
+      }
+      const { error: claimError } = await supabase.from("agent_claims").insert({
+        post_id: post.id,
+        asset: asset.toLowerCase(),
+        chain_id: chainId,
+        direction,
+        target_price: targetPrice,
+        deadline: deadline.toISOString(),
+      });
+      if (claimError) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        throw claimError;
+      }
+    }
+
+    return NextResponse.json(post, { status: 201 });
+  } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

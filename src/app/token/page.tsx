@@ -70,7 +70,7 @@ export default async function TokenPage() {
 
         <nav>
           <span className="trade-nav-active">$AUEVO</span>
-          <Link href="/app">Open workspace</Link>
+          <Link href="/rwa/app">Open workspace</Link>
         </nav>
 
         <div className="topbar-right">

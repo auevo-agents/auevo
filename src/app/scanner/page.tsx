@@ -131,7 +131,7 @@ function ScannerApp() {
 
         <nav>
           <span className="trade-nav-active">Token scanner</span>
-          <Link href="/app">Auevo app →</Link>
+          <Link href="/rwa/app">Auevo app →</Link>
         </nav>
 
         <div className="topbar-right">

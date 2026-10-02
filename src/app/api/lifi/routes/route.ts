@@ -7,7 +7,7 @@ export const maxDuration = 15;
 /**
  * RWA_SPEC.md Phase 4's server proxy for LI.FI's route-finding endpoint
  * (POST https://li.quest/v1/advanced/routes — see src/lib/rwa/lifi/client.ts
- * for how that URL/shape was verified from this sandbox). Both `/app/swap`'s
+ * for how that URL/shape was verified from this sandbox). Both `/rwa/app/swap`'s
  * Swap tab (fromChainId === toChainId) and its Bridge tab (different chains)
  * hit this same endpoint — LI.FI treats a same-chain "route" as just the
  * best on-chain DEX aggregation, so there is no separate swap-only endpoint
