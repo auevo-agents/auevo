@@ -16,10 +16,12 @@ function findImports(importPath) {
 const targets = [
   "src/DcaVault.sol",
   "src/DcaVaultV4.sol",
+  "src/AgentCreditPool.sol",
   "test/mocks/MockERC20.sol",
   "test/mocks/MockUniswap.sol",
   "test/mocks/MockPoolManagerV4.sol",
   "test/mocks/MockPriceOracle.sol",
+  "test/mocks/MockAgentIdentity.sol",
 ];
 
 const sources = {};
@@ -30,6 +32,11 @@ const input = {
   sources,
   settings: {
     optimizer: { enabled: true, runs: 200 },
+    // AgentCreditPool pulls in OpenZeppelin's EIP712/Strings/Bytes helpers,
+    // which emit MCOPY (EIP-5656, Cancun). Robinhood Chain already runs
+    // Priors' own EIP-712-based CreditPoolV2 live, so Cancun opcodes are
+    // proven supported on this chain — see contracts/README.md.
+    evmVersion: "cancun",
     outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
   },
 };

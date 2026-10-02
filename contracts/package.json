@@ -5,8 +5,9 @@
   "description": "Solidity contracts for the Auevo platform on Robinhood Chain.",
   "scripts": {
     "compile": "node write-input.js src/DcaVault.sol && node compile-all.js",
-    "test": "node compile-all.js && node test/run.mjs && node test/run-v4.mjs",
-    "deploy:dca": "node script/deploy-dca.mjs"
+    "test": "node compile-all.js && node test/run.mjs && node test/run-v4.mjs && node test/run-credit.mjs",
+    "deploy:dca": "node script/deploy-dca.mjs",
+    "deploy:credit-pool": "node script/deploy-credit-pool.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1",
