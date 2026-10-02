@@ -21,5 +21,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      // The RWA marketplace that used to be the homepage — still fully
+      // live, just no longer the headline (see src/app/page.tsx).
+      url: "https://auevo.io/rwa",
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
   ];
 }

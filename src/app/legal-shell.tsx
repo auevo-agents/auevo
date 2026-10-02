@@ -8,7 +8,7 @@ export function LegalShell({ children }: { children: React.ReactNode }) {
         <Link href="/" className="legal-brand" aria-label="Auevo home">
           <AuevoLogo />
         </Link>
-        <Link href="/app" className="legal-workspace-link">Open workspace</Link>
+        <Link href="/rwa/app" className="legal-workspace-link">Open workspace</Link>
       </header>
       <article className="legal-page">{children}</article>
     </main>

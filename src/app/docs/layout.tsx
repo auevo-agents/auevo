@@ -32,7 +32,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
         <div className="docs-topbar-actions">
           <span className="docs-version">v1.0 · live</span>
-          <Link href="/app" className="docs-workspace-link">
+          <Link href="/rwa/app" className="docs-workspace-link">
             Open workspace
           </Link>
         </div>

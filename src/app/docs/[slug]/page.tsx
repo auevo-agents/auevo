@@ -57,7 +57,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
         {headings.map((heading) => (
           <a key={heading} href={`#${headingId(heading)}`}>{heading}</a>
         ))}
-        <Link href="/app" className="docs-toc-product">
+        <Link href="/rwa/app" className="docs-toc-product">
           Open in product
         </Link>
       </aside>

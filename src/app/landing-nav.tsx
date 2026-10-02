@@ -18,24 +18,24 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Trade",
     links: [
-      { title: "Assets", body: "Every tokenized stock and ETF, live premium and risk", href: "/app/assets" },
-      { title: "Scanner", body: "Premium, arbitrage, risk, liquidity, new listings", href: "/app/scanner" },
-      { title: "Swap & Bridge", body: "Best route across Robinhood Chain and 5 others", href: "/app/swap" },
+      { title: "Assets", body: "Every tokenized stock and ETF, live premium and risk", href: "/rwa/app/assets" },
+      { title: "Scanner", body: "Premium, arbitrage, risk, liquidity, new listings", href: "/rwa/app/scanner" },
+      { title: "Swap & Bridge", body: "Best route across Robinhood Chain and 5 others", href: "/rwa/app/swap" },
     ],
   },
   {
     label: "Build",
     links: [
-      { title: "Baskets", body: "5–10 stocks in one wallet signature", href: "/app/baskets" },
-      { title: "Pools", body: "v4 RWA/USDG liquidity, volume and fee APR", href: "/app/pools" },
-      { title: "Lend", body: "Kamino xStocks lending rates, read-only", href: "/app/lend" },
+      { title: "Baskets", body: "5–10 stocks in one wallet signature", href: "/rwa/app/baskets" },
+      { title: "Pools", body: "v4 RWA/USDG liquidity, volume and fee APR", href: "/rwa/app/pools" },
+      { title: "Lend", body: "Kamino xStocks lending rates, read-only", href: "/rwa/app/lend" },
     ],
   },
   {
     label: "Track",
     links: [
-      { title: "Portfolio", body: "Your RWA holdings in USD, cost basis and PnL", href: "/app/portfolio" },
-      { title: "Alerts", body: "Premium spikes, new listings, whale trades", href: "/app/scanner" },
+      { title: "Portfolio", body: "Your RWA holdings in USD, cost basis and PnL", href: "/rwa/app/portfolio" },
+      { title: "Alerts", body: "Premium spikes, new listings, whale trades", href: "/rwa/app/scanner" },
     ],
   },
 ];
@@ -78,7 +78,7 @@ export function LandingNav() {
         <span className="landing-nav-label-desktop">Explore</span>
         <span className="landing-nav-label-mobile">Menu</span>
       </button>
-      <Link href="/app/assets" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
+      <Link href="/rwa/app/assets" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Markets
       </Link>
       <Link href="/wallet" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
@@ -87,7 +87,7 @@ export function LandingNav() {
       <Link href="/docs" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Docs
       </Link>
-      <Link href="/app" className="landing-cta-ghost">
+      <Link href="/rwa/app" className="landing-cta-ghost">
         Open workspace
       </Link>
 
@@ -106,7 +106,7 @@ export function LandingNav() {
           ))}
           <div className="landing-nav-group landing-nav-mobile-actions">
             <p className="landing-nav-group-label">Auevo</p>
-            <Link href="/app/assets" className="landing-nav-link" onClick={() => setOpen(false)}>
+            <Link href="/rwa/app/assets" className="landing-nav-link" onClick={() => setOpen(false)}>
               <span className="landing-nav-link-title">Markets</span>
               <span className="landing-nav-link-body">Browse the verified asset registry</span>
             </Link>
@@ -118,7 +118,7 @@ export function LandingNav() {
               <span className="landing-nav-link-title">Docs</span>
               <span className="landing-nav-link-body">Product and market structure guide</span>
             </Link>
-            <Link href="/app" className="landing-nav-link" onClick={() => setOpen(false)}>
+            <Link href="/rwa/app" className="landing-nav-link" onClick={() => setOpen(false)}>
               <span className="landing-nav-link-title">Open workspace</span>
               <span className="landing-nav-link-body">Use every Auevo market tool</span>
             </Link>

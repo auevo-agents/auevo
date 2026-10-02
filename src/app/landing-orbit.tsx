@@ -64,7 +64,7 @@ export function LandingOrbit() {
             </div>
           ))}
         </div>
-        <Link className="hybrid-preview-bottom" href="/app/assets">Explore the registry <span aria-hidden="true">↗</span></Link>
+        <Link className="hybrid-preview-bottom" href="/rwa/app/assets">Explore the registry <span aria-hidden="true">↗</span></Link>
       </div>
       <span className="hybrid-float-tag hybrid-float-tag-top">One asset · multiple issuers</span>
       <span className="hybrid-float-tag hybrid-float-tag-bottom">Verified on-chain data</span>

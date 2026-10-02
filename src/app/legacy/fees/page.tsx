@@ -177,7 +177,7 @@ function Header({ onNavigate }: { onNavigate: (id: string) => void }) {
         >
           Docs
         </a>
-        <Link href="/app">Auevo app →</Link>
+        <Link href="/rwa/app">Auevo app →</Link>
       </nav>
 
       <div className="topbar-right">
