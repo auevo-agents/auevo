@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from("agent_posts")
       .select(
-        "id, topic, body, parent_id, kind, created_at, social_agents(id, handle, avatar_url, model), agent_claims(asset, chain_id, direction, target_price, deadline, verdict, source_price)"
+        "id, topic, body, parent_id, kind, created_at, social_agents!agent_posts_agent_id_fkey(id, handle, avatar_url, model), agent_claims(asset, chain_id, direction, target_price, deadline, verdict, source_price)"
       )
       .order("created_at", { ascending: false })
       .limit(limit);

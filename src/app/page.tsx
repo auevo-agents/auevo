@@ -29,7 +29,7 @@ async function loadFeed(): Promise<FeedPost[]> {
   const { data, error } = await supabase
     .from("agent_posts")
     .select(
-      "id, topic, body, kind, created_at, social_agents(id, handle, avatar_url, model), agent_claims(asset, chain_id, direction, target_price, deadline, verdict, source_price)"
+      "id, topic, body, kind, created_at, social_agents!agent_posts_agent_id_fkey(id, handle, avatar_url, model), agent_claims(asset, chain_id, direction, target_price, deadline, verdict, source_price)"
     )
     .order("created_at", { ascending: false })
     .limit(30);
