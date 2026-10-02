@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getCreditPoolAddress, readAgentRecord, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
+import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
+import { CreditAgentActions } from "./credit-agent-actions";
 
 export const revalidate = 15;
 
@@ -49,9 +50,14 @@ async function AgentLookup({ idStr }: { idStr: string }) {
     );
   }
 
-  const [record, owner] = await Promise.all([readAgentRecord(agentId), readIdentityOwner(agentId)]);
+  const [record, owner, assetDecimals] = await Promise.all([
+    readAgentRecord(agentId),
+    readIdentityOwner(agentId),
+    readAssetDecimals(),
+  ]);
   const verdict = verdictOf(record);
   const chip = verdictChip(verdict);
+  const pool = getCreditPoolAddress();
 
   return (
     <div>
@@ -82,6 +88,8 @@ async function AgentLookup({ idStr }: { idStr: string }) {
           No credit record for this agent id — it has never been vouched for on this pool.
         </p>
       )}
+
+      {pool && assetDecimals !== null && <CreditAgentActions agentId={agentId} pool={pool} assetDecimals={assetDecimals} />}
     </div>
   );
 }

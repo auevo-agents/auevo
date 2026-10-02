@@ -77,7 +77,78 @@ export const AGENT_CREDIT_POOL_ABI = [
   { type: "function", name: "minRootStake", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "asset", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
   { type: "function", name: "identity", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+
+  // Writes — every one of these is a real on-chain action with real
+  // money behind it the moment the pool is deployed. See
+  // AgentCreditPool.sol's own doc comment for exactly what each can and
+  // cannot do; this file only mirrors the signatures.
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+  },
+  { type: "function", name: "enrollRoot", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  {
+    type: "function",
+    name: "vouch",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+      { name: "premiumBps", type: "uint16" },
+      { name: "maxPremiumBps", type: "uint16" },
+      { name: "nonce", type: "uint256" },
+      { name: "deadline", type: "uint256" },
+      { name: "signature", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "borrow",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+      { name: "termDays", type: "uint256" },
+      { name: "to", type: "address" },
+    ],
+    outputs: [{ name: "loanId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "repay",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "loanId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "markDefault",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "loanId", type: "uint256" }],
+    outputs: [],
+  },
 ] as const;
+
+export const CONSENT_EIP712_TYPES = {
+  Consent: [
+    { name: "agentId", type: "uint256" },
+    { name: "sponsor", type: "address" },
+    { name: "maxPremiumBps", type: "uint16" },
+    { name: "nonce", type: "uint256" },
+    { name: "deadline", type: "uint256" },
+  ],
+} as const;
 
 export const ERC721_OWNER_OF_ABI = [
   {
