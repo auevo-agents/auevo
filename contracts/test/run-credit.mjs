@@ -287,6 +287,30 @@ console.log("\n5) a defaulted loan burns only the sponsor's shares, never the le
   check("a defaulted agent can never borrow again", stillDefaulted);
 }
 
+console.log("\n6) withdraw() rounds shares-burned UP, never leaking value to an uninvolved holder");
+{
+  // Regression for a real bug: withdraw() originally floored the shares
+  // burned for a given asset amount, which rounds in the WITHDRAWER's
+  // favour and silently lowers the price-per-share for every remaining
+  // holder on any withdrawal that doesn't divide evenly — including a
+  // holder who never touched this transaction at all.
+  await write(deployerClient, token, MockERC20.abi, "mint", [stranger, parseUnits("1000", 18)]);
+  await write(strangerClient, token, MockERC20.abi, "approve", [pool, parseUnits("1000", 18)]);
+
+  const lenderValueBefore = await read(pool, Pool.abi, "sharesValue", [lender]);
+
+  // An amount deliberately chosen so amount*totalShares/totalAssets does
+  // not divide evenly, to force the rounding path.
+  await write(strangerClient, pool, Pool.abi, "deposit", [parseUnits("777", 18)]);
+  await write(strangerClient, pool, Pool.abi, "withdraw", [1n]); // smallest possible unit — maximal rounding pressure
+
+  const lenderValueAfter = await read(pool, Pool.abi, "sharesValue", [lender]);
+  check(
+    "an uninvolved lender's share value never decreases from someone else's withdraw",
+    lenderValueAfter >= lenderValueBefore
+  );
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 await server.close();
 process.exit(failed > 0 ? 1 : 0);

@@ -178,7 +178,7 @@ anything else here. Short version:
   chain pulls in `Bytes.sol`'s `MCOPY` — see `compile-all.js`'s comment;
   Robinhood Chain already runs Priors' own EIP-712-based CreditPoolV2
   live, so Cancun support is proven, not assumed).
-- 29 integration tests against a local Ganache node
+- 30 integration tests against a local Ganache node
   (`test/run-credit.mjs`) covering: share accounting on deposit/withdraw,
   enrolling as a root above the minimum stake, `vouch()` rejecting a
   consent signed by anyone other than the agent's current owner,
@@ -186,10 +186,25 @@ anything else here. Short version:
   locking the sponsor's fee capacity at borrow time (closes the
   self-backing-loop exploit Priors itself found and fixed in v2), the
   exact 60/25/15 fee split on repay, growing the agent's on-chain record,
-  and — the two that matter most — a default burning only the
-  defaulting agent's own sponsor's shares while the lender's share value
-  never falls, and a permanently defaulted agent never being able to
-  borrow again.
+  a default burning only the defaulting agent's own sponsor's shares
+  while the lender's share value never falls, a permanently defaulted
+  agent never being able to borrow again, and — added after an
+  independent security review of this contract found it as a real bug,
+  not a hypothetical — `withdraw()` rounding shares-burned the correct
+  direction so an unevenly-divisible withdrawal can never leak value
+  out of an uninvolved holder's share price.
+- That same review found a second, related issue:
+  `markDefault()`'s share-burn cap could, before the `withdraw()` fix
+  above, subtract a defaulting loan's full loss from `totalAssets` while
+  only burning however many shares the sponsor actually had left —
+  diluting every other holder instead of containing the loss to that one
+  sponsor, in direct contradiction of this contract's own stated
+  guarantee. Fixed by writing off only the value actually recovered from
+  the burn and tracking any shortfall as explicit, visible
+  `totalBadDebt` (plus a `BadDebt` event) rather than silently pulling it
+  from everyone else's shares. The `withdraw()` fix removes the only
+  known way to trigger this in practice; the `totalBadDebt` path stays
+  in as a hard backstop rather than an assumption.
 
 ### What has NOT been done
 

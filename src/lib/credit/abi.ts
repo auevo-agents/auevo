@@ -71,6 +71,7 @@ export const AGENT_CREDIT_POOL_ABI = [
     outputs: [{ type: "bool" }],
   },
   { type: "function", name: "nextLoanId", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "totalBadDebt", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "minLoan", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "maxLoan", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { type: "function", name: "feeBps", stateMutability: "view", inputs: [], outputs: [{ type: "uint16" }] },
