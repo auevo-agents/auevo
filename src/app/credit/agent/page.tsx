@@ -1,0 +1,87 @@
+import Link from "next/link";
+import { getCreditPoolAddress, readAgentRecord, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
+
+export const revalidate = 15;
+
+function verdictChip(verdict: string) {
+  if (verdict === "repaid") return { label: "✓ repaid", className: "text-[var(--green)] border-[var(--green)]/40 bg-[var(--green)]/10" };
+  if (verdict === "defaulted") return { label: "✗ defaulted", className: "text-[var(--red)] border-[var(--red)]/40 bg-[var(--red)]/10" };
+  if (verdict === "no repayments yet") return { label: "no repayments yet", className: "text-[var(--muted)] border-[var(--line-2)]" };
+  return { label: "no record", className: "text-[var(--muted)] border-[var(--line-2)]" };
+}
+
+export default async function CreditAgentPage({ searchParams }: PageProps<"/credit/agent">) {
+  const { id } = await searchParams;
+  const idStr = Array.isArray(id) ? id[0] : id;
+
+  return (
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
+      <header className="border-b border-[var(--line)] px-6 py-4">
+        <Link href="/credit" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+          ← Credit
+        </Link>
+      </header>
+
+      <section className="max-w-2xl mx-auto px-6 pt-10 pb-20">
+        {!idStr ? (
+          <p className="text-[var(--muted)]">No agent id given.</p>
+        ) : (
+          <AgentLookup idStr={idStr} />
+        )}
+      </section>
+    </div>
+  );
+}
+
+async function AgentLookup({ idStr }: { idStr: string }) {
+  let agentId: bigint;
+  try {
+    agentId = BigInt(idStr);
+  } catch {
+    return <p className="text-[var(--muted)]">&quot;{idStr}&quot; is not a valid agent id.</p>;
+  }
+
+  if (!getCreditPoolAddress()) {
+    return (
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-[var(--muted)]">
+        AgentCreditPool has not been deployed yet — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>.
+      </div>
+    );
+  }
+
+  const [record, owner] = await Promise.all([readAgentRecord(agentId), readIdentityOwner(agentId)]);
+  const verdict = verdictOf(record);
+  const chip = verdictChip(verdict);
+
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold">Agent #{idStr}</h1>
+      {owner && <p className="mt-1 text-sm text-[var(--muted)] break-all">owner: {owner}</p>}
+
+      <div className="mt-4 flex items-center gap-2 text-sm">
+        <span className={`rounded-full border px-2 py-0.5 ${chip.className}`}>{chip.label}</span>
+      </div>
+
+      {record ? (
+        <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+          <dt className="text-[var(--muted)]">Sponsor</dt>
+          <dd className="break-all">{record.sponsor}</dd>
+          <dt className="text-[var(--muted)]">Line (delegatedIn)</dt>
+          <dd>{record.delegatedIn.toString()} (raw units)</dd>
+          <dt className="text-[var(--muted)]">Currently borrowed</dt>
+          <dd>{record.principalOut.toString()} (raw units)</dd>
+          <dt className="text-[var(--muted)]">Open loan right now</dt>
+          <dd>{record.activeLoan ? "yes" : "no"}</dd>
+          <dt className="text-[var(--muted)]">Loans repaid</dt>
+          <dd>{record.loansRepaid}</dd>
+          <dt className="text-[var(--muted)]">Volume repaid</dt>
+          <dd>{record.volumeRepaid.toString()} (raw units)</dd>
+        </dl>
+      ) : (
+        <p className="mt-6 text-[var(--muted)]">
+          No credit record for this agent id — it has never been vouched for on this pool.
+        </p>
+      )}
+    </div>
+  );
+}
