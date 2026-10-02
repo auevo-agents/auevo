@@ -1,4 +1,5 @@
 import { getRobinhoodClient } from "@/lib/evm/client";
+import { ERC20_ABI } from "@/lib/erc20-abi";
 import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS } from "./abi";
 
 /**
@@ -144,4 +145,18 @@ export async function readPoolParams() {
   ]);
 
   return { pool, minLoan, maxLoan, feeBps, minRootStake, asset };
+}
+
+/** Null when the pool isn't deployed — the asset's own decimals(), read live. */
+export async function readAssetDecimals(): Promise<number | null> {
+  const pool = getCreditPoolAddress();
+  if (!pool) return null;
+
+  const client = getRobinhoodClient();
+  const assetAddress = await client.readContract({
+    address: pool,
+    abi: AGENT_CREDIT_POOL_ABI,
+    functionName: "asset",
+  });
+  return client.readContract({ address: assetAddress, abi: ERC20_ABI, functionName: "decimals" });
 }
