@@ -56,7 +56,11 @@ import {IAgentIdentity} from "./interfaces/IAgentIdentity.sol";
 ///      a sold/re-registered identity cannot outrun its own history. One
 ///      sponsor's default never touches another sponsor's stake, and
 ///      never reduces the pool's share price for anyone who did not back
-///      that specific agent.
+///      that specific agent — if a sponsor's live stake ever falls short
+///      of what it owes at default time (should be unreachable; see
+///      `markDefault`'s own comment), the uncollectible remainder becomes
+///      visible `totalBadDebt` instead of being pulled from everyone
+///      else's shares.
 ///
 ///      Scope deliberately narrower than Priors v2: one open loan per
 ///      agent at a time (simplifies default accounting — nothing here
@@ -112,6 +116,12 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
 
     uint256 public totalShares;
     uint256 public totalAssets;
+    /// @dev Should be unreachable under correct operation — see markDefault's
+    ///      own comment. Tracked, not hidden, if it is ever nonzero: it means
+    ///      a sponsor's live stake fell short of its committed capacity at
+    ///      default time, and that shortfall was deliberately NOT pulled from
+    ///      totalAssets, so it never diluted an uninvolved lender or sponsor.
+    uint256 public totalBadDebt;
     mapping(address => uint256) public shares;
 
     mapping(address => bool) public isRoot;
@@ -171,6 +181,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     event Borrowed(uint256 indexed loanId, uint256 indexed agentId, address sponsor, uint256 amount, uint256 fee, uint64 dueAt);
     event Repaid(uint256 indexed loanId, uint256 indexed agentId, uint256 lenderCut, uint256 sponsorCut, uint256 reserveCut);
     event Defaulted(uint256 indexed loanId, uint256 indexed agentId, address sponsor, uint256 loss, uint256 sharesBurned);
+    event BadDebt(uint256 indexed loanId, uint256 amount);
 
     constructor(
         IERC20 asset_,
@@ -233,7 +244,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         require(amount > 0, "amount=0");
         require(amount <= freeCapacity(msg.sender), "not free");
         require(totalAssets > 0, "empty pool");
-        uint256 burned = (amount * totalShares) / totalAssets; // floor: favours remaining holders
+        uint256 burned = (amount * totalShares + totalAssets - 1) / totalAssets; // ceil: favours remaining holders
         require(burned <= shares[msg.sender], "insufficient shares");
         shares[msg.sender] -= burned;
         totalShares -= burned;
@@ -384,10 +395,29 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         uint256 loss = loan.principal + loan.fee;
         uint256 toBurn = (loss * totalShares + totalAssets - 1) / totalAssets; // ceil, favours the pool
         uint256 sponsorShares = shares[loan.sponsor];
-        if (toBurn > sponsorShares) toBurn = sponsorShares;
+        uint256 writeOff = loss;
+        if (toBurn > sponsorShares) {
+            // The sponsor's live stake no longer covers this loan's committed
+            // capacity. Every vouch()/borrow() only checks freeCapacity at
+            // that moment, so this should be unreachable in practice (a
+            // default releases a sponsor's FULL delegatedIn, not just the
+            // outstanding principal, which keeps every other open
+            // commitment of the same sponsor covered — see the invariant
+            // argument in the security review this fixes) — but it is kept
+            // as a hard backstop rather than an assumption. Burn everything
+            // the sponsor still has and write off only the value actually
+            // recovered; the uncollectible remainder becomes tracked bad
+            // debt instead of being pulled from totalAssets, so it can
+            // never dilute a lender or sponsor who never backed this agent.
+            toBurn = sponsorShares;
+            uint256 recovered = (toBurn * totalAssets) / totalShares; // floor, pre-burn price
+            totalBadDebt += loss - recovered;
+            writeOff = recovered;
+            emit BadDebt(loanId, loss - recovered);
+        }
         shares[loan.sponsor] -= toBurn;
         totalShares -= toBurn;
-        totalAssets -= loss;
+        totalAssets -= writeOff;
 
         AgentAccount storage a = agents[loan.agentId];
         a.principalOut -= loan.principal;
