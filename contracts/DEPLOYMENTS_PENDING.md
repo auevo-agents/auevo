@@ -14,6 +14,7 @@ and produces a public, fundable mainnet address the moment it lands.
 | Contract | Source | Deploy script | Status |
 | --- | --- | --- | --- |
 | DcaVault | [`src/DcaVault.sol`](./src/DcaVault.sol) | [`script/deploy-dca.mjs`](./script/deploy-dca.mjs) | Written, 13 integration tests passing, Slither-clean. **Not independently audited.** Ready to deploy when the batch goes out. |
+| AgentCreditPool | [`src/AgentCreditPool.sol`](./src/AgentCreditPool.sol) | [`script/deploy-credit-pool.mjs`](./script/deploy-credit-pool.mjs) | Written, 29 integration tests passing. **Not independently audited.** Not yet ready — needs a conscious decision on which identity registry to trust (`CREDIT_IDENTITY_ADDRESS`) before it goes in the batch; see README.md's own section on this contract and the deploy script's header. |
 
 ## When it's time to deploy
 

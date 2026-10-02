@@ -150,6 +150,69 @@ V3 vault, not just the plumbing. Short version:
   follow the same "show the honest not-deployed status, no placeholder
   address" pattern once this contract has an audit and a deployment.
 
+## AgentCreditPool — status: written, tested. **Not deployed — one open decision first.**
+
+Unsecured-from-the-agent, fully-backed-by-a-third-party credit pool for AI
+agents on Robinhood Chain, modeled on Priors' public v2 design
+(github.com/priors-agents/priors) and independently reimplemented here —
+`src/AgentCreditPool.sol`. Read that contract's own doc comment before
+anything else here. Short version:
+
+- No path from an agent's default to a lender's principal: every loan is
+  sized so principal + fee never exceeds its one sponsor's own free
+  capacity, and a default burns only that sponsor's shares.
+- Auevo never backs an agent and never deposits its own capital — the
+  contract has no owner, no admin function, no privileged address at all.
+  Every line exists only because some third party called `vouch()` with
+  that agent's owner's own EIP-712-signed consent.
+- One sponsor, one open loan per agent at a time — a deliberately smaller
+  surface than Priors v2 (no treasury/seat/stock-vault backer types yet).
+- Points at an *existing* identity registry (`IAgentIdentity`, matching
+  ERC-8004/ERC-721 `ownerOf`) rather than minting its own — see the open
+  decision below.
+
+### What's been done
+
+- Compiles cleanly with solc 0.8.24 against `@openzeppelin/contracts`
+  5.6, `evmVersion: cancun` (needed because OpenZeppelin's EIP-712 helper
+  chain pulls in `Bytes.sol`'s `MCOPY` — see `compile-all.js`'s comment;
+  Robinhood Chain already runs Priors' own EIP-712-based CreditPoolV2
+  live, so Cancun support is proven, not assumed).
+- 29 integration tests against a local Ganache node
+  (`test/run-credit.mjs`) covering: share accounting on deposit/withdraw,
+  enrolling as a root above the minimum stake, `vouch()` rejecting a
+  consent signed by anyone other than the agent's current owner,
+  rejecting a replayed nonce, borrowing within/beyond the vouched line,
+  locking the sponsor's fee capacity at borrow time (closes the
+  self-backing-loop exploit Priors itself found and fixed in v2), the
+  exact 60/25/15 fee split on repay, growing the agent's on-chain record,
+  and — the two that matter most — a default burning only the
+  defaulting agent's own sponsor's shares while the lender's share value
+  never falls, and a permanently defaulted agent never being able to
+  borrow again.
+
+### What has NOT been done
+
+- **No independent, paid, professional audit.** Same posture as
+  DcaVault.sol/DcaVaultV4.sol — doubly true here given this moves a
+  stablecoin, not just swaps one.
+- **No mainnet deployment**, and deploying needs one decision made
+  first, consciously, by you: which identity registry to point
+  `CREDIT_IDENTITY_ADDRESS` at. Reusing Priors' own ERC-8004 registry
+  (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`) means any agent already
+  registered there needs no new identity to use this pool — but it also
+  means trusting that registry's own owner, which the Priors audit found
+  to be a single EOA today, not a multisig. See `script/deploy-credit-
+  pool.mjs`'s own header for the full list of required deploy-time
+  decisions (asset token, its decimals, reserve address) — none of them
+  have a hardcoded default in that script, on purpose.
+- **No fork test against the real, live ERC-8004 registry on Robinhood
+  Chain** — the integration tests use a mock (`test/mocks/
+  MockAgentIdentity.sol`) so the pool's own logic could be exercised
+  deterministically, same philosophy as `test/mocks/MockUniswap.sol` for
+  DcaVault.
+- **No backend/frontend wiring yet** — this is the contract layer only.
+
 ## Setup
 
 ```bash
