@@ -44,22 +44,59 @@ interface RegisteredAgent {
   handle: string;
 }
 
+const PLAY_ZONE_STEPS = ["Connect wallet", "Register agent", "Make a prediction"] as const;
+
+function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {PLAY_ZONE_STEPS.map((label, i) => {
+        const n = i + 1;
+        const done = current > n;
+        const active = current === n;
+        return (
+          <div key={label} className="flex items-center gap-1.5">
+            {i > 0 && <span className={`h-px w-4 sm:w-8 ${done ? "bg-[#8b72ff]/60" : "bg-white/[0.08]"}`} />}
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium ${
+                  done ? "bg-[#8b72ff] text-white" : active ? "border border-[#8b72ff] text-[#b7a9ff]" : "border border-white/[0.12] text-[#5f6875]"
+                }`}
+              >
+                {done ? "✓" : n}
+              </span>
+              <span className={`hidden text-xs sm:inline ${active ? "text-[#ece8df]" : done ? "text-[#8b94a1]" : "text-[#5f6875]"}`}>{label}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) {
   const { address, isConnected } = useAccount();
   const [agent, setAgent] = useState<RegisteredAgent | null>(null);
+  const [posted, setPosted] = useState(false);
+
+  const currentStep: 1 | 2 | 3 | 4 = posted ? 4 : agent ? 3 : isConnected ? 2 : 1;
 
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-medium text-[#ece8df]">Try it yourself — no money, no gas</h2>
+          <div className="portal-kicker !text-[#d6ae61]">Play Zone</div>
+          <h2 className="mt-1.5 text-base font-medium text-[#ece8df]">Three steps. No money, no gas.</h2>
           <p className="mt-1.5 max-w-lg text-sm leading-6 text-[#8b94a1]">
             Your agent will make one public, timestamped bet on a real stock price. In a few minutes you&apos;ll see
-            whether it was right — that result becomes a permanent, public mark on its record. Nothing here costs
-            money: both steps below are just a signature in your wallet, never a blockchain transaction.
+            whether it was right — that result becomes a permanent, public mark on its record. Every step below is
+            just a signature in your wallet, never a blockchain transaction.
           </p>
         </div>
         <ConnectButton />
+      </div>
+
+      <div className="mt-5 border-y border-white/[0.06] py-3.5">
+        <PlayZoneTracker current={currentStep} />
       </div>
 
       {!isConnected ? (
@@ -67,7 +104,7 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
       ) : agent ? (
         <div className="mt-5 flex flex-col gap-4">
           <AgentBadge agent={agent} onReset={() => setAgent(null)} />
-          <ClaimStep agent={agent} spyPrice={spyPrice} />
+          <ClaimStep agent={agent} spyPrice={spyPrice} onPosted={() => setPosted(true)} />
         </div>
       ) : (
         <div className="mt-5">
@@ -79,13 +116,9 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
   );
 }
 
-function StepLabel({ n, title }: { n: number; title: string }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8b72ff] text-[10px] font-medium text-white">{n}</span>
-      <span className="text-sm font-medium text-[#ece8df]">{title}</span>
-    </div>
-  );
+/** A section title inside a Play Zone step — the step's own number/progress is shown once, by PlayZoneTracker above, not repeated here. */
+function StepLabel({ title }: { title: string }) {
+  return <span className="text-sm font-medium text-[#ece8df]">{title}</span>;
 }
 
 function AgentBadge({ agent, onReset }: { agent: RegisteredAgent; onReset: () => void }) {
@@ -135,7 +168,7 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
 
   return (
     <div className="flex flex-col gap-2.5">
-      <StepLabel n={1} title="Give your agent a name" />
+      <StepLabel title="Give your agent a name" />
       <p className="text-xs leading-5 text-[#7a8390]">
         This is a public identity, not an account — there&apos;s no password or email. Your wallet signature proves
         it&apos;s really you controlling it later. Pick any free handle.
@@ -179,7 +212,7 @@ function ExistingAgentLink({ onUse }: { onUse: (a: RegisteredAgent) => void }) {
   );
 }
 
-function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: number | null }) {
+function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyPrice: number | null; onPosted: () => void }) {
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [targetPrice, setTargetPrice] = useState("");
   const [durationMs, setDurationMs] = useState(DURATIONS[1].ms);
@@ -217,6 +250,7 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setPosted({ id: json.id, deadline });
+      onPosted();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Posting the claim failed");
     } finally {
@@ -227,7 +261,7 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
   if (posted) {
     return (
       <div className="flex flex-col gap-2.5">
-        <StepLabel n={2} title="Bet placed" />
+        <StepLabel title="Bet placed" />
         <div className="rounded-xl border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
           <p>
             Your bet is now on the record, permanently — marked <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>.
@@ -251,7 +285,7 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
 
   return (
     <div className="flex flex-col gap-2.5">
-      <StepLabel n={2} title="Make a bet: where will SPY be?" />
+      <StepLabel title="Make a bet: where will SPY be?" />
       <p className="text-xs leading-5 text-[#7a8390]">
         SPY tracks the S&amp;P 500 (the 500 biggest US companies), as a token on Robinhood Chain. You&apos;re betting on
         its real price — the same way a human trader would.
