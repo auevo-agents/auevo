@@ -73,7 +73,7 @@ export function ProofCitadel({
   const byStatus=(category:ProofCategory,status:string)=>proofs?.filter(p=>p.category===category&&p.status===status).length ?? 0;
   const W=compact?320:600,H=compact?320:500,cx=W/2;
   const baseY=compact?245:390;
-  const s=compact?.55:1;
+  const s=compact ? .55 : 1;
   const foundation=Math.max(1,Math.min(7,Math.ceil(ageDays/60)));
   const positions=[
     [0,-18],[-74,2],[72,-6],[-128,38],[124,42],[-66,70],[64,78],[-112,100],[108,106],
@@ -89,12 +89,12 @@ export function ProofCitadel({
         </radialGradient>
         <filter id={compact?"iso-glow-mini":"iso-glow"}><feGaussianBlur stdDeviation={compact?"1.5":"2.8"}/></filter>
       </defs>
-      <rect width={W} height={H} rx={compact?20:30} fill={`url(#${compact?"iso-bg-mini":"iso-bg"})`}/>
-      <ellipse cx={cx} cy={baseY+42*s} rx={compact?118:230} ry={compact?28:50} fill="#000" opacity=".42"/>
+      <rect width={W} height={H} rx={compact ? 20 : 30} fill={`url(#${compact?"iso-bg-mini":"iso-bg"})`}/>
+      <ellipse cx={cx} cy={baseY+42*s} rx={compact ? 118 : 230} ry={compact ? 28 : 50} fill="#000" opacity=".42"/>
 
       {Array.from({length:foundation}).map((_,i)=>{
-        const width=(compact?195:360)-i*(compact?11:19);
-        const y=baseY+28*s-i*(compact?4:8);
+        const width=(compact ? 195 : 360)-i*(compact ? 11 : 19);
+        const y=baseY+28*s-i*(compact ? 4 : 8);
         return <g key={i} opacity={.82}>
           <polygon points={`${cx-width/2},${y} ${cx},${y-width*.16} ${cx+width/2},${y} ${cx},${y+width*.16}`} fill={i===foundation-1?"#17131d":"#101319"} stroke="#2b2c35" strokeWidth=".7"/>
         </g>;
@@ -112,8 +112,8 @@ export function ProofCitadel({
         const [px,pz]=positions[index];
         const x=cx+(px-pz*.55)*s-12*s;
         const y=baseY+(px*.18+pz*.42)*s;
-        const bw=(compact?22:34)*(1+d*.22);
-        const bh=(compact?12:19);
+        const bw=(compact ? 22 : 34)*(1+d*.22);
+        const bh=(compact ? 12 : 19);
         const color=COLOR[category];
         const failed=(a?attempted-verified:0)+byStatus(category,"rejected")+byStatus(category,"disputed");
         const pending=byStatus(category,"pending");
@@ -126,14 +126,14 @@ export function ProofCitadel({
             return <IsoBlock key={j} x={x} y={y-j*bh*.86} w={bw} h={bh} color={blockColor} alpha={alpha} fractured={failed>0&&j===Math.max(0,Math.floor(blocks*.38))}/>;
           })}
           {pending>0&&<IsoBlock x={x+bw*.08} y={y-blocks*bh*.86-4*s} w={bw*.84} h={bh*.8} color={color} alpha={.55} ghost/>}
-          {verified>0&&<circle cx={x+bw*.72} cy={y-blocks*bh*.86-bh*.35} r={compact?2.2:3.5} fill={color} opacity=".95" filter={`url(#${compact?"iso-glow-mini":"iso-glow"})`}/>}
+          {verified>0&&<circle cx={x+bw*.72} cy={y-blocks*bh*.86-bh*.35} r={compact ? 2.2 : 3.5} fill={color} opacity=".95" filter={`url(#${compact?"iso-glow-mini":"iso-glow"})`}/>}
         </g>;
       })}
 
       <g>
-        <IsoBlock x={cx-(compact?14:22)} y={baseY-16*s} w={compact?28:44} h={(compact?18:28)+depth(categories.reduce((n,c)=>n+c.verified,0))*(compact?65:105)} color="#d3a552" alpha=".98"/>
-        <circle cx={cx+(compact?4:7)} cy={baseY-(compact?55:92)} r={compact?4:7} fill="#8b72ff" opacity=".95"/>
-        <circle cx={cx+(compact?4:7)} cy={baseY-(compact?55:92)} r={compact?9:15} fill="none" stroke="#8b72ff" strokeOpacity=".24"/>
+        <IsoBlock x={cx-(compact ? 14 : 22)} y={baseY-16*s} w={compact ? 28 : 44} h={(compact ? 18 : 28)+depth(categories.reduce((n,c)=>n+c.verified,0))*(compact ? 65 : 105)} color="#d3a552" alpha=".98"/>
+        <circle cx={cx+(compact ? 4 : 7)} cy={baseY-(compact ? 55 : 92)} r={compact ? 4 : 7} fill="#8b72ff" opacity=".95"/>
+        <circle cx={cx+(compact ? 4 : 7)} cy={baseY-(compact ? 55 : 92)} r={compact ? 9 : 15} fill="none" stroke="#8b72ff" strokeOpacity=".24"/>
       </g>
 
       {!compact&&<><text x="28" y="32" fill="#8b72ff" fontSize="9" letterSpacing="2.4">PROOF CITADEL</text><text x={W-28} y="32" textAnchor="end" fill="#5d6673" fontSize="9">{categories.reduce((n,c)=>n+c.verified,0)} VERIFIED</text></>}
