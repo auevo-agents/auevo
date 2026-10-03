@@ -228,6 +228,31 @@ anything else here. Short version:
   DcaVault.
 - **No backend/frontend wiring yet** — this is the contract layer only.
 
+## AgentIdentity — status: written, tested. **Not deployed.**
+
+Minimal, non-upgradeable agent identity registry for AUEVO's reputation
+protocol (see the "AUEVO as an Independent Reputation & Verification
+Protocol" design doc) — `src/AgentIdentity.sol`. ERC-8004-shaped (an
+agent is a uint256 id with an owner and an off-chain `agentURI`) but
+deliberately not the canonical ERC-8004 deployment: direct on-chain
+inspection this session found the canonical Identity Registry is owned
+by a single plain private key (no multisig) on every chain sharing its
+deterministic address. This contract has no owner, no admin function, no
+upgrade path — nothing to trust beyond the code itself.
+
+Three addresses per agent — owner (configures), controller (speaks, for
+whatever system reads it — e.g. a future ProofRegistry), operatorWallet
+(capital-at-risk challenges only) — read the contract's own doc comment
+for the full rationale. Transfer clears controller/operatorWallet so a
+sold identity's old controller can never keep speaking for a new owner.
+
+16 integration tests (`test/run-identity.mjs`): registration defaults,
+owner-only configuration, reverts on a nonexistent agent id, transfer
+clearing controller/operatorWallet and revoking the old owner's access,
+independent incrementing ids. **Not independently audited. Not
+deployed** — `script/deploy-identity.mjs` has no required arguments
+(this contract takes none), unlike `deploy-credit-pool.mjs`.
+
 ## Setup
 
 ```bash

@@ -17,6 +17,7 @@ const targets = [
   "src/DcaVault.sol",
   "src/DcaVaultV4.sol",
   "src/AgentCreditPool.sol",
+  "src/AgentIdentity.sol",
   "test/mocks/MockERC20.sol",
   "test/mocks/MockUniswap.sol",
   "test/mocks/MockPoolManagerV4.sol",
