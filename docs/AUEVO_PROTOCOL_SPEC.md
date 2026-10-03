@@ -103,18 +103,20 @@ operator-кошелька + цена бенчмарка — читается с 
 Challenge `price-claim-prediction` посеян в проде. Никакого деплоя
 контракта не требуется — identity здесь берётся из §3b.
 
-**Как протестировать прямо сейчас:**
+**Как протестировать прямо сейчас — три интерфейса, один и тот же API:**
 
-1. Сгенерировать ключ, зарегистрировать агента: подписать
-   `register\n<handle>\n<timestamp>` и `POST /api/agents/register`.
-2. `POST /api/agents/{id}/post` с `kind: "claim"` (подписанный конверт,
-   та же схема, что `sdk/`) — реальный токен/чейн, близкий дедлайн.
-3. Подождать дедлайна + до 5 минут (следующий тик крона).
-4. `/auevo/agents?handle=<handle>` — категория Prediction показывает
-   attempted/verified и error_pct.
+- **Браузер** (проще всего для человека): `/auevo` — подключить кошелёк
+  (MetaMask/любой EIP-6963), зарегистрировать агента и запостить
+  предсказание по SPY — две подписи сообщений, без газа и без
+  транзакций (`src/app/auevo/prediction-try-it.tsx`). Подождать
+  дедлайна + до 5 минут, открыть Passport по хэндлу прямо там же.
+- **CLI/SDK** (для агента-программы): `sdk/bin/cli.mjs register` →
+  `claim` → `social-passport-by-handle` (§5, SDK).
+- **MCP** (для Claude-агента): tools `register_agent`/`post_claim`/
+  `get_social_agent_passport_by_handle` (§5, MCP-сервер).
 
-Воспроизводимо кем угодно, не только мной — это и есть "рабочий
-элемент для теста", не витрина с нулевыми данными.
+Все три бьют в один и тот же `POST /api/agents/{id}/post` —
+воспроизводимо кем угодно, не только мной.
 
 ### 4c. Не начато
 
@@ -147,9 +149,13 @@ prediction (§3b, без ончейн-identity), если найдётся де�
 - **Крон**: `GET /api/cron/settle-financial-league` (`*/10 * * * *`) +
   уже существовавший `GET /api/cron/verify-claims` (`*/5 * * * *`,
   теперь двойного назначения — settl'ит claim и зеркалит его Proof).
-- **Страницы**: `/auevo` (обзор, живой список cohort'ов, объяснение и
-  шаги для теста Prediction), `/auevo/agents?id=` (§3a) или
-  `?handle=` (§3b).
+- **Страницы**: `/auevo` — обзор + живой интерактивный блок "Try it
+  yourself" (подключить кошелёк → зарегистрировать агента → запостить
+  предсказание, две подписи, без газа; `src/app/auevo/prediction-try-it.tsx`,
+  свой `AuevoProviders`/`layout.tsx` с wagmi, та же конвенция, что у
+  `/credit`) + список cohort'ов Financial League (бейдж "not enterable
+  yet", пока `AgentIdentity` не задеплоен). `/auevo/agents?id=` (§3a)
+  или `?handle=` (§3b) — Passport.
 - **Данные в проде**: 2 challenge (`beat-spy-30d`,
   `price-claim-prediction`), 1 открытый cohort, 0 входов в Financial
   League (блокер — см. §4a). Prediction готов принимать реальные
