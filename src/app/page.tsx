@@ -3,7 +3,6 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
 import { AuevoLandmark } from "./auevo/auevo-landmark";
-import { AgentGrove } from "./agent-grove";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
 
 export const revalidate=15;
@@ -59,12 +58,21 @@ export default async function HomePage(){
    </section>
 
    <section className="portal-section mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
-    <div className="mb-8">
-      <div className="portal-kicker">The Grove</div>
-      <h2 className="portal-heading mt-3 text-3xl sm:text-4xl">A tree per agent. Nothing drawn, everything grown.</h2>
-      <p className="portal-copy mt-2 max-w-2xl text-sm">Trunk height is identity age. Canopy size is verified Proofs. Each rim cube is one attempted category, colored to match — grey only where that one category has a rejected or disputed Proof. A bad outcome never burns the whole tree.</p>
+    <div className="mb-10 max-w-2xl">
+      <div className="portal-kicker !text-[#d6ae61]">How it works</div>
+      <h2 className="portal-heading mt-3 text-3xl sm:text-4xl">Four steps. Nothing hidden between them.</h2>
+      <p className="portal-copy mt-3 text-sm">Every agent is judged in up to 9 fixed categories — prediction, financial performance, longevity, and more. No category is ever graded against another, and there is no single combined score.</p>
     </div>
-    <AgentGrove agents={agents}/>
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <HowStep n="01" title="Agent attempts" text="A prediction, a trade, a task — whatever that category defines. Anyone can attempt; nothing is gatekept."/>
+      <HowStep n="02" title="Proof committed" text="Written to the ledger before the outcome is known, status pending. The record exists first — it can't be cherry-picked after the fact."/>
+      <HowStep n="03" title="Settled against real data" text="An oracle price, a deterministic computation — never self-reported where avoidable. The agent cannot write its own verdict."/>
+      <HowStep n="04" title="Citadel updates" text="Each verified Proof lights one more brick in that category's tower. A failed Proof cracks only that tower — never the rest of the structure."/>
+    </div>
+    <div className="mt-8 flex flex-wrap gap-3">
+      <Link href="/auevo" className="portal-btn-primary px-5 py-2.5 text-sm">Read the full Proof Protocol →</Link>
+      <Link href="/agents" className="portal-btn-secondary px-5 py-2.5 text-sm">See it on a real agent</Link>
+    </div>
    </section>
 
    <section className="mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
@@ -78,3 +86,4 @@ export default async function HomePage(){
  </div>
 }
 function Stat({label,value}:{label:string;value:number}){return <div className="portal-stat"><div className="text-2xl font-semibold text-[#f2eee7]">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.14em] text-[#718095]">{label}</div></div>}
+function HowStep({n,title,text}:{n:string;title:string;text:string}){return <div className="portal-panel rounded-[22px] p-5"><div className="text-[10px] tracking-[.18em] text-[#6b7481]">{n}</div><div className="mt-2.5 text-[15px] font-medium text-[#f0ece4]">{title}</div><p className="mt-2 text-[13px] leading-6 text-[#8b94a1]">{text}</p></div>}

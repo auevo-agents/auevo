@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
-import { categoryLabel } from "@/app/auevo/reputation-structure";
+import { categoryLabel, categoryAccent, CATEGORY_ORDER } from "@/app/auevo/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
@@ -84,9 +84,16 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
     <aside className="space-y-4">
       <div className="portal-panel rounded-[26px] p-5">
        <div className="flex items-center justify-between"><h2 className="text-sm font-medium">Reputation Vector</h2><span className="text-[9px] uppercase tracking-[.1em] text-[#5f6875]">recomputed</span></div>
-       <div className="mt-5 space-y-4">{record.categories.length?record.categories.map(c=>{const ratio=c.attempted?c.verified/c.attempted:0;return <div key={c.category}><div className="flex justify-between text-xs"><span className="text-[#aeb5bf]">{categoryLabel(c.category as ProofCategory)}</span><span className="font-mono text-[#6f7885]">{c.verified}/{c.attempted}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-gradient-to-r from-[#7a68ee] to-[#d3ad63]" style={{width:Math.round(ratio*100)+"%"}}/></div><div className="mt-1.5 text-[8px] uppercase tracking-[.1em] text-[#596270]">{c.confidence.replaceAll("_"," ")}</div></div>}):<p className="text-sm text-[#6f7885]">No proofs yet.</p>}</div>
+       <div className="mt-5 space-y-4">{record.categories.length?record.categories.map(c=>{const ratio=c.attempted?c.verified/c.attempted:0;const accent=categoryAccent(c.category as ProofCategory);return <div key={c.category}><div className="flex items-center gap-2 text-xs"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:accent}}/><span className="flex-1 text-[#aeb5bf]">{categoryLabel(c.category as ProofCategory)}</span><span className="font-mono text-[#6f7885]">{c.verified}/{c.attempted}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full" style={{width:Math.round(ratio*100)+"%",background:accent}}/></div><div className="mt-1.5 text-[8px] uppercase tracking-[.1em] text-[#596270]">{c.confidence.replaceAll("_"," ")}</div></div>}):<p className="text-sm text-[#6f7885]">No proofs yet.</p>}</div>
       </div>
-      <div className="portal-panel rounded-[26px] p-5"><div className="text-[10px] uppercase tracking-[.18em] text-[#d6ae61]">Visual encoding</div><div className="mt-4 space-y-2 text-xs text-[#7e8794]"><Row a="Mass" b="attempted"/><Row a="Light" b="verified"/><Row a="Cracks" b="failed"/><Row a="Ghost layer" b="pending"/><Row a="Foundation" b="identity age"/></div></div>
+      <div className="portal-panel rounded-[26px] p-5">
+       <div className="text-[10px] uppercase tracking-[.18em] text-[#d6ae61]">Visual encoding</div>
+       <div className="mt-4 space-y-2 text-xs text-[#7e8794]"><Row a="Mass" b="attempted"/><Row a="Light" b="verified"/><Row a="Cracks" b="failed"/><Row a="Ghost layer" b="pending"/><Row a="Foundation" b="identity age"/></div>
+       <div className="mt-5 border-t border-white/[0.055] pt-4">
+        <div className="text-[9px] uppercase tracking-[.14em] text-[#5f6875]">9 towers, by color</div>
+        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">{CATEGORY_ORDER.map((cat)=><div key={cat} className="flex items-center gap-1.5 text-[10.5px] text-[#9299a6]"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:categoryAccent(cat)}}/>{categoryLabel(cat)}</div>)}</div>
+       </div>
+      </div>
     </aside>
    </section>
 
