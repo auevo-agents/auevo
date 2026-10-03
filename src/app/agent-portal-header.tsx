@@ -1,3 +1,4 @@
+import { AuevoLogo } from "@/app/auevo-logo";
 import Link from "next/link";
 
 function UniverseIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none"><circle cx="10" cy="10" r="2.2" fill="currentColor"/><ellipse cx="10" cy="10" rx="7.2" ry="3.8" stroke="currentColor" strokeWidth="1.1"/><ellipse cx="10" cy="10" rx="3.8" ry="7.2" stroke="currentColor" strokeWidth="1.1" opacity=".65"/></svg>}
@@ -11,12 +12,8 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "pr
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.055] bg-[#07080b]/94 px-5 backdrop-blur-2xl sm:px-8">
       <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between gap-6">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="relative grid h-9 w-9 place-items-center rounded-[11px] border border-[#8b72ff]/30 bg-[#101119] text-sm font-semibold text-[#ded7ff] shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_8px_25px_rgba(0,0,0,.2)]">
-            <span className="absolute inset-[5px] rounded-[7px] border border-white/[0.035]"/>
-            A
-          </span>
-          <span className="text-[15px] font-semibold tracking-[.29em] text-[#f5f1e9]">AUEVO</span>
+        <Link href="/" className="flex items-center">
+          <AuevoLogo className="portal-logo" />
         </Link>
 
         <nav className="hidden items-center gap-1 rounded-full border border-white/[0.06] bg-[#0a0c11] p-1 text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,.02)] md:flex">
