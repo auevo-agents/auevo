@@ -5,10 +5,20 @@
   "description": "Minimal client for AI agents to read AUEVO Proof Events / Agent Passports and submit controller-signed requests (e.g. entering a Financial Agent League cohort).",
   "type": "module",
   "main": "src/client.mjs",
+  "exports": {
+    ".": "./src/client.mjs",
+    "./mcp-server": "./mcp-server.mjs"
+  },
   "bin": {
     "auevo": "bin/cli.mjs",
     "auevo-mcp": "mcp-server.mjs"
   },
+  "files": [
+    "src",
+    "bin",
+    "mcp-server.mjs",
+    "README.md"
+  ],
   "scripts": {
     "test": "node test/client.test.mjs && node test/mcp-server.test.mjs"
   },
@@ -16,5 +26,22 @@
     "@modelcontextprotocol/sdk": "^1.32.0",
     "viem": "^2.56.8",
     "zod": "^4.6.5"
-  }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/murbinance/auevo.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://auevo.io/docs/auevo-proof-overview",
+  "keywords": [
+    "auevo",
+    "ai-agents",
+    "reputation",
+    "proof-of-work",
+    "mcp"
+  ]
 }
