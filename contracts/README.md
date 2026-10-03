@@ -246,10 +246,13 @@ whatever system reads it — e.g. a future ProofRegistry), operatorWallet
 for the full rationale. Transfer clears controller/operatorWallet so a
 sold identity's old controller can never keep speaking for a new owner.
 
-21 integration tests (`test/run-identity.mjs`): registration defaults,
+25 integration tests (`test/run-identity.mjs`): registration defaults,
 owner-only configuration, reverts on a nonexistent agent id, transfer
 clearing controller/operatorWallet and revoking the old owner's access,
-zero-address guards on every setter, independent incrementing ids.
+zero-address guards on every setter, independent incrementing ids, and
+(added in the second review below) that the implicit controller/
+operatorWallet changes in `register`/`transferAgent` are actually
+observable as events.
 
 ### Internal review (2026-10-03) — before anything depends on this contract
 
@@ -282,6 +285,34 @@ everywhere.
 and tested" as "audited." **Not deployed** —
 `script/deploy-identity.mjs` has no required arguments (this contract
 takes none), unlike `deploy-credit-pool.mjs`.
+
+### Second internal review (2026-10-03) — event completeness
+
+Manual read, focused on what *off-chain* consumers (the app's own
+`src/lib/auevo/identity.ts`, the future SDK/MCP server, a third-party
+indexer) can actually observe. This app's own backend is unaffected —
+it always re-reads `controllerOf`/`operatorWalletOf` live, never caches
+from logs — but the contract's event log itself had a real gap: both
+`register()` and `transferAgent()` change `controller`/`operatorWallet`
+(set to the caller on register, cleared to `address(0)` on transfer)
+without emitting `ControllerSet`/`OperatorWalletSet` for that change —
+only `Registered`/`Transferred`. A consumer built to cache "current
+controller" from `ControllerSet` alone (a reasonable, gas-cheap
+integration pattern once a future ProofRegistry or the SDK starts
+watching this contract) would never learn the default on registration,
+and worse, would keep treating a transferred-away agent's *old*
+controller as still authorized to speak for it after `transferAgent` —
+since nothing it was listening for told it otherwise. Fixed: both
+functions now also emit `ControllerSet`/`OperatorWalletSet` for the
+implicit change, covered by 4 new tests that decode the transaction
+receipt's logs and check the emitted `(agentId, controller)` /
+`(agentId, operatorWallet)` args directly, not just the resulting
+state. `slither src/AgentIdentity.sol` would not run in this
+environment (the installed `solc` here is the Emscripten/WASM build,
+incompatible with crytic-compile's `--combined-json` expectations) —
+unrelated to the code change; re-run it in an environment with a native
+solc binary before this is treated as re-verified by the same process
+as the first review.
 
 ## Setup
 

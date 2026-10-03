@@ -1,5 +1,5 @@
 import Ganache from "ganache";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createPublicClient, createWalletClient, http, decodeEventLog } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import fs from "node:fs";
 
@@ -55,6 +55,19 @@ async function read(address, abi, functionName, args = []) {
   return publicClient.readContract({ address, abi, functionName, args });
 }
 
+function eventsNamed(receipt, abi, eventName) {
+  const out = [];
+  for (const log of receipt.logs) {
+    try {
+      const decoded = decodeEventLog({ abi, data: log.data, topics: log.topics });
+      if (decoded.eventName === eventName) out.push(decoded.args);
+    } catch {
+      // a log from a different event signature — not this one
+    }
+  }
+  return out;
+}
+
 async function expectRevert(promise) {
   try {
     await promise;
@@ -75,12 +88,23 @@ console.log("AgentIdentity deployed at", identity);
 
 console.log("\n1) register mints an agent id, defaults controller/operatorWallet to the caller");
 {
-  await write(ownerClient, identity, AgentIdentity.abi, "register", ["ipfs://agent-0"]);
+  const receipt = await write(ownerClient, identity, AgentIdentity.abi, "register", ["ipfs://agent-0"]);
   const agentId = 0n;
   check("owner is set", (await read(identity, AgentIdentity.abi, "ownerOf", [agentId])).toLowerCase() === owner.toLowerCase());
   check("controller defaults to owner", (await read(identity, AgentIdentity.abi, "controllerOf", [agentId])).toLowerCase() === owner.toLowerCase());
   check("operatorWallet defaults to owner", (await read(identity, AgentIdentity.abi, "operatorWalletOf", [agentId])).toLowerCase() === owner.toLowerCase());
   check("agentURI stored", (await read(identity, AgentIdentity.abi, "agentURI", [agentId])) === "ipfs://agent-0");
+
+  const controllerSet = eventsNamed(receipt, AgentIdentity.abi, "ControllerSet");
+  check(
+    "register emits ControllerSet(agentId, owner) — an event-only indexer sees the default without re-reading state",
+    controllerSet.length === 1 && controllerSet[0].agentId === agentId && controllerSet[0].controller.toLowerCase() === owner.toLowerCase()
+  );
+  const operatorSet = eventsNamed(receipt, AgentIdentity.abi, "OperatorWalletSet");
+  check(
+    "register emits OperatorWalletSet(agentId, owner)",
+    operatorSet.length === 1 && operatorSet[0].agentId === agentId && operatorSet[0].operatorWallet.toLowerCase() === owner.toLowerCase()
+  );
 }
 
 console.log("\n2) only the owner can configure controller/operatorWallet/URI/metadata");
@@ -109,10 +133,21 @@ console.log("\n3) reads on a nonexistent agent id revert");
 console.log("\n4) transferAgent clears controller and operatorWallet");
 {
   const agentId = 0n;
-  await write(ownerClient, identity, AgentIdentity.abi, "transferAgent", [agentId, newOwner]);
+  const receipt = await write(ownerClient, identity, AgentIdentity.abi, "transferAgent", [agentId, newOwner]);
   check("owner updated", (await read(identity, AgentIdentity.abi, "ownerOf", [agentId])).toLowerCase() === newOwner.toLowerCase());
   check("controller cleared on transfer", (await read(identity, AgentIdentity.abi, "controllerOf", [agentId])) === "0x0000000000000000000000000000000000000000");
   check("operatorWallet cleared on transfer", (await read(identity, AgentIdentity.abi, "operatorWalletOf", [agentId])) === "0x0000000000000000000000000000000000000000");
+
+  const controllerSet = eventsNamed(receipt, AgentIdentity.abi, "ControllerSet");
+  check(
+    "transferAgent emits ControllerSet(agentId, address(0)) — an event-only indexer can't keep treating the old controller as authorized",
+    controllerSet.length === 1 && controllerSet[0].agentId === agentId && controllerSet[0].controller === "0x0000000000000000000000000000000000000000"
+  );
+  const operatorSet = eventsNamed(receipt, AgentIdentity.abi, "OperatorWalletSet");
+  check(
+    "transferAgent emits OperatorWalletSet(agentId, address(0))",
+    operatorSet.length === 1 && operatorSet[0].agentId === agentId && operatorSet[0].operatorWallet === "0x0000000000000000000000000000000000000000"
+  );
 
   const rejected = await expectRevert(write(ownerClient, identity, AgentIdentity.abi, "setController", [agentId, controller]));
   check("the OLD owner can no longer configure the agent after transfer", rejected);

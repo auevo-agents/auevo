@@ -91,6 +91,12 @@ contract AgentIdentity is IAgentIdentity {
             registeredAt: uint64(block.timestamp)
         });
         emit Registered(agentId, msg.sender, agentURI_);
+        // controller/operatorWallet default to the caller too — emit the same events a later
+        // setController/setOperatorWallet call would, so an indexer built only from events (not
+        // re-reading controllerOf/operatorWalletOf live) never has to special-case Registered to
+        // learn the initial values.
+        emit ControllerSet(agentId, msg.sender);
+        emit OperatorWalletSet(agentId, msg.sender);
     }
 
     function ownerOf(uint256 agentId) external view returns (address) {
@@ -161,5 +167,11 @@ contract AgentIdentity is IAgentIdentity {
         a.controller = address(0);
         a.operatorWallet = address(0);
         emit Transferred(agentId, previousOwner, newOwner);
+        // Mirror the clear as explicit ControllerSet/OperatorWalletSet(..., address(0)) events —
+        // the same reasoning as register() above: a consumer that caches "current controller"
+        // from ControllerSet alone, without re-reading controllerOf live, must not go on treating
+        // the OLD controller as authorized to speak for this agent after a transfer.
+        emit ControllerSet(agentId, address(0));
+        emit OperatorWalletSet(agentId, address(0));
     }
 }

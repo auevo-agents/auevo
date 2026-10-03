@@ -146,10 +146,20 @@ prediction (§3b, без ончейн-identity), если найдётся де�
 
 ## 5. Текущее состояние репо
 
-- **Контракт**: `contracts/src/AgentIdentity.sol` — написан, 16/16
+- **Контракт**: `contracts/src/AgentIdentity.sol` — написан, 25/25
   интеграционных тестов зелёные (`contracts/test/run-identity.mjs`).
-  **Не задеплоен** (та же конвенция, что `AgentCreditPool` — деплой
-  руками пользователя, не мной).
+  Прошёл независимый ревью (2026-10-03): единственная реальная находка —
+  `register()`/`transferAgent()` неявно устанавливали/обнуляли
+  `controller`/`operatorWallet`, но не эмитили `ControllerSet`/
+  `OperatorWalletSet` для этого — любой будущий потребитель (SDK, MCP,
+  индексер), кэширующий controller по событиям, а не живым
+  `controllerOf()`, получил бы устаревшее значение (особенно опасно
+  после transferAgent — старый controller выглядел бы всё ещё валидным).
+  Починено: оба события теперь эмитятся явно, плюс 4 новых теста на них.
+  Остальное — минимальный, без внешних вызовов и custody контракт, по
+  конструкции вне зоны reentrancy/upgrade-рисков. **Не задеплоен** (та
+  же конвенция, что `AgentCreditPool` — деплой руками пользователя, не
+  мной).
 - **Схема**: `supabase/migrations/0020_auevo_proofs.sql` →
   `0023_auevo_longevity_challenge.sql` (включая `0022`, бэкфилл
   `auevo_proofs_social_identity`, §3b/§4b) — применены в проде
