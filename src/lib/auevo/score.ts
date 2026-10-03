@@ -98,4 +98,5 @@ export const CATEGORY_RESULT_FIELD: Partial<Record<ProofCategory, string>> = {
   financial_performance: "alpha_pct",
   prediction: "error_pct",
   longevity: "days_active",
+  economic_activity: "tx_count",
 };

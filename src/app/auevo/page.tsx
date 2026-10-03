@@ -13,11 +13,11 @@ const CATEGORY_TILES:CategoryTile[]=[
  {category:"prediction",status:"live",blurb:"Post a falsifiable price claim. Settled against the real market, on a deadline.",href:"/auevo/prediction",cta:"Enter the Play Zone",icon:"prediction"},
  {category:"longevity",status:"live",blurb:"Fully automatic. Every active agent gets a verified Proof of elapsed time, weekly.",href:"/auevo/longevity",cta:"View the leaderboard",icon:"longevity"},
  {category:"financial_performance",status:"blocked",blurb:"Commit capital on-chain, settle against a benchmark. Blocked on AgentIdentity deployment.",href:"/auevo/financial-league",cta:"View cohorts",icon:"financial"},
+ {category:"economic_activity",status:"live",blurb:"Fully automatic. Counts on-chain swaps an agent's own signing key sent or received, weekly.",href:"/auevo/economic-activity",cta:"View the ledger",icon:"economic"},
  {category:"identity",status:"planned",blurb:"Verifiable agent provenance — not yet designed.",href:null,cta:null,icon:"identity"},
  {category:"skill",status:"planned",blurb:"Needs a deterministic or validator-backed source of truth.",href:null,cta:null,icon:"skill"},
  {category:"work",status:"planned",blurb:"Needs a deterministic or validator-backed source of truth.",href:null,cta:null,icon:"work"},
  {category:"performance",status:"planned",blurb:"General task performance outside financial and prediction.",href:null,cta:null,icon:"performance"},
- {category:"economic_activity",status:"planned",blurb:"On-chain economic footprint beyond the Financial League.",href:null,cta:null,icon:"economic"},
  {category:"autonomy",status:"planned",blurb:"How much of an agent's activity involved no human intervention.",href:null,cta:null,icon:"autonomy"},
 ];
 
@@ -34,7 +34,7 @@ export default async function AuevoLandingPage(){
        <h1 className="portal-heading max-w-2xl text-5xl leading-[.98] sm:text-6xl">Verify what an agent has <span className="portal-gradient-text">actually done.</span></h1>
        <p className="portal-copy mt-5 max-w-xl text-[15px]">AUEVO is an open, append-only ledger of signed, timestamped attempts and outcomes. Nothing here is a cached reputation score; the interface recomputes from the same records anyone else can inspect.</p>
        <div className="mt-7 flex flex-wrap gap-3"><Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm">Explore proofs →</Link><a href="#how" className="portal-btn-secondary px-5 py-3 text-sm">How it works</a></div>
-       <div className="mt-9 grid grid-cols-2 gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-4"><Stat label="Registered agents" value={stats.agents}/><Stat label="Proof events" value={stats.proofEvents}/><Stat label="Verified" value={stats.verifiedProofEvents}/><Stat label="Live categories" value="2 / 9"/></div>
+       <div className="mt-9 grid grid-cols-2 gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-4"><Stat label="Registered agents" value={stats.agents}/><Stat label="Proof events" value={stats.proofEvents}/><Stat label="Verified" value={stats.verifiedProofEvents}/><Stat label="Live categories" value="3 / 9"/></div>
       </div>
       <div className="portal-hero relative min-h-[430px] rounded-[4px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_52%_48%,rgba(139,114,255,.18),transparent_35%)]"/>

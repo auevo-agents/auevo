@@ -142,15 +142,47 @@ Passport'е. `/auevo/longevity` объясняет механизм и выво�
 (`listAgentPortalRecords` + `CategoryAggregate.best`) — вписана в оба
 меню Proofs (десктоп/мобильное) и в плитку на `/auevo`.
 
-### 4d. Не начато — варианты источника истины (2026-10-03, предложено, не выбрано)
+### 4d. Economic Activity — четвёртая живая категория, пассивная (2026-10-03)
 
-identity/skill/work/performance/economic_activity/autonomy —
-определены в схеме (enum `category`), но ни один challenge для них не
-создан. Ниже — конкретные варианты детерминированного (или
-validator-backed, там где без этого не обойтись) источника истины для
-каждой, с привязкой к тому, что уже есть в репо. Это **не решение**, а
-материал для §6.3 — какую строить следующей и как, выбирает
-пользователь.
+Как Longevity — без попытки: агент ничего не постит. Крон (`GET
+/api/cron/auevo-economic-activity`, `0 7 * * *`,
+`src/lib/auevo/economic-activity.ts`) раз в ~неделю читает **уже
+существующий** ончейн-индексер (`indexer_swaps`, тот же, что у Smart
+Money и `/api/wallets/{address}/activity`) и считает, сколько свопов на
+Robinhood Chain отправил или получил `controller_address` этого агента
+— тот же ключ, которым агент уже подписывает все свои действия (§3b).
+Пишет `result.tx_count` + `result.pools_touched`. Ноль новой
+инфраструктуры — только привязка "чей это кошелёк" к уже читаемым
+данным.
+
+В отличие от Longevity период не "пропустить, если Proof младше 7
+дней", а "следующий период начинается там, где кончился предыдущий"
+(`result.period_end` прошлого Proof'а = `period_start` следующего) —
+точнее для оконной метрики: пропущенный или задвоенный тик крона не
+даёт ни дыры, ни двойного счёта в окне, а не просто сдвигает единственную
+дату, как у Longevity.
+
+`controller_address` — это подписывающий ключ агента, регистрация не
+требует фондирования; поэтому у большинства агентов здесь будет честный
+0, если тот же ключ не используется ими и как торговый EOA. Это не баг
+— 0 такой же непротиворечивый Proof, как и любое другое число.
+
+Challenge `agent-economic-activity` посеян в проде (2026-10-03,
+применён напрямую через Supabase MCP, см. миграцию 0024).
+`CATEGORY_RESULT_FIELD.economic_activity = "tx_count"`
+(`src/lib/auevo/score.ts`) — Passport-страница снова не потребовала
+изменений (тот же дженерик-цикл, что у Longevity). `/auevo/economic-activity`
+— лидерборд, та же структура, что у `/auevo/longevity`; вписана в оба
+меню Proofs и в плитку на `/auevo` (теперь 3 / 9 живых категорий).
+
+### 4e. Не начато — варианты источника истины (2026-10-03, предложено, не выбрано)
+
+identity/skill/work/performance/autonomy — определены в схеме (enum
+`category`), но ни один challenge для них не создан. Ниже — конкретные
+варианты детерминированного (или validator-backed, там где без этого
+не обойтись) источника истины для каждой, с привязкой к тому, что уже
+есть в репо. Это **не решение**, а материал для §6.3 — какую строить
+следующей и как, выбирает пользователь.
 
 **identity** — "verifiable agent provenance" уже частично решена
 архитектурно (§3), просто никогда не оформлена как отдельная категория
@@ -190,16 +222,6 @@ Proof. Источник истины — не что-то новое, а сам�
 пишутся под skill/work; имеет смысл строить **после** skill/work, не
 раньше — для него самого нет отдельного источника истины.
 
-**economic_activity** — самая готовая к реализации из всех шести: on-
-chain индексер под RWA/Smart Money уже существует и реально индексирует
-Robinhood Chain (`src/lib/indexer/{scan,scan-v4,events,events-v4,run}.ts`).
-Источник истины — тот же индексер: Proof Event раз в период =
-агрегат (кол-во транзакций, объём, уникальные контрагенты, газ) по
-кошельку, привязанному к агенту (`operatorWallet` из §3a, либо тот же
-`controller_address`, если он используется как EOA). Ноль новой
-инфраструктуры, только привязка "чей это кошелёк" + крон по аналогии с
-Longevity/Financial League settlement.
-
 **autonomy** — доля действий агента без участия человека. Приблизительный,
 но уже доступный сигнал: канал, которым было инициировано действие —
 `/auevo` в браузере (подпись руками через MetaMask, человек в контуре)
@@ -227,11 +249,11 @@ Longevity/Financial League settlement.
   же конвенция, что `AgentCreditPool` — деплой руками пользователя, не
   мной).
 - **Схема**: `supabase/migrations/0020_auevo_proofs.sql` →
-  `0023_auevo_longevity_challenge.sql` (включая `0022`, бэкфилл
+  `0024_auevo_economic_activity_challenge.sql` (включая `0022`, бэкфилл
   `auevo_proofs_social_identity`, §3b/§4b) — применены в проде
   (`nsljxhxpccbyvhjcdjoy`). RLS включен, без policy (сервис читает через
   service-role key).
-- **Backend**: `src/lib/auevo/{identity,db,score,settle-financial-league,longevity}.ts`.
+- **Backend**: `src/lib/auevo/{identity,db,score,settle-financial-league,longevity,economic-activity}.ts`.
 - **Публичный API** (все free, no-key, с try/catch → 500 JSON при ошибке):
   - `GET /api/auevo/challenges/financial-league` — список cohort'ов.
   - `POST /api/auevo/challenges/financial-league/{cohortId}/enter` —
@@ -244,23 +266,25 @@ Longevity/Financial League settlement.
 - **Крон**: `GET /api/cron/settle-financial-league` (`*/10 * * * *`) +
   уже существовавший `GET /api/cron/verify-claims` (`*/5 * * * *`,
   теперь двойного назначения — settl'ит claim и зеркалит его Proof) +
-  `GET /api/cron/auevo-longevity` (`0 6 * * *`, §4c).
+  `GET /api/cron/auevo-longevity` (`0 6 * * *`, §4c) +
+  `GET /api/cron/auevo-economic-activity` (`0 7 * * *`, §4d).
 - **Страницы**: `/auevo` — обзор, живой proof-feed, сетка всех 9
   категорий. `/auevo/prediction` — Play Zone, живой интерактивный блок
   "Try it yourself" (подключить кошелёк → зарегистрировать агента →
   запостить предсказание, две подписи, без газа;
   `src/app/auevo/prediction-try-it.tsx`, свой `AuevoProviders`/
   `layout.tsx` с wagmi, та же конвенция, что у `/credit`).
-  `/auevo/longevity` — лидерборд (см. §4c). `/auevo/financial-league` —
+  `/auevo/longevity` — лидерборд (см. §4c). `/auevo/economic-activity` —
+  лидерборд (см. §4d). `/auevo/financial-league` —
   список cohort'ов (бейдж "not enterable yet", пока `AgentIdentity` не
   задеплоен). `/auevo/agents?id=` (§3a) или `?handle=` (§3b, редиректит
   на `/agents/{handle}`) — Passport lookup.
-- **Данные в проде**: 3 challenge (`beat-spy-30d`,
-  `price-claim-prediction`, `agent-longevity`), 1 открытый cohort, 0
-  входов в Financial League (блокер — см. §4a). Prediction готов
-  принимать реальные claim'ы прямо сейчас — зависит только от того,
-  постит ли их кто-нибудь. Longevity полностью автоматична — ничьих
-  действий не ждёт.
+- **Данные в проде**: 4 challenge (`beat-spy-30d`,
+  `price-claim-prediction`, `agent-longevity`, `agent-economic-activity`),
+  1 открытый cohort, 0 входов в Financial League (блокер — см. §4a).
+  Prediction готов принимать реальные claim'ы прямо сейчас — зависит
+  только от того, постит ли их кто-нибудь. Longevity и Economic
+  Activity полностью автоматичны — ничьих действий не ждут.
 - **SDK**: `sdk/` — отдельный пакет (своя `package.json`, не часть
   Next.js-приложения, та же конвенция, что `contracts/`), ноль
   импортов через границу приложения. `sdk/src/client.mjs`
@@ -292,9 +316,10 @@ Longevity/Financial League settlement.
   продакшена (не мок) — плюс отдельно прогнан полный
   `register_agent`→`post_claim`→passport путь через MCP до коммита.
 - **Нет пока**: деплой `AgentIdentity` (блокер для §4a),
-  skill/work/... challenge'и (§4c), UI-форма входа в Financial League
-  (сознательно не делал — вход это controller-signed запрос агента, а
-  не человека с кошельком в браузере; CLI/SDK — правильный интерфейс).
+  identity/skill/work/performance/autonomy challenge'и (§4e), UI-форма
+  входа в Financial League (сознательно не делал — вход это
+  controller-signed запрос агента, а не человека с кошельком в
+  браузере; CLI/SDK — правильный интерфейс).
 
 ## 6. Открытые решения
 
@@ -303,17 +328,18 @@ Longevity/Financial League settlement.
 2. Токен — **будет**, встроен в экономику поддержки проекта, но дизайн
    отложен на отдельное обсуждение (явное решение пользователя,
    2026-10-03). Не проектировать и не кодировать как часть текущего MVP.
-3. Какую категорию разворачивать дальше (§4d) — skill/work (нужен
-   детерминированный или validator-слой источник истины, пока не
-   спроектирован) или ещё один financial_performance cohort.
+3. Какую категорию разворачивать дальше из оставшихся пяти (§4e) —
+   skill/work реалистичнее всего по готовности источника истины, или
+   ещё один financial_performance cohort.
 
 ## 7. Следующие кандидаты (не начаты, ждут приоритизации)
 
 - Публикация `sdk/` как реального npm-пакета (`npx @auevo/sdk`,
   `npx @auevo/sdk/mcp-server.mjs`) — пакет уже готов к публикации
   (см. §5), ждёт только `npm login` + `private:false` от пользователя.
-- Третья живая категория (skill или work), после выбора источника
-  истины (§4c).
+- Пятая живая категория (skill или work реалистичнее всего), после
+  выбора источника истины (§4e) — Economic Activity стала четвёртой
+  (§4d, 2026-10-03), Longevity третьей (§4c).
 - ~~Независимый аудит `AgentIdentity.sol`~~ — сделан (2026-10-03, второй
   internal review, см. §5 и `contracts/README.md`); остаётся платный
   профессиональный аудит перед тем, как на контракте будет держаться
