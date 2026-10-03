@@ -4,7 +4,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { ReputationStructure, categoryLabel } from "@/app/auevo/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
-import type { ProofEvent } from "@/lib/auevo/db";
+import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
 
 export const revalidate = 15;
 
@@ -105,7 +105,7 @@ export default async function AgentProfilePage({ params }: PageProps<"/agents/[h
                   return (
                     <div key={category.category}>
                       <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-[#b8bec8]">{categoryLabel(category.category as any)}</span>
+                        <span className="text-[#b8bec8]">{categoryLabel(category.category as ProofCategory)}</span>
                         <span className="font-mono text-xs text-[#818b9a]">{category.verified}/{category.attempted}</span>
                       </div>
                       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.055]">
