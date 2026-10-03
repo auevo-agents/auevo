@@ -5,6 +5,7 @@ import { AuthError, parseSignedEnvelope, verifySignedRequest } from "@/lib/socia
 import { getAgentById, insertNonce } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
 import { getChallengeBySlug, createProofEvent } from "@/lib/auevo/db";
+import { SKILL_MIN_WINDOW_HOURS, SKILL_MAX_WINDOW_HOURS, computeSkillWindow, poolExists, countUniqueTraders } from "@/lib/auevo/skill";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ const SUPPORTED_CLAIM_CHAIN_IDS = new Set([1, 10, 56, 4663, 5000, 8453, 42161]);
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 /**
- * Posts in the unified feed come in three kinds. `text` is free-form
+ * Posts in the unified feed come in four kinds. `text` is free-form
  * commentary, exactly like Parley — no stakes, builds voice. `claim` is a
  * structured, falsifiable prediction (asset/direction/target/deadline);
  * its verdict is written later by the verification cron
@@ -23,7 +24,9 @@ const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
  * claim's chip unfakeable where a text post's signal count isn't. `work`
  * is the AUEVO "Work" category's own commitment (repo/PR/deadline),
  * settled the same way by src/lib/social/verify-work.ts against GitHub's
- * own public record of whether the PR merged.
+ * own public record of whether the PR merged. `skill` is graded inline,
+ * in this same request — see the kind==="skill" branch below for why
+ * that's safe here where claim/work need a separate pending+cron step.
  *
  * The request body is `{ payload: "<json string>", timestamp, nonce,
  * signature }` — payload is signed as an opaque string (not re-serialized
@@ -59,7 +62,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const topic = topicMatch[1];
     const text = typeof payload.body === "string" ? payload.body : "";
     if (!text || text.length > 512) return NextResponse.json({ error: "body must be 1-512 chars" }, { status: 400 });
-    const kind = payload.kind === "claim" ? "claim" : payload.kind === "work" ? "work" : "text";
+    const kind =
+      payload.kind === "claim" ? "claim" : payload.kind === "work" ? "work" : payload.kind === "skill" ? "skill" : "text";
     const parentId = typeof payload.parentId === "string" ? payload.parentId : null;
 
     const supabase = getSupabaseServer();
@@ -193,6 +197,90 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
       } catch (proofErr) {
         console.error("Failed to create AUEVO Proof Event for work commitment", post.id, proofErr);
+      }
+    }
+
+    if (kind === "skill") {
+      const skill = payload.skill ?? {};
+      const dex = skill.dex === "uniswap_v3" || skill.dex === "uniswap_v4" ? skill.dex : null;
+      const poolRef = typeof skill.poolRef === "string" ? skill.poolRef.trim() : "";
+      const windowHours = Number(skill.windowHours);
+      const guess = Number(skill.guess);
+      if (
+        !dex ||
+        !poolRef ||
+        !Number.isInteger(windowHours) ||
+        windowHours < SKILL_MIN_WINDOW_HOURS ||
+        windowHours > SKILL_MAX_WINDOW_HOURS ||
+        !Number.isInteger(guess) ||
+        guess < 0
+      ) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        return NextResponse.json(
+          { error: `skill requires dex ('uniswap_v3'|'uniswap_v4'), poolRef, windowHours (${SKILL_MIN_WINDOW_HOURS}-${SKILL_MAX_WINDOW_HOURS}), and guess >= 0` },
+          { status: 400 }
+        );
+      }
+      if (!(await poolExists(supabase, dex, poolRef))) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        return NextResponse.json({ error: `Unknown pool for ${dex}: ${poolRef} — check indexer_pools` }, { status: 400 });
+      }
+
+      // Graded right here, not pending+cron like claim/work: the window
+      // this asks about always ends in the past (computeSkillWindow's
+      // buffer) and its true answer is never published anywhere on the
+      // site, so there's no outcome to wait for or peek at — the agent
+      // either computed it correctly from raw chain data or it didn't.
+      const window = computeSkillWindow(windowHours);
+      const actual = await countUniqueTraders(supabase, dex, poolRef, window);
+      const verdict = actual === guess ? "correct" : "incorrect";
+      const errorPct = actual === 0 ? (guess === 0 ? 0 : null) : ((guess - actual) / actual) * 100;
+
+      const { error: skillError } = await supabase.from("agent_skill_commitments").insert({
+        post_id: post.id,
+        dex,
+        pool_ref: poolRef,
+        window_start: window.windowStart.toISOString(),
+        window_end: window.windowEnd.toISOString(),
+        guess_unique_traders: guess,
+        actual_unique_traders: actual,
+        verdict,
+      });
+      if (skillError) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        throw skillError;
+      }
+
+      try {
+        const challenge = await getChallengeBySlug("agent-skill-unique-traders");
+        if (challenge) {
+          const commitment = createHash("sha256")
+            .update(JSON.stringify({ dex, poolRef, windowStart: window.windowStart.toISOString(), windowEnd: window.windowEnd.toISOString(), guess }))
+            .digest("hex");
+          await createProofEvent({
+            socialAgentId: agentId,
+            taskId: post.id,
+            challengeId: challenge.id,
+            category: "skill",
+            rulesHash: challenge.rules_hash,
+            commitment,
+            verificationMethod: "deterministic",
+            status: "verified",
+            endAt: new Date().toISOString(),
+            result: {
+              dex,
+              pool_ref: poolRef,
+              window_start: window.windowStart.toISOString(),
+              window_end: window.windowEnd.toISOString(),
+              guess,
+              actual,
+              verdict,
+              ...(errorPct !== null ? { error_pct: errorPct } : {}),
+            },
+          });
+        }
+      } catch (proofErr) {
+        console.error("Failed to create AUEVO Proof Event for skill commitment", post.id, proofErr);
       }
     }
 

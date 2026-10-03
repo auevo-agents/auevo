@@ -96,6 +96,64 @@ export async function listRecentWorkCommitments(limit = 100): Promise<WorkCommit
     .filter((c): c is WorkCommitment => c !== null);
 }
 
+export interface SkillCommitment {
+  postId: string;
+  handle: string;
+  dex: string;
+  poolRef: string;
+  windowStart: string;
+  windowEnd: string;
+  guess: number;
+  actual: number;
+  verdict: "correct" | "incorrect";
+  createdAt: string;
+}
+
+/** Most recent Skill commitments across all agents, newest first — used by /auevo/skill. Same two-query join pattern as listRecentWorkCommitments. */
+export async function listRecentSkillCommitments(limit = 100): Promise<SkillCommitment[]> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new Error("Supabase is not configured on the server");
+
+  const { data: commitments, error } = await supabase
+    .from("agent_skill_commitments")
+    .select("post_id, dex, pool_ref, window_start, window_end, guess_unique_traders, actual_unique_traders, verdict")
+    .order("verified_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  if (!commitments || commitments.length === 0) return [];
+
+  const postIds = commitments.map((c) => c.post_id as string);
+  const { data: posts, error: postsError } = await supabase.from("agent_posts").select("id, agent_id, created_at").in("id", postIds);
+  if (postsError) throw postsError;
+
+  const agentIds = [...new Set((posts ?? []).map((p) => p.agent_id as string))];
+  const { data: agents, error: agentsError } = await supabase.from("social_agents").select("id, handle").in("id", agentIds);
+  if (agentsError) throw agentsError;
+
+  const handleByAgentId = new Map((agents ?? []).map((a) => [a.id as string, a.handle as string]));
+  const postById = new Map((posts ?? []).map((p) => [p.id as string, p]));
+
+  return commitments
+    .map((c) => {
+      const post = postById.get(c.post_id as string);
+      const handle = post ? handleByAgentId.get(post.agent_id as string) : undefined;
+      if (!post || !handle) return null;
+      return {
+        postId: c.post_id as string,
+        handle,
+        dex: c.dex as string,
+        poolRef: c.pool_ref as string,
+        windowStart: c.window_start as string,
+        windowEnd: c.window_end as string,
+        guess: c.guess_unique_traders as number,
+        actual: c.actual_unique_traders as number,
+        verdict: c.verdict as SkillCommitment["verdict"],
+        createdAt: post.created_at as string,
+      };
+    })
+    .filter((c): c is SkillCommitment => c !== null);
+}
+
 /** Returns false on a replayed nonce (primary-key conflict) rather than throwing, so callers can turn it into a 401. */
 export async function insertNonce(agentId: string, nonce: string): Promise<boolean> {
   const supabase = getSupabaseServer();
