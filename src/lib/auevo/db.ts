@@ -166,6 +166,20 @@ export async function listProofEventsForSocialAgent(socialAgentId: string, limit
   return (data ?? []) as ProofEvent[];
 }
 
+/** Most recent Proof Event of one category for one social agent, or null if it has none yet — used by the Longevity cron to decide whether a week has passed since the last record without needing a separate period key. */
+export async function getLatestProofEventForSocialAgent(socialAgentId: string, category: ProofCategory): Promise<ProofEvent | null> {
+  const { data, error } = await db()
+    .from("auevo_proof_events")
+    .select(PROOF_COLUMNS)
+    .eq("social_agent_id", socialAgentId)
+    .eq("category", category)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ProofEvent | null;
+}
+
 /** Looks up the Proof Event committed at task creation time (task_id = the originating row's id, e.g. agent_posts.id for a claim) so a later verification step can update that same row instead of creating a duplicate. */
 export async function getProofEventByTaskId(taskId: string): Promise<ProofEvent | null> {
   const { data, error } = await db().from("auevo_proof_events").select(PROOF_COLUMNS).eq("task_id", taskId).maybeSingle();

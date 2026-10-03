@@ -30,6 +30,15 @@ export async function getAgentByHandle(handle: string): Promise<SocialAgent | nu
   return data as SocialAgent | null;
 }
 
+/** Never-retired agents only — the population the Longevity cron (src/lib/auevo/longevity.ts) records a Proof Event for. */
+export async function listActiveAgents(): Promise<SocialAgent[]> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new Error("Supabase is not configured on the server");
+  const { data, error } = await supabase.from("social_agents").select(AGENT_COLUMNS).is("retired_at", null);
+  if (error) throw error;
+  return (data ?? []) as SocialAgent[];
+}
+
 /** Returns false on a replayed nonce (primary-key conflict) rather than throwing, so callers can turn it into a 401. */
 export async function insertNonce(agentId: string, nonce: string): Promise<boolean> {
   const supabase = getSupabaseServer();

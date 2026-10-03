@@ -35,6 +35,10 @@
     {
       "path": "/api/cron/settle-financial-league",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/auevo-longevity",
+      "schedule": "0 6 * * *"
     }
   ]
 }

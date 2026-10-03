@@ -118,9 +118,27 @@ Challenge `price-claim-prediction` посеян в проде. Никакого 
 Все три бьют в один и тот же `POST /api/agents/{id}/post` —
 воспроизводимо кем угодно, не только мной.
 
-### 4c. Не начато
+### 4c. Longevity — третья живая категория, пассивная
 
-identity/skill/work/performance/economic_activity/autonomy/longevity —
+Единственная категория без попытки: агент ничего не постит и не
+сабмитит. Крон (`GET /api/cron/auevo-longevity`, `0 6 * * *`,
+`src/lib/auevo/longevity.ts`) раз в ~неделю проходит по всем
+неретайренным `social_agents` и пишет каждому свежий **уже verified**
+Proof Event, `result.days_active` = разница между сейчас и
+`created_at` этого же агента. Детерминировано, идемпотентно (если у
+агента уже есть longevity-Proof младше 7 дней — пропуск, без отдельного
+period-ключа: пропущенный или задвоенный тик крона сам себя лечит),
+`verification_method: "deterministic"` — подделать нечем, источник
+истины это timestamp самой записи агента.
+
+Challenge `agent-longevity` посеян в проде. `CATEGORY_RESULT_FIELD.longevity
+= "days_active"` (`src/lib/auevo/score.ts`) — Passport-страница уже
+рендерит любую категорию дженерик-циклом по `ALL_CATEGORIES`, так что
+никаких изменений на фронте не потребовалось.
+
+### 4d. Не начато
+
+identity/skill/work/performance/economic_activity/autonomy —
 определены в схеме (enum `category`), но ни один challenge для них не
 создан. skill/work реалистичнее всего развернуть по той же логике, что
 prediction (§3b, без ончейн-identity), если найдётся детерминированный
@@ -132,11 +150,12 @@ prediction (§3b, без ончейн-identity), если найдётся де�
   интеграционных тестов зелёные (`contracts/test/run-identity.mjs`).
   **Не задеплоен** (та же конвенция, что `AgentCreditPool` — деплой
   руками пользователя, не мной).
-- **Схема**: `supabase/migrations/0020_auevo_proofs.sql` +
-  `0021_auevo_fl_entry_baseline.sql` + `auevo_proofs_social_identity`
-  (§3b) — применены в проде (`nsljxhxpccbyvhjcdjoy`). RLS включен, без
-  policy (сервис читает через service-role key).
-- **Backend**: `src/lib/auevo/{identity,db,score,settle-financial-league}.ts`.
+- **Схема**: `supabase/migrations/0020_auevo_proofs.sql` →
+  `0023_auevo_longevity_challenge.sql` (включая `0022`, бэкфилл
+  `auevo_proofs_social_identity`, §3b/§4b) — применены в проде
+  (`nsljxhxpccbyvhjcdjoy`). RLS включен, без policy (сервис читает через
+  service-role key).
+- **Backend**: `src/lib/auevo/{identity,db,score,settle-financial-league,longevity}.ts`.
 - **Публичный API** (все free, no-key, с try/catch → 500 JSON при ошибке):
   - `GET /api/auevo/challenges/financial-league` — список cohort'ов.
   - `POST /api/auevo/challenges/financial-league/{cohortId}/enter` —
@@ -148,7 +167,8 @@ prediction (§3b, без ончейн-identity), если найдётся де�
   - `GET /api/auevo/proofs/{id}` — один Proof с указателями на evidence.
 - **Крон**: `GET /api/cron/settle-financial-league` (`*/10 * * * *`) +
   уже существовавший `GET /api/cron/verify-claims` (`*/5 * * * *`,
-  теперь двойного назначения — settl'ит claim и зеркалит его Proof).
+  теперь двойного назначения — settl'ит claim и зеркалит его Proof) +
+  `GET /api/cron/auevo-longevity` (`0 6 * * *`, §4c).
 - **Страницы**: `/auevo` — обзор + живой интерактивный блок "Try it
   yourself" (подключить кошелёк → зарегистрировать агента → запостить
   предсказание, две подписи, без газа; `src/app/auevo/prediction-try-it.tsx`,
@@ -156,11 +176,12 @@ prediction (§3b, без ончейн-identity), если найдётся де�
   `/credit`) + список cohort'ов Financial League (бейдж "not enterable
   yet", пока `AgentIdentity` не задеплоен). `/auevo/agents?id=` (§3a)
   или `?handle=` (§3b) — Passport.
-- **Данные в проде**: 2 challenge (`beat-spy-30d`,
-  `price-claim-prediction`), 1 открытый cohort, 0 входов в Financial
-  League (блокер — см. §4a). Prediction готов принимать реальные
-  claim'ы прямо сейчас — зависит только от того, кто-нибудь ли их
-  постит.
+- **Данные в проде**: 3 challenge (`beat-spy-30d`,
+  `price-claim-prediction`, `agent-longevity`), 1 открытый cohort, 0
+  входов в Financial League (блокер — см. §4a). Prediction готов
+  принимать реальные claim'ы прямо сейчас — зависит только от того,
+  постит ли их кто-нибудь. Longevity полностью автоматична — ничьих
+  действий не ждёт.
 - **SDK**: `sdk/` — отдельный пакет (своя `package.json`, не часть
   Next.js-приложения, та же конвенция, что `contracts/`), ноль
   импортов через границу приложения. `sdk/src/client.mjs`
@@ -198,7 +219,7 @@ prediction (§3b, без ончейн-identity), если найдётся де�
 2. Токен — **будет**, встроен в экономику поддержки проекта, но дизайн
    отложен на отдельное обсуждение (явное решение пользователя,
    2026-10-03). Не проектировать и не кодировать как часть текущего MVP.
-3. Какую категорию разворачивать дальше (§4c) — skill/work (нужен
+3. Какую категорию разворачивать дальше (§4d) — skill/work (нужен
    детерминированный или validator-слой источник истины, пока не
    спроектирован) или ещё один financial_performance cohort.
 
