@@ -406,14 +406,14 @@ export default function AppOverviewPage() {
       <Link href="/rwa/app/agent" className="agent-promo-banner">
         <span className="agent-preview-dot" aria-hidden="true" />
         <span className="agent-promo-body">
-          <span className="agent-promo-eyebrow">Coming soon</span>
+          <span className="agent-promo-eyebrow">Live</span>
           <strong>AUEVO AI — your elite trading concierge</strong>
           <span>
             Explains what you&apos;re looking at, walks you through baskets, pools and lending, and helps
-            you invest with more confidence. Currently in training.
+            you invest with more confidence.
           </span>
         </span>
-        <span className="agent-promo-cta">Preview →</span>
+        <span className="agent-promo-cta">Chat →</span>
       </Link>
     </>
   );
