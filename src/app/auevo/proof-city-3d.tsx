@@ -66,6 +66,11 @@ function volume(n: number) {
   return clamp(Math.log1p(n) / Math.log(101));
 }
 
+function saturate(c: [number, number, number], amount: number): [number, number, number] {
+  const avg = (c[0] + c[1] + c[2]) / 3;
+  return [clamp(avg + (c[0] - avg) * amount), clamp(avg + (c[1] - avg) * amount), clamp(avg + (c[2] - avg) * amount)];
+}
+
 function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, landmark = false): Box[] {
   const boxes: Box[] = [];
   const age = Math.max(1, Math.min(7, Math.ceil(agent.ageDays / 45)));
@@ -98,31 +103,20 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
 
   const cats = agent.categories.length ? agent.categories : [{ category: "identity", attempted: 0, verified: 0, confidence: "INSUFFICIENT" }];
   const allCategories = Object.keys(CATEGORY_COLORS);
-  let centerTop = 2;
   allCategories.slice(0, 9).forEach((category, i) => {
     const c = cats.find((item)=>item.category===category) ?? { category, attempted:0, verified:0, confidence:"INSUFFICIENT" };
     const d = volume(c.attempted);
-    const color = CATEGORY_COLORS[c.category] ?? [0.52, 0.45, 0.78];
+    const color = landmark ? saturate(CATEGORY_COLORS[c.category] ?? [0.52, 0.45, 0.78], 1.7) : (CATEGORY_COLORS[c.category] ?? [0.52, 0.45, 0.78]);
     const ratio = c.attempted ? c.verified / c.attempted : 0;
     const conf = CONFIDENCE[c.confidence] ?? 0.18;
 
-    let x: number, z: number, height: number, width: number;
-    if (landmark) {
-      // A skyline silhouette, not a ring: one dominant central spire, symmetric falloff to each side — Burj Khalifa, not a crown.
-      const offset = i - 4;
-      const falloff = Math.pow(Math.max(0, 1 - Math.abs(offset) / 4.6), 1.5);
-      x = ox + offset * 0.5 * scale;
-      z = oz + (Math.abs(offset) % 2 === 0 ? 0.1 : -0.1) * scale;
-      height = (0.85 + falloff * 5.6 + d * 1.1) * scale;
-      width = (0.30 + falloff * 0.15 + d * 0.08) * scale;
-    } else {
-      const angle = (i / 9) * Math.PI * 2;
-      const radius = 0.88 + (i % 2) * 0.27;
-      height = (0.58 + d * 3.55) * scale;
-      width = (0.26 + d * 0.34) * scale;
-      x = ox + Math.cos(angle) * radius * scale;
-      z = oz + Math.sin(angle) * radius * scale;
-    }
+    // Landmark: a tight radial cluster hugging the dominant centre spire — true volume on every side, not a flat row.
+    const angle = (i / 9) * Math.PI * 2;
+    const radius = landmark ? 0.46 : 0.88 + (i % 2) * 0.27;
+    const height = landmark ? (0.55 + d * 2.0) * scale : (0.58 + d * 3.55) * scale;
+    const width = landmark ? (0.22 + d * 0.11) * scale : (0.26 + d * 0.34) * scale;
+    const x = ox + Math.cos(angle) * radius * scale;
+    const z = oz + Math.sin(angle) * radius * scale;
 
     const tiers = Math.max(2, Math.min(9, Math.ceil(2 + d * 7)));
     for (let t = 0; t < tiers; t++) {
@@ -137,56 +131,46 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
         sy: Math.max(0.11, th * 0.86),
         sz: width * taper,
         color: lit ? color : [0.14, 0.18, 0.28],
-        emissive: lit ? 0.30 + conf * 0.60 : 0.018,
+        emissive: lit ? (landmark ? 0.46 + conf * 0.85 : 0.30 + conf * 0.60) : 0.018,
       });
     }
 
-    if (landmark) {
-      if (i === 4) centerTop = 0.38 + height;
-    } else {
-      // Verified proof pixels make reputation discrete and visible.
-      const pixels = Math.min(14, c.verified);
-      for(let p=0;p<pixels;p++){
-        const px=x + (((p%3)-1)*0.17)*scale;
-        const pz=z + ((((p*2)%3)-1)*0.15)*scale;
-        const py=0.48 + height + (p%5)*0.078*scale;
-        boxes.push({x:px,y:py,z:pz,sx:0.075*scale,sy:0.075*scale,sz:0.075*scale,color,emissive:0.78});
-      }
+    // Verified proof pixels make reputation discrete and visible.
+    const pixels = Math.min(14, c.verified);
+    for(let p=0;p<pixels;p++){
+      const px=x + (((p%3)-1)*0.17)*scale;
+      const pz=z + ((((p*2)%3)-1)*0.15)*scale;
+      const py=0.48 + height + (p%5)*0.078*scale;
+      boxes.push({x:px,y:py,z:pz,sx:0.075*scale,sy:0.075*scale,sz:0.075*scale,color,emissive:landmark?0.95:0.78});
+    }
 
-      if (agent.pending > 0 && i === 0) {
-        boxes.push({x,y:0.44+height+0.14,z,sx:width*.78,sy:.12*scale,sz:width*.78,color:[.71,.64,1],emissive:.28});
-      }
-      if (agent.rejected > 0 && i === 1) {
-        boxes.push({x:x+.16*scale,y:.42+height*.42,z:z+.12*scale,sx:width*.35,sy:.10*scale,sz:width*1.18,color:[.95,.22,.28],emissive:.34});
-      }
+    if (agent.pending > 0 && i === 0) {
+      boxes.push({x,y:0.44+height+0.14,z,sx:width*.78,sy:.12*scale,sz:width*.78,color:[.71,.64,1],emissive:.28});
+    }
+    if (agent.rejected > 0 && i === 1) {
+      boxes.push({x:x+.16*scale,y:.42+height*.42,z:z+.12*scale,sx:width*.35,sy:.10*scale,sz:width*1.18,color:[.95,.22,.28],emissive:.34});
     }
   });
 
-  if (landmark) {
-    // One slender antenna crowns the central spire — the silhouette's signature tip.
-    const spireH = 1.35 * scale;
-    boxes.push({x:ox,y:.5+centerTop+spireH/2,z:oz,sx:.09*scale,sy:spireH,sz:.09*scale,color:[.88,.66,.32],emissive:.7});
-    boxes.push({x:ox,y:.5+centerTop+spireH+.08,z:oz,sx:.16*scale,sy:.14*scale,sz:.16*scale,color:[.58,.44,1],emissive:.95});
-  } else {
-    const coreHeight = 1.24 + volume(agent.verified + agent.attempted) * 3.45;
-    const ch=coreHeight*scale;
-    boxes.push({x:ox,y:.50+ch/2,z:oz,sx:.60*scale,sy:ch,sz:.60*scale,color:[.16,.20,.30],emissive:.03});
-    boxes.push({x:ox,y:.50+ch*.60,z:oz,sx:.36*scale,sy:ch*.78,sz:.36*scale,color:[.88,.66,.32],emissive:.60});
-    boxes.push({x:ox,y:.50+ch+.20,z:oz,sx:.24*scale,sy:.28*scale,sz:.24*scale,color:[.58,.44,1],emissive:.92});
+  // The crown: one dominant centre spire, always the tallest mass in the structure.
+  const coreHeight = (landmark ? 3.6 : 1.24) + volume(agent.verified + agent.attempted) * (landmark ? 5.6 : 3.45);
+  const ch=coreHeight*scale;
+  boxes.push({x:ox,y:.50+ch/2,z:oz,sx:(landmark?.5:.60)*scale,sy:ch,sz:(landmark?.5:.60)*scale,color:[.16,.20,.30],emissive:landmark?.08:.03});
+  boxes.push({x:ox,y:.50+ch*.60,z:oz,sx:(landmark?.32:.36)*scale,sy:ch*.78,sz:(landmark?.32:.36)*scale,color:[.95,.74,.38],emissive:landmark?.95:.60});
+  boxes.push({x:ox,y:.50+ch+.20,z:oz,sx:(landmark?.22:.24)*scale,sy:(landmark?.34:.28)*scale,sz:(landmark?.22:.24)*scale,color:[.66,.48,1],emissive:landmark?1.15:.92});
 
-    const bridgeCount=Math.max(4,Math.min(18,agent.attempted+agent.verified+4));
-    for(let i=0;i<bridgeCount;i++){
-      const a=(i/bridgeCount)*Math.PI*2;
-      const rr=(1.72+(i%3)*.12)*scale;
-      boxes.push({
-        x:ox+Math.cos(a)*rr,
-        y:(.34+(i%2)*.075)*scale,
-        z:oz+Math.sin(a)*rr,
-        sx:.085*scale,sy:.085*scale,sz:.085*scale,
-        color:i%2?[.88,.66,.32]:[.58,.44,1],
-        emissive:.54,
-      });
-    }
+  const bridgeCount=Math.max(4,Math.min(18,agent.attempted+agent.verified+4));
+  for(let i=0;i<bridgeCount;i++){
+    const a=(i/bridgeCount)*Math.PI*2;
+    const rr=(landmark?0.78+(i%3)*.09:1.72+(i%3)*.12)*scale;
+    boxes.push({
+      x:ox+Math.cos(a)*rr,
+      y:(.34+(i%2)*.075)*scale,
+      z:oz+Math.sin(a)*rr,
+      sx:.085*scale,sy:.085*scale,sz:.085*scale,
+      color:i%2?[.95,.74,.38]:[.66,.48,1],
+      emissive:landmark?.85:.54,
+    });
   }
   return boxes;
 }
@@ -408,21 +392,22 @@ export function ProofCity3D({
       <div className="pointer-events-none absolute inset-x-0 top-[42%] h-px bg-gradient-to-r from-transparent via-[#9b8cff]/20 to-transparent"/>
       <div className="pointer-events-none absolute inset-x-[-10%] top-[37%] h-[24%] bg-[radial-gradient(ellipse_at_center,rgba(214,174,97,.11),rgba(139,114,255,.08)_34%,transparent_72%)] blur-2xl"/>
       <div className="pointer-events-none absolute -bottom-[22%] left-[12%] h-[52%] w-[76%] rounded-full bg-[#243453]/30 blur-[90px]"/>
+      {landmark&&<div className="pointer-events-none absolute left-1/2 top-[38%] h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,196,92,.26),rgba(155,124,255,.20)_42%,transparent_72%)] blur-[55px] mix-blend-screen"/>}
       <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":hoverInfo?"cursor-pointer":"cursor-grab")}/>
 
-      {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[250px] rounded-xl border border-[#9b8cff]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(139,114,255,.12)] backdrop-blur-xl">
+      {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[250px] rounded-[3px] border border-[#9b8cff]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(139,114,255,.12)] backdrop-blur-xl">
         <div className="text-[9px] uppercase tracking-[.18em] text-[#9f8cff]">Agent detected</div>
         <div className="mt-2 truncate text-sm font-medium text-[#f3eee6]">@{hovered.handle}</div>
         <div className="mt-1 text-[11px] text-[#8f9caf]">{hovered.dominantCategory?.replaceAll("_"," ")??"Unproven"}</div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.025] p-2"><div className="text-sm">{hovered.verified}</div><div className="mt-1 text-[7px] uppercase tracking-[.11em] text-[#718095]">verified</div></div>
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.025] p-2"><div className="text-sm">{hovered.attempted}</div><div className="mt-1 text-[7px] uppercase tracking-[.11em] text-[#718095]">attempts</div></div>
-          <div className="rounded-lg border border-white/[0.06] bg-white/[0.025] p-2"><div className="text-sm">{hovered.ageDays}d</div><div className="mt-1 text-[7px] uppercase tracking-[.11em] text-[#718095]">age</div></div>
+          <div className="rounded-[2px] border border-white/[0.06] bg-white/[0.025] p-2"><div className="text-sm">{hovered.verified}</div><div className="mt-1 text-[7px] uppercase tracking-[.11em] text-[#718095]">verified</div></div>
+          <div className="rounded-[2px] border border-white/[0.06] bg-white/[0.025] p-2"><div className="text-sm">{hovered.attempted}</div><div className="mt-1 text-[7px] uppercase tracking-[.11em] text-[#718095]">attempts</div></div>
+          <div className="rounded-[2px] border border-white/[0.06] bg-white/[0.025] p-2"><div className="text-sm">{hovered.ageDays}d</div><div className="mt-1 text-[7px] uppercase tracking-[.11em] text-[#718095]">age</div></div>
         </div>
         <div className="mt-3 text-[9px] uppercase tracking-[.12em] text-[#d6ae61]">Click to open passport →</div>
       </div>}
 
-      {background&&<div className="pointer-events-none absolute bottom-4 left-4 rounded-lg border border-white/[0.08] bg-[#0b121d]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#8794a8] backdrop-blur-md">
+      {background&&<div className="pointer-events-none absolute bottom-4 left-4 rounded-[2px] border border-white/[0.08] bg-[#0b121d]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#8794a8] backdrop-blur-md">
         {autoRotate?"Auto orbit · ":""}Drag to orbit · Scroll to zoom
       </div>}
     </div>

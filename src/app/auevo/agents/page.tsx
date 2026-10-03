@@ -61,7 +61,7 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
         {idStr ? (
           <IdentityPassport idStr={idStr} />
         ) : (
-          <div className="portal-panel rounded-[28px] p-8">
+          <div className="portal-panel rounded-[4px] p-8">
             <div className="portal-kicker">Passport lookup</div>
             <h1 className="portal-heading mt-3 text-4xl">Open an agent from the Explorer.</h1>
             <p className="portal-copy mt-3 text-sm">Social-agent Passports now live in the premium Agent Explorer. On-chain identities can still be opened here by id.</p>
@@ -74,9 +74,9 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
 }
 
 function CategoryList({ categories }: { categories: CategoryAggregate[] }) {
-  if (categories.length === 0) return <div className="portal-panel mt-3 rounded-2xl p-6 text-center text-sm text-[#7a8390]">No Proof Events yet.</div>;
+  if (categories.length === 0) return <div className="portal-panel mt-3 rounded-[3px] p-6 text-center text-sm text-[#7a8390]">No Proof Events yet.</div>;
   return (
-    <div className="portal-panel mt-3 overflow-hidden rounded-2xl">
+    <div className="portal-panel mt-3 overflow-hidden rounded-[3px]">
       {categories.map((c, i) => (
         <div key={c.category} className={"grid grid-cols-[1.4fr_.8fr_.8fr_1fr] items-center gap-3 px-5 py-3.5 text-sm " + (i > 0 ? "border-t border-white/[0.06]" : "")}>
           <span className="font-medium text-[#ece8df]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
@@ -104,7 +104,7 @@ async function IdentityPassport({ idStr }: { idStr: string }) {
     return (
       <div>
         <h1 className="portal-heading text-3xl">Agent #{idStr}</h1>
-        <div className="portal-panel mt-4 rounded-xl p-6 text-[#7a8390]">
+        <div className="portal-panel mt-4 rounded-[3px] p-6 text-[#7a8390]">
           AgentIdentity has not been deployed yet, or no agent exists with this id — see{" "}
           <code className="rounded bg-[#11141b] px-1.5 py-0.5">contracts/src/AgentIdentity.sol</code>. Looking for a social agent instead?
           Try <Link href="/agents" className="text-[#a99cff] hover:text-white">the Agent Explorer</Link>.
@@ -116,7 +116,7 @@ async function IdentityPassport({ idStr }: { idStr: string }) {
   return (
     <div>
       <h1 className="portal-heading text-3xl">Agent #{idStr}</h1>
-      <div className="portal-panel mt-4 rounded-2xl p-5">
+      <div className="portal-panel mt-4 rounded-[3px] p-5">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-sm">
           <dt className="text-[#7a8390]">owner</dt>
           <dd className="break-all text-[#c7cdd6]">{identity.owner}</dd>
@@ -132,10 +132,10 @@ async function IdentityPassport({ idStr }: { idStr: string }) {
       <h2 className="mt-8 font-medium text-[#ece8df]">Proof categories</h2>
       <CategoryList categories={categories} />
 
-      <div className="portal-panel mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 text-sm">
+      <div className="portal-panel mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[3px] p-4 text-sm">
         <p className="text-[#7a8390]">
           Full attempt history (including failures — never filtered to only successes):{" "}
-          <code className="rounded-md bg-[#11141b] px-1.5 py-0.5">GET /api/auevo/agents/{idStr}/proofs</code>
+          <code className="rounded-[2px] bg-[#11141b] px-1.5 py-0.5">GET /api/auevo/agents/{idStr}/proofs</code>
         </p>
         <a href={`/api/auevo/agents/${idStr}/proofs`} target="_blank" rel="noreferrer" className="shrink-0 text-[#a99cff] hover:text-white">Open raw feed →</a>
       </div>

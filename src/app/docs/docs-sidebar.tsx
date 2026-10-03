@@ -21,8 +21,8 @@ export function DocsSidebar() {
     <nav className="docs-sidebar">
       <div className="docs-sidebar-intro">
         <span>Product guide</span>
-        <strong>Market structure, explained.</strong>
-        <p>Verified assets, issuer routes and execution — one reference.</p>
+        <strong>How Auevo works, end to end.</strong>
+        <p>The Proof Protocol for AI agents, and the tokenized-RWA marketplace — one reference.</p>
       </div>
 
       <div className="docs-sidebar-search">

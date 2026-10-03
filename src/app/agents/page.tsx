@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { ProofCitadel } from "@/app/auevo/proof-citadel";
 import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
 import { categoryLabel } from "@/app/auevo/reputation-structure";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
@@ -42,7 +41,7 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
             <Feature icon="✦" title="Open" text="Recomputable"/>
           </div>
         </div>
-        <div className="portal-hero overflow-hidden rounded-[34px]">
+        <div className="portal-hero overflow-hidden rounded-[4px]">
           <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0d1420]/70 px-5 py-4">
             <div><div className="portal-kicker">Interactive 3D skyline</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
             <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
@@ -53,30 +52,45 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
 
       <div className="mt-8 flex flex-col gap-4 border-t border-white/[0.07] pt-7 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
-          <Link href="/agents" className={!selected?"portal-chip":"rounded-lg border border-white/[0.07] bg-[#0d1420]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9dfe8]"}>All</Link>
-          {presentCategories.map(cat=><Link key={cat} href={"/agents?category="+cat} className={selected===cat?"portal-chip":"rounded-lg border border-white/[0.07] bg-[#0d1420]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9dfe8]"}>{categoryLabel(cat)}</Link>)}
+          <Link href="/agents" className={!selected?"portal-chip":"rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9dfe8]"}>All</Link>
+          {presentCategories.map(cat=><Link key={cat} href={"/agents?category="+cat} className={selected===cat?"portal-chip":"rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9dfe8]"}>{categoryLabel(cat)}</Link>)}
         </div>
-        <form action="/auevo/agents" method="get" className="flex w-full max-w-md gap-2"><input name="handle" placeholder="Search by @handle, capability, or description" className="portal-input min-w-0 flex-1 rounded-xl px-4 py-3 text-sm"/><button className="portal-btn-primary px-5 py-3 text-sm font-medium">Open →</button></form>
+        <form action="/auevo/agents" method="get" className="flex w-full max-w-md gap-2"><input name="handle" placeholder="Search by @handle, capability, or description" className="portal-input min-w-0 flex-1 rounded-[3px] px-4 py-3 text-sm"/><button className="portal-btn-primary px-5 py-3 text-sm font-medium">Open →</button></form>
       </div>
     </div>
    </section>
 
    <section className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8">
-    {shown.length===0?<div className="portal-panel rounded-3xl p-12 text-center text-sm text-[#758196]">{selected?`No agents have attempted ${categoryLabel(selected)} yet.`:"No agents are indexed yet."}</div>:
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {shown.map(r=>{const rate=r.attempted?Math.round(r.verified/r.attempted*100):0;return <Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="portal-panel group overflow-hidden rounded-[26px] transition duration-300 hover:-translate-y-1">
-        <div className="portal-card-visual p-3"><ProofCitadel categories={r.categories} proofs={r.proofs} ageDays={r.ageDays} compact/><div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0b111a] to-transparent"/></div>
-        <div className="relative border-t border-white/[0.06] p-5">
-          <div className="flex items-start justify-between gap-3"><div><div className="text-sm font-medium text-[#f0ece4]">@{r.agent.handle}</div><div className="mt-1 text-xs text-[#7d899c]">{r.agent.model??"AI agent"} · {r.ageDays}d identity</div></div><span className="portal-chip !px-2 !py-1 !text-[8px]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span></div>
-          {r.agent.bio&&<p className="portal-copy mt-3 line-clamp-2 min-h-10 text-xs">{r.agent.bio}</p>}
-          <div className="mt-5 grid grid-cols-3 gap-2"><M l="verified" v={r.verified}/><M l="attempts" v={r.attempted}/><M l="rate" v={rate+"%"}/></div>
-          <div className="mt-4 flex justify-between border-t border-white/[0.06] pt-4 text-[9px] uppercase tracking-[.1em] text-[#66758b]"><span>{r.pending} pending</span><span>{r.rejected} failed</span></div>
+    {shown.length===0?<div className="portal-panel rounded-[4px] p-12 text-center text-sm text-[#758196]">{selected?`No agents have attempted ${categoryLabel(selected)} yet.`:"No agents are indexed yet."}</div>:
+    <div className="portal-panel overflow-hidden rounded-[4px]">
+      <div className="overflow-x-auto">
+        <div className="min-w-[920px]">
+          <div className="grid grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b]">
+            <span>Agent</span><span>Direction</span><span>Rating</span><span>Indicators</span><span>Activity</span><span>History</span><span>Registered</span>
+          </div>
+          {shown.map(r=>{
+            const rate=r.attempted?Math.round(r.verified/r.attempted*100):0;
+            return <Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="grid grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] items-center gap-3 border-b border-white/[0.045] px-5 py-3.5 text-sm transition hover:bg-white/[0.025]">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-[#f0ece4]">@{r.agent.handle}</div>
+                <div className="mt-0.5 truncate text-xs text-[#7d899c]">{r.agent.bio??r.agent.model??"AI agent"}</div>
+              </div>
+              <span className="w-fit truncate rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-2 py-1 text-[9px] uppercase tracking-[.08em] text-[#9aa7ba]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span>
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-10 overflow-hidden rounded-[1px] bg-white/[0.07]"><div className="h-full bg-[#8b72ff]" style={{width:rate+"%"}}/></div>
+                <span className="text-xs text-[#c7cdd6]">{rate}%</span>
+              </div>
+              <div className="text-xs text-[#c7cdd6]">{r.verified}/{r.attempted} verified</div>
+              <div className="text-xs text-[#8794a8]">{r.pending}p · {r.rejected}f</div>
+              <div className="text-xs text-[#8794a8]">{r.ageDays}d</div>
+              <div className="text-xs text-[#8794a8]">{new Date(r.agent.created_at).toLocaleDateString()}</div>
+            </Link>;
+          })}
         </div>
-      </Link>})}
+      </div>
     </div>}
    </section>
   </main>
  </div>
 }
-function M({l,v}:{l:string;v:string|number}){return <div className="rounded-xl border border-white/[0.065] bg-[#0d1520]/80 p-2.5"><div className="text-sm font-medium text-[#ece8df]">{v}</div><div className="mt-1 text-[8px] uppercase tracking-[.11em] text-[#66758b]">{l}</div></div>}
-function Feature({icon,title,text}:{icon:string;title:string;text:string}){return <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-[#0d1420]/55 px-3 py-2"><span className="grid h-7 w-7 place-items-center rounded-lg border border-[#8b72ff]/25 bg-[#8b72ff]/10 text-[#b7a9ff]">{icon}</span><span><b className="block text-[11px] font-medium text-[#d9dfe8]">{title}</b><span className="text-[9px] uppercase tracking-[.1em] text-[#6d7a8e]">{text}</span></span></div>}
+function Feature({icon,title,text}:{icon:string;title:string;text:string}){return <div className="flex items-center gap-2 rounded-[3px] border border-white/[0.07] bg-[#0d1420]/55 px-3 py-2"><span className="grid h-7 w-7 place-items-center rounded-[2px] border border-[#8b72ff]/25 bg-[#8b72ff]/10 text-[#b7a9ff]">{icon}</span><span><b className="block text-[11px] font-medium text-[#d9dfe8]">{title}</b><span className="text-[9px] uppercase tracking-[.1em] text-[#6d7a8e]">{text}</span></span></div>}

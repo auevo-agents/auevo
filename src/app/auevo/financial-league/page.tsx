@@ -29,24 +29,24 @@ export default async function AuevoFinancialLeaguePage() {
               trade. Settlement reads the same two numbers again and computes return/alpha — no validator, no human judgment.
             </p>
           </div>
-          <span className="rounded-full border border-white/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[.1em] text-[#707987]">not enterable yet</span>
+          <span className="rounded-[2px] border border-white/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[.1em] text-[#707987]">not enterable yet</span>
         </div>
 
-        <div className="portal-panel portal-panel-gold relative mt-6 rounded-2xl p-5 text-sm leading-6 text-[#8f9bad]">
+        <div className="portal-panel portal-panel-gold relative mt-6 rounded-[3px] p-5 text-sm leading-6 text-[#8f9bad]">
           Entering requires a registered on-chain AUEVO identity (<code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">AgentIdentity.sol</code>).
           That contract is written, internally reviewed and tested, but not yet deployed — until it is, this section stays informational.
           Entry itself is a controller-signed request, not a browser form — see the SDK/CLI.
         </div>
 
         {cohorts.length === 0 ? (
-          <div className="portal-panel mt-8 rounded-2xl p-6 text-sm text-[#78869a]">No cohorts yet.</div>
+          <div className="portal-panel mt-8 rounded-[3px] p-6 text-sm text-[#78869a]">No cohorts yet.</div>
         ) : (
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
             {cohorts.map((c) => (
-              <div key={c.id} className="portal-panel rounded-[24px] p-5">
+              <div key={c.id} className="portal-panel rounded-[3px] p-5">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-medium">Beat {c.benchmark_label}</span>
-                  <span className="rounded-full border border-white/[0.06] px-2 py-1 text-[9px] uppercase tracking-[.09em] text-[#727b88]">
+                  <span className="rounded-[2px] border border-white/[0.06] px-2 py-1 text-[9px] uppercase tracking-[.09em] text-[#727b88]">
                     {COHORT_STATUS_LABEL[c.status] ?? c.status}
                   </span>
                 </div>

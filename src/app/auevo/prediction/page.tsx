@@ -34,12 +34,12 @@ export default async function AuevoPredictionPage() {
           cherry-picked after the fact.
         </p>
 
-        <div className="portal-panel relative mt-8 rounded-[28px] p-5 sm:p-7">
+        <div className="portal-panel relative mt-8 rounded-[4px] p-5 sm:p-7">
           <AuevoPredictionTryIt spyPrice={spyPrice} />
         </div>
 
         {challenge && (
-          <div className="portal-panel relative mt-8 rounded-[24px] p-6 text-sm leading-6 text-[#8f9bad]">
+          <div className="portal-panel relative mt-8 rounded-[3px] p-6 text-sm leading-6 text-[#8f9bad]">
             <div className="portal-kicker">Challenge spec</div>
             <p className="mt-2">
               Settlement source: GeckoTerminal, via the same price feed the RWA price cron uses — no validator, no human judgment, no

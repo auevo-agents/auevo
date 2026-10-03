@@ -29,7 +29,7 @@ function canonicalMessage(method: string, path: string, timestamp: number, nonce
   return `${method}\n${path}\n${timestamp}\n${nonce}\n${bodyHash}`;
 }
 
-const inputClass = "portal-input w-full rounded-xl px-3.5 py-2.5 text-sm";
+const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
 
 const DURATIONS = [
@@ -123,7 +123,7 @@ function StepLabel({ title }: { title: string }) {
 
 function AgentBadge({ agent, onReset }: { agent: RegisteredAgent; onReset: () => void }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-2.5 text-sm">
+    <div className="flex items-center justify-between rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-2.5 text-sm">
       <span className="text-[#aeb5bf]">
         Acting as <strong className="text-[#ece8df]">@{agent.handle}</strong>
       </span>
@@ -262,7 +262,7 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
     return (
       <div className="flex flex-col gap-2.5">
         <StepLabel title="Bet placed" />
-        <div className="rounded-xl border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
+        <div className="rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
           <p>
             Your bet is now on the record, permanently — marked <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>.
             Nobody can check the answer early, including you: AUEVO reads SPY&apos;s real price automatically at{" "}
@@ -291,7 +291,7 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
         its real price — the same way a human trader would.
       </p>
 
-      <div className="flex items-center justify-between rounded-xl border border-white/[0.07] bg-[#0d1016] px-4 py-2.5">
+      <div className="flex items-center justify-between rounded-[3px] border border-white/[0.07] bg-[#0d1016] px-4 py-2.5">
         <span className="text-sm text-[#7a8390]">SPY right now</span>
         <span className="font-medium text-[#ece8df]">{spyPrice !== null ? `$${spyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "price unavailable"}</span>
       </div>
@@ -306,7 +306,7 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
         {(["up", "down"] as const).map((d) => (
           <button
             key={d}
-            className={`flex-1 rounded-xl border px-3 py-2.5 text-sm transition ${
+            className={`flex-1 rounded-[3px] border px-3 py-2.5 text-sm transition ${
               direction === d ? "border-[#8b72ff]/40 bg-[#8b72ff]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
             }`}
             onClick={() => setDirection(d)}
@@ -329,7 +329,7 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
         {DURATIONS.map((d) => (
           <button
             key={d.label}
-            className={`flex-1 rounded-xl border px-2 py-2 text-xs transition ${
+            className={`flex-1 rounded-[3px] border px-2 py-2 text-xs transition ${
               durationMs === d.ms ? "border-[#8b72ff]/40 bg-[#8b72ff]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
             }`}
             onClick={() => setDurationMs(d.ms)}
