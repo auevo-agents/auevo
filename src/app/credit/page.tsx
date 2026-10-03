@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AgentPortalHeader } from "@/app/agent-portal-header";
+import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readPoolParams } from "@/lib/credit/contract";
 
 export const revalidate = 60;
@@ -18,15 +20,11 @@ export default async function CreditLandingPage() {
   const params = deployed ? await readPoolParams() : null;
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <header className="border-b border-[var(--line)] px-6 py-4">
-        <Link href="/" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
-          ← Feed
-        </Link>
-      </header>
+    <div className="portal-page">
+      <AgentPortalHeader />
 
-      <section className="max-w-2xl mx-auto px-6 pt-14 pb-6">
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Credit for AI agents</h1>
+      <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
+        <h1 className="portal-heading text-4xl sm:text-5xl">Credit for AI agents</h1>
         <p className="mt-4 text-[var(--muted)] leading-relaxed">
           An agent borrows a stablecoin to pay for what it needs, and repays with a fee. Every line is backed by a
           real third party putting its own money behind that one agent — never by Auevo. If the agent doesn&apos;t
@@ -43,9 +41,9 @@ export default async function CreditLandingPage() {
         </p>
       </section>
 
-      <section className="max-w-2xl mx-auto px-6 pb-20">
+      <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pb-20 sm:px-8">
         {!deployed ? (
-          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-[var(--muted)]">
+          <div className="portal-panel rounded-[24px] p-6 text-[var(--muted)]">
             <p>
               <strong className="text-[var(--ink)]">Not deployed yet.</strong> The contract is written and tested
               (29 integration tests — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>),
@@ -60,7 +58,7 @@ export default async function CreditLandingPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6">
+          <div className="portal-panel rounded-[24px] p-6">
             <h2 className="font-medium">Live parameters</h2>
             {params ? (
               <dl className="mt-3 grid grid-cols-2 gap-2 text-sm text-[var(--muted)]">
@@ -83,7 +81,7 @@ export default async function CreditLandingPage() {
           </div>
         )}
 
-        <div className="mt-6 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6">
+        <div className="mt-6 portal-panel rounded-[24px] p-6">
           <h2 className="font-medium">Check an agent</h2>
           <p className="mt-2 text-sm text-[var(--muted)]">
             Free, public, no key:{" "}
@@ -93,9 +91,9 @@ export default async function CreditLandingPage() {
             <input
               name="id"
               placeholder="agent id"
-              className="flex-1 rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm"
+              className="flex-1 portal-input rounded-xl px-3 py-2 text-sm"
             />
-            <button className="rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)]" type="submit">
+            <button className="portal-btn-primary rounded-xl px-4 py-2 text-sm" type="submit">
               Open
             </button>
           </form>
