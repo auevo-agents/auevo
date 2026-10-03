@@ -16,7 +16,7 @@ function shade(hex:string,m:number){
 
 function Cube({x,y,s,color,muted=false}:{x:number;y:number;s:number;color:string;muted?:boolean}){
   const d=s*.42;
-  return <g opacity={muted?.48:1}>
+  return <g opacity={muted ? .48 : 1}>
     <polygon points={`${x},${y} ${x+s},${y-d} ${x+s+d},${y} ${x+d},${y+d}`} fill={shade(color,1.1)} stroke="rgba(255,255,255,.08)" strokeWidth=".55"/>
     <polygon points={`${x},${y} ${x+d},${y+d} ${x+d},${y+s+d} ${x},${y+s}`} fill={shade(color,.58)} stroke="rgba(255,255,255,.06)" strokeWidth=".55"/>
     <polygon points={`${x+d},${y+d} ${x+s+d},${y} ${x+s+d},${y+s} ${x+d},${y+s+d}`} fill={shade(color,.76)} stroke="rgba(255,255,255,.06)" strokeWidth=".55"/>
