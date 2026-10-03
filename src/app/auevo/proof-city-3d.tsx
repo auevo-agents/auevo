@@ -153,10 +153,13 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
   });
 
   // The crown: one dominant centre spire, always the tallest mass in the structure.
+  // A single glowing gold shaft (nesting a dimmer box inside a wider one made it invisible — fully occluded), a
+  // violet collar band wider than the shaft so it actually protrudes, and a violet tip above the shaft's top.
   const coreHeight = (landmark ? 3.6 : 1.24) + volume(agent.verified + agent.attempted) * (landmark ? 5.6 : 3.45);
   const ch=coreHeight*scale;
-  boxes.push({x:ox,y:.50+ch/2,z:oz,sx:(landmark?.5:.60)*scale,sy:ch,sz:(landmark?.5:.60)*scale,color:[.16,.20,.30],emissive:landmark?.08:.03});
-  boxes.push({x:ox,y:.50+ch*.60,z:oz,sx:(landmark?.32:.36)*scale,sy:ch*.78,sz:(landmark?.32:.36)*scale,color:[.95,.74,.38],emissive:landmark?.95:.60});
+  const shaftW=(landmark?.4:.46)*scale;
+  boxes.push({x:ox,y:.50+ch/2,z:oz,sx:shaftW,sy:ch,sz:shaftW,color:[.95,.74,.38],emissive:landmark?.85:.55});
+  boxes.push({x:ox,y:.50+ch*.62,z:oz,sx:shaftW*1.3,sy:ch*.04,sz:shaftW*1.3,color:[.66,.48,1],emissive:landmark?1.0:.75});
   boxes.push({x:ox,y:.50+ch+.20,z:oz,sx:(landmark?.22:.24)*scale,sy:(landmark?.34:.28)*scale,sz:(landmark?.22:.24)*scale,color:[.66,.48,1],emissive:landmark?1.15:.92});
 
   const bridgeCount=Math.max(4,Math.min(18,agent.attempted+agent.verified+4));
