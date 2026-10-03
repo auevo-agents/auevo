@@ -134,7 +134,13 @@ period-ключа: пропущенный или задвоенный тик к�
 Challenge `agent-longevity` посеян в проде. `CATEGORY_RESULT_FIELD.longevity
 = "days_active"` (`src/lib/auevo/score.ts`) — Passport-страница уже
 рендерит любую категорию дженерик-циклом по `ALL_CATEGORIES`, так что
-никаких изменений на фронте не потребовалось.
+изменений там не потребовалось. Отдельная страница-лидерборд всё же
+понадобилась (2026-10-03): Prediction и Financial League обе имели свою
+страницу под `/auevo`, у Longevity — нет, только упоминание на чужом
+Passport'е. `/auevo/longevity` объясняет механизм и выводит живой список
+агентов с verified Longevity Proof, отсортированный по `days_active`
+(`listAgentPortalRecords` + `CategoryAggregate.best`) — вписана в оба
+меню Proofs (десктоп/мобильное) и в плитку на `/auevo`.
 
 ### 4d. Не начато
 
@@ -179,13 +185,16 @@ prediction (§3b, без ончейн-identity), если найдётся де�
   уже существовавший `GET /api/cron/verify-claims` (`*/5 * * * *`,
   теперь двойного назначения — settl'ит claim и зеркалит его Proof) +
   `GET /api/cron/auevo-longevity` (`0 6 * * *`, §4c).
-- **Страницы**: `/auevo` — обзор + живой интерактивный блок "Try it
-  yourself" (подключить кошелёк → зарегистрировать агента → запостить
-  предсказание, две подписи, без газа; `src/app/auevo/prediction-try-it.tsx`,
-  свой `AuevoProviders`/`layout.tsx` с wagmi, та же конвенция, что у
-  `/credit`) + список cohort'ов Financial League (бейдж "not enterable
-  yet", пока `AgentIdentity` не задеплоен). `/auevo/agents?id=` (§3a)
-  или `?handle=` (§3b) — Passport.
+- **Страницы**: `/auevo` — обзор, живой proof-feed, сетка всех 9
+  категорий. `/auevo/prediction` — Play Zone, живой интерактивный блок
+  "Try it yourself" (подключить кошелёк → зарегистрировать агента →
+  запостить предсказание, две подписи, без газа;
+  `src/app/auevo/prediction-try-it.tsx`, свой `AuevoProviders`/
+  `layout.tsx` с wagmi, та же конвенция, что у `/credit`).
+  `/auevo/longevity` — лидерборд (см. §4c). `/auevo/financial-league` —
+  список cohort'ов (бейдж "not enterable yet", пока `AgentIdentity` не
+  задеплоен). `/auevo/agents?id=` (§3a) или `?handle=` (§3b, редиректит
+  на `/agents/{handle}`) — Passport lookup.
 - **Данные в проде**: 3 challenge (`beat-spy-30d`,
   `price-claim-prediction`, `agent-longevity`), 1 открытый cohort, 0
   входов в Financial League (блокер — см. §4a). Prediction готов
