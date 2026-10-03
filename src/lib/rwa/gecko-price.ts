@@ -12,18 +12,28 @@
  * hand a pool-address-shaped endpoint. A token-address lookup works the
  * same way regardless of which pool version backs it.
  *
- * Network-slug mapping is deliberately incomplete: only chains this
- * session could confirm GeckoTerminal's own slug for are listed. A chain
- * id with no entry here has its price left unset rather than guessed —
- * xStocks' own token list (see xstocks.ts) covers a few chains (X Layer,
- * HyperEVM, Ink) whose GeckoTerminal slugs were not verified, so pricing
- * silently doesn't apply to tokens on those chains yet.
+ * Network-slug mapping is deliberately incomplete: only chains with a
+ * confirmed GeckoTerminal slug are listed. A chain id with no entry here
+ * has its price left unset rather than guessed. xStocks' own token list
+ * (see xstocks.ts) also covers chainId 999 (HyperEVM) and 57073 (Ink) —
+ * checked directly against GeckoTerminal's own `/networks` listing
+ * (126 networks, paginated through all of them) and neither chain is
+ * covered by GeckoTerminal at all, not just "slug unverified" — so
+ * pricing correctly stays unset for tokens on those two chains until
+ * GeckoTerminal adds them (or another price source is wired in for
+ * just those two). chainId 196 (X Layer) IS listed as a network, slug
+ * "x-layer" (confirmed the same way) — but as of this check GeckoTerminal
+ * tracks zero pools on it (`/networks/x-layer/pools` returns an empty
+ * list), so every X Layer token_price lookup will still come back
+ * unpriced for now. The mapping is still correct to add: nothing else
+ * needs to change here once GeckoTerminal starts indexing that chain.
  */
 
 const NETWORK_SLUGS: Record<number, string> = {
   1: "eth",
   10: "optimism",
   56: "bsc",
+  196: "x-layer",
   4663: "robinhood",
   5000: "mantle",
   8453: "base",

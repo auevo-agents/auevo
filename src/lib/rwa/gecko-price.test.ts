@@ -29,6 +29,16 @@ describe("fetchTokenPricesUsd", () => {
     expect(result.get("0xabc")).toBe(191.23);
   });
 
+  it("maps chainId 196 (X Layer) to the confirmed GeckoTerminal slug 'x-layer'", async () => {
+    global.fetch = vi.fn(async (url: string | URL) => {
+      expect(String(url)).toContain("/simple/networks/x-layer/token_price/0xabc");
+      return new Response(JSON.stringify({ data: { attributes: { token_prices: {} } } }), { status: 200 });
+    }) as typeof fetch;
+
+    await fetchTokenPricesUsd(196, ["0xabc"]);
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
   it("drops a non-finite or non-positive price rather than recording it", async () => {
     global.fetch = vi.fn(
       async () =>
