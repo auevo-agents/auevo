@@ -7,28 +7,54 @@ const ORDER: ProofCategory[] = [
 ];
 
 const COLOR: Record<ProofCategory,string> = {
-  identity:"#d7c7a2",
-  skill:"#7b68ee",
-  work:"#5ca8c8",
-  performance:"#9e7ff1",
-  economic_activity:"#5eb69f",
-  financial_performance:"#d3a85b",
-  prediction:"#8d73ff",
-  autonomy:"#58b9a0",
-  longevity:"#9a8e7b",
+  identity:"#c6b892",
+  skill:"#8068ee",
+  work:"#579bc1",
+  performance:"#a37cf1",
+  economic_activity:"#4ea787",
+  financial_performance:"#d2a554",
+  prediction:"#8c6fff",
+  autonomy:"#4fa98c",
+  longevity:"#91836f",
 };
 
 const CONF: Record<string,number> = {
   DETERMINISTICALLY_VERIFIED:1,
-  ORACLE_VERIFIED:.9,
+  ORACLE_VERIFIED:.92,
   MULTI_VALIDATOR_VERIFIED:.82,
-  COUNTERPARTY_CONFIRMED:.6,
-  SELF_REPORTED:.3,
-  INSUFFICIENT:.12,
+  COUNTERPARTY_CONFIRMED:.62,
+  SELF_REPORTED:.34,
+  INSUFFICIENT:.16,
 };
 
 function clamp(v:number,a=0,b=1){return Math.max(a,Math.min(b,v));}
 function depth(n:number){return clamp(Math.log1p(n)/Math.log(101));}
+function hexToRgb(hex:string){
+  const v=parseInt(hex.slice(1),16);
+  return {r:(v>>16)&255,g:(v>>8)&255,b:v&255};
+}
+function shade(hex:string,m:number){
+  const {r,g,b}=hexToRgb(hex);
+  const f=(x:number)=>Math.round(clamp(x*m,0,255));
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+function IsoBlock({
+  x,y,w,h,color,alpha=1,ghost=false,fractured=false,
+}:{
+  x:number;y:number;w:number;h:number;color:string;alpha?:number;ghost?:boolean;fractured?:boolean;
+}){
+  const d=w*.38;
+  const top=`${x},${y-h} ${x+w},${y-h-d} ${x+w+d},${y-h} ${x+d},${y-h+d}`;
+  const left=`${x},${y-h} ${x+d},${y-h+d} ${x+d},${y+d} ${x},${y}`;
+  const right=`${x+d},${y-h+d} ${x+w+d},${y-h} ${x+w+d},${y} ${x+d},${y+d}`;
+  return <g opacity={alpha}>
+    <polygon points={left} fill={ghost?"none":shade(color,.58)} stroke={ghost?color:"rgba(255,255,255,.07)"} strokeWidth={ghost?1.2:.6} strokeDasharray={ghost?"3 2":undefined}/>
+    <polygon points={right} fill={ghost?"none":shade(color,.76)} stroke={ghost?color:"rgba(255,255,255,.07)"} strokeWidth={ghost?1.2:.6} strokeDasharray={ghost?"3 2":undefined}/>
+    <polygon points={top} fill={ghost?"rgba(139,114,255,.035)":shade(color,1.12)} stroke={ghost?color:"rgba(255,255,255,.1)"} strokeWidth={ghost?1.2:.6} strokeDasharray={ghost?"3 2":undefined}/>
+    {fractured&&<><line x1={x+w*.2} y1={y-h*.55} x2={x+w*.7} y2={y-h*.28} stroke="#ff6975" strokeWidth="1.2"/><line x1={x+w*.55} y1={y-h*.34} x2={x+w*.92} y2={y-h*.48} stroke="#ff6975" strokeWidth=".8"/></>}
+  </g>;
+}
 
 export function ProofCitadel({
   categories,
@@ -45,33 +71,33 @@ export function ProofCitadel({
 }) {
   const map=new Map(categories.map(c=>[c.category as ProofCategory,c]));
   const byStatus=(category:ProofCategory,status:string)=>proofs?.filter(p=>p.category===category&&p.status===status).length ?? 0;
-  const cx=compact?160:300, baseY=compact?258:430;
-  const baseW=compact?34:62, gap=compact?7:12;
-  const maxH=compact?112:230;
-  const ground=compact?290:470;
-  const terraces=Math.max(1,Math.min(7,Math.ceil(ageDays/60)));
-  const totalW=ORDER.length*(baseW+gap)-gap;
-  const startX=cx-totalW/2;
+  const W=compact?320:600,H=compact?320:500,cx=W/2;
+  const baseY=compact?245:390;
+  const s=compact?.55:1;
+  const foundation=Math.max(1,Math.min(7,Math.ceil(ageDays/60)));
+  const positions=[
+    [0,-18],[-74,2],[72,-6],[-128,38],[124,42],[-66,70],[64,78],[-112,100],[108,106],
+  ];
 
   return (
-    <svg viewBox={compact?"0 0 320 320":"0 0 600 500"} className={"block w-full h-auto "+className} role="img" aria-label="Deterministic proof citadel generated from AUEVO proof ledger">
+    <svg viewBox={`0 0 ${W} ${H}`} className={"block h-auto w-full "+className} role="img" aria-label="AUEVO proof citadel generated from live proof data">
       <defs>
-        <linearGradient id={compact?"pc-bg-mini":"pc-bg"} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#0c1017"/>
-          <stop offset="100%" stopColor="#07090d"/>
-        </linearGradient>
-        <filter id={compact?"pc-soft-mini":"pc-soft"}>
-          <feGaussianBlur stdDeviation={compact?"1.2":"2.2"}/>
-        </filter>
+        <radialGradient id={compact?"iso-bg-mini":"iso-bg"} cx="50%" cy="45%" r="72%">
+          <stop offset="0%" stopColor="#171321"/>
+          <stop offset="48%" stopColor="#0b0d12"/>
+          <stop offset="100%" stopColor="#07080b"/>
+        </radialGradient>
+        <filter id={compact?"iso-glow-mini":"iso-glow"}><feGaussianBlur stdDeviation={compact?"1.5":"2.8"}/></filter>
       </defs>
+      <rect width={W} height={H} rx={compact?20:30} fill={`url(#${compact?"iso-bg-mini":"iso-bg"})`}/>
+      <ellipse cx={cx} cy={baseY+42*s} rx={compact?118:230} ry={compact?28:50} fill="#000" opacity=".42"/>
 
-      <rect width="100%" height="100%" fill={"url(#"+(compact?"pc-bg-mini":"pc-bg")+")"} rx={compact?20:28}/>
-      <ellipse cx={cx} cy={ground} rx={compact?125:250} ry={compact?20:34} fill="#000" opacity=".35"/>
-
-      {Array.from({length:terraces}).map((_,i)=>{
-        const w=(compact?210:420)-i*(compact?15:26);
-        const h=compact?7:11;
-        return <rect key={i} x={cx-w/2} y={ground-8-i*h} width={w} height={h} rx={2} fill={i===terraces-1?"#1a1820":"#11151c"} stroke="#2a2f39" strokeWidth=".7"/>;
+      {Array.from({length:foundation}).map((_,i)=>{
+        const width=(compact?195:360)-i*(compact?11:19);
+        const y=baseY+28*s-i*(compact?4:8);
+        return <g key={i} opacity={.82}>
+          <polygon points={`${cx-width/2},${y} ${cx},${y-width*.16} ${cx+width/2},${y} ${cx},${y+width*.16}`} fill={i===foundation-1?"#17131d":"#101319"} stroke="#2b2c35" strokeWidth=".7"/>
+        </g>;
       })}
 
       {ORDER.map((category,index)=>{
@@ -80,33 +106,37 @@ export function ProofCitadel({
         const verified=a?.verified??0;
         const ratio=attempted?verified/attempted:0;
         const d=depth(attempted);
-        const h=(compact?18:28)+maxH*d;
-        const w=baseW+(compact?5:10)*d;
-        const x=startX+index*(baseW+gap)+(baseW-w)/2;
-        const y=baseY-h;
-        const conf=CONF[a?.confidence??"INSUFFICIENT"]??.12;
+        const conf=CONF[a?.confidence??"INSUFFICIENT"]??.16;
+        const blocks=Math.max(1,Math.min(8,Math.ceil(1+d*7)));
+        const verifiedBlocks=Math.round(blocks*ratio);
+        const [px,pz]=positions[index];
+        const x=cx+(px-pz*.55)*s-12*s;
+        const y=baseY+(px*.18+pz*.42)*s;
+        const bw=(compact?22:34)*(1+d*.22);
+        const bh=(compact?12:19);
+        const color=COLOR[category];
         const failed=(a?attempted-verified:0)+byStatus(category,"rejected")+byStatus(category,"disputed");
         const pending=byStatus(category,"pending");
-        const fillH=h*ratio;
 
         return <g key={category}>
-          <rect x={x} y={y} width={w} height={h} rx={compact?2:3} fill="#0f131a" stroke="#303745" strokeWidth={compact?.8:1.2}/>
-          {verified>0 && <rect x={x+2} y={baseY-fillH} width={Math.max(2,w-4)} height={fillH} rx={2} fill={COLOR[category]} opacity={.18+.52*conf}/>}
-          {Array.from({length:Math.min(8,attempted)}).map((_,j)=>{
-            const yy=baseY-((j+1)/(Math.min(8,attempted)+1))*h;
-            return <line key={j} x1={x+2} x2={x+w-2} y1={yy} y2={yy} stroke={COLOR[category]} strokeOpacity={.18+.12*conf} strokeWidth={compact?.55:.8}/>;
+          {Array.from({length:blocks}).map((_,j)=>{
+            const lit=j<verifiedBlocks;
+            const blockColor=lit?color:"#232630";
+            const alpha=lit?.48+.48*conf:.86;
+            return <IsoBlock key={j} x={x} y={y-j*bh*.86} w={bw} h={bh} color={blockColor} alpha={alpha} fractured={failed>0&&j===Math.max(0,Math.floor(blocks*.38))}/>;
           })}
-          {pending>0 && <rect x={x+4} y={y-7} width={w-8} height={5} fill="none" stroke={COLOR[category]} strokeDasharray="2 2" opacity=".55"/>}
-          {failed>0 && Array.from({length:Math.min(3,failed)}).map((_,j)=><line key={j} x1={x+3} y1={y+h*(.32+j*.16)} x2={x+w-3} y2={y+h*(.24+j*.16)} stroke="#ff6b72" strokeWidth={compact?.9:1.5} opacity=".8"/>)}
-          <rect x={x+w*.35} y={y-(compact?7:12)} width={w*.3} height={compact?7:12} fill={COLOR[category]} opacity={.22+.45*conf}/>
-          {!compact && attempted>0 && <text x={x+w/2} y={ground+18} textAnchor="middle" fill="#697281" fontSize="9">{verified}/{attempted}</text>}
-        </g>
+          {pending>0&&<IsoBlock x={x+bw*.08} y={y-blocks*bh*.86-4*s} w={bw*.84} h={bh*.8} color={color} alpha={.55} ghost/>}
+          {verified>0&&<circle cx={x+bw*.72} cy={y-blocks*bh*.86-bh*.35} r={compact?2.2:3.5} fill={color} opacity=".95" filter={`url(#${compact?"iso-glow-mini":"iso-glow"})`}/>}
+        </g>;
       })}
 
-      <circle cx={cx} cy={ground-terraces*(compact?7:11)-8} r={compact?6:9} fill="#d8b66c" opacity=".95"/>
-      <circle cx={cx} cy={ground-terraces*(compact?7:11)-8} r={compact?13:20} fill="none" stroke="#8b72ff" strokeOpacity=".35"/>
+      <g>
+        <IsoBlock x={cx-(compact?14:22)} y={baseY-16*s} w={compact?28:44} h={(compact?18:28)+depth(categories.reduce((n,c)=>n+c.verified,0))*(compact?65:105)} color="#d3a552" alpha=".98"/>
+        <circle cx={cx+(compact?4:7)} cy={baseY-(compact?55:92)} r={compact?4:7} fill="#8b72ff" opacity=".95"/>
+        <circle cx={cx+(compact?4:7)} cy={baseY-(compact?55:92)} r={compact?9:15} fill="none" stroke="#8b72ff" strokeOpacity=".24"/>
+      </g>
 
-      {!compact && <text x={cx} y="34" textAnchor="middle" fill="#6e7685" fontSize="10" letterSpacing="3">PROOF CITADEL</text>}
+      {!compact&&<><text x="28" y="32" fill="#8b72ff" fontSize="9" letterSpacing="2.4">PROOF CITADEL</text><text x={W-28} y="32" textAnchor="end" fill="#5d6673" fontSize="9">{categories.reduce((n,c)=>n+c.verified,0)} VERIFIED</text></>}
     </svg>
   );
 }
