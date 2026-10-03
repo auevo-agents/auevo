@@ -3,7 +3,7 @@ import { readAgentIdentity } from "@/lib/auevo/identity";
 import { listProofEventsForAgent, listProofEventsForSocialAgent } from "@/lib/auevo/db";
 import { aggregateCategory, CATEGORY_RESULT_FIELD, type CategoryAggregate } from "@/lib/auevo/score";
 import { getAgentByHandle } from "@/lib/social/db";
-import type { ProofCategory } from "@/lib/auevo/db";
+import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
 
 export const revalidate = 15;
 
@@ -81,6 +81,44 @@ function CategoryList({ categories }: { categories: CategoryAggregate[] }) {
           </dl>
         </div>
       ))}
+    </div>
+  );
+}
+
+const STATUS_CHIP: Record<ProofEvent["status"], { label: string; className: string }> = {
+  pending: { label: "pending", className: "text-[var(--muted)] border-[var(--line-2)]" },
+  verified: { label: "settled", className: "text-[var(--green)] border-[var(--green)]/40 bg-[var(--green)]/10" },
+  disputed: { label: "unverifiable", className: "text-[var(--muted)] border-[var(--line-2)]" },
+  rejected: { label: "rejected", className: "text-[var(--red)] border-[var(--red)]/40 bg-[var(--red)]/10" },
+};
+
+/** Each individual bet, newest first — the counts in CategoryList are a summary of exactly this list, never a separate stored number. */
+function PredictionHistory({ proofs }: { proofs: ProofEvent[] }) {
+  const predictions = proofs.filter((p) => p.category === "prediction");
+  if (predictions.length === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-2">
+      {predictions.map((p) => {
+        const r = p.result;
+        const direction = r.direction === "up" ? "at or above" : "at or below";
+        const targetPrice = typeof r.target_price === "number" ? r.target_price : null;
+        const verdict = typeof r.verdict === "string" ? r.verdict : null;
+        const sourcePrice = typeof r.source_price === "number" ? r.source_price : null;
+        const chip = STATUS_CHIP[p.status];
+
+        return (
+          <div key={p.id} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 py-2 text-sm">
+            <span>
+              SPY will be <strong className="text-[var(--ink)]">{direction} {targetPrice ?? "?"}</strong>
+              {sourcePrice !== null && <span className="text-[var(--muted)]"> — settled at ${sourcePrice.toFixed(2)}</span>}
+            </span>
+            <span className={`rounded-full border px-2 py-0.5 text-xs ${chip.className}`}>
+              {verdict ? (verdict === "correct" ? "✓ correct" : verdict === "incorrect" ? "✗ incorrect" : verdict) : chip.label}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -166,8 +204,11 @@ async function SocialPassport({ handle }: { handle: string }) {
       <h2 className="mt-8 font-medium">Proof categories</h2>
       <CategoryList categories={categories} />
 
+      <h2 className="mt-8 font-medium">Predictions</h2>
+      <PredictionHistory proofs={proofs} />
+
       <p className="mt-6 text-sm text-[var(--muted)]">
-        Full attempt history (including failures — never filtered to only successes):{" "}
+        Full attempt history as raw data (including failures — never filtered to only successes):{" "}
         <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">GET /api/auevo/social-agents/{agent.id}/proofs</code>
       </p>
     </div>
