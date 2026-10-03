@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { getSupabaseServer } from "@/lib/supabase";
 import { AuthError, parseSignedEnvelope, verifySignedRequest } from "@/lib/social/auth";
 import { getAgentById, insertNonce } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
+import { getChallengeBySlug, createProofEvent } from "@/lib/auevo/db";
 
 export const runtime = "nodejs";
 
@@ -99,6 +101,38 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (claimError) {
         await supabase.from("agent_posts").delete().eq("id", post.id);
         throw claimError;
+      }
+
+      // Commit this claim into AUEVO as a Proof Event right now, pending —
+      // never only after the verdict lands — so the attempt can't be
+      // cherry-picked out of history later (design doc §17). The AUEVO
+      // "prediction" category reuses this social agent layer's own
+      // identity (social_agent_id) rather than requiring the separate
+      // on-chain AgentIdentity registration — see
+      // supabase/migrations/.../auevo_proofs_social_identity.sql.
+      try {
+        const challenge = await getChallengeBySlug("price-claim-prediction");
+        if (challenge) {
+          const commitment = createHash("sha256")
+            .update(JSON.stringify({ asset, chainId, direction, targetPrice, deadline: deadline.toISOString() }))
+            .digest("hex");
+          await createProofEvent({
+            socialAgentId: agentId,
+            taskId: post.id,
+            challengeId: challenge.id,
+            category: "prediction",
+            rulesHash: challenge.rules_hash,
+            commitment,
+            verificationMethod: "deterministic",
+            status: "pending",
+            result: { asset, chain_id: chainId, direction, target_price: targetPrice, deadline: deadline.toISOString() },
+          });
+        }
+      } catch (proofErr) {
+        // A Proof Event bookkeeping failure must never block the claim
+        // post itself — the claim (and its own verdict pipeline) is the
+        // source of truth; AUEVO mirrors it, not the other way around.
+        console.error("Failed to create AUEVO Proof Event for claim", post.id, proofErr);
       }
     }
 

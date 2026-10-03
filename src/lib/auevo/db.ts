@@ -16,7 +16,8 @@ export type ProofStatus = "pending" | "verified" | "disputed" | "rejected";
 
 export interface ProofEvent {
   id: string;
-  agent_id: string; // bigint comes back as string from postgres
+  agent_id: string | null; // bigint comes back as string from postgres — an on-chain AgentIdentity tokenId
+  social_agent_id: string | null; // social_agents.id — exactly one of agent_id/social_agent_id is ever set
   task_id: string | null;
   challenge_id: string | null;
   category: ProofCategory;
@@ -38,7 +39,7 @@ export interface ProofEvent {
 }
 
 const PROOF_COLUMNS =
-  "id, agent_id, task_id, challenge_id, category, rules_hash, commitment, start_at, end_at, input_commitment, output_hash, evidence_uri, evidence_hash, verification_method, validator_set, result, validator_signatures, human_intervention, status, created_at";
+  "id, agent_id, social_agent_id, task_id, challenge_id, category, rules_hash, commitment, start_at, end_at, input_commitment, output_hash, evidence_uri, evidence_hash, verification_method, validator_set, result, validator_signatures, human_intervention, status, created_at";
 
 function db() {
   const supabase = getSupabaseServer();
@@ -55,7 +56,9 @@ export async function insertProofNonce(agentId: string, nonce: string): Promise<
 }
 
 export interface CreateProofEventInput {
-  agentId: string;
+  /** Exactly one of agentId (on-chain AgentIdentity tokenId) / socialAgentId (social_agents.id) must be set. */
+  agentId?: string | null;
+  socialAgentId?: string | null;
   taskId?: string | null;
   challengeId?: string | null;
   category: ProofCategory;
@@ -80,10 +83,17 @@ export interface CreateProofEventInput {
  * so attempt history can't be cherry-picked (design doc §17).
  */
 export async function createProofEvent(input: CreateProofEventInput): Promise<ProofEvent> {
+  const agentId = input.agentId ?? null;
+  const socialAgentId = input.socialAgentId ?? null;
+  if (Boolean(agentId) === Boolean(socialAgentId)) {
+    throw new Error("createProofEvent requires exactly one of agentId / socialAgentId");
+  }
+
   const { data, error } = await db()
     .from("auevo_proof_events")
     .insert({
-      agent_id: input.agentId,
+      agent_id: agentId,
+      social_agent_id: socialAgentId,
       task_id: input.taskId ?? null,
       challenge_id: input.challengeId ?? null,
       category: input.category,
@@ -143,6 +153,24 @@ export async function listProofEventsForAgent(agentId: string, limit = 100): Pro
     .limit(limit);
   if (error) throw error;
   return (data ?? []) as ProofEvent[];
+}
+
+export async function listProofEventsForSocialAgent(socialAgentId: string, limit = 100): Promise<ProofEvent[]> {
+  const { data, error } = await db()
+    .from("auevo_proof_events")
+    .select(PROOF_COLUMNS)
+    .eq("social_agent_id", socialAgentId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as ProofEvent[];
+}
+
+/** Looks up the Proof Event committed at task creation time (task_id = the originating row's id, e.g. agent_posts.id for a claim) so a later verification step can update that same row instead of creating a duplicate. */
+export async function getProofEventByTaskId(taskId: string): Promise<ProofEvent | null> {
+  const { data, error } = await db().from("auevo_proof_events").select(PROOF_COLUMNS).eq("task_id", taskId).maybeSingle();
+  if (error) throw error;
+  return data as ProofEvent | null;
 }
 
 export interface Challenge {
