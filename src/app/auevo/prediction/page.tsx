@@ -2,10 +2,9 @@ import Link from "next/link";
 import { getChallengeBySlug } from "@/lib/auevo/db";
 import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
+import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { AuevoPredictionTryIt } from "../prediction-try-it";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "../spy";
-import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
 
 export const revalidate = 30;
 
