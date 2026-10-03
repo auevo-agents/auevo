@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { ConnectButton } from "@/app/rwa/app/connect-button";
+import { SPY_ADDRESS, SPY_CHAIN_ID } from "./spy";
 
 /**
  * The live, clickable version of "try the Prediction pipeline" — same
@@ -31,9 +32,6 @@ function canonicalMessage(method: string, path: string, timestamp: number, nonce
 const inputClass = "w-full rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
 const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
 
-const SPY_ADDRESS = "0x117cc2133c37B721F49dE2A7a74833232B3B4C0C";
-const SPY_CHAIN_ID = 4663;
-
 const DURATIONS = [
   { label: "1 minute", ms: 60_000 },
   { label: "5 minutes", ms: 5 * 60_000 },
@@ -46,7 +44,7 @@ interface RegisteredAgent {
   handle: string;
 }
 
-export function AuevoPredictionTryIt() {
+export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) {
   const { address, isConnected } = useAccount();
   const [agent, setAgent] = useState<RegisteredAgent | null>(null);
 
@@ -56,19 +54,20 @@ export function AuevoPredictionTryIt() {
         <div>
           <h2 className="font-medium">Try it yourself — no money, no gas</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Registering an agent and posting a prediction are both just a signature in your wallet — neither ever
-            sends an on-chain transaction.
+            Your agent will make one public, timestamped bet on a real stock price. In a few minutes you&apos;ll see
+            whether it was right — that result becomes a permanent, public mark on its record. Nothing here costs
+            money: both steps below are just a signature in your wallet, never a blockchain transaction.
           </p>
         </div>
         <ConnectButton />
       </div>
 
       {!isConnected ? (
-        <p className="mt-4 text-sm text-[var(--muted)]">Connect a wallet above to start. It becomes your agent&apos;s controller key.</p>
+        <p className="mt-4 text-sm text-[var(--muted)]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
       ) : agent ? (
         <div className="mt-4 flex flex-col gap-4">
           <AgentBadge agent={agent} onReset={() => setAgent(null)} />
-          <ClaimStep agent={agent} />
+          <ClaimStep agent={agent} spyPrice={spyPrice} />
         </div>
       ) : (
         <div className="mt-4">
@@ -136,8 +135,11 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
 
   return (
     <div className="flex flex-col gap-2">
-      <StepLabel n={1} title="Register a feed agent" />
-      <p className="text-xs text-[var(--muted)]">Free, one-time, no wallet funds touched — this just proves you hold the handle&apos;s controller key.</p>
+      <StepLabel n={1} title="Give your agent a name" />
+      <p className="text-xs text-[var(--muted)]">
+        This is a public identity, not an account — there&apos;s no password or email. Your wallet signature proves
+        it&apos;s really you controlling it later. Pick any free handle.
+      </p>
       <input
         className={inputClass}
         placeholder="handle (3-32 chars, a-z 0-9 _)"
@@ -177,7 +179,7 @@ function ExistingAgentLink({ onUse }: { onUse: (a: RegisteredAgent) => void }) {
   );
 }
 
-function ClaimStep({ agent }: { agent: RegisteredAgent }) {
+function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: number | null }) {
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [targetPrice, setTargetPrice] = useState("");
   const [durationMs, setDurationMs] = useState(DURATIONS[1].ms);
@@ -225,26 +227,46 @@ function ClaimStep({ agent }: { agent: RegisteredAgent }) {
   if (posted) {
     return (
       <div className="flex flex-col gap-2">
-        <StepLabel n={2} title="Predict SPY" />
+        <StepLabel n={2} title="Bet placed" />
         <div className="rounded-lg border border-[var(--green)]/30 bg-[var(--green)]/10 px-4 py-3 text-sm">
           <p>
-            Posted. A <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">pending</code> Proof Event exists right now — settles
-            automatically at <strong className="text-[var(--ink)]">{new Date(posted.deadline).toLocaleString()}</strong>, then within 5
-            minutes (next cron tick).
+            Your bet is now on the record, permanently — marked <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">pending</code>.
+            Nobody can check the answer early, including you: AUEVO reads SPY&apos;s real price automatically at{" "}
+            <strong className="text-[var(--ink)]">{new Date(posted.deadline).toLocaleString()}</strong> and marks it right or wrong within
+            5 minutes after that.
           </p>
           <a href={`/auevo/agents?handle=${agent.handle}`} className="mt-2 inline-block underline hover:text-[var(--ink)]">
-            Open @{agent.handle}&apos;s Passport →
+            Open @{agent.handle}&apos;s Passport to check later →
           </a>
         </div>
       </div>
     );
   }
 
+  function fillGuaranteedExample() {
+    setDirection("down");
+    setTargetPrice(spyPrice ? String(Math.ceil(spyPrice * 2)) : "999999");
+    setDurationMs(DURATIONS[0].ms);
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      <StepLabel n={2} title="Predict SPY (chain 4663)" />
+      <StepLabel n={2} title="Make a bet: where will SPY be?" />
       <p className="text-xs text-[var(--muted)]">
-        Pick a direction and a target price relative to SPY&apos;s real price now, so you can see it settle either way.
+        SPY tracks the S&amp;P 500 (the 500 biggest US companies), as a token on Robinhood Chain. You&apos;re betting on
+        its real price — the same way a human trader would.
+      </p>
+
+      <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 py-2">
+        <span className="text-sm text-[var(--muted)]">SPY right now</span>
+        <span className="font-medium">{spyPrice !== null ? `$${spyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "price unavailable"}</span>
+      </div>
+
+      <p className="text-xs text-[var(--muted)]">
+        Pick a direction and a price. Example:{" "}
+        {spyPrice !== null
+          ? `"at or above $${Math.round(spyPrice * 0.99)}" is an easy bet right now; "at or above $${Math.round(spyPrice * 1.5)}" is a hard one.`
+          : `"at or above <lower than today's price>" is an easy bet; far above today's price is a hard one.`}
       </p>
       <div className="flex gap-2">
         {(["up", "down"] as const).map((d) => (
@@ -255,17 +277,20 @@ function ClaimStep({ agent }: { agent: RegisteredAgent }) {
             }`}
             onClick={() => setDirection(d)}
           >
-            {d === "up" ? "↑ at or above" : "↓ at or below"}
+            {d === "up" ? "↑ will be at or above" : "↓ will be at or below"}
           </button>
         ))}
       </div>
       <input
         className={inputClass}
-        placeholder="target price (USD)"
+        placeholder="your target price, in USD"
         value={targetPrice}
         onChange={(e) => setTargetPrice(e.target.value)}
         inputMode="decimal"
       />
+      <button type="button" className="self-start text-xs text-[var(--muted)] underline hover:text-[var(--ink)]" onClick={fillGuaranteedExample}>
+        Just show me how it works (fills in a bet that will obviously resolve correct, settling in 1 minute)
+      </button>
       <div className="flex gap-2">
         {DURATIONS.map((d) => (
           <button
