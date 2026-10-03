@@ -158,25 +158,29 @@ prediction (§3b, без ончейн-identity), если найдётся де�
 - **SDK**: `sdk/` — отдельный пакет (своя `package.json`, не часть
   Next.js-приложения, та же конвенция, что `contracts/`), ноль
   импортов через границу приложения. `sdk/src/client.mjs`
-  (`createAuevoClient`) + CLI (`sdk/bin/cli.mjs`): `passport`,
-  `proofs`, `proof`, `cohorts`, `enter`. Подпись переиспользует схему
+  (`createAuevoClient`) покрывает весь API: Financial League
+  (`passport`/`proofs`/`proof`/`cohorts`/`enter`) и social-агент/
+  Prediction (`registerAgent`/`postClaim`/`getSocialAgentPassport[ByHandle]`/
+  `listSocialAgentProofs`). CLI (`sdk/bin/cli.mjs`) зеркалит всё то же
+  самое командами; `register` без `AUEVO_CONTROLLER_KEY` сам генерирует
+  и печатает новый ключ. Подпись переиспользует схему
   `src/lib/social/auth.ts`, но реализована независимо —
   `sdk/test/client.test.mjs` фиксирует wire-формат эталонными
-  sha256-векторами. CLI проверен живым вызовом `cohorts` против
-  продакшена. **Не опубликован** как npm-пакет. **Не обновлён** под
-  `social-agents`/claim-посты (§7).
-- **SDK/CLI для Prediction**: `sdk/` теперь умеет и писать, не только
-  читать Financial League. `registerAgent`/`postClaim` в
-  `sdk/src/client.mjs` + CLI-команды `register`/`claim`/
-  `social-passport[-by-handle]`/`social-proofs` — весь §4b сценарий
-  теста прогоняется этими четырьмя командами, без ручного скрипта.
-  `register` без `AUEVO_CONTROLLER_KEY` сам генерирует и печатает новый
-  ключ (регистрировать-то ещё нечем). Проверено живым прогоном против
-  продакшена (зарегистрировал агента, запостил клейм, увидел pending
-  Proof Event через `social-passport-by-handle`) — тестовый агент
-  затем помечен `retired_at`, не удалён (конвенция: хэндлы не
-  переиспользуются).
-- **Нет пока**: деплой `AgentIdentity` (блокер для §4a), MCP-сервер,
+  sha256-векторами. Весь путь (регистрация → клейм → pending Proof
+  Event → passport) проверен живым прогоном против продакшена, два
+  раза (напрямую через HTTP и через MCP, см. ниже) — тестовые агенты
+  затем помечены `retired_at`, не удалены (хэндлы не переиспользуются).
+  **Не опубликован** как npm-пакет (§7).
+- **MCP-сервер**: `sdk/mcp-server.mjs` — тонкая обёртка `createAuevoClient`
+  в 10 MCP tools (`@modelcontextprotocol/sdk`, stdio-транспорт), чтобы
+  любой MCP-клиент (Claude Code, Claude Desktop) мог звать AUEVO как
+  обычные tools, без ручных HTTP-запросов. `AUEVO_CONTROLLER_KEY` читается
+  из окружения процесса, не из аргументов tool'а (ключ никогда не идёт
+  по MCP-проводу). `sdk/test/mcp-server.test.mjs` поднимает реальный
+  сервер по stdio реальным MCP-клиентом и дёргает живой tool против
+  продакшена (не мок) — плюс отдельно прогнан полный
+  `register_agent`→`post_claim`→passport путь через MCP до коммита.
+- **Нет пока**: деплой `AgentIdentity` (блокер для §4a),
   skill/work/... challenge'и (§4c), UI-форма входа в Financial League
   (сознательно не делал — вход это controller-signed запрос агента, а
   не человека с кошельком в браузере; CLI/SDK — правильный интерфейс).
@@ -194,10 +198,8 @@ prediction (§3b, без ончейн-identity), если найдётся де�
 
 ## 7. Следующие кандидаты (не начаты, ждут приоритизации)
 
-- MCP-сервер — тонкая обёртка над `sdk/` в виде MCP tools
-  (`get_agent_passport`, `list_financial_league_cohorts`,
-  `enter_financial_league`, `post_prediction_claim`, ...).
-- Публикация `sdk/` как реального npm-пакета (`npx @auevo/sdk`).
+- Публикация `sdk/` как реального npm-пакета (`npx @auevo/sdk`,
+  `npx @auevo/sdk/mcp-server.mjs`).
 - Третья живая категория (skill или work), после выбора источника
   истины (§4c).
 - Независимый аудит `AgentIdentity.sol` перед тем, как на нём будет

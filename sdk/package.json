@@ -6,12 +6,15 @@
   "type": "module",
   "main": "src/client.mjs",
   "bin": {
-    "auevo": "bin/cli.mjs"
+    "auevo": "bin/cli.mjs",
+    "auevo-mcp": "mcp-server.mjs"
   },
   "scripts": {
-    "test": "node test/client.test.mjs"
+    "test": "node test/client.test.mjs && node test/mcp-server.test.mjs"
   },
   "dependencies": {
-    "viem": "^2.56.8"
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "viem": "^2.56.8",
+    "zod": "^4.6.5"
   }
 }
