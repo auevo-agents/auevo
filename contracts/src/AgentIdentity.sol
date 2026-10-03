@@ -148,10 +148,14 @@ contract AgentIdentity is IAgentIdentity {
 
     /// @notice Transfers the agent id. Clears controller and operatorWallet
     ///         (see this contract's own doc comment) — the new owner must
-    ///         explicitly re-set both.
+    ///         explicitly re-set both. Reverts on a no-op transfer to the
+    ///         current owner, since that would otherwise silently wipe the
+    ///         owner's own controller/operatorWallet with no ownership
+    ///         change to show for it.
     function transferAgent(uint256 agentId, address newOwner) external onlyOwner(agentId) {
         require(newOwner != address(0), "newOwner=0");
         Agent storage a = _agents[agentId];
+        require(newOwner != a.owner, "already owner");
         address previousOwner = a.owner;
         a.owner = newOwner;
         a.controller = address(0);

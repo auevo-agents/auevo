@@ -228,7 +228,7 @@ anything else here. Short version:
   DcaVault.
 - **No backend/frontend wiring yet** — this is the contract layer only.
 
-## AgentIdentity — status: written, tested. **Not deployed.**
+## AgentIdentity — status: written, tested, reviewed. **Not deployed.**
 
 Minimal, non-upgradeable agent identity registry for AUEVO's reputation
 protocol (see the "AUEVO as an Independent Reputation & Verification
@@ -246,12 +246,42 @@ whatever system reads it — e.g. a future ProofRegistry), operatorWallet
 for the full rationale. Transfer clears controller/operatorWallet so a
 sold identity's old controller can never keep speaking for a new owner.
 
-16 integration tests (`test/run-identity.mjs`): registration defaults,
+21 integration tests (`test/run-identity.mjs`): registration defaults,
 owner-only configuration, reverts on a nonexistent agent id, transfer
 clearing controller/operatorWallet and revoking the old owner's access,
-independent incrementing ids. **Not independently audited. Not
-deployed** — `script/deploy-identity.mjs` has no required arguments
-(this contract takes none), unlike `deploy-credit-pool.mjs`.
+zero-address guards on every setter, independent incrementing ids.
+
+### Internal review (2026-10-03) — before anything depends on this contract
+
+Manual read plus Slither static analysis (`slither src/AgentIdentity.sol`).
+No value custody, no external calls, no reentrancy surface at all — the
+contract only writes to its own storage. Slither's only output is the
+same known false-positive class already noted for `DcaVault`
+(`address(0)` existence checks misclassified as "timestamp
+comparisons" — nothing to do with `block.timestamp`).
+
+One real issue found and fixed: `transferAgent(agentId, newOwner)` had
+no check against `newOwner == currentOwner`, so an owner accidentally
+calling it with their own address would silently wipe their own
+`controller`/`operatorWallet` to zero with no ownership change to show
+for it — a self-inflicted footgun, not exploitable by anyone else, but
+untested and unguarded. Fixed with a `require(newOwner != a.owner)`,
+covered by a new test (case 6 in `run-identity.mjs`).
+
+Also checked, not a bug: the first registered agent gets id `0`
+(`nextAgentId` starts at 0), which is a classic sentinel-collision
+footgun in systems that treat `id == 0` as "no agent". Traced every
+agentId read path in both `AgentCreditPool.sol` and the Next.js app
+(`src/lib/auevo/db.ts` and callers) — all use explicit existence checks
+(`owner != address(0)`, `?? null`) or string comparisons, never numeric
+truthiness on the id itself, so agent `#0` is handled correctly
+everywhere.
+
+**Still not a substitute for a paid, independent, professional audit**
+— this was a thorough internal review, not that. Do not treat "reviewed
+and tested" as "audited." **Not deployed** —
+`script/deploy-identity.mjs` has no required arguments (this contract
+takes none), unlike `deploy-credit-pool.mjs`.
 
 ## Setup
 

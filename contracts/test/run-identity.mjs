@@ -121,7 +121,37 @@ console.log("\n4) transferAgent clears controller and operatorWallet");
   check("the NEW owner can configure the agent", (await read(identity, AgentIdentity.abi, "controllerOf", [agentId])).toLowerCase() === controller.toLowerCase());
 }
 
-console.log("\n5) two agents get independent, incrementing ids");
+console.log("\n5) zero-address guards reject on setController/setOperatorWallet/transferAgent");
+{
+  const agentId = 0n;
+  const rejected1 = await expectRevert(
+    write(newOwnerClient, identity, AgentIdentity.abi, "setController", [agentId, "0x0000000000000000000000000000000000000000"])
+  );
+  check("setController rejects address(0)", rejected1);
+
+  const rejected2 = await expectRevert(
+    write(newOwnerClient, identity, AgentIdentity.abi, "setOperatorWallet", [agentId, "0x0000000000000000000000000000000000000000"])
+  );
+  check("setOperatorWallet rejects address(0)", rejected2);
+
+  const rejected3 = await expectRevert(
+    write(newOwnerClient, identity, AgentIdentity.abi, "transferAgent", [agentId, "0x0000000000000000000000000000000000000000"])
+  );
+  check("transferAgent rejects address(0)", rejected3);
+}
+
+console.log("\n6) transferAgent rejects a no-op transfer to the current owner (would silently wipe controller/operatorWallet)");
+{
+  const agentId = 0n;
+  const rejected = await expectRevert(write(newOwnerClient, identity, AgentIdentity.abi, "transferAgent", [agentId, newOwner]));
+  check("self-transfer reverts instead of silently clearing controller/operatorWallet", rejected);
+  check(
+    "controller is untouched after the rejected self-transfer",
+    (await read(identity, AgentIdentity.abi, "controllerOf", [agentId])).toLowerCase() === controller.toLowerCase()
+  );
+}
+
+console.log("\n7) two agents get independent, incrementing ids");
 {
   await write(strangerClient, identity, AgentIdentity.abi, "register", ["ipfs://agent-1"]);
   check("second registration gets id 1", (await read(identity, AgentIdentity.abi, "ownerOf", [1n])).toLowerCase() === stranger.toLowerCase());
