@@ -22,7 +22,7 @@ export function CreditAgentActions({ agentId, pool, assetDecimals }: { agentId: 
 
   return (
     <div className="mt-8 flex flex-col gap-4">
-      <div className="flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+      <div className="flex items-center justify-between rounded-[3px] border border-[var(--line)] bg-[var(--panel)] p-4">
         <span className="text-sm text-[var(--muted)]">Connect a wallet to act on this agent — nothing here is held for you.</span>
         <ConnectButton />
       </div>
@@ -42,7 +42,7 @@ export function CreditAgentActions({ agentId, pool, assetDecimals }: { agentId: 
 
 function Panel({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+    <div className="rounded-[3px] border border-[var(--line)] bg-[var(--panel)] p-4">
       <h3 className="font-medium">{title}</h3>
       <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>
       <div className="mt-3 flex flex-col gap-2">{children}</div>

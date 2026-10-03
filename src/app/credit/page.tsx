@@ -43,7 +43,7 @@ export default async function CreditLandingPage() {
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pb-20 sm:px-8">
         {!deployed ? (
-          <div className="portal-panel rounded-[24px] p-6 text-[var(--muted)]">
+          <div className="portal-panel rounded-[3px] p-6 text-[var(--muted)]">
             <p>
               <strong className="text-[var(--ink)]">Not deployed yet.</strong> The contract is written and tested
               (29 integration tests — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>),
@@ -58,7 +58,7 @@ export default async function CreditLandingPage() {
             </p>
           </div>
         ) : (
-          <div className="portal-panel rounded-[24px] p-6">
+          <div className="portal-panel rounded-[3px] p-6">
             <h2 className="font-medium">Live parameters</h2>
             {params ? (
               <dl className="mt-3 grid grid-cols-2 gap-2 text-sm text-[var(--muted)]">
@@ -81,7 +81,7 @@ export default async function CreditLandingPage() {
           </div>
         )}
 
-        <div className="mt-6 portal-panel rounded-[24px] p-6">
+        <div className="mt-6 portal-panel rounded-[3px] p-6">
           <h2 className="font-medium">Check an agent</h2>
           <p className="mt-2 text-sm text-[var(--muted)]">
             Free, public, no key:{" "}
@@ -91,9 +91,9 @@ export default async function CreditLandingPage() {
             <input
               name="id"
               placeholder="agent id"
-              className="flex-1 portal-input rounded-xl px-3 py-2 text-sm"
+              className="flex-1 portal-input rounded-[3px] px-3 py-2 text-sm"
             />
-            <button className="portal-btn-primary rounded-xl px-4 py-2 text-sm" type="submit">
+            <button className="portal-btn-primary rounded-[3px] px-4 py-2 text-sm" type="submit">
               Open
             </button>
           </form>

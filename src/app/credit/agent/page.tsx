@@ -42,7 +42,7 @@ async function AgentLookup({ idStr }: { idStr: string }) {
 
   if (!getCreditPoolAddress()) {
     return (
-      <div className="portal-panel rounded-[24px] p-6 text-[var(--muted)]">
+      <div className="portal-panel rounded-[3px] p-6 text-[var(--muted)]">
         AgentCreditPool has not been deployed yet — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>.
       </div>
     );
@@ -63,7 +63,7 @@ async function AgentLookup({ idStr }: { idStr: string }) {
       {owner && <p className="mt-1 text-sm text-[var(--muted)] break-all">owner: {owner}</p>}
 
       <div className="mt-4 flex items-center gap-2 text-sm">
-        <span className={`rounded-full border px-2 py-0.5 ${chip.className}`}>{chip.label}</span>
+        <span className={`rounded-[2px] border px-2 py-0.5 ${chip.className}`}>{chip.label}</span>
       </div>
 
       {record ? (
