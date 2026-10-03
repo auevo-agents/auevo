@@ -15454,7 +15454,7 @@ body{
 .portal-btn-primary{
   display:inline-flex;align-items:center;justify-content:center;gap:.55rem;
   border:1px solid rgba(191,170,255,.38);
-  border-radius:14px;
+  border-radius:9px;
   background:linear-gradient(180deg,#9b84ff,#7659ef);
   color:white;
   box-shadow:0 14px 36px rgba(82,54,198,.3),inset 0 1px 0 rgba(255,255,255,.28);
@@ -15464,7 +15464,7 @@ body{
 .portal-btn-secondary{
   display:inline-flex;align-items:center;justify-content:center;gap:.55rem;
   border:1px solid rgba(193,205,228,.14);
-  border-radius:14px;
+  border-radius:9px;
   background:rgba(14,21,33,.72);
   color:#d3dae4;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
@@ -15474,7 +15474,7 @@ body{
   border:1px solid rgba(139,114,255,.28);
   background:rgba(74,54,138,.16);
   color:#bbaeff;
-  border-radius:999px;
+  border-radius:8px;
   padding:.48rem .8rem;
   font-size:10px;
   letter-spacing:.16em;

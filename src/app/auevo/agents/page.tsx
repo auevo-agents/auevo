@@ -74,27 +74,15 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
 }
 
 function CategoryList({ categories }: { categories: CategoryAggregate[] }) {
-  if (categories.length === 0) return <p className="mt-2 text-sm text-[#7a8390]">No Proof Events yet.</p>;
+  if (categories.length === 0) return <div className="portal-panel mt-3 rounded-2xl p-6 text-center text-sm text-[#7a8390]">No Proof Events yet.</div>;
   return (
-    <div className="mt-3 space-y-3">
-      {categories.map((c) => (
-        <div key={c.category} className="portal-panel rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-[#ece8df]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
-            <span className="text-xs text-[#7a8390]">confidence: {c.confidence}</span>
-          </div>
-          <dl className="mt-2 grid grid-cols-2 gap-1 text-sm text-[#7a8390]">
-            <dt>Attempted</dt>
-            <dd className="text-[#c7cdd6]">{c.attempted}</dd>
-            <dt>Verified</dt>
-            <dd className="text-[#c7cdd6]">{c.verified}</dd>
-            {c.median !== null && (
-              <>
-                <dt>Median result</dt>
-                <dd className="text-[#c7cdd6]">{c.median.toFixed(2)}</dd>
-              </>
-            )}
-          </dl>
+    <div className="portal-panel mt-3 overflow-hidden rounded-2xl">
+      {categories.map((c, i) => (
+        <div key={c.category} className={"grid grid-cols-[1.4fr_.8fr_.8fr_1fr] items-center gap-3 px-5 py-3.5 text-sm " + (i > 0 ? "border-t border-white/[0.06]" : "")}>
+          <span className="font-medium text-[#ece8df]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
+          <span className="text-[#c7cdd6]">{c.verified}/{c.attempted} verified</span>
+          <span className="text-[#c7cdd6]">{c.median !== null ? "median " + c.median.toFixed(2) : "—"}</span>
+          <span className="justify-self-end text-[10px] uppercase tracking-[.08em] text-[#7a8390]">{c.confidence.replaceAll("_", " ").toLowerCase()}</span>
         </div>
       ))}
     </div>
@@ -128,24 +116,29 @@ async function IdentityPassport({ idStr }: { idStr: string }) {
   return (
     <div>
       <h1 className="portal-heading text-3xl">Agent #{idStr}</h1>
-      <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-[#7a8390]">owner</dt>
-        <dd className="break-all text-[#c7cdd6]">{identity.owner}</dd>
-        <dt className="text-[#7a8390]">controller</dt>
-        <dd className="break-all text-[#c7cdd6]">{identity.controller}</dd>
-        <dt className="text-[#7a8390]">operator wallet</dt>
-        <dd className="break-all text-[#c7cdd6]">{identity.operatorWallet}</dd>
-        <dt className="text-[#7a8390]">registered</dt>
-        <dd className="text-[#c7cdd6]">{new Date(Number(identity.registeredAt) * 1000).toLocaleDateString()}</dd>
-      </dl>
+      <div className="portal-panel mt-4 rounded-2xl p-5">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 text-sm">
+          <dt className="text-[#7a8390]">owner</dt>
+          <dd className="break-all text-[#c7cdd6]">{identity.owner}</dd>
+          <dt className="text-[#7a8390]">controller</dt>
+          <dd className="break-all text-[#c7cdd6]">{identity.controller}</dd>
+          <dt className="text-[#7a8390]">operator wallet</dt>
+          <dd className="break-all text-[#c7cdd6]">{identity.operatorWallet}</dd>
+          <dt className="text-[#7a8390]">registered</dt>
+          <dd className="text-[#c7cdd6]">{new Date(Number(identity.registeredAt) * 1000).toLocaleDateString()}</dd>
+        </dl>
+      </div>
 
       <h2 className="mt-8 font-medium text-[#ece8df]">Proof categories</h2>
       <CategoryList categories={categories} />
 
-      <p className="mt-6 text-sm text-[#7a8390]">
-        Full attempt history (including failures — never filtered to only successes):{" "}
-        <code className="rounded bg-[#11141b] px-1.5 py-0.5">GET /api/auevo/agents/{idStr}/proofs</code>
-      </p>
+      <div className="portal-panel mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 text-sm">
+        <p className="text-[#7a8390]">
+          Full attempt history (including failures — never filtered to only successes):{" "}
+          <code className="rounded-md bg-[#11141b] px-1.5 py-0.5">GET /api/auevo/agents/{idStr}/proofs</code>
+        </p>
+        <a href={`/api/auevo/agents/${idStr}/proofs`} target="_blank" rel="noreferrer" className="shrink-0 text-[#a99cff] hover:text-white">Open raw feed →</a>
+      </div>
     </div>
   );
 }

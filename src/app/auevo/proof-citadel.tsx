@@ -45,16 +45,16 @@ export function ProofCitadel({
 }) {
   const map=new Map(categories.map(c=>[c.category as ProofCategory,c]));
   const byStatus=(category:ProofCategory,status:string)=>proofs?.filter(p=>p.category===category&&p.status===status).length ?? 0;
-  const cx=compact?160:300, baseY=compact?258:430;
-  const baseW=compact?34:62, gap=compact?7:12;
-  const maxH=compact?112:230;
-  const ground=compact?290:470;
+  const cx=compact?160:300, baseY=compact?190:430;
+  const baseW=compact?24:62, gap=compact?4:12;
+  const maxH=compact?150:230;
+  const ground=compact?215:470;
   const terraces=Math.max(1,Math.min(7,Math.ceil(ageDays/60)));
   const totalW=ORDER.length*(baseW+gap)-gap;
   const startX=cx-totalW/2;
 
   return (
-    <svg viewBox={compact?"0 0 320 320":"0 0 600 500"} className={"block w-full h-auto "+className} role="img" aria-label="Deterministic proof citadel generated from AUEVO proof ledger">
+    <svg viewBox={compact?"0 0 320 244":"0 0 600 500"} className={"block w-full h-auto "+className} role="img" aria-label="Deterministic proof citadel generated from AUEVO proof ledger">
       <defs>
         <linearGradient id={compact?"pc-bg-mini":"pc-bg"} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="#0c1017"/>
