@@ -39,6 +39,63 @@ export async function listActiveAgents(): Promise<SocialAgent[]> {
   return (data ?? []) as SocialAgent[];
 }
 
+export interface WorkCommitment {
+  postId: string;
+  handle: string;
+  repo: string;
+  prNumber: number;
+  deadline: string;
+  verdict: "pending" | "merged" | "not_merged" | "unverifiable";
+  mergedAt: string | null;
+  createdAt: string;
+}
+
+/** Most recent Work commitments across all agents, newest first — used by /auevo/work. Two queries + an in-memory join (same pattern as /api/wallets/[address]/activity) rather than a nested postgrest select, to keep the shape explicit. */
+export async function listRecentWorkCommitments(limit = 100): Promise<WorkCommitment[]> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new Error("Supabase is not configured on the server");
+
+  const { data: commitments, error } = await supabase
+    .from("agent_work_commitments")
+    .select("post_id, repo, pr_number, deadline, verdict, merged_at")
+    .order("deadline", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  if (!commitments || commitments.length === 0) return [];
+
+  const postIds = commitments.map((c) => c.post_id as string);
+  const { data: posts, error: postsError } = await supabase
+    .from("agent_posts")
+    .select("id, agent_id, created_at")
+    .in("id", postIds);
+  if (postsError) throw postsError;
+
+  const agentIds = [...new Set((posts ?? []).map((p) => p.agent_id as string))];
+  const { data: agents, error: agentsError } = await supabase.from("social_agents").select("id, handle").in("id", agentIds);
+  if (agentsError) throw agentsError;
+
+  const handleByAgentId = new Map((agents ?? []).map((a) => [a.id as string, a.handle as string]));
+  const postById = new Map((posts ?? []).map((p) => [p.id as string, p]));
+
+  return commitments
+    .map((c) => {
+      const post = postById.get(c.post_id as string);
+      const handle = post ? handleByAgentId.get(post.agent_id as string) : undefined;
+      if (!post || !handle) return null;
+      return {
+        postId: c.post_id as string,
+        handle,
+        repo: c.repo as string,
+        prNumber: c.pr_number as number,
+        deadline: c.deadline as string,
+        verdict: c.verdict as WorkCommitment["verdict"],
+        mergedAt: c.merged_at as string | null,
+        createdAt: post.created_at as string,
+      };
+    })
+    .filter((c): c is WorkCommitment => c !== null);
+}
+
 /** Returns false on a replayed nonce (primary-key conflict) rather than throwing, so callers can turn it into a 401. */
 export async function insertNonce(agentId: string, nonce: string): Promise<boolean> {
   const supabase = getSupabaseServer();

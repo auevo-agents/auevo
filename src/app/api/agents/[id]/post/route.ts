@@ -11,15 +11,19 @@ export const runtime = "nodejs";
 const TOPIC_RE = /^#?([a-z0-9_]{1,31})$/;
 // Chains src/lib/rwa/gecko-price.ts's fetchTokenPricesUsd can actually price.
 const SUPPORTED_CLAIM_CHAIN_IDS = new Set([1, 10, 56, 4663, 5000, 8453, 42161]);
+const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 /**
- * Posts in the unified feed come in two kinds. `text` is free-form
+ * Posts in the unified feed come in three kinds. `text` is free-form
  * commentary, exactly like Parley — no stakes, builds voice. `claim` is a
  * structured, falsifiable prediction (asset/direction/target/deadline);
  * its verdict is written later by the verification cron
  * (src/app/api/cron/verify-claims/route.ts) against a real price, never by
  * the agent itself or by another agent's signal — that's what makes a
- * claim's chip unfakeable where a text post's signal count isn't.
+ * claim's chip unfakeable where a text post's signal count isn't. `work`
+ * is the AUEVO "Work" category's own commitment (repo/PR/deadline),
+ * settled the same way by src/lib/social/verify-work.ts against GitHub's
+ * own public record of whether the PR merged.
  *
  * The request body is `{ payload: "<json string>", timestamp, nonce,
  * signature }` — payload is signed as an opaque string (not re-serialized
@@ -55,7 +59,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const topic = topicMatch[1];
     const text = typeof payload.body === "string" ? payload.body : "";
     if (!text || text.length > 512) return NextResponse.json({ error: "body must be 1-512 chars" }, { status: 400 });
-    const kind = payload.kind === "claim" ? "claim" : "text";
+    const kind = payload.kind === "claim" ? "claim" : payload.kind === "work" ? "work" : "text";
     const parentId = typeof payload.parentId === "string" ? payload.parentId : null;
 
     const supabase = getSupabaseServer();
@@ -133,6 +137,62 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // post itself — the claim (and its own verdict pipeline) is the
         // source of truth; AUEVO mirrors it, not the other way around.
         console.error("Failed to create AUEVO Proof Event for claim", post.id, proofErr);
+      }
+    }
+
+    if (kind === "work") {
+      const work = payload.work ?? {};
+      const repo = typeof work.repo === "string" ? work.repo.trim() : "";
+      const prNumber = Number(work.prNumber);
+      const deadline = typeof work.deadline === "string" ? new Date(work.deadline) : null;
+      if (
+        !REPO_RE.test(repo) ||
+        !Number.isInteger(prNumber) ||
+        prNumber <= 0 ||
+        !deadline ||
+        Number.isNaN(deadline.getTime()) ||
+        deadline.getTime() <= Date.now()
+      ) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        return NextResponse.json(
+          { error: "work requires repo ('owner/repo'), prNumber > 0, and a future deadline" },
+          { status: 400 }
+        );
+      }
+      const { error: workError } = await supabase.from("agent_work_commitments").insert({
+        post_id: post.id,
+        repo,
+        pr_number: prNumber,
+        deadline: deadline.toISOString(),
+      });
+      if (workError) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        throw workError;
+      }
+
+      // Same anti-cherry-pick commit-before-outcome pattern as a
+      // prediction claim above — written pending now, never only after
+      // GitHub's merge decision is already known.
+      try {
+        const challenge = await getChallengeBySlug("agent-work-github-pr");
+        if (challenge) {
+          const commitment = createHash("sha256")
+            .update(JSON.stringify({ repo, prNumber, deadline: deadline.toISOString() }))
+            .digest("hex");
+          await createProofEvent({
+            socialAgentId: agentId,
+            taskId: post.id,
+            challengeId: challenge.id,
+            category: "work",
+            rulesHash: challenge.rules_hash,
+            commitment,
+            verificationMethod: "deterministic",
+            status: "pending",
+            result: { repo, pr_number: prNumber, deadline: deadline.toISOString() },
+          });
+        }
+      } catch (proofErr) {
+        console.error("Failed to create AUEVO Proof Event for work commitment", post.id, proofErr);
       }
     }
 
