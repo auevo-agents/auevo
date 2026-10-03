@@ -34,10 +34,10 @@ export default async function AgentsPage(){
         </div>
         <div className="portal-hero overflow-hidden rounded-[34px]">
           <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0d1420]/70 px-5 py-4">
-            <div><div className="portal-kicker">Interactive 3D skyline</div><div className="mt-1 text-sm text-[#b8c1cf]">Drag to orbit · scroll to zoom</div></div>
+            <div><div className="portal-kicker">Interactive 3D skyline</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
             <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
           </div>
-          <ProofCity3D agents={cityAgents} className="h-[520px] sm:h-[590px]"/>
+          <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[560px] sm:h-[650px]"/>
         </div>
       </div>
 
