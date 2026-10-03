@@ -106,7 +106,7 @@ export function ProofCitadel({
         const verified=a?.verified??0;
         const ratio=attempted?verified/attempted:0;
         const d=depth(attempted);
-        const conf=CONF[a?.confidence??"INSUFFICIENT"]??.16;
+        const conf = CONF[a?.confidence ?? "INSUFFICIENT"] ?? 0.16;
         const blocks=Math.max(1,Math.min(8,Math.ceil(1+d*7)));
         const verifiedBlocks=Math.round(blocks*ratio);
         const [px,pz]=positions[index];
