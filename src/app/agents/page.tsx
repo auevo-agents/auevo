@@ -78,5 +78,5 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
   </main>
  </div>
 }
-function M({l,v}:{l:string;v:string|number}){return <div className="rounded-xl border border-white/[0.065] bg-[#0d1520]/80 p-2.5"><div className="text-sm text-[#ece8df]">{v}</div><div className="mt-1 text-[8px] uppercase tracking-[.11em] text-[#66758b]">{l}</div></div>}
+function M({l,v}:{l:string;v:string|number}){return <div className="rounded-xl border border-white/[0.065] bg-[#0d1520]/80 p-2.5"><div className="text-sm font-medium text-[#ece8df]">{v}</div><div className="mt-1 text-[8px] uppercase tracking-[.11em] text-[#66758b]">{l}</div></div>}
 function Feature({icon,title,text}:{icon:string;title:string;text:string}){return <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-[#0d1420]/55 px-3 py-2"><span className="grid h-7 w-7 place-items-center rounded-lg border border-[#8b72ff]/25 bg-[#8b72ff]/10 text-[#b7a9ff]">{icon}</span><span><b className="block text-[11px] font-medium text-[#d9dfe8]">{title}</b><span className="text-[9px] uppercase tracking-[.1em] text-[#6d7a8e]">{text}</span></span></div>}

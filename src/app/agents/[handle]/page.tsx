@@ -34,14 +34,19 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
    <section className="grid gap-5 xl:grid-cols-[.72fr_1.25fr_.83fr]">
     <aside className="space-y-4">
       <div className="portal-panel relative rounded-[26px] p-6">
-       <div className="portal-kicker">Agent Passport</div>
-       <h1 className="portal-heading mt-3 text-5xl">@{record.agent.handle}</h1>
-       {record.agent.bio&&<p className="mt-4 text-sm leading-6 text-[#8b94a1]">{record.agent.bio}</p>}
-       <div className="mt-5 flex flex-wrap gap-2">{record.agent.topics?.slice(0,5).map(t=><span key={t} className="rounded-full border border-white/[0.06] px-2.5 py-1 text-[10px] text-[#838c99]">{t}</span>)}</div>
-       <div className="mt-6 border-t border-white/[0.055] pt-5 text-xs text-[#747d8a]">
-        <div className="flex justify-between py-1.5"><span>Model</span><span className="text-[#b7bdc5]">{record.agent.model??"AI agent"}</span></div>
-        <div className="flex justify-between py-1.5"><span>Identity age</span><span className="text-[#b7bdc5]">{record.ageDays} days</span></div>
-        <div className="flex justify-between py-1.5"><span>Status</span><span className="text-[#d7bc83]">Active</span></div>
+       <div className="flex items-center justify-between">
+        <div className="portal-kicker">Agent Passport</div>
+        {record.agent.retired_at
+         ?<span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[9px] uppercase tracking-[.1em] text-[#8b94a1]">Retired</span>
+         :<span className="flex items-center gap-1.5 rounded-full border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-2 py-0.5 text-[9px] uppercase tracking-[.1em] text-[#7fd9b8]"><span className="h-1.5 w-1.5 rounded-full bg-[#4fc6a4]"/>Active</span>}
+       </div>
+       <h1 className="portal-heading mt-3 truncate text-[26px] font-medium leading-tight" title={"@"+record.agent.handle}>@{record.agent.handle}</h1>
+       {record.agent.bio&&<p className="mt-3 text-sm leading-6 text-[#8b94a1]">{record.agent.bio}</p>}
+       <div className="mt-4 flex flex-wrap gap-2">{record.agent.topics?.slice(0,5).map(t=><span key={t} className="rounded-full border border-white/[0.06] px-2.5 py-1 text-[10px] text-[#838c99]">{t}</span>)}</div>
+       <div className="mt-6 space-y-1 border-t border-white/[0.055] pt-5 text-xs text-[#747d8a]">
+        <div className="flex items-center justify-between py-1.5"><span>Model</span><span className="text-[#b7bdc5]">{record.agent.model??"AI agent"}</span></div>
+        <div className="flex items-center justify-between py-1.5"><span>Identity age</span><span className="text-[#b7bdc5]">{record.ageDays} days</span></div>
+        <div className="flex items-center justify-between py-1.5"><span>Registered</span><span className="text-[#b7bdc5]">{new Date(record.agent.created_at).toLocaleDateString()}</span></div>
        </div>
       </div>
       <div className="grid grid-cols-2 gap-3"><Metric l="Verified" v={record.verified}/><Metric l="Attempts" v={record.attempted}/><Metric l="Success rate" v={rate+"%"}/><Metric l="Failures" v={record.rejected}/></div>
@@ -75,9 +80,9 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
         className="h-[590px]"
       />
       <div className="grid grid-cols-3 border-t border-white/[0.05] text-center">
-       <div className="p-4"><div className="text-lg">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified blocks</div></div>
-       <div className="border-x border-white/[0.05] p-4"><div className="text-lg">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending layers</div></div>
-       <div className="p-4"><div className="text-lg">{record.ageDays}d</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">foundation age</div></div>
+       <div className="p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified blocks</div></div>
+       <div className="border-x border-white/[0.05] p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending layers</div></div>
+       <div className="p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.ageDays}d</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">foundation age</div></div>
       </div>
     </div>
 
@@ -113,6 +118,6 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
  </div>
 }
 
-function Metric({l,v}:{l:string;v:string|number}){return <div className="rounded-2xl border border-white/[0.055] bg-[#0a0d12] p-4"><div className="text-xl">{v}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#606978]">{l}</div></div>}
+function Metric({l,v}:{l:string;v:string|number}){return <div className="rounded-2xl border border-white/[0.055] bg-[#0a0d12] p-4"><div className="text-xl font-semibold text-[#f0ece4]">{v}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#606978]">{l}</div></div>}
 function Row({a,b}:{a:string;b:string}){return <div className="flex justify-between border-b border-white/[0.04] py-2 last:border-0"><span>{a}</span><span className="text-[#b1b7bf]">{b}</span></div>}
 function ProofRow({p}:{p:ProofEvent}){const cls=p.status==="verified"?"text-[#d9bd84]":p.status==="pending"?"text-[#a897ff]":p.status==="rejected"?"text-[#ff7883]":"text-[#df9367]";return <div className="rounded-xl border border-white/[0.05] bg-[#0c0f14] p-3"><div className="flex items-center justify-between gap-3"><div className="text-[10px] uppercase tracking-[.1em] text-[#7a8390]">{p.category.replaceAll("_"," ")}</div><div className={"text-[9px] uppercase tracking-[.1em] "+cls}>{p.status}</div></div><div className="mt-2 flex justify-between gap-3 text-[10px] text-[#596270]"><span>{p.verification_method.replaceAll("_"," ")}</span><span>{new Date(p.created_at).toLocaleDateString()}</span></div></div>}
