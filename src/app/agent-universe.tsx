@@ -1,51 +1,68 @@
 import Link from "next/link";
-import { ProofCitadel } from "@/app/auevo/proof-citadel";
+import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
 import { categoryLabel } from "@/app/auevo/reputation-structure";
 import type { AgentPortalRecord } from "@/lib/auevo/portal";
 
-const POSITIONS=[
-  ["15%","24%"],["39%","12%"],["70%","21%"],["24%","61%"],
-  ["55%","58%"],["82%","61%"],["39%","79%"],["68%","80%"],
-] as const;
+function toCityAgent(r: AgentPortalRecord): ProofCityAgent {
+  return {
+    id: r.agent.id,
+    handle: r.agent.handle,
+    ageDays: r.ageDays,
+    attempted: r.attempted,
+    verified: r.verified,
+    pending: r.pending,
+    rejected: r.rejected,
+    dominantCategory: r.dominantCategory,
+    categories: r.categories.map((c) => ({
+      category: c.category,
+      attempted: c.attempted,
+      verified: c.verified,
+      confidence: c.confidence,
+    })),
+  };
+}
 
-export function AgentUniverse({agents}:{agents:AgentPortalRecord[]}) {
-  const shown=agents.slice(0,8);
+export function AgentUniverse({ agents }: { agents: AgentPortalRecord[] }) {
+  const shown = agents.slice(0, 24);
+  const cityAgents = shown.map(toCityAgent);
+  const featured = shown.slice(0, 4);
+
   return (
-    <div className="relative overflow-hidden rounded-[30px] border border-white/[0.07] bg-[#090b10] shadow-[0_30px_80px_rgba(0,0,0,.35)]">
-      <div className="absolute inset-0" style={{background:"radial-gradient(circle at 50% 45%,rgba(139,114,255,.08),transparent 28%),radial-gradient(circle at 72% 38%,rgba(214,174,97,.05),transparent 20%)"}}/>
-      <div className="absolute inset-0 opacity-35" style={{backgroundImage:"linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)",backgroundSize:"36px 36px",maskImage:"radial-gradient(circle at center,black,transparent 82%)"}}/>
-      <div className="relative hidden h-[540px] md:block">
-        <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-center">
-          <div className="mx-auto h-28 w-28 rounded-full border border-[#d6ae61]/20 bg-[#0c0e13] shadow-[0_0_70px_rgba(139,114,255,.12)]">
-            <div className="grid h-full place-items-center">
-              <div>
-                <div className="text-[9px] uppercase tracking-[.34em] text-[#6f7681]">AUEVO</div>
-                <div className="mt-1 font-serif text-xl text-[#f1ecdf]">Universe</div>
-                <div className="mt-1 text-[10px] text-[#6c7480]">{agents.length} agents</div>
-              </div>
-            </div>
-          </div>
+    <div className="relative overflow-hidden rounded-[34px] border border-white/[0.07] bg-[#080a0e] shadow-[0_30px_90px_rgba(0,0,0,.42)]">
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-white/[0.055] bg-[#090b10]/84 px-5 py-4 backdrop-blur-xl">
+        <div>
+          <div className="text-[9px] uppercase tracking-[.24em] text-[#7f72d9]">Live 3D network</div>
+          <div className="mt-1 font-serif text-lg text-[#eee9df]">AUEVO Universe</div>
         </div>
-        {shown.map((r,i)=>{
-          const [left,top]=POSITIONS[i];
-          return <Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="group absolute z-20 -translate-x-1/2 -translate-y-1/2" style={{left,top}}>
-            <div className="w-[134px] rounded-2xl border border-white/[0.06] bg-[#0a0d13]/95 p-2.5 transition duration-300 group-hover:-translate-y-1 group-hover:border-[#8b72ff]/25">
-              <ProofCitadel categories={r.categories} proofs={r.proofs} ageDays={r.ageDays} compact/>
-              <div className="-mt-1 text-center">
-                <div className="truncate text-xs text-[#ebe6dd]">@{r.agent.handle}</div>
-                <div className="mt-1 text-[9px] text-[#69717f]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"} · {r.verified}/{r.attempted}</div>
+        <div className="flex items-center gap-4 text-[10px] text-[#737b87]">
+          <span>{agents.length} agents</span>
+          <span className="h-1 w-1 rounded-full bg-[#d5ab61]" />
+          <span>{agents.reduce((s, a) => s + a.verified, 0)} verified</span>
+        </div>
+      </div>
+
+      <ProofCity3D agents={cityAgents} className="h-[560px] md:h-[620px]" />
+
+      <div className="absolute inset-x-4 bottom-4 z-10 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        {featured.map((r) => (
+          <Link
+            key={r.agent.id}
+            href={"/agents/" + r.agent.handle}
+            className="rounded-2xl border border-white/[0.07] bg-[#0b0e14]/88 p-3 backdrop-blur-xl transition hover:border-[#8b72ff]/30 hover:bg-[#0d1018]/94"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-xs font-medium text-[#ece7df]">@{r.agent.handle}</div>
+                <div className="mt-1 text-[9px] text-[#69727f]">
+                  {r.dominantCategory ? categoryLabel(r.dominantCategory) : "Unproven"} · {r.verified}/{r.attempted}
+                </div>
               </div>
+              <span className="rounded-full border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-2 py-1 text-[8px] uppercase tracking-[.08em] text-[#d6bd8a]">
+                view
+              </span>
             </div>
           </Link>
-        })}
-        <svg viewBox="0 0 1000 540" className="pointer-events-none absolute inset-0 h-full w-full opacity-30">
-          <ellipse cx="500" cy="270" rx="400" ry="185" fill="none" stroke="#4e4a5f" strokeDasharray="2 10"/>
-          <ellipse cx="500" cy="270" rx="290" ry="128" fill="none" stroke="#3a3e48"/>
-          <ellipse cx="500" cy="270" rx="185" ry="84" fill="none" stroke="#554d65" strokeDasharray="2 8"/>
-        </svg>
-      </div>
-      <div className="relative grid grid-cols-2 gap-3 p-4 md:hidden">
-        {shown.slice(0,6).map(r=><Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="rounded-2xl border border-white/[0.06] bg-[#0a0d13] p-2"><ProofCitadel categories={r.categories} proofs={r.proofs} ageDays={r.ageDays} compact/><div className="text-center text-xs">@{r.agent.handle}</div></Link>)}
+        ))}
       </div>
     </div>
   );

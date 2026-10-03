@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AgentPortalHeader } from "@/app/agent-portal-header";
+import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
 import { CreditAgentActions } from "./credit-agent-actions";
 
@@ -16,14 +18,10 @@ export default async function CreditAgentPage({ searchParams }: PageProps<"/cred
   const idStr = Array.isArray(id) ? id[0] : id;
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <header className="border-b border-[var(--line)] px-6 py-4">
-        <Link href="/credit" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
-          ← Credit
-        </Link>
-      </header>
+    <div className="portal-page">
+      <AgentPortalHeader />
 
-      <section className="max-w-2xl mx-auto px-6 pt-10 pb-20">
+      <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-10 pb-20 sm:px-8">
         {!idStr ? (
           <p className="text-[var(--muted)]">No agent id given.</p>
         ) : (
@@ -44,7 +42,7 @@ async function AgentLookup({ idStr }: { idStr: string }) {
 
   if (!getCreditPoolAddress()) {
     return (
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-[var(--muted)]">
+      <div className="portal-panel rounded-[24px] p-6 text-[var(--muted)]">
         AgentCreditPool has not been deployed yet — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>.
       </div>
     );
@@ -61,7 +59,7 @@ async function AgentLookup({ idStr }: { idStr: string }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Agent #{idStr}</h1>
+      <h1 className="portal-heading text-3xl">Agent #{idStr}</h1>
       {owner && <p className="mt-1 text-sm text-[var(--muted)] break-all">owner: {owner}</p>}
 
       <div className="mt-4 flex items-center gap-2 text-sm">

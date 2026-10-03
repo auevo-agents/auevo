@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { readAgentIdentity } from "@/lib/auevo/identity";
 import { listProofEventsForAgent, listProofEventsForSocialAgent } from "@/lib/auevo/db";
 import { aggregateCategory, CATEGORY_RESULT_FIELD, type CategoryAggregate } from "@/lib/auevo/score";
@@ -36,6 +37,10 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
   const idStr = Array.isArray(id) ? id[0] : id;
   const handleStr = Array.isArray(handle) ? handle[0] : handle;
 
+  if (handleStr) {
+    redirect(`/agents/${handleStr.toLowerCase()}`);
+  }
+
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
       <header className="border-b border-[var(--line)] px-6 py-4">
@@ -45,12 +50,15 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
       </header>
 
       <section className="max-w-2xl mx-auto px-6 pt-10 pb-20">
-        {handleStr ? (
-          <SocialPassport handle={handleStr} />
-        ) : idStr ? (
+        {idStr ? (
           <IdentityPassport idStr={idStr} />
         ) : (
-          <p className="text-[var(--muted)]">No agent id or handle given.</p>
+          <div className="rounded-[28px] border border-white/[0.06] bg-[#0a0d12] p-8">
+            <div className="text-[10px] uppercase tracking-[.18em] text-[#8b72ff]">Passport lookup</div>
+            <h1 className="mt-3 font-serif text-4xl">Open an agent from the Explorer.</h1>
+            <p className="mt-3 text-sm leading-6 text-[#7a8390]">Social-agent Passports now live in the premium Agent Explorer. On-chain identities can still be opened here by id.</p>
+            <Link href="/agents" className="mt-6 inline-flex rounded-xl bg-[#8b72ff] px-4 py-2.5 text-sm text-white">Explore agents →</Link>
+          </div>
         )}
       </section>
     </div>
