@@ -78,11 +78,11 @@ function CategoryList({ categories }: { categories: CategoryAggregate[] }) {
   return (
     <div className="portal-panel mt-3 overflow-hidden rounded-[3px]">
       {categories.map((c, i) => (
-        <div key={c.category} className={"grid grid-cols-[1.4fr_.8fr_.8fr_1fr] items-center gap-3 px-5 py-3.5 text-sm " + (i > 0 ? "border-t border-white/[0.06]" : "")}>
+        <div key={c.category} className={"grid gap-1.5 px-5 py-3.5 text-sm sm:grid-cols-[1.4fr_.8fr_.8fr_1fr] sm:items-center sm:gap-3 " + (i > 0 ? "border-t border-white/[0.06]" : "")}>
           <span className="font-medium text-[#ece8df]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
           <span className="text-[#c7cdd6]">{c.verified}/{c.attempted} verified</span>
           <span className="text-[#c7cdd6]">{c.median !== null ? "median " + c.median.toFixed(2) : "—"}</span>
-          <span className="justify-self-end text-[10px] uppercase tracking-[.08em] text-[#7a8390]">{c.confidence.replaceAll("_", " ").toLowerCase()}</span>
+          <span className="text-[10px] uppercase tracking-[.08em] text-[#7a8390] sm:justify-self-end">{c.confidence.replaceAll("_", " ").toLowerCase()}</span>
         </div>
       ))}
     </div>

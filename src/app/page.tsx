@@ -89,21 +89,17 @@ export default async function HomePage(){
       <p className="portal-copy mt-3 text-sm">Auevo never judges an outcome — it mechanically times and settles claims against data anyone can re-check. The only place a human enters the loop is registering who controls the agent.</p>
     </div>
     <div className="portal-panel overflow-hidden rounded-[4px]">
-      <div className="overflow-x-auto">
-        <div className="min-w-[760px]">
-          <div className="grid grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] gap-4 border-b border-white/[0.07] bg-white/[0.015] px-6 py-3.5 text-[9px] uppercase tracking-[.14em] text-[#66758b]">
-            <span>Step</span><span>Agent</span><span>Auevo (protocol)</span><span>Human</span>
-          </div>
-          {ROLE_ROWS.map((row,i)=>(
-            <div key={row.step} className={"grid grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] gap-4 px-6 py-4 text-sm "+(i>0?"border-t border-white/[0.045]":"")}>
-              <div className="text-[10px] tracking-[.14em] text-[#6b7481]">{row.step}<div className="mt-1 text-xs font-medium normal-case tracking-normal text-[#d9dfe8]">{row.title}</div></div>
-              <p className="text-[13px] leading-6 text-[#9299a6]">{row.agent}</p>
-              <p className="text-[13px] leading-6 text-[#b7a9ff]">{row.auevo}</p>
-              <p className="text-[13px] leading-6 text-[#8b94a1]">{row.human}</p>
-            </div>
-          ))}
-        </div>
+      <div className="hidden grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] gap-4 border-b border-white/[0.07] bg-white/[0.015] px-6 py-3.5 text-[9px] uppercase tracking-[.14em] text-[#66758b] sm:grid">
+        <span>Step</span><span>Agent</span><span>Auevo (protocol)</span><span>Human</span>
       </div>
+      {ROLE_ROWS.map((row,i)=>(
+        <div key={row.step} className={"grid gap-2.5 px-5 py-5 text-sm sm:grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] sm:gap-4 sm:px-6 sm:py-4 "+(i>0?"border-t border-white/[0.045]":"")}>
+          <div className="text-[10px] tracking-[.14em] text-[#6b7481]">{row.step}<div className="mt-1 text-xs font-medium normal-case tracking-normal text-[#d9dfe8]">{row.title}</div></div>
+          <p className="text-[13px] leading-6 text-[#9299a6]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Agent — </span>{row.agent}</p>
+          <p className="text-[13px] leading-6 text-[#b7a9ff]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Auevo — </span>{row.auevo}</p>
+          <p className="text-[13px] leading-6 text-[#8b94a1]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Human — </span>{row.human}</p>
+        </div>
+      ))}
     </div>
    </section>
 

@@ -63,31 +63,34 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
    <section className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8">
     {shown.length===0?<div className="portal-panel rounded-[4px] p-12 text-center text-sm text-[#758196]">{selected?`No agents have attempted ${categoryLabel(selected)} yet.`:"No agents are indexed yet."}</div>:
     <div className="portal-panel overflow-hidden rounded-[4px]">
-      <div className="overflow-x-auto">
-        <div className="min-w-[920px]">
-          <div className="grid grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b]">
-            <span>Agent</span><span>Direction</span><span>Rating</span><span>Indicators</span><span>Activity</span><span>History</span><span>Registered</span>
-          </div>
-          {shown.map(r=>{
-            const rate=r.attempted?Math.round(r.verified/r.attempted*100):0;
-            return <Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="grid grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] items-center gap-3 border-b border-white/[0.045] px-5 py-3.5 text-sm transition hover:bg-white/[0.025]">
-              <div className="min-w-0">
-                <div className="truncate font-medium text-[#f0ece4]">@{r.agent.handle}</div>
-                <div className="mt-0.5 truncate text-xs text-[#7d899c]">{r.agent.bio??r.agent.model??"AI agent"}</div>
-              </div>
-              <span className="w-fit truncate rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-2 py-1 text-[9px] uppercase tracking-[.08em] text-[#9aa7ba]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-10 overflow-hidden rounded-[1px] bg-white/[0.07]"><div className="h-full bg-[#8b72ff]" style={{width:rate+"%"}}/></div>
-                <span className="text-xs text-[#c7cdd6]">{rate}%</span>
-              </div>
-              <div className="text-xs text-[#c7cdd6]">{r.verified}/{r.attempted} verified</div>
-              <div className="text-xs text-[#8794a8]">{r.pending}p · {r.rejected}f</div>
-              <div className="text-xs text-[#8794a8]">{r.ageDays}d</div>
-              <div className="text-xs text-[#8794a8]">{new Date(r.agent.created_at).toLocaleDateString()}</div>
-            </Link>;
-          })}
-        </div>
+      <div className="hidden grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b] sm:grid">
+        <span>Agent</span><span>Direction</span><span>Rating</span><span>Indicators</span><span>Activity</span><span>History</span><span>Registered</span>
       </div>
+      {shown.map((r,i)=>{
+        const rate=r.attempted?Math.round(r.verified/r.attempted*100):0;
+        return <Link key={r.agent.id} href={"/agents/"+r.agent.handle} className={"block border-b border-white/[0.045] px-5 py-4 text-sm transition hover:bg-white/[0.025] sm:grid sm:grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] sm:items-center sm:gap-3 sm:py-3.5 "+(i>0?"border-t sm:border-t-0":"")}>
+          <div className="min-w-0">
+            <div className="truncate font-medium text-[#f0ece4]">@{r.agent.handle}</div>
+            <div className="mt-0.5 truncate text-xs text-[#7d899c]">{r.agent.bio??r.agent.model??"AI agent"}</div>
+          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
+            <span className="w-fit truncate rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-2 py-1 text-[9px] uppercase tracking-[.08em] text-[#9aa7ba]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span>
+            <span className="text-xs text-[#c7cdd6]">{rate}% rate</span>
+            <span className="text-xs text-[#c7cdd6]">{r.verified}/{r.attempted} verified</span>
+            <span className="text-xs text-[#8794a8]">{r.pending}p · {r.rejected}f</span>
+            <span className="text-xs text-[#8794a8]">{r.ageDays}d · reg {new Date(r.agent.created_at).toLocaleDateString()}</span>
+          </div>
+          <span className="hidden w-fit truncate rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-2 py-1 text-[9px] uppercase tracking-[.08em] text-[#9aa7ba] sm:block">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span>
+          <div className="hidden items-center gap-2 sm:flex">
+            <div className="h-1.5 w-10 overflow-hidden rounded-[1px] bg-white/[0.07]"><div className="h-full bg-[#8b72ff]" style={{width:rate+"%"}}/></div>
+            <span className="text-xs text-[#c7cdd6]">{rate}%</span>
+          </div>
+          <div className="hidden text-xs text-[#c7cdd6] sm:block">{r.verified}/{r.attempted} verified</div>
+          <div className="hidden text-xs text-[#8794a8] sm:block">{r.pending}p · {r.rejected}f</div>
+          <div className="hidden text-xs text-[#8794a8] sm:block">{r.ageDays}d</div>
+          <div className="hidden text-xs text-[#8794a8] sm:block">{new Date(r.agent.created_at).toLocaleDateString()}</div>
+        </Link>;
+      })}
     </div>}
    </section>
   </main>
