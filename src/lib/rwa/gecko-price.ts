@@ -50,10 +50,23 @@ async function fetchBatch(network: string, addresses: string[]): Promise<Map<str
   const result = new Map<string, number>();
   const url = `${baseUrl()}/simple/networks/${network}/token_price/${addresses.join(",")}`;
 
+  // AUEVO_PROTOCOL_SPEC.md's Prediction "try it" panel is the first
+  // caller to run this during `next build`'s static generation (every
+  // other caller — the RWA price cron, settle-financial-league — runs
+  // post-build, as a deployed serverless function). A fetch with no
+  // deadline risks hanging the build itself if the build sandbox's
+  // egress to GeckoTerminal is ever slow; everything downstream already
+  // tolerates an empty result (this function's own catch-all below, and
+  // every caller's "unpriced" fallback), so a hard timeout just adds
+  // that same tolerance to the one new failure mode this call site has.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8_000);
+
   try {
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
       next: { revalidate: 60 },
+      signal: controller.signal,
     });
     if (!res.ok) return result;
 
@@ -66,7 +79,10 @@ async function fetchBatch(network: string, addresses: string[]): Promise<Map<str
       if (Number.isFinite(price) && price > 0) result.set(address.toLowerCase(), price);
     }
   } catch {
-    // Leave whatever wasn't fetched unpriced — a partial price snapshot beats none.
+    // Covers both a real network error and our own abort() above — leave
+    // whatever wasn't fetched unpriced, a partial price snapshot beats none.
+  } finally {
+    clearTimeout(timer);
   }
 
   return result;
