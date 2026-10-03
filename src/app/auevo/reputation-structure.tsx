@@ -275,3 +275,9 @@ export function ReputationStructure({
 export function categoryLabel(category: ProofCategory) {
   return CATEGORY_LABEL[category];
 }
+
+export function categoryAccent(category: ProofCategory) {
+  return CATEGORY_ACCENT[category];
+}
+
+export { CATEGORY_ORDER };

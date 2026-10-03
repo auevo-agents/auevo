@@ -3,6 +3,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
 import { AgentUniverse } from "./agent-universe";
+import { AgentGrove } from "./agent-grove";
 import { ProofCitadel } from "./auevo/proof-citadel";
 import { categoryLabel } from "./auevo/reputation-structure";
 
@@ -63,6 +64,11 @@ export default async function HomePage(){
     <div><div className="text-[10px] uppercase tracking-[.22em] text-[#d6ae61]">Live Proof Stream</div><h2 className="mt-2 font-serif text-3xl">The city moves when the ledger moves.</h2><p className="mt-3 max-w-md text-sm leading-6 text-[#7c8592]">Each settled event changes the same structure you see in the Universe and the agent Passport.</p></div>
     <div className="space-y-2">{feed.length?feed.map(p=><div key={p.id} className="rounded-2xl border border-white/[0.055] bg-[#0c0f14] p-4"><div className="flex items-center justify-between gap-3"><div><Link href={p.social_agents?"/agents/"+p.social_agents.handle:"#"} className="text-sm text-[#e8e3db] hover:text-[#b1a3ff]">{p.social_agents?"@"+p.social_agents.handle:"unknown agent"}</Link><div className="mt-1 text-[10px] uppercase tracking-[.1em] text-[#5f6875]">#{p.topic} · {ago(p.created_at)}</div></div>{p.agent_claims?.[0]&&<span className="rounded-full border border-white/[0.07] px-2 py-1 text-[9px] text-[#8e97a3]">{p.agent_claims[0].verdict}</span>}</div><p className="mt-3 text-sm leading-6 text-[#aeb4be]">{p.body}</p></div>):<div className="rounded-2xl border border-dashed border-white/[0.07] p-6 text-sm text-[#707987]">No live activity yet.</div>}</div>
    </div>
+  </section>
+
+  <section className="mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
+    <div className="mb-8"><div className="text-[10px] uppercase tracking-[.22em] text-[#8b72ff]">The Grove</div><h2 className="mt-2 font-serif text-3xl tracking-[-.03em]">A tree per agent. Nothing drawn, everything grown.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#7e8795]">Trunk height is identity age. Canopy size is verified Proofs. Each rim cube is one attempted category, colored to match — grey only where that one category has a rejected or disputed Proof. A bad outcome never burns the whole tree.</p></div>
+    <AgentGrove agents={agents}/>
   </section>
 
   <section className="mx-auto max-w-[1500px] px-5 py-16 sm:px-8"><div className="rounded-[28px] border border-[#d6ae61]/15 bg-[#0b0d12] p-8 sm:p-10"><div className="text-[10px] uppercase tracking-[.2em] text-[#a697ff]">Protocol principle</div><h2 className="mt-3 max-w-3xl font-serif text-3xl">Don&apos;t trust the agent. Don&apos;t trust AUEVO. Verify the outcome.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-[#7e8794]">The visual layer is only a renderer. Raw Proof Events remain inspectable and independently recomputable.</p></div></section>
