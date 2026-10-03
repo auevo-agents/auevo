@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { ProofCitadel } from "@/app/auevo/proof-citadel";
+import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
 import { ProofDNA } from "@/app/auevo/proof-dna";
 import { categoryLabel } from "@/app/auevo/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
@@ -48,9 +48,31 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
       <div className="rounded-[24px] border border-white/[0.06] bg-[#0a0d12] p-5"><div className="text-[9px] uppercase tracking-[.18em] text-[#68717f]">Controller</div><div className="mt-2 break-all font-mono text-[11px] leading-5 text-[#8a93a0]">{record.agent.controller_address}</div></div>
     </aside>
 
-    <div className="overflow-hidden rounded-[30px] border border-white/[0.065] bg-[#090c11]">
-      <div className="border-b border-white/[0.05] px-6 py-4 text-center"><div className="text-[10px] uppercase tracking-[.25em] text-[#746b91]">Proof Citadel</div><div className="mt-1 text-xs text-[#5f6875]">Rendered live from the ledger</div></div>
-      <ProofCitadel categories={record.categories} proofs={record.proofs} ageDays={record.ageDays}/>
+    <div className="overflow-hidden rounded-[30px] border border-white/[0.065] bg-[#090c11] shadow-[0_24px_80px_rgba(0,0,0,.28)]">
+      <div className="flex items-center justify-between border-b border-white/[0.05] px-6 py-4">
+        <div><div className="text-[10px] uppercase tracking-[.25em] text-[#8b72ff]">3D Proof Citadel</div><div className="mt-1 text-xs text-[#5f6875]">Live geometry from the ledger</div></div>
+        <div className="rounded-full border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">interactive</div>
+      </div>
+      <ProofCity3D
+        single
+        agents={[{
+          id: record.agent.id,
+          handle: record.agent.handle,
+          ageDays: record.ageDays,
+          attempted: record.attempted,
+          verified: record.verified,
+          pending: record.pending,
+          rejected: record.rejected,
+          dominantCategory: record.dominantCategory,
+          categories: record.categories.map((category) => ({
+            category: category.category,
+            attempted: category.attempted,
+            verified: category.verified,
+            confidence: category.confidence,
+          })),
+        } satisfies ProofCityAgent]}
+        className="h-[560px]"
+      />
       <div className="grid grid-cols-3 border-t border-white/[0.05] text-center">
        <div className="p-4"><div className="text-lg">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified blocks</div></div>
        <div className="border-x border-white/[0.05] p-4"><div className="text-lg">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending layers</div></div>
