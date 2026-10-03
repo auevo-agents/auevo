@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#07080b] text-[#f3f0ea]">
+    <div className="docs-shell min-h-screen text-[#f3f0ea]">
       <AgentPortalHeader />
       <div className="mx-auto max-w-[1500px] border-x border-white/[0.04] bg-[#080a0e]">
         <div className="flex items-center justify-between border-b border-white/[0.055] px-6 py-5 lg:px-8">
