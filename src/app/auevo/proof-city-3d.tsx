@@ -61,78 +61,101 @@ function volume(n: number) {
 
 function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1): Box[] {
   const boxes: Box[] = [];
-  const age = Math.max(1, Math.min(7, Math.ceil(agent.ageDays / 60)));
-  for (let r = 0; r < age; r++) {
-    const side = (3.3 + r * 0.26) * scale;
-    const y = 0.08 + r * 0.09;
-    boxes.push({ x: ox, y, z: oz, sx: side, sy: 0.12 * scale, sz: side, color: [0.10, 0.11, 0.13], emissive: 0 });
+  const age = Math.max(1, Math.min(7, Math.ceil(agent.ageDays / 45)));
+
+  // Foundation terraces: identity age is always visible, even before the first Proof.
+  for (let r = 0; r < age + 2; r++) {
+    const side = (3.7 - r * 0.22) * scale;
+    boxes.push({
+      x: ox,
+      y: 0.06 + r * 0.085,
+      z: oz,
+      sx: side,
+      sy: 0.11 * scale,
+      sz: side,
+      color: r === age + 1 ? [0.12, 0.15, 0.22] : [0.07, 0.10, 0.16],
+      emissive: r === age + 1 ? 0.03 : 0,
+    });
   }
 
+  // Architectural corner pylons make the identity readable before it has a large history.
+  const corner = 1.34 * scale;
+  [[-corner,-corner],[corner,-corner],[-corner,corner],[corner,corner]].forEach(([dx,dz],i)=>{
+    const h=(0.52 + age * 0.07 + (agent.verified>0 && i%2===0 ? 0.22 : 0)) * scale;
+    boxes.push({x:ox+dx,y:0.28+h/2,z:oz+dz,sx:0.28*scale,sy:h,sz:0.28*scale,color:[0.10,0.13,0.20],emissive:0.02});
+    boxes.push({x:ox+dx,y:0.31+h,z:oz+dz,sx:0.13*scale,sy:0.12*scale,sz:0.13*scale,color:i%2?[0.86,0.63,0.28]:[0.56,0.39,1],emissive:0.52});
+  });
+
   const cats = agent.categories.length ? agent.categories : [{ category: "identity", attempted: 0, verified: 0, confidence: "INSUFFICIENT" }];
-  cats.slice(0, 9).forEach((c, i) => {
+  const allCategories = Object.keys(CATEGORY_COLORS);
+  allCategories.slice(0, 9).forEach((category, i) => {
+    const c = cats.find((item)=>item.category===category) ?? { category, attempted:0, verified:0, confidence:"INSUFFICIENT" };
     const angle = (i / 9) * Math.PI * 2;
-    const radius = 0.82 + (i % 2) * 0.24;
+    const radius = 0.83 + (i % 2) * 0.27;
     const d = volume(c.attempted);
-    const height = (0.34 + d * 2.9) * scale;
-    const width = (0.24 + d * 0.28) * scale;
+    const height = (0.46 + d * 3.45) * scale;
+    const width = (0.23 + d * 0.34) * scale;
     const x = ox + Math.cos(angle) * radius * scale;
     const z = oz + Math.sin(angle) * radius * scale;
     const color = CATEGORY_COLORS[c.category] ?? [0.52, 0.45, 0.78];
     const ratio = c.attempted ? c.verified / c.attempted : 0;
     const conf = CONFIDENCE[c.confidence] ?? 0.18;
-    const tiers = Math.max(1, Math.min(6, Math.ceil(1 + d * 5)));
+    const tiers = Math.max(2, Math.min(8, Math.ceil(2 + d * 6)));
 
     for (let t = 0; t < tiers; t++) {
       const th = height / tiers;
-      const taper = 1 - (t / tiers) * 0.34;
-      const lit = t / tiers < ratio;
+      const taper = 1 - (t / tiers) * 0.30;
+      const lit = c.attempted > 0 && t / tiers < ratio;
       boxes.push({
         x,
-        y: 0.28 + t * th + th / 2,
+        y: 0.34 + t * th + th / 2,
         z,
         sx: width * taper,
-        sy: Math.max(0.12, th * 0.88),
+        sy: Math.max(0.10, th * 0.86),
         sz: width * taper,
-        color: lit ? color : [0.10, 0.12, 0.16],
-        emissive: lit ? 0.22 + conf * 0.52 : 0,
+        color: lit ? color : [0.075, 0.095, 0.145],
+        emissive: lit ? 0.28 + conf * 0.58 : 0.012,
       });
+    }
+
+    // Tiny proof pixels make growth visibly discrete.
+    const pixels = Math.min(10, c.verified);
+    for(let p=0;p<pixels;p++){
+      const px=x + (((p%3)-1)*0.16)*scale;
+      const pz=z + ((((p*2)%3)-1)*0.14)*scale;
+      const py=0.42 + height + (p%4)*0.075*scale;
+      boxes.push({x:px,y:py,z:pz,sx:0.07*scale,sy:0.07*scale,sz:0.07*scale,color,emissive:0.72});
     }
 
     if (agent.pending > 0 && i === 0) {
-      boxes.push({
-        x,
-        y: 0.32 + height + 0.12,
-        z,
-        sx: width * 0.72,
-        sy: 0.12,
-        sz: width * 0.72,
-        color,
-        emissive: 0.35,
-      });
+      boxes.push({x,y:0.38+height+0.13,z,sx:width*.76,sy:.12*scale,sz:width*.76,color,emissive:.38});
     }
-
     if (agent.rejected > 0 && i === 1) {
-      boxes.push({
-        x: x + 0.16 * scale,
-        y: 0.35 + height * 0.42,
-        z: z + 0.12 * scale,
-        sx: width * 0.34,
-        sy: 0.10,
-        sz: width * 1.12,
-        color: [0.88, 0.18, 0.24],
-        emissive: 0.22,
-      });
+      boxes.push({x:x+.16*scale,y:.38+height*.42,z:z+.12*scale,sx:width*.34,sy:.10*scale,sz:width*1.15,color:[.90,.18,.25],emissive:.28});
     }
   });
 
-  const coreHeight = (0.58 + volume(agent.verified) * 3.2) * scale;
-  const coreColor: [number, number, number] = [0.88, 0.65, 0.29];
-  boxes.push({ x: ox, y: 0.35 + coreHeight / 2, z: oz, sx: 0.44 * scale, sy: coreHeight, sz: 0.44 * scale, color: coreColor, emissive: 0.46 });
-  boxes.push({ x: ox, y: 0.35 + coreHeight + 0.13, z: oz, sx: 0.20 * scale, sy: 0.22 * scale, sz: 0.20 * scale, color: [0.60, 0.42, 1], emissive: 0.72 });
+  const coreHeight = (1.12 + volume(agent.verified + agent.attempted) * 3.3) * scale;
+  boxes.push({x:ox,y:.42+coreHeight/2,z:oz,sx:.58*scale,sy:coreHeight,sz:.58*scale,color:[.10,.13,.20],emissive:.02});
+  boxes.push({x:ox,y:.42+coreHeight*.58,z:oz,sx:.36*scale,sy:coreHeight*.75,sz:.36*scale,color:[.88,.65,.29],emissive:.54});
+  boxes.push({x:ox,y:.42+coreHeight+.18,z:oz,sx:.25*scale,sy:.28*scale,sz:.25*scale,color:[.60,.42,1],emissive:.86});
 
+  // Gold/violet bridge pixels are derived from total verified/attempted history.
+  const bridgeCount=Math.max(2,Math.min(14,agent.attempted+agent.verified+2));
+  for(let i=0;i<bridgeCount;i++){
+    const a=(i/bridgeCount)*Math.PI*2;
+    const rr=(1.55+(i%3)*.12)*scale;
+    boxes.push({
+      x:ox+Math.cos(a)*rr,
+      y:(.30+(i%2)*.07)*scale,
+      z:oz+Math.sin(a)*rr,
+      sx:.08*scale,sy:.08*scale,sz:.08*scale,
+      color:i%2?[.84,.62,.27]:[.56,.39,1],
+      emissive:.48,
+    });
+  }
   return boxes;
 }
-
 function sceneBoxes(agents: ProofCityAgent[], single: boolean): Box[] {
   if (single) return agents.length ? cityForAgent(agents[0], 0, 0, 1.55) : [];
   const boxes: Box[] = [];
@@ -276,8 +299,8 @@ export function ProofCity3D({
   },[boxes,single]);
 
   return (
-    <div className={"relative overflow-hidden bg-[#080a0e] "+className}>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(112,86,214,.13),transparent_35%),radial-gradient(circle_at_65%_18%,rgba(205,157,74,.08),transparent_24%)]"/>
+    <div className={"relative overflow-hidden bg-[#0b111a] "+className}>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(139,114,255,.18),transparent_35%),radial-gradient(circle_at_65%_18%,rgba(214,174,97,.12),transparent_24%)]"/>
       <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":"cursor-grab")}/>
       <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-white/[0.07] bg-black/35 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#7e8793] backdrop-blur-md">
         Drag to orbit · Scroll to zoom
