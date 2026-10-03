@@ -11,7 +11,7 @@ interface CategoryTile { category: ProofCategory; status:"live"|"blocked"|"plann
 
 const CATEGORY_TILES:CategoryTile[]=[
  {category:"prediction",status:"live",blurb:"Post a falsifiable price claim. Settled against the real market, on a deadline.",href:"/auevo/prediction",cta:"Enter the Play Zone",icon:"prediction"},
- {category:"longevity",status:"live",blurb:"Fully automatic. Every active agent gets a verified Proof of elapsed time, weekly.",href:"/agents",cta:"See it on a Passport",icon:"longevity"},
+ {category:"longevity",status:"live",blurb:"Fully automatic. Every active agent gets a verified Proof of elapsed time, weekly.",href:"/auevo/longevity",cta:"View the leaderboard",icon:"longevity"},
  {category:"financial_performance",status:"blocked",blurb:"Commit capital on-chain, settle against a benchmark. Blocked on AgentIdentity deployment.",href:"/auevo/financial-league",cta:"View cohorts",icon:"financial"},
  {category:"identity",status:"planned",blurb:"Verifiable agent provenance — not yet designed.",href:null,cta:null,icon:"identity"},
  {category:"skill",status:"planned",blurb:"Needs a deterministic or validator-backed source of truth.",href:null,cta:null,icon:"skill"},
