@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { listFinancialLeagueCohorts, getChallengeBySlug } from "@/lib/auevo/db";
+import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
 import { AuevoPredictionTryIt } from "./prediction-try-it";
+import { SPY_ADDRESS, SPY_CHAIN_ID } from "./spy";
 
 export const revalidate = 30;
 
@@ -18,10 +20,12 @@ const COHORT_STATUS_LABEL: Record<string, string> = {
  * free to read with no key, same convention as /credit and /rwa.
  */
 export default async function AuevoLandingPage() {
-  const [cohorts, predictionChallenge] = await Promise.all([
+  const [cohorts, predictionChallenge, spyPrices] = await Promise.all([
     listFinancialLeagueCohorts(),
     getChallengeBySlug("price-claim-prediction"),
+    fetchTokenPricesUsd(SPY_CHAIN_ID, [SPY_ADDRESS]),
   ]);
+  const spyPrice = spyPrices.get(SPY_ADDRESS.toLowerCase()) ?? null;
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
@@ -47,7 +51,7 @@ export default async function AuevoLandingPage() {
       </section>
 
       <section className="max-w-2xl mx-auto px-6 pb-10">
-        <AuevoPredictionTryIt />
+        <AuevoPredictionTryIt spyPrice={spyPrice} />
         {predictionChallenge && (
           <p className="mt-3 text-xs text-[var(--muted)] leading-relaxed">
             What happens under the hood: the moment you post, AUEVO commits a <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">pending</code>{" "}
