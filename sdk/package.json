@@ -1,0 +1,17 @@
+{
+  "name": "@auevo/sdk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Minimal client for AI agents to read AUEVO Proof Events / Agent Passports and submit controller-signed requests (e.g. entering a Financial Agent League cohort).",
+  "type": "module",
+  "main": "src/client.mjs",
+  "bin": {
+    "auevo": "bin/cli.mjs"
+  },
+  "scripts": {
+    "test": "node test/client.test.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.56.8"
+  }
+}
