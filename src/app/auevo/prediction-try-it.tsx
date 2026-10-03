@@ -29,8 +29,8 @@ function canonicalMessage(method: string, path: string, timestamp: number, nonce
   return `${method}\n${path}\n${timestamp}\n${nonce}\n${bodyHash}`;
 }
 
-const inputClass = "w-full rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
-const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
+const inputClass = "portal-input w-full rounded-xl px-3.5 py-2.5 text-sm";
+const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
 
 const DURATIONS = [
   { label: "1 minute", ms: 60_000 },
@@ -49,11 +49,11 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
   const [agent, setAgent] = useState<RegisteredAgent | null>(null);
 
   return (
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6">
-      <div className="flex items-start justify-between gap-4">
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-medium">Try it yourself — no money, no gas</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <h2 className="text-base font-medium text-[#ece8df]">Try it yourself — no money, no gas</h2>
+          <p className="mt-1.5 max-w-lg text-sm leading-6 text-[#8b94a1]">
             Your agent will make one public, timestamped bet on a real stock price. In a few minutes you&apos;ll see
             whether it was right — that result becomes a permanent, public mark on its record. Nothing here costs
             money: both steps below are just a signature in your wallet, never a blockchain transaction.
@@ -63,14 +63,14 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
       </div>
 
       {!isConnected ? (
-        <p className="mt-4 text-sm text-[var(--muted)]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
+        <p className="mt-5 text-sm text-[#7a8390]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
       ) : agent ? (
-        <div className="mt-4 flex flex-col gap-4">
+        <div className="mt-5 flex flex-col gap-4">
           <AgentBadge agent={agent} onReset={() => setAgent(null)} />
           <ClaimStep agent={agent} spyPrice={spyPrice} />
         </div>
       ) : (
-        <div className="mt-4">
+        <div className="mt-5">
           <RegisterStep controllerAddress={address!} onRegistered={setAgent} />
           <ExistingAgentLink onUse={setAgent} />
         </div>
@@ -81,20 +81,20 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
 
 function StepLabel({ n, title }: { n: number; title: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ink)] text-[10px] font-medium text-[var(--bg)]">{n}</span>
-      <span className="font-medium">{title}</span>
+    <div className="flex items-center gap-2.5">
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#8b72ff] text-[10px] font-medium text-white">{n}</span>
+      <span className="text-sm font-medium text-[#ece8df]">{title}</span>
     </div>
   );
 }
 
 function AgentBadge({ agent, onReset }: { agent: RegisteredAgent; onReset: () => void }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-[var(--green)]/30 bg-[var(--green)]/10 px-4 py-2 text-sm">
-      <span>
-        Acting as <strong className="text-[var(--ink)]">@{agent.handle}</strong>
+    <div className="flex items-center justify-between rounded-xl border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-2.5 text-sm">
+      <span className="text-[#aeb5bf]">
+        Acting as <strong className="text-[#ece8df]">@{agent.handle}</strong>
       </span>
-      <button className="text-xs text-[var(--muted)] underline hover:text-[var(--ink)]" onClick={onReset}>
+      <button className="text-xs text-[#7a8390] underline hover:text-white" onClick={onReset}>
         use a different agent
       </button>
     </div>
@@ -134,9 +134,9 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       <StepLabel n={1} title="Give your agent a name" />
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-xs leading-5 text-[#7a8390]">
         This is a public identity, not an account — there&apos;s no password or email. Your wallet signature proves
         it&apos;s really you controlling it later. Pick any free handle.
       </p>
@@ -150,7 +150,7 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
       <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleRegister}>
         {pending ? "Signing…" : "Sign & register"}
       </button>
-      {error && <p className="text-xs text-[var(--red)]">{error}</p>}
+      {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
     </div>
   );
 }
@@ -162,16 +162,16 @@ function ExistingAgentLink({ onUse }: { onUse: (a: RegisteredAgent) => void }) {
 
   if (!open) {
     return (
-      <button className="mt-3 text-xs text-[var(--muted)] underline hover:text-[var(--ink)]" onClick={() => setOpen(true)}>
+      <button className="mt-3 text-xs text-[#7a8390] underline hover:text-white" onClick={() => setOpen(true)}>
         Already registered an agent with this wallet? Use it instead.
       </button>
     );
   }
 
   return (
-    <div className="mt-3 flex gap-2">
-      <input className={inputClass} placeholder="agent id (uuid)" value={id} onChange={(e) => setId(e.target.value)} />
-      <input className={inputClass} placeholder="handle" value={handle} onChange={(e) => setHandle(e.target.value)} />
+    <div className="mt-3 flex flex-wrap gap-2">
+      <input className={`${inputClass} flex-1`} placeholder="agent id (uuid)" value={id} onChange={(e) => setId(e.target.value)} />
+      <input className={`${inputClass} flex-1`} placeholder="handle" value={handle} onChange={(e) => setHandle(e.target.value)} />
       <button className={buttonClass} disabled={!id || !handle} onClick={() => onUse({ id, handle })}>
         Use
       </button>
@@ -226,16 +226,16 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
 
   if (posted) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         <StepLabel n={2} title="Bet placed" />
-        <div className="rounded-lg border border-[var(--green)]/30 bg-[var(--green)]/10 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
           <p>
-            Your bet is now on the record, permanently — marked <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">pending</code>.
+            Your bet is now on the record, permanently — marked <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>.
             Nobody can check the answer early, including you: AUEVO reads SPY&apos;s real price automatically at{" "}
-            <strong className="text-[var(--ink)]">{new Date(posted.deadline).toLocaleString()}</strong> and marks it right or wrong within
+            <strong className="text-[#ece8df]">{new Date(posted.deadline).toLocaleString()}</strong> and marks it right or wrong within
             5 minutes after that.
           </p>
-          <a href={`/auevo/agents?handle=${agent.handle}`} className="mt-2 inline-block underline hover:text-[var(--ink)]">
+          <a href={`/agents/${agent.handle}`} className="mt-2 inline-block text-[#a99cff] underline hover:text-white">
             Open @{agent.handle}&apos;s Passport to check later →
           </a>
         </div>
@@ -250,19 +250,19 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       <StepLabel n={2} title="Make a bet: where will SPY be?" />
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-xs leading-5 text-[#7a8390]">
         SPY tracks the S&amp;P 500 (the 500 biggest US companies), as a token on Robinhood Chain. You&apos;re betting on
         its real price — the same way a human trader would.
       </p>
 
-      <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 py-2">
-        <span className="text-sm text-[var(--muted)]">SPY right now</span>
-        <span className="font-medium">{spyPrice !== null ? `$${spyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "price unavailable"}</span>
+      <div className="flex items-center justify-between rounded-xl border border-white/[0.07] bg-[#0d1016] px-4 py-2.5">
+        <span className="text-sm text-[#7a8390]">SPY right now</span>
+        <span className="font-medium text-[#ece8df]">{spyPrice !== null ? `$${spyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "price unavailable"}</span>
       </div>
 
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-xs leading-5 text-[#7a8390]">
         Pick a direction and a price. Example:{" "}
         {spyPrice !== null
           ? `"at or above $${Math.round(spyPrice * 0.99)}" is an easy bet right now; "at or above $${Math.round(spyPrice * 1.5)}" is a hard one.`
@@ -272,8 +272,8 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
         {(["up", "down"] as const).map((d) => (
           <button
             key={d}
-            className={`flex-1 rounded border px-3 py-2 text-sm ${
-              direction === d ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)]" : "border-[var(--line)]"
+            className={`flex-1 rounded-xl border px-3 py-2.5 text-sm transition ${
+              direction === d ? "border-[#8b72ff]/40 bg-[#8b72ff]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
             }`}
             onClick={() => setDirection(d)}
           >
@@ -288,15 +288,15 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
         onChange={(e) => setTargetPrice(e.target.value)}
         inputMode="decimal"
       />
-      <button type="button" className="self-start text-xs text-[var(--muted)] underline hover:text-[var(--ink)]" onClick={fillGuaranteedExample}>
+      <button type="button" className="self-start text-xs text-[#7a8390] underline hover:text-white" onClick={fillGuaranteedExample}>
         Just show me how it works (fills in a bet that will obviously resolve correct, settling in 1 minute)
       </button>
       <div className="flex gap-2">
         {DURATIONS.map((d) => (
           <button
             key={d.label}
-            className={`flex-1 rounded border px-2 py-2 text-xs ${
-              durationMs === d.ms ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)]" : "border-[var(--line)]"
+            className={`flex-1 rounded-xl border px-2 py-2 text-xs transition ${
+              durationMs === d.ms ? "border-[#8b72ff]/40 bg-[#8b72ff]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
             }`}
             onClick={() => setDurationMs(d.ms)}
           >
@@ -307,7 +307,7 @@ function ClaimStep({ agent, spyPrice }: { agent: RegisteredAgent; spyPrice: numb
       <button className={`${buttonClass} self-start`} disabled={!canSubmit || pending} onClick={handlePost}>
         {pending ? "Signing…" : "Sign & post prediction"}
       </button>
-      {error && <p className="text-xs text-[var(--red)]">{error}</p>}
+      {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
     </div>
   );
 }
