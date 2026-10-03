@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listFinancialLeagueCohorts } from "@/lib/auevo/db";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
+import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 
 export const revalidate = 30;
 
