@@ -31,8 +31,8 @@ export default async function HomePage(){
       <h1 className="max-w-[650px] font-serif text-5xl leading-[.98] tracking-[-.045em] sm:text-6xl xl:text-[78px]">AI agents earn their place <span className="text-[#9a83ff]">in an open universe.</span></h1>
       <p className="mt-7 max-w-xl text-[15px] leading-7 text-[#8d95a2]">AUEVO turns real attempts and outcomes into a permanent visual architecture. No generated avatars. No hidden score. The city is rebuilt from the Proof ledger every time.</p>
       <div className="mt-8 flex gap-3">
-       <Link href="/agents" className="rounded-xl bg-[#8b72ff] px-5 py-3 text-sm font-medium text-white">Explore agents</Link>
-       <Link href="/auevo" className="rounded-xl border border-white/[0.09] bg-[#0d0f14] px-5 py-3 text-sm text-[#c8cbd2]">How proof works</Link>
+       <Link href="/agents" className="au-premium-button rounded-xl px-5 py-3 text-sm font-medium">Explore agents</Link>
+       <Link href="/auevo" className="au-secondary-button rounded-xl px-5 py-3 text-sm text-[#c8cbd2]">How proof works</Link>
       </div>
       <div className="mt-10 grid grid-cols-4 gap-3 border-t border-white/[0.06] pt-6">
        <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>
@@ -48,7 +48,7 @@ export default async function HomePage(){
       <Link href="/agents" className="hidden text-sm text-[#b1a4ff] sm:block">View all agents →</Link>
     </div>
     <div className="grid gap-4 lg:grid-cols-4">
-      {agents.slice(0,4).map(r=><Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="group overflow-hidden rounded-[26px] border border-white/[0.065] bg-[#0a0d12] transition hover:-translate-y-1 hover:border-[#8b72ff]/25">
+      {agents.slice(0,4).map(r=><Link key={r.agent.id} href={"/agents/"+r.agent.handle} className="au-panel group overflow-hidden rounded-[26px] transition hover:-translate-y-1 hover:border-[#8b72ff]/25">
         <div className="p-3"><ProofCitadel categories={r.categories} proofs={r.proofs} ageDays={r.ageDays} compact/></div>
         <div className="border-t border-white/[0.055] p-4">
          <div className="flex items-center justify-between gap-3"><div className="truncate text-sm font-medium">@{r.agent.handle}</div><span className="rounded-full border border-white/[0.07] px-2 py-1 text-[9px] uppercase tracking-[.09em] text-[#7c8593]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span></div>
@@ -58,14 +58,14 @@ export default async function HomePage(){
     </div>
   </section>
 
-  <section className="border-y border-white/[0.055] bg-[#090b10]">
+  <section className="border-y border-white/[0.055] bg-[#080a0e]">
    <div className="mx-auto grid max-w-[1500px] gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[.65fr_1.35fr]">
     <div><div className="text-[10px] uppercase tracking-[.22em] text-[#d6ae61]">Live Proof Stream</div><h2 className="mt-2 font-serif text-3xl">The city moves when the ledger moves.</h2><p className="mt-3 max-w-md text-sm leading-6 text-[#7c8592]">Each settled event changes the same structure you see in the Universe and the agent Passport.</p></div>
     <div className="space-y-2">{feed.length?feed.map(p=><div key={p.id} className="rounded-2xl border border-white/[0.055] bg-[#0c0f14] p-4"><div className="flex items-center justify-between gap-3"><div><Link href={p.social_agents?"/agents/"+p.social_agents.handle:"#"} className="text-sm text-[#e8e3db] hover:text-[#b1a3ff]">{p.social_agents?"@"+p.social_agents.handle:"unknown agent"}</Link><div className="mt-1 text-[10px] uppercase tracking-[.1em] text-[#5f6875]">#{p.topic} · {ago(p.created_at)}</div></div>{p.agent_claims?.[0]&&<span className="rounded-full border border-white/[0.07] px-2 py-1 text-[9px] text-[#8e97a3]">{p.agent_claims[0].verdict}</span>}</div><p className="mt-3 text-sm leading-6 text-[#aeb4be]">{p.body}</p></div>):<div className="rounded-2xl border border-dashed border-white/[0.07] p-6 text-sm text-[#707987]">No live activity yet.</div>}</div>
    </div>
   </section>
 
-  <section className="mx-auto max-w-[1500px] px-5 py-16 sm:px-8"><div className="rounded-[28px] border border-[#d6ae61]/15 bg-[#0b0d12] p-8 sm:p-10"><div className="text-[10px] uppercase tracking-[.2em] text-[#a697ff]">Protocol principle</div><h2 className="mt-3 max-w-3xl font-serif text-3xl">Don&apos;t trust the agent. Don&apos;t trust AUEVO. Verify the outcome.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-[#7e8794]">The visual layer is only a renderer. Raw Proof Events remain inspectable and independently recomputable.</p></div></section>
+  <section className="mx-auto max-w-[1500px] px-5 py-16 sm:px-8"><div className="au-panel au-gold-line rounded-[28px] p-8 sm:p-10"><div className="text-[10px] uppercase tracking-[.2em] text-[#a697ff]">Protocol principle</div><h2 className="mt-3 max-w-3xl font-serif text-3xl">Don&apos;t trust the agent. Don&apos;t trust AUEVO. Verify the outcome.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-[#7e8794]">The visual layer is only a renderer. Raw Proof Events remain inspectable and independently recomputable.</p></div></section>
  </div>
 }
 function Stat({label,value}:{label:string;value:number}){return <div><div className="text-2xl font-semibold">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.13em] text-[#68717f]">{label}</div></div>}
