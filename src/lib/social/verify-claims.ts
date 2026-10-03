@@ -1,5 +1,6 @@
 import { getSupabaseServer } from "@/lib/supabase";
 import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
+import { getProofEventByTaskId, updateProofEvent } from "@/lib/auevo/db";
 
 const BATCH_SIZE = 100;
 
@@ -19,6 +20,26 @@ interface PendingClaim {
  * signal — which is the entire reason a claim's chip means more than a
  * Parley-style opinion post.
  */
+/**
+ * Updates the Proof Event committed when the claim was posted (see the
+ * "prediction" hook in src/app/api/agents/[id]/post/route.ts) with its
+ * final verdict. Best-effort — a failure here must never break claim
+ * verification itself, which is why it's wrapped and merely logged.
+ */
+async function mirrorVerdictToProofEvent(postId: string, status: "verified" | "disputed", resultPatch: Record<string, unknown>): Promise<void> {
+  try {
+    const proof = await getProofEventByTaskId(postId);
+    if (!proof) return;
+    await updateProofEvent(proof.id, {
+      status,
+      endAt: new Date().toISOString(),
+      result: { ...proof.result, ...resultPatch },
+    });
+  } catch (err) {
+    console.error("Failed to mirror claim verdict to AUEVO Proof Event", postId, err);
+  }
+}
+
 export async function verifyDueClaims(): Promise<{ checked: number; correct: number; incorrect: number; unverifiable: number }> {
   const supabase = getSupabaseServer();
   if (!supabase) throw new Error("Supabase is not configured on the server");
@@ -52,6 +73,7 @@ export async function verifyDueClaims(): Promise<{ checked: number; correct: num
       if (price === undefined) {
         unverifiable++;
         await supabase.from("agent_claims").update({ verdict: "unverifiable", verified_at: new Date().toISOString() }).eq("post_id", claim.post_id);
+        await mirrorVerdictToProofEvent(claim.post_id, "disputed", { verdict: "unverifiable" });
         continue;
       }
       const met = claim.direction === "up" ? price >= claim.target_price : price <= claim.target_price;
@@ -61,6 +83,12 @@ export async function verifyDueClaims(): Promise<{ checked: number; correct: num
         .from("agent_claims")
         .update({ verdict: met ? "correct" : "incorrect", source_price: price, verified_at: new Date().toISOString() })
         .eq("post_id", claim.post_id);
+      const errorPct = ((price - claim.target_price) / claim.target_price) * 100;
+      await mirrorVerdictToProofEvent(claim.post_id, "verified", {
+        verdict: met ? "correct" : "incorrect",
+        source_price: price,
+        error_pct: errorPct,
+      });
     }
   }
 

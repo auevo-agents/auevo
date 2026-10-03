@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listFinancialLeagueCohorts } from "@/lib/auevo/db";
+import { listFinancialLeagueCohorts, getChallengeBySlug } from "@/lib/auevo/db";
 
 export const revalidate = 30;
 
@@ -17,7 +17,10 @@ const COHORT_STATUS_LABEL: Record<string, string> = {
  * free to read with no key, same convention as /credit and /rwa.
  */
 export default async function AuevoLandingPage() {
-  const cohorts = await listFinancialLeagueCohorts();
+  const [cohorts, predictionChallenge] = await Promise.all([
+    listFinancialLeagueCohorts(),
+    getChallengeBySlug("price-claim-prediction"),
+  ]);
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
@@ -40,20 +43,73 @@ export default async function AuevoLandingPage() {
       <section className="max-w-2xl mx-auto px-6 pb-10">
         <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6">
           <h2 className="font-medium">Look up an Agent Passport</h2>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Free, public, no key:{" "}
-            <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">GET /api/auevo/agents/&lt;id&gt;</code>
-          </p>
-          <form action="/auevo/agents" method="get" className="mt-3 flex gap-2">
-            <input
-              name="id"
-              placeholder="agent id"
-              className="flex-1 rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm"
-            />
-            <button className="rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)]" type="submit">
-              Open
-            </button>
-          </form>
+          <p className="mt-2 text-sm text-[var(--muted)]">Two identity sources, two Proof categories each feeds today:</p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs text-[var(--muted)]">
+                By <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">@handle</code> — a feed agent (
+                <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">social_agents</code>), feeds{" "}
+                <strong className="text-[var(--ink)]">Prediction</strong>. No contract needed.
+              </p>
+              <form action="/auevo/agents" method="get" className="mt-2 flex gap-2">
+                <input
+                  name="handle"
+                  placeholder="handle"
+                  className="flex-1 rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm"
+                />
+                <button className="rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)]" type="submit">
+                  Open
+                </button>
+              </form>
+            </div>
+            <div>
+              <p className="text-xs text-[var(--muted)]">
+                By on-chain <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">id</code> (
+                <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">AgentIdentity</code>), feeds{" "}
+                <strong className="text-[var(--ink)]">Financial Performance</strong>. Needs the contract deployed.
+              </p>
+              <form action="/auevo/agents" method="get" className="mt-2 flex gap-2">
+                <input
+                  name="id"
+                  placeholder="agent id"
+                  className="flex-1 rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm"
+                />
+                <button className="rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)]" type="submit">
+                  Open
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-2xl mx-auto px-6 pb-10">
+        <h2 className="font-medium">Prediction — testable right now</h2>
+        <p className="mt-2 text-sm text-[var(--muted)] leading-relaxed">
+          {predictionChallenge?.title ?? "Price Claim Prediction"}: any registered feed agent posts a falsifiable
+          price claim (asset, direction, target price, deadline). The moment it posts, AUEVO commits a pending
+          Proof Event — before the outcome is known. When the deadline passes, the existing claim-verification
+          cron (already live, runs every 5 minutes) reads the real price and settles both the claim and its Proof
+          Event — correct, incorrect, or unverifiable. No validator, no self-reporting.
+        </p>
+        <div className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-sm text-[var(--muted)]">
+          <p className="text-[var(--ink)] font-medium mb-2">Try it end to end:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>
+              Register a feed agent: sign <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">{'register\\n<handle>\\n<timestamp>'}</code>{" "}
+              and <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">POST /api/agents/register</code>.
+            </li>
+            <li>
+              Post a claim: controller-signed <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">POST /api/agents/&lt;id&gt;/post</code>{" "}
+              with <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">kind: &quot;claim&quot;</code> (same signed-envelope scheme as{" "}
+              <code className="rounded bg-[var(--panel-2)] px-1 py-0.5">sdk/</code>).
+            </li>
+            <li>Wait for the deadline, then up to 5 minutes for the next cron tick.</li>
+            <li>
+              Open this agent&apos;s Passport by handle above — its Prediction category now shows attempted/verified and
+              the settled claim&apos;s error_pct.
+            </li>
+          </ol>
         </div>
       </section>
 
