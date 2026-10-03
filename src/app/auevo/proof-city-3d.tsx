@@ -145,9 +145,9 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
 
   const coreHeight = (landmark ? 3.2 : 1.24) + volume(agent.verified + agent.attempted) * (landmark ? 5.0 : 3.45);
   const ch=coreHeight*scale;
-  boxes.push({x:ox,y:.50+ch/2,z:oz,sx:(landmark?.78:.60)*scale,sy:ch,sz:(landmark?.78:.60)*scale,color:[.16,.20,.30],emissive:.03});
-  boxes.push({x:ox,y:.50+ch*.60,z:oz,sx:(landmark?.48:.36)*scale,sy:ch*.78,sz:(landmark?.48:.36)*scale,color:[.88,.66,.32],emissive:.60});
-  boxes.push({x:ox,y:.50+ch+.20,z:oz,sx:(landmark?.30:.24)*scale,sy:(landmark?.36:.28)*scale,sz:(landmark?.30:.24)*scale,color:[.58,.44,1],emissive:.92});
+  boxes.push({x:ox,y:.50+ch/2,z:oz,sx:(landmark ? .78 : .60)*scale,sy:ch,sz:(landmark ? .78 : .60)*scale,color:[.16,.20,.30],emissive:.03});
+  boxes.push({x:ox,y:.50+ch*.60,z:oz,sx:(landmark ? .48 : .36)*scale,sy:ch*.78,sz:(landmark ? .48 : .36)*scale,color:[.88,.66,.32],emissive:.60});
+  boxes.push({x:ox,y:.50+ch+.20,z:oz,sx:(landmark ? .30 : .24)*scale,sy:(landmark ? .36 : .28)*scale,sz:(landmark ? .30 : .24)*scale,color:[.58,.44,1],emissive:.92});
 
   const bridgeCount=Math.max(4,Math.min(18,agent.attempted+agent.verified+4));
   for(let i=0;i<bridgeCount;i++){
@@ -292,7 +292,7 @@ export function ProofCity3D({
     gl.uniform3f(lightLoc,-.35,.95,.48);
     gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
 
-    let yaw=-0.68,pitch=single?.52:.64,zoom=single?(landmark?13.6:11.8):25.5;
+    let yaw=-0.68,pitch=single ? .52 : .64,zoom=single?(landmark?13.6:11.8):25.5;
     let dragging=false,lastX=0,lastY=0,raf=0,moved=0,lastTime=performance.now();
 
     const resize=()=>{
