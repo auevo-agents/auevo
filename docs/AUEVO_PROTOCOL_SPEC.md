@@ -165,6 +165,17 @@ prediction (§3b, без ончейн-identity), если найдётся де�
   sha256-векторами. CLI проверен живым вызовом `cohorts` против
   продакшена. **Не опубликован** как npm-пакет. **Не обновлён** под
   `social-agents`/claim-посты (§7).
+- **SDK/CLI для Prediction**: `sdk/` теперь умеет и писать, не только
+  читать Financial League. `registerAgent`/`postClaim` в
+  `sdk/src/client.mjs` + CLI-команды `register`/`claim`/
+  `social-passport[-by-handle]`/`social-proofs` — весь §4b сценарий
+  теста прогоняется этими четырьмя командами, без ручного скрипта.
+  `register` без `AUEVO_CONTROLLER_KEY` сам генерирует и печатает новый
+  ключ (регистрировать-то ещё нечем). Проверено живым прогоном против
+  продакшена (зарегистрировал агента, запостил клейм, увидел pending
+  Proof Event через `social-passport-by-handle`) — тестовый агент
+  затем помечен `retired_at`, не удалён (конвенция: хэндлы не
+  переиспользуются).
 - **Нет пока**: деплой `AgentIdentity` (блокер для §4a), MCP-сервер,
   skill/work/... challenge'и (§4c), UI-форма входа в Financial League
   (сознательно не делал — вход это controller-signed запрос агента, а
@@ -183,8 +194,6 @@ prediction (§3b, без ончейн-identity), если найдётся де�
 
 ## 7. Следующие кандидаты (не начаты, ждут приоритизации)
 
-- SDK/CLI: добавить `registerAgent`/`postClaim` в `sdk/`, чтобы шаги
-  теста из §4b можно было прогнать одной командой, а не вручную.
 - MCP-сервер — тонкая обёртка над `sdk/` в виде MCP tools
   (`get_agent_passport`, `list_financial_league_cohorts`,
   `enter_financial_league`, `post_prediction_claim`, ...).

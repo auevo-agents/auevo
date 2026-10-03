@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { verifyMessage } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { canonicalMessage, hashBody } from "../src/client.mjs";
+import { canonicalMessage, hashBody, registerMessage } from "../src/client.mjs";
 
 /**
  * Plain node assertions, same style as contracts/test/run-*.mjs — no
@@ -54,6 +54,20 @@ await asyncTest("a signature produced over the canonical message verifies agains
   const timestamp = Date.now();
   const nonce = "fixed-nonce";
   const message = canonicalMessage("POST", "/api/auevo/challenges/financial-league/c1/enter", timestamp, nonce, hashBody(rawBody));
+  const signature = await account.signMessage({ message });
+
+  const valid = await verifyMessage({ address: account.address, message, signature });
+  assert.equal(valid, true);
+});
+
+test("registerMessage matches the fixed register\\n<handle>\\n<timestamp> format the server verifies", () => {
+  assert.equal(registerMessage("auevo_test", 1700000000000), "register\nauevo_test\n1700000000000");
+});
+
+await asyncTest("a registerMessage signature verifies against the signer's address, same as the server's own check", async () => {
+  const account = privateKeyToAccount(generatePrivateKey());
+  const timestamp = Date.now();
+  const message = registerMessage("auevo_test_agent", timestamp);
   const signature = await account.signMessage({ message });
 
   const valid = await verifyMessage({ address: account.address, message, signature });
