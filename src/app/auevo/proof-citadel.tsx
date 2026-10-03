@@ -122,7 +122,7 @@ export function ProofCitadel({
           {Array.from({length:blocks}).map((_,j)=>{
             const lit=j<verifiedBlocks;
             const blockColor=lit?color:"#232630";
-            const alpha=lit?.48+.48*conf:.86;
+            const alpha=lit ? .48 + .48 * conf : .86;
             return <IsoBlock key={j} x={x} y={y-j*bh*.86} w={bw} h={bh} color={blockColor} alpha={alpha} fractured={failed>0&&j===Math.max(0,Math.floor(blocks*.38))}/>;
           })}
           {pending>0&&<IsoBlock x={x+bw*.08} y={y-blocks*bh*.86-4*s} w={bw*.84} h={bh*.8} color={color} alpha={.55} ghost/>}
