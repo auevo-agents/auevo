@@ -187,6 +187,22 @@ export async function getProofEventByTaskId(taskId: string): Promise<ProofEvent 
   return data as ProofEvent | null;
 }
 
+export interface AuevoLiveStats {
+  agents: number;
+  proofEvents: number;
+  verifiedProofEvents: number;
+}
+
+/** Cheap counts for the landing page's live-stat strip — count-only queries (`head: true`), never fetches rows. Every number here is a direct COUNT over the same tables everything else reads, not a cached/derived figure. */
+export async function getAuevoLiveStats(): Promise<AuevoLiveStats> {
+  const [{ count: agents }, { count: proofEvents }, { count: verifiedProofEvents }] = await Promise.all([
+    db().from("social_agents").select("*", { count: "exact", head: true }).is("retired_at", null),
+    db().from("auevo_proof_events").select("*", { count: "exact", head: true }),
+    db().from("auevo_proof_events").select("*", { count: "exact", head: true }).eq("status", "verified"),
+  ]);
+  return { agents: agents ?? 0, proofEvents: proofEvents ?? 0, verifiedProofEvents: verifiedProofEvents ?? 0 };
+}
+
 export interface Challenge {
   id: string;
   slug: string;
