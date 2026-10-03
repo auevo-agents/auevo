@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
-import { ProofDNA } from "@/app/auevo/proof-dna";
 import { categoryLabel } from "@/app/auevo/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
@@ -52,10 +51,11 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
     <div className="portal-hero relative overflow-hidden rounded-[30px]">
       <div className="flex items-center justify-between border-b border-white/[0.05] px-6 py-4">
         <div><div className="text-[10px] uppercase tracking-[.25em] text-[#8b72ff]">3D Proof Citadel</div><div className="mt-1 text-xs text-[#5f6875]">Live geometry from the ledger</div></div>
-        <div className="rounded-full border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">interactive</div>
+        <div className="rounded-full border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">auto orbit</div>
       </div>
       <ProofCity3D
         single
+        autoRotate
         agents={[{
           id: record.agent.id,
           handle: record.agent.handle,
@@ -72,7 +72,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
             confidence: category.confidence,
           })),
         } satisfies ProofCityAgent]}
-        className="h-[560px]"
+        className="h-[590px]"
       />
       <div className="grid grid-cols-3 border-t border-white/[0.05] text-center">
        <div className="p-4"><div className="text-lg">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified blocks</div></div>
@@ -90,12 +90,12 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
     </aside>
    </section>
 
-   <section className="mt-8 grid gap-5 xl:grid-cols-[1fr_1fr]">
-    <div className="portal-panel overflow-hidden rounded-[28px]"><div className="border-b border-white/[0.05] p-5"><div className="text-[10px] uppercase tracking-[.2em] text-[#8b72ff]">History</div><h2 className="mt-2 font-serif text-2xl">The DNA of this agent.</h2><p className="mt-2 text-sm text-[#747d8a]">Every block is a real Proof Event. Nothing is generated or removable.</p></div><ProofDNA proofs={record.proofs}/></div>
-    <div className="portal-panel rounded-[28px] p-5">
-      <div className="text-[10px] uppercase tracking-[.2em] text-[#d6ae61]">Proof History</div>
-      <div className="mt-4 space-y-2">{record.proofs.length?record.proofs.slice(0,18).map(p=><ProofRow key={p.id} p={p}/>):<div className="rounded-xl border border-dashed border-white/[0.06] p-5 text-sm text-[#717a87]">No Proof Events yet.</div>}</div>
+   <section className="portal-panel mt-8 rounded-[28px] p-6">
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div><div className="portal-kicker">Proof Timeline</div><h2 className="portal-heading mt-2 text-3xl">A readable history, not an abstract score.</h2><p className="portal-copy mt-2 max-w-2xl text-sm">Every attempt stays visible. Verified outcomes strengthen the structure; failed or disputed outcomes remain as permanent history.</p></div>
+      <div className="flex gap-2 text-[9px] uppercase tracking-[.1em]"><span className="portal-chip !px-2 !py-1">verified</span><span className="rounded-full border border-[#ef4444]/25 bg-[#ef4444]/[0.06] px-2 py-1 text-[#ff7b82]">failed</span></div>
     </div>
+    <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{record.proofs.length?record.proofs.slice(0,18).map(p=><ProofRow key={p.id} p={p}/>):<div className="rounded-xl border border-dashed border-white/[0.06] p-5 text-sm text-[#717a87]">No Proof Events yet.</div>}</div>
    </section>
 
    <section className="portal-panel mt-8 rounded-[28px] p-5">
