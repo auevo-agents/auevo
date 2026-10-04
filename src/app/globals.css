@@ -15829,3 +15829,576 @@ body{
     background:linear-gradient(90deg,rgba(3,11,7,.97) 0%,rgba(3,11,7,.83) 58%,rgba(3,11,7,.46) 100%);
   }
 }
+
+
+/* ============================================================
+   RWA — luxury emerald visual system
+   Scoped to /rwa and /rwa/app only.
+   ============================================================ */
+
+.rwa-green-theme{
+  --rwa-bg:#06100c;
+  --rwa-bg-2:#081710;
+  --rwa-bg-3:#0c1d15;
+  --rwa-panel:rgba(8,25,17,.84);
+  --rwa-panel-strong:rgba(7,21,14,.96);
+  --rwa-line:rgba(112,177,141,.16);
+  --rwa-line-strong:rgba(137,201,163,.28);
+  --rwa-text:#f3efe5;
+  --rwa-muted:#91a398;
+  --rwa-faint:#63766b;
+  --rwa-green:#42d995;
+  --rwa-green-soft:#8cf0bd;
+  --rwa-gold:#d7b56d;
+  --rwa-gold-soft:#f1d796;
+  --rwa-red:#e8666d;
+  color:var(--rwa-text);
+}
+
+/* Landing background */
+.landing2.rwa-green-theme{
+  position:relative;
+  isolation:isolate;
+  background:
+    radial-gradient(circle at 74% 3%, rgba(51,160,103,.15), transparent 29%),
+    radial-gradient(circle at 10% 25%, rgba(26,90,58,.19), transparent 34%),
+    radial-gradient(circle at 62% 63%, rgba(209,168,86,.045), transparent 30%),
+    linear-gradient(180deg,#08150f 0%,#06110d 50%,#050d0a 100%);
+  color:var(--rwa-text);
+}
+.landing2.rwa-green-theme:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  opacity:.20;
+  background-image:
+    linear-gradient(rgba(109,181,143,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(109,181,143,.020) 1px,transparent 1px);
+  background-size:64px 64px;
+}
+.landing2.rwa-green-theme:after{
+  content:"";
+  position:absolute;
+  inset:0 0 auto 0;
+  height:720px;
+  pointer-events:none;
+  z-index:-1;
+  background:
+    linear-gradient(90deg,transparent 7%,rgba(215,181,109,.12) 7.08%,transparent 7.16%),
+    linear-gradient(90deg,transparent 84%,rgba(66,217,149,.10) 84.08%,transparent 84.16%),
+    radial-gradient(ellipse at 50% 92%,rgba(40,130,83,.11),transparent 48%);
+  mask-image:linear-gradient(to bottom,#000,transparent);
+}
+
+/* Landing header / navigation */
+.rwa-green-theme .landing-header{
+  border-bottom-color:rgba(111,171,138,.13);
+  background:rgba(5,15,10,.80);
+  box-shadow:0 10px 50px rgba(0,0,0,.24);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.rwa-green-theme .landing-brand .auevo-wordmark{
+  background:linear-gradient(90deg,#f4d593,#d7b56d 55%,#ad7d38);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent!important;
+}
+.rwa-green-theme .landing-nav-trigger{
+  color:#cbd7cf;
+  border-color:transparent;
+}
+.rwa-green-theme .landing-nav-trigger:hover,
+.rwa-green-theme .landing-nav-trigger[aria-expanded="true"]{
+  color:#f4efe5;
+  border-color:rgba(108,175,139,.18);
+  background:rgba(31,95,63,.12);
+}
+.rwa-green-theme .landing-nav-panel{
+  border-color:rgba(111,171,138,.20);
+  background:rgba(6,20,13,.96);
+  box-shadow:0 24px 70px rgba(0,0,0,.48),0 0 38px rgba(66,217,149,.045);
+}
+.rwa-green-theme .landing-nav-group{
+  background:linear-gradient(160deg,rgba(17,46,31,.70),rgba(7,21,14,.96));
+}
+.rwa-green-theme .landing-nav-link:hover{background:rgba(66,217,149,.065)}
+.rwa-green-theme .landing-nav-link-title{color:#eef4ef}
+.rwa-green-theme .landing-nav-link-body,
+.rwa-green-theme .landing-nav-group-label{color:#758b7d}
+
+/* RWA hero */
+.rwa-green-theme .landing2-hero-premium{
+  position:relative;
+  border-bottom:1px solid rgba(111,171,138,.10);
+  background:
+    radial-gradient(circle at 74% 42%,rgba(51,177,111,.16),transparent 24%),
+    radial-gradient(circle at 81% 45%,rgba(215,181,109,.07),transparent 15%),
+    linear-gradient(180deg,rgba(9,27,18,.16),rgba(6,17,12,.52));
+}
+.rwa-green-theme .landing2-hero-premium:before{
+  content:"";
+  position:absolute;
+  width:min(780px,62vw);
+  height:min(780px,62vw);
+  right:-90px;
+  top:50%;
+  transform:translateY(-48%);
+  border-radius:50%;
+  border:1px solid rgba(66,217,149,.08);
+  box-shadow:
+    0 0 0 62px rgba(66,217,149,.025),
+    0 0 0 126px rgba(215,181,109,.018),
+    0 0 120px rgba(53,177,111,.10);
+  pointer-events:none;
+}
+.rwa-green-theme .landing2-eyebrow,
+.rwa-green-theme .landing2-section-label{
+  color:var(--rwa-green-soft);
+}
+.rwa-green-theme .landing2-h1,
+.rwa-green-theme .landing2-section-title{
+  color:#f4efe5;
+}
+.rwa-green-theme .landing2-h1 em,
+.rwa-green-theme .landing2-section-title em,
+.rwa-green-theme .landing2-band h2 em{
+  font-style:normal;
+  background:linear-gradient(90deg,#8cf0bd 0%,#42d995 46%,#d7b56d 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.rwa-green-theme .landing2-hero-copy,
+.rwa-green-theme .landing2-data-note{
+  color:#95a89c;
+}
+.rwa-green-theme .hybrid-hero-search{
+  border-color:rgba(119,185,150,.22);
+  background:
+    linear-gradient(180deg,rgba(16,48,31,.80),rgba(7,24,15,.92));
+  color:#dce6df;
+  box-shadow:0 16px 50px rgba(0,0,0,.20),inset 0 1px 0 rgba(220,246,232,.035);
+}
+.rwa-green-theme .hybrid-hero-search:hover{
+  border-color:rgba(66,217,149,.46);
+  box-shadow:0 18px 58px rgba(0,0,0,.28),0 0 30px rgba(66,217,149,.06);
+}
+.rwa-green-theme .hybrid-search-icon,
+.rwa-green-theme .hybrid-search-key{color:#d7b56d}
+.rwa-green-theme .hybrid-hero-categories a{
+  border-color:rgba(111,171,138,.17);
+  color:#9db0a4;
+  background:rgba(9,29,19,.58);
+}
+.rwa-green-theme .hybrid-hero-categories a:hover{
+  border-color:rgba(66,217,149,.36);
+  color:#dff6e9;
+  background:rgba(30,108,69,.13);
+}
+.rwa-green-theme .landing2-cta,
+.rwa-green-theme .app-connect-button{
+  border:1px solid rgba(114,237,177,.34);
+  background:linear-gradient(180deg,#45d899,#23875e);
+  color:#f8fff9;
+  box-shadow:0 14px 42px rgba(25,121,78,.25),inset 0 1px 0 rgba(231,255,240,.22);
+}
+.rwa-green-theme .landing2-cta:hover,
+.rwa-green-theme .app-connect-button:hover:not(:disabled){
+  filter:brightness(1.07);
+  box-shadow:0 18px 48px rgba(25,121,78,.34),0 0 30px rgba(66,217,149,.10);
+}
+.rwa-green-theme .landing2-cta-link,
+.rwa-green-theme .landing2-text-link,
+.rwa-green-theme .landing-status a{
+  color:#d7b56d;
+}
+.rwa-green-theme .landing2-cta-link:hover,
+.rwa-green-theme .landing2-text-link:hover{color:#f0d594}
+
+/* Tapes */
+.rwa-green-theme .landing2-market-tapes{
+  border-color:rgba(111,171,138,.11);
+  background:rgba(6,19,13,.74);
+  box-shadow:inset 0 1px 0 rgba(208,233,218,.025);
+}
+.rwa-green-theme .landing2-ticker,
+.rwa-green-theme .landing2-public-quotes{
+  border-color:rgba(111,171,138,.10);
+}
+.rwa-green-theme .landing2-ticker-up{color:#55dfa0}
+.rwa-green-theme .landing2-ticker-down{color:#e8666d}
+
+/* Landing cards / sections */
+.rwa-green-theme .landing2-section{
+  border-color:rgba(111,171,138,.10);
+}
+.rwa-green-theme .landing2-section-heading{
+  border-color:rgba(111,171,138,.10);
+}
+.rwa-green-theme .landing2-scanner-table,
+.rwa-green-theme .landing2-scanner-empty{
+  border-color:rgba(111,171,138,.17);
+  background:
+    linear-gradient(145deg,rgba(67,144,98,.03),rgba(255,255,255,.005) 38%),
+    rgba(7,22,14,.86);
+  box-shadow:0 28px 90px rgba(0,0,0,.25),inset 0 1px 0 rgba(210,235,220,.035);
+}
+.rwa-green-theme .landing2-scanner-head{
+  color:#768a7d;
+  background:rgba(12,35,23,.78);
+  border-color:rgba(111,171,138,.12);
+}
+.rwa-green-theme .landing2-scanner-row{
+  border-color:rgba(111,171,138,.09);
+  color:#dce6df;
+}
+.rwa-green-theme .landing2-scanner-row:hover{
+  background:linear-gradient(90deg,rgba(37,119,77,.08),rgba(215,181,109,.025));
+}
+.rwa-green-theme .landing2-scanner-asset b,
+.rwa-green-theme .landing2-scanner-issuer b,
+.rwa-green-theme .landing2-scanner-price{color:#f2eee5}
+.rwa-green-theme .landing2-scanner-asset small,
+.rwa-green-theme .landing2-scanner-issuer small{color:#74877a}
+
+.rwa-green-theme .landing2-band-premium{
+  border-color:rgba(215,181,109,.22);
+  background:
+    radial-gradient(circle at 82% 40%,rgba(215,181,109,.08),transparent 26%),
+    radial-gradient(circle at 20% 50%,rgba(66,217,149,.10),transparent 30%),
+    linear-gradient(145deg,#0c2418,#08160f 58%,#0a1911);
+  box-shadow:0 30px 100px rgba(0,0,0,.30),inset 0 1px 0 rgba(242,214,152,.04);
+}
+.rwa-green-theme .landing2-footer{
+  border-color:rgba(111,171,138,.11);
+  background:linear-gradient(180deg,rgba(8,24,16,.72),rgba(5,14,9,.96));
+}
+
+/* Workspace shell */
+.app-shell.rwa-green-theme{
+  width:min(1540px,calc(100% - 48px));
+  background:
+    radial-gradient(circle at 78% -5%,rgba(47,153,98,.14),transparent 28%),
+    radial-gradient(circle at 10% 35%,rgba(21,77,49,.16),transparent 30%),
+    linear-gradient(180deg,#08150f 0%,#06110d 100%);
+  border-left:1px solid rgba(111,171,138,.08);
+  border-right:1px solid rgba(111,171,138,.08);
+  box-shadow:0 0 80px rgba(0,0,0,.24);
+}
+.app-shell.rwa-green-theme .app-ambient{
+  opacity:.8;
+}
+.app-shell.rwa-green-theme .app-ambient-mark{
+  color:rgba(215,181,109,.06);
+}
+.app-shell.rwa-green-theme .app-ambient-orbit{
+  border-color:rgba(66,217,149,.08);
+}
+.app-shell.rwa-green-theme .app-ambient-node{
+  background:#d7b56d;
+  box-shadow:0 0 18px rgba(215,181,109,.44);
+}
+
+/* Workspace nav */
+.app-shell.rwa-green-theme .app-topnav{
+  border-bottom-color:rgba(111,171,138,.14);
+  background:
+    linear-gradient(180deg,rgba(140,240,189,.018),transparent 36%),
+    rgba(5,17,11,.94);
+  box-shadow:0 15px 48px rgba(0,0,0,.18);
+  backdrop-filter:blur(18px);
+}
+.app-shell.rwa-green-theme .app-topnav-edition{
+  color:#6f8377;
+}
+.app-shell.rwa-green-theme .app-nav-link{
+  color:#869a8e;
+}
+.app-shell.rwa-green-theme .app-nav-link:hover{
+  color:#e3ebe5;
+  background:rgba(66,217,149,.055);
+}
+.app-shell.rwa-green-theme .app-nav-link.active{
+  color:#9af1c2;
+  background:linear-gradient(90deg,rgba(66,217,149,.12),rgba(66,217,149,.025));
+  box-shadow:inset 0 0 0 1px rgba(66,217,149,.17);
+}
+.app-shell.rwa-green-theme .app-nav-group-panel{
+  border-color:rgba(111,171,138,.20);
+  background:#081710;
+  box-shadow:0 22px 60px rgba(0,0,0,.50),0 0 34px rgba(66,217,149,.045);
+}
+.app-shell.rwa-green-theme .app-nav-group-link{
+  color:#91a398;
+}
+.app-shell.rwa-green-theme .app-nav-group-link:hover{
+  color:#e7eee9;
+  background:rgba(66,217,149,.055);
+}
+.app-shell.rwa-green-theme .app-nav-group-link.active{
+  color:#8cf0bd;
+  background:rgba(66,217,149,.09);
+}
+.app-shell.rwa-green-theme .app-topnav-trust{
+  color:#d8bf83;
+}
+.app-shell.rwa-green-theme .app-topnav-trust-dot{
+  background:#d7b56d;
+  box-shadow:0 0 12px rgba(215,181,109,.65);
+}
+
+/* Workspace headers */
+.app-shell.rwa-green-theme .product-main{
+  color:#dfe8e2;
+}
+.app-shell.rwa-green-theme .product-header{
+  border-bottom-color:rgba(111,171,138,.12);
+}
+.app-shell.rwa-green-theme .product-header h3{
+  color:#f2eee5;
+}
+.app-shell.rwa-green-theme .product-header p{
+  color:#81958a;
+}
+
+/* Main panels, tables, tool cards */
+.app-shell.rwa-green-theme .app-kpis,
+.app-shell.rwa-green-theme .dash-stat-strip,
+.app-shell.rwa-green-theme .token-stat-grid,
+.app-shell.rwa-green-theme .token-pulse{
+  gap:1px;
+  border-color:rgba(111,171,138,.14);
+  background:rgba(111,171,138,.14);
+}
+.app-shell.rwa-green-theme .app-kpi,
+.app-shell.rwa-green-theme .dash-stat,
+.app-shell.rwa-green-theme .token-stat,
+.app-shell.rwa-green-theme .token-pulse-item{
+  background:
+    linear-gradient(150deg,rgba(78,155,111,.025),transparent 44%),
+    rgba(8,24,16,.90);
+}
+.app-shell.rwa-green-theme .app-kpi span,
+.app-shell.rwa-green-theme .dash-stat-label,
+.app-shell.rwa-green-theme .token-stat span,
+.app-shell.rwa-green-theme .token-pulse-item span{
+  color:#65796d;
+}
+.app-shell.rwa-green-theme .app-kpi strong,
+.app-shell.rwa-green-theme .dash-stat-value,
+.app-shell.rwa-green-theme .token-stat strong,
+.app-shell.rwa-green-theme .token-pulse-item strong{
+  color:#f1ede4;
+}
+.app-shell.rwa-green-theme .app-tools,
+.app-shell.rwa-green-theme .dash-list-card,
+.app-shell.rwa-green-theme .token-side-card,
+.app-shell.rwa-green-theme .token-chart-card,
+.app-shell.rwa-green-theme .issuer-card,
+.app-shell.rwa-green-theme .wallet-modal,
+.app-shell.rwa-green-theme .trade-form,
+.app-shell.rwa-green-theme .constellation-wrap{
+  border-color:rgba(111,171,138,.16)!important;
+  background:
+    linear-gradient(145deg,rgba(77,160,112,.025),rgba(255,255,255,.004) 42%),
+    rgba(7,23,15,.88)!important;
+  box-shadow:0 24px 74px rgba(0,0,0,.22),inset 0 1px 0 rgba(216,239,224,.025);
+}
+.app-shell.rwa-green-theme .app-tool-card{
+  border-color:rgba(111,171,138,.15);
+  background:linear-gradient(145deg,rgba(52,129,87,.035),rgba(8,24,16,.90));
+  box-shadow:inset 0 1px 0 rgba(210,235,220,.025);
+}
+.app-shell.rwa-green-theme .app-tool-card:hover{
+  border-color:rgba(66,217,149,.36);
+  transform:translateY(-1px);
+  box-shadow:0 18px 48px rgba(0,0,0,.22),0 0 24px rgba(66,217,149,.04);
+}
+.app-shell.rwa-green-theme .app-tool-card strong,
+.app-shell.rwa-green-theme .token-side-card h4,
+.app-shell.rwa-green-theme .issuer-card h4{
+  color:#f1ede4;
+}
+.app-shell.rwa-green-theme .app-tool-card p,
+.app-shell.rwa-green-theme .token-side-card p{
+  color:#83978b;
+}
+
+/* Shared table/list language */
+.app-shell.rwa-green-theme .desk-scroll{
+  border-color:rgba(111,171,138,.15);
+  background:rgba(6,20,13,.62);
+  box-shadow:inset 0 1px 0 rgba(205,234,216,.018);
+}
+.app-shell.rwa-green-theme .desk-head,
+.app-shell.rwa-green-theme .money-head,
+.app-shell.rwa-green-theme .pools-head,
+.app-shell.rwa-green-theme .wallet-activity-head,
+.app-shell.rwa-green-theme .position-head{
+  background:#0b2116;
+  color:#6f8377;
+}
+.app-shell.rwa-green-theme .desk-row,
+.app-shell.rwa-green-theme .money-row,
+.app-shell.rwa-green-theme .pools-row,
+.app-shell.rwa-green-theme .wallet-activity-row,
+.app-shell.rwa-green-theme .position-row,
+.app-shell.rwa-green-theme .dash-list-row{
+  border-bottom-color:rgba(111,171,138,.09);
+  color:#dce5df;
+}
+.app-shell.rwa-green-theme .desk-row:hover,
+.app-shell.rwa-green-theme .money-row-link:hover,
+.app-shell.rwa-green-theme .pools-row:hover,
+.app-shell.rwa-green-theme .dash-list-row:hover{
+  background:linear-gradient(90deg,rgba(39,123,79,.07),rgba(215,181,109,.018));
+}
+.app-shell.rwa-green-theme .desk-pair,
+.app-shell.rwa-green-theme .token-detail-name strong,
+.app-shell.rwa-green-theme .token-detail-price strong{
+  color:#f0ece4;
+}
+.app-shell.rwa-green-theme .desk-pair-symbols small,
+.app-shell.rwa-green-theme .desk-note,
+.app-shell.rwa-green-theme .token-detail-name span,
+.app-shell.rwa-green-theme .app-empty{
+  color:#708579;
+}
+
+/* Tabs / pills / links */
+.app-shell.rwa-green-theme .desk-tabs{
+  border-bottom-color:rgba(111,171,138,.12);
+}
+.app-shell.rwa-green-theme .desk-tab{color:#778b7f}
+.app-shell.rwa-green-theme .desk-tab:hover{color:#dce7e0}
+.app-shell.rwa-green-theme .desk-tab.active{
+  color:#eef6f1;
+  border-bottom-color:#42d995;
+}
+.app-shell.rwa-green-theme .token-chart-tab{
+  border-color:rgba(111,171,138,.15);
+  color:#7f9387;
+}
+.app-shell.rwa-green-theme .token-chart-tab.active{
+  border-color:rgba(66,217,149,.52);
+  background:rgba(66,217,149,.075);
+  color:#dff7e9;
+}
+.app-shell.rwa-green-theme .app-link-button,
+.app-shell.rwa-green-theme .landing-cta-ghost,
+.app-shell.rwa-green-theme .desk-actions a,
+.app-shell.rwa-green-theme .token-back,
+.app-shell.rwa-green-theme .token-detail-links a{
+  color:#d9bd7d;
+}
+.app-shell.rwa-green-theme .app-link-button:hover,
+.app-shell.rwa-green-theme .landing-cta-ghost:hover,
+.app-shell.rwa-green-theme .desk-actions a:hover,
+.app-shell.rwa-green-theme .token-back:hover,
+.app-shell.rwa-green-theme .token-detail-links a:hover{
+  color:#f0d594;
+}
+.app-shell.rwa-green-theme .landing-cta-ghost{
+  border-color:rgba(215,181,109,.22);
+  background:rgba(105,78,26,.055);
+}
+
+/* Inputs / search / forms */
+.app-shell.rwa-green-theme input,
+.app-shell.rwa-green-theme select,
+.app-shell.rwa-green-theme textarea,
+.app-shell.rwa-green-theme .desk-search input{
+  border-color:rgba(111,171,138,.18)!important;
+  background:rgba(5,18,12,.82)!important;
+  color:#edf3ef!important;
+}
+.app-shell.rwa-green-theme input:focus,
+.app-shell.rwa-green-theme select:focus,
+.app-shell.rwa-green-theme textarea:focus,
+.app-shell.rwa-green-theme .desk-search input:focus{
+  outline:none;
+  border-color:rgba(66,217,149,.50)!important;
+  box-shadow:0 0 0 3px rgba(66,217,149,.07);
+}
+.app-shell.rwa-green-theme .desk-search-results,
+.app-shell.rwa-green-theme .wallet-modal-item{
+  border-color:rgba(111,171,138,.15);
+  background:#091b12;
+}
+.app-shell.rwa-green-theme .desk-search-result{
+  border-bottom-color:rgba(111,171,138,.09);
+  color:#dce6df;
+}
+.app-shell.rwa-green-theme .desk-search-result:hover,
+.app-shell.rwa-green-theme .wallet-modal-item:hover:not(:disabled){
+  background:rgba(66,217,149,.055);
+}
+
+/* Issuer cards */
+.app-shell.rwa-green-theme .issuer-card{
+  border-color:rgba(111,171,138,.15)!important;
+}
+.app-shell.rwa-green-theme .issuer-card--active{
+  border-color:rgba(66,217,149,.25)!important;
+  box-shadow:0 20px 62px rgba(0,0,0,.24),0 0 26px rgba(66,217,149,.035);
+}
+.app-shell.rwa-green-theme .issuer-card-monogram{
+  border-color:rgba(215,181,109,.24);
+  color:#d9bd7d;
+  background:rgba(100,74,24,.08);
+}
+.app-shell.rwa-green-theme .issuer-card-status--live{
+  color:#8cf0bd;
+  background:rgba(66,217,149,.08);
+  border-color:rgba(66,217,149,.18);
+}
+
+/* Positive/negative semantics retained, but harmonised */
+.app-shell.rwa-green-theme .desk-change-pos,
+.app-shell.rwa-green-theme .token-pulse-buy{color:#55dfa0!important}
+.app-shell.rwa-green-theme .desk-change-neg,
+.app-shell.rwa-green-theme .token-pulse-sell{color:#e8666d!important}
+.app-shell.rwa-green-theme .desk-tag-new,
+.app-shell.rwa-green-theme .desk-badge-pos{
+  color:#68e3a7;
+  background:rgba(66,217,149,.10);
+}
+.app-shell.rwa-green-theme .desk-badge-neg{
+  color:#ec7a80;
+  background:rgba(232,102,109,.10);
+}
+
+/* Notices / geo */
+.rwa-green-theme .geo-banner,
+.app-shell.rwa-green-theme .app-notice{
+  border-color:rgba(215,181,109,.28);
+  background:rgba(112,82,27,.08);
+  color:#ddc485;
+}
+.rwa-green-theme .rwa-disclaimer{
+  color:#64786d;
+}
+
+/* Scrollbars for RWA workspace */
+.app-shell.rwa-green-theme *{
+  scrollbar-color:#244d38 #07140e;
+}
+.app-shell.rwa-green-theme ::selection,
+.landing2.rwa-green-theme ::selection{
+  background:rgba(66,217,149,.26);
+  color:#f7fff9;
+}
+
+@media (max-width:860px){
+  .app-shell.rwa-green-theme{
+    width:100%;
+    border-left:0;
+    border-right:0;
+  }
+  .app-shell.rwa-green-theme .app-topnav{
+    background:rgba(5,17,11,.98);
+  }
+}

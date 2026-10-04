@@ -219,7 +219,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const chainNames = LIFI_EVM_CHAINS.map((c) => c.chain.name);
 
   return (
-    <main className="landing2 landing2-premium">
+    <main className="landing2 landing2-premium rwa-green-theme">
       <header className="landing-header">
         <LandingHeaderWave />
         <Link href="/" className="landing-brand" aria-label="Auevo home">

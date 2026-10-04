@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function AppSectionLayout({ children }: LayoutProps<"/rwa/app">) {
   return (
     <AppProviders>
-      <main className="app-shell">
+      <main className="app-shell rwa-green-theme">
         <div className="app-ambient" aria-hidden="true">
           <AuevoMark className="app-ambient-mark" />
           <span className="app-ambient-orbit app-ambient-orbit-one" />
