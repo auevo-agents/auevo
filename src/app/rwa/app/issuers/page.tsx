@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 interface Issuer {
@@ -25,6 +25,7 @@ export default function IssuersPage() {
   const [issuers, setIssuers] = useState<Issuer[] | null>(null);
   const [indexed, setIndexed] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +52,13 @@ export default function IssuersPage() {
     };
   }, []);
 
+  const filteredIssuers = useMemo(() => {
+    if (!issuers) return null;
+    const needle = query.trim().toLowerCase();
+    if (!needle) return issuers;
+    return issuers.filter((issuer) => [issuer.name, issuer.suffix, issuer.description, issuer.backingNote].filter(Boolean).join(" ").toLowerCase().includes(needle));
+  }, [issuers, query]);
+
   return (
     <>
       <header className="product-header product-header--issuers">
@@ -65,8 +73,20 @@ export default function IssuersPage() {
       {issuers && !indexed && <div className="app-empty">The asset registry isn&apos;t connected yet.</div>}
 
       {issuers && indexed && (
-        <div className="issuer-card-grid">
-          {issuers.map((issuer, index) => {
+        <>
+          <section className="issuer-explorer-head">
+            <div>
+              <span className="issuer-explorer-kicker"><i /> All issuers</span>
+              <h4>Explore <em>more issuers</em></h4>
+            </div>
+            <label className="issuer-search">
+              <span aria-hidden="true">⌕</span>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search issuers, assets or chains…" />
+              <kbd>/</kbd>
+            </label>
+          </section>
+          <div className="issuer-card-grid">
+          {(filteredIssuers ?? []).map((issuer, index) => {
             const isLive = issuer.tokenCount > 0;
             const monogram = issuer.name
               .split(/\s+/)
@@ -108,7 +128,9 @@ export default function IssuersPage() {
               </article>
             );
           })}
-        </div>
+          </div>
+          {filteredIssuers?.length === 0 && <div className="app-empty">No issuers match this search.</div>}
+        </>
       )}
     </>
   );
