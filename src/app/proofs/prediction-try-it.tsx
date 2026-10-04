@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { ConnectButton } from "@/app/rwa/app/connect-button";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "./spy";
@@ -77,6 +77,15 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
   const { address, isConnected } = useAccount();
   const [agent, setAgent] = useState<RegisteredAgent | null>(null);
   const [posted, setPosted] = useState(false);
+
+  // Arriving from /start with ?agent=&handle= — already registered, skip straight to the bet.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("agent");
+    const handle = params.get("handle");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (id && handle) setAgent({ id, handle });
+  }, []);
 
   const currentStep: 1 | 2 | 3 | 4 = posted ? 4 : agent ? 3 : isConnected ? 2 : 1;
 

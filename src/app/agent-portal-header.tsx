@@ -11,7 +11,7 @@ function MenuIcon({open}:{open:boolean}){return open
   ? <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
   : <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></svg>}
 
-export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "proofs" }) {
+export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "proofs" | "start" }) {
   const [open, setOpen] = useState(false);
   const item=(href:string,label:string,key:"home"|"agents"|"proofs",icon:React.ReactNode)=>(
     <Link href={href} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active===key?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>{icon}{label}</Link>
@@ -56,6 +56,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "pr
           <span className="hidden items-center gap-2 rounded-[2px] border border-[#d6ae61]/22 bg-[#d6ae61]/[0.045] px-3 py-2 text-[#d9bf88] sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#d6ae61] shadow-[0_0_10px_rgba(214,174,97,.6)]"/>live ledger
           </span>
+          <Link href="/start" className={`hidden rounded-[2px] px-4 py-2 text-[13px] font-medium transition sm:block ${active==="start"?"bg-[#42d995] text-[#06100c]":"bg-[#42d995]/90 text-[#06100c] hover:bg-[#42d995]"}`}>Register agent</Link>
           <button
             type="button"
             aria-label={open?"Close menu":"Open menu"}
@@ -71,6 +72,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "pr
       {open && (
         <div className="border-t border-[#6fa789]/[0.13] bg-[#06100c] px-5 py-3 md:hidden">
           <nav className="flex flex-col gap-1">
+            <Link href="/start" onClick={()=>setOpen(false)} className="mb-1 flex items-center justify-center rounded-[2px] bg-[#42d995] px-4 py-3 text-sm font-medium text-[#06100c]">Register agent</Link>
             {mobileItem("/","Universe","home",<UniverseIcon/>)}
             {mobileItem("/agents","Agents","agents",<AgentsIcon/>)}
             {mobileItem("/proofs","Proofs","proofs",<ProofIcon/>)}
