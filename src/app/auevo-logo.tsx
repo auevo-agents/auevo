@@ -17,36 +17,36 @@ export function AuevoMark({ className = "", title }: MarkProps) {
       aria-label={title}
     >
       <defs>
-        <linearGradient id="au-logo-violet" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#b9f6d5" />
-          <stop offset="52%" stopColor="#42d995" />
-          <stop offset="100%" stopColor="#1f8f61" />
+        <linearGradient id="au-tree-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ffe7aa" />
+          <stop offset="48%" stopColor="#d7b56d" />
+          <stop offset="100%" stopColor="#8b6429" />
         </linearGradient>
-        <linearGradient id="au-logo-gold" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ffe2a4" />
-          <stop offset="55%" stopColor="#d6ae61" />
-          <stop offset="100%" stopColor="#9c7430" />
+        <linearGradient id="au-tree-green" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#93ebbd" />
+          <stop offset="100%" stopColor="#2c8f62" />
         </linearGradient>
-        <filter id="au-logo-glow">
-          <feGaussianBlur stdDeviation="1.35" result="b" />
+        <filter id="au-tree-glow">
+          <feGaussianBlur stdDeviation="1.1" result="b" />
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
 
-      <g fill="#07140e" stroke="#244c38" strokeWidth="1">
-        <path d="M12 48 32 57 52 48 32 39Z" />
-        <path d="M16 40 32 47 48 40 32 33Z" />
+      <g fill="none" stroke="url(#au-tree-gold)" strokeLinecap="round" strokeLinejoin="round" filter="url(#au-tree-glow)">
+        <path d="M32 55V16" strokeWidth="3"/>
+        <path d="M32 35C24 34 19 29 16 22" strokeWidth="2.5"/>
+        <path d="M32 40C42 39 47 32 50 24" strokeWidth="2.5"/>
+        <path d="M32 28C38 27 42 23 45 18" strokeWidth="2"/>
+        <path d="M32 31C26 30 22 25 20 20" strokeWidth="2"/>
       </g>
-
-      <g strokeLinejoin="round">
-        <path d="M25 43V24l7-4 7 4v19l-7 4Z" fill="#0f2419" stroke="#2d5a43"/>
-        <path d="M20 45V33l5-3 5 3v12l-5 3Z" fill="#0b1c14" stroke="#28513d"/>
-        <path d="M39 45V31l5-3 5 3v14l-5 3Z" fill="#0b1c14" stroke="#28513d"/>
-        <path d="M28 24V14l4-2.5 4 2.5v10l-4 2.5Z" fill="url(#au-logo-violet)" stroke="#d1f8e3" filter="url(#au-logo-glow)"/>
-        <path d="M17 37h3M44 36h4M30 35h4M30 40h4" stroke="url(#au-logo-gold)" strokeWidth="2" strokeLinecap="round" filter="url(#au-logo-glow)"/>
-        <path d="M32 11.5V6.5" stroke="#5be0a0" strokeWidth="1.6" strokeLinecap="round" filter="url(#au-logo-glow)"/>
-        <circle cx="32" cy="5.5" r="1.2" fill="#f2db9b" filter="url(#au-logo-glow)"/>
+      <g fill="url(#au-tree-green)" stroke="url(#au-tree-gold)" strokeWidth=".8">
+        <path d="M13 19c7-3 13 0 14 7-7 1-12-1-14-7Z"/>
+        <path d="M44 14c6-1 11 2 11 8-6 0-10-2-11-8Z"/>
+        <path d="M47 23c7-1 12 3 12 9-7 0-11-3-12-9Z"/>
+        <path d="M16 28c7-1 12 3 12 9-7 0-11-3-12-9Z"/>
       </g>
+      <path d="M27 55h10" stroke="url(#au-tree-gold)" strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M32 13l2.2 4.2L38.5 19l-4.3 1.8L32 25l-2.2-4.2L25.5 19l4.3-1.8Z" fill="#f3d58c" filter="url(#au-tree-glow)"/>
     </svg>
   );
 }
@@ -56,7 +56,7 @@ export function AuevoLogo({ className = "", compact = false, title = "Auevo" }: 
     <span className={`auevo-logo ${compact ? "auevo-logo-compact" : ""} ${className}`.trim()}>
       <AuevoMark />
       {!compact && (
-        <span className="auevo-wordmark" aria-label={title}>
+        <span className="auevo-wordmark auevo-wordmark-gold" aria-label={title}>
           AUEVO
         </span>
       )}
