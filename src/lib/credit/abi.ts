@@ -12,11 +12,10 @@
 export const AGENT_CREDIT_POOL_ABI = [
   {
     type: "function",
-    name: "agents",
+    name: "agentInfo",
     stateMutability: "view",
     inputs: [{ name: "agentId", type: "uint256" }],
     outputs: [
-      { name: "sponsor", type: "address" },
       { name: "delegatedIn", type: "uint256" },
       { name: "principalOut", type: "uint256" },
       { name: "activeLoan", type: "bool" },
@@ -24,22 +23,58 @@ export const AGENT_CREDIT_POOL_ABI = [
       { name: "loansRepaid", type: "uint32" },
       { name: "volumeRepaid", type: "uint256" },
       { name: "enrolledAt", type: "uint64" },
+      { name: "sponsorCount", type: "uint256" },
+    ],
+  },
+  {
+    type: "function",
+    name: "sponsorsOf",
+    stateMutability: "view",
+    inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [{ type: "address[]" }],
+  },
+  {
+    type: "function",
+    name: "sponsorStakeOf",
+    stateMutability: "view",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "sponsor", type: "address" },
+    ],
+    outputs: [
+      { name: "amount", type: "uint256" },
       { name: "premiumBps", type: "uint16" },
     ],
   },
   {
     type: "function",
-    name: "loans",
+    name: "loanInfo",
     stateMutability: "view",
     inputs: [{ name: "loanId", type: "uint256" }],
     outputs: [
       { name: "agentId", type: "uint256" },
-      { name: "sponsor", type: "address" },
       { name: "principal", type: "uint256" },
       { name: "fee", type: "uint256" },
       { name: "dueAt", type: "uint64" },
       { name: "defaultableAt", type: "uint64" },
       { name: "status", type: "uint8" },
+    ],
+  },
+  {
+    type: "function",
+    name: "loanSharesOf",
+    stateMutability: "view",
+    inputs: [{ name: "loanId", type: "uint256" }],
+    outputs: [
+      {
+        name: "shares",
+        type: "tuple[]",
+        components: [
+          { name: "sponsor", type: "address" },
+          { name: "principal", type: "uint256" },
+          { name: "fee", type: "uint256" },
+        ],
+      },
     ],
   },
   {

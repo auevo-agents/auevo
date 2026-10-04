@@ -284,11 +284,11 @@ function RepayPanel({ pool }: { pool: Address }) {
   const { data: loan } = useReadContract({
     address: pool,
     abi: AGENT_CREDIT_POOL_ABI,
-    functionName: "loans",
+    functionName: "loanInfo",
     args: parsedLoanId !== null ? [parsedLoanId] : undefined,
     query: { enabled: parsedLoanId !== null },
   });
-  const totalDue = loan ? loan[2] + loan[3] : null; // principal + fee
+  const totalDue = loan ? loan[1] + loan[2] : null; // principal + fee
 
   const approve = useWriteContract();
   const approveReceipt = useWaitForTransactionReceipt({ hash: approve.data });
@@ -300,11 +300,11 @@ function RepayPanel({ pool }: { pool: Address }) {
   return (
     <Panel title="Repay, or mark a defaulted loan (anyone)" hint="Repay is permissionless — anyone may repay on an agent's behalf. markDefault only succeeds once the loan is past its grace period.">
       <input className={inputClass} placeholder="loan id" value={loanId} onChange={(e) => setLoanId(e.target.value)} inputMode="numeric" />
-      {loan && loan[6] === 1 && totalDue !== null && <p className="text-xs text-[var(--muted)]">Owes {totalDue.toString()} (raw units) — principal + fee.</p>}
+      {loan && loan[5] === 1 && totalDue !== null && <p className="text-xs text-[var(--muted)]">Owes {totalDue.toString()} (raw units) — principal + fee.</p>}
       <div className="flex gap-2">
         <button
           className={buttonClass}
-          disabled={!assetAddress || !loan || loan[6] !== 1 || totalDue === null || approve.isPending || approveReceipt.isLoading || repay.isPending || repayReceipt.isLoading}
+          disabled={!assetAddress || !loan || loan[5] !== 1 || totalDue === null || approve.isPending || approveReceipt.isLoading || repay.isPending || repayReceipt.isLoading}
           onClick={() => {
             if (!assetAddress || parsedLoanId === null || totalDue === null) return;
             approve.writeContract(
@@ -317,7 +317,7 @@ function RepayPanel({ pool }: { pool: Address }) {
         </button>
         <button
           className="rounded border border-[var(--line)] px-4 py-2 text-sm disabled:opacity-50"
-          disabled={!loan || loan[6] !== 1 || markDefault.isPending || markDefaultReceipt.isLoading}
+          disabled={!loan || loan[5] !== 1 || markDefault.isPending || markDefaultReceipt.isLoading}
           onClick={() => {
             if (parsedLoanId === null) return;
             markDefault.writeContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "markDefault", args: [parsedLoanId] });

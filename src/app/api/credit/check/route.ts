@@ -58,7 +58,11 @@ export async function GET(req: NextRequest) {
     verdict: verdictOf(record),
     record: record
       ? {
-          sponsor: record.sponsor,
+          sponsors: record.sponsors.map((s) => ({
+            sponsor: s.sponsor,
+            amount: s.amount.toString(),
+            premiumBps: s.premiumBps,
+          })),
           delegatedIn: record.delegatedIn.toString(),
           principalOut: record.principalOut.toString(),
           activeLoan: record.activeLoan,

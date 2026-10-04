@@ -13,9 +13,15 @@ import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS } from "./abi";
  * already established in this app.
  */
 
+export type SponsorStake = {
+  sponsor: `0x${string}`;
+  amount: bigint;
+  premiumBps: number;
+};
+
 export type AgentRecord = {
   agentId: bigint;
-  sponsor: `0x${string}`;
+  sponsors: SponsorStake[];
   delegatedIn: bigint;
   principalOut: bigint;
   activeLoan: boolean;
@@ -23,7 +29,6 @@ export type AgentRecord = {
   loansRepaid: number;
   volumeRepaid: bigint;
   enrolledAt: bigint;
-  premiumBps: number;
 };
 
 export type CreditVerdict = "no record" | "defaulted" | "no repayments yet" | "repaid";
@@ -35,34 +40,49 @@ export function getCreditPoolAddress(): `0x${string}` | null {
   return raw as `0x${string}`;
 }
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-
 export async function readAgentRecord(agentId: bigint): Promise<AgentRecord | null> {
   const pool = getCreditPoolAddress();
   if (!pool) return null;
 
   const client = getRobinhoodClient();
-  const result = await client.readContract({
-    address: pool,
-    abi: AGENT_CREDIT_POOL_ABI,
-    functionName: "agents",
-    args: [agentId],
-  });
+  const [delegatedIn, principalOut, activeLoan, defaulted, loansRepaid, volumeRepaid, enrolledAt, sponsorCount] =
+    await client.readContract({
+      address: pool,
+      abi: AGENT_CREDIT_POOL_ABI,
+      functionName: "agentInfo",
+      args: [agentId],
+    });
 
-  const [sponsor, delegatedIn, principalOut, activeLoan, defaulted, loansRepaid, volumeRepaid, enrolledAt, premiumBps] =
-    result;
-
-  // sponsor === address(0) means this agentId has never been vouched for on
-  // this pool — distinct from "doesn't exist on the identity registry",
-  // which this function doesn't check (callers that need that should read
-  // the identity registry's own ownerOf separately).
-  if (sponsor.toLowerCase() === ZERO_ADDRESS && loansRepaid === 0 && delegatedIn === 0n) {
+  // No sponsors ever and nothing repaid means this agentId has never been
+  // vouched for on this pool — distinct from "doesn't exist on the identity
+  // registry", which this function doesn't check (callers that need that
+  // should read the identity registry's own ownerOf separately).
+  if (sponsorCount === 0n && loansRepaid === 0 && delegatedIn === 0n) {
     return null;
   }
 
+  const sponsorAddresses = await client.readContract({
+    address: pool,
+    abi: AGENT_CREDIT_POOL_ABI,
+    functionName: "sponsorsOf",
+    args: [agentId],
+  });
+
+  const sponsors = await Promise.all(
+    sponsorAddresses.map(async (sponsor) => {
+      const [amount, premiumBps] = await client.readContract({
+        address: pool,
+        abi: AGENT_CREDIT_POOL_ABI,
+        functionName: "sponsorStakeOf",
+        args: [agentId, sponsor],
+      });
+      return { sponsor, amount, premiumBps };
+    })
+  );
+
   return {
     agentId,
-    sponsor,
+    sponsors,
     delegatedIn,
     principalOut,
     activeLoan,
@@ -70,7 +90,6 @@ export async function readAgentRecord(agentId: bigint): Promise<AgentRecord | nu
     loansRepaid,
     volumeRepaid,
     enrolledAt,
-    premiumBps,
   };
 }
 
@@ -110,24 +129,31 @@ export async function readLoan(loanId: bigint) {
   if (!pool) return null;
 
   const client = getRobinhoodClient();
-  const [agentId, sponsor, principal, fee, dueAt, defaultableAt, status] = await client.readContract({
+  const [agentId, principal, fee, dueAt, defaultableAt, status] = await client.readContract({
     address: pool,
     abi: AGENT_CREDIT_POOL_ABI,
-    functionName: "loans",
+    functionName: "loanInfo",
     args: [loanId],
   });
 
   if (status === 0) return null; // LoanStatus.None — this loanId was never written
 
+  const shares = await client.readContract({
+    address: pool,
+    abi: AGENT_CREDIT_POOL_ABI,
+    functionName: "loanSharesOf",
+    args: [loanId],
+  });
+
   return {
     loanId,
     agentId,
-    sponsor,
     principal,
     fee,
     dueAt,
     defaultableAt,
     status: LOAN_STATUS[status],
+    shares,
   };
 }
 

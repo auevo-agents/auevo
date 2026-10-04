@@ -101,8 +101,20 @@ async function AgentLookup({ idStr }: { idStr: string }) {
 
       {record ? (
         <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
-          <dt className="text-[var(--muted)]">Sponsor</dt>
-          <dd className="break-all">{record.sponsor}</dd>
+          <dt className="text-[var(--muted)]">Sponsors ({record.sponsors.length})</dt>
+          <dd className="break-all">
+            {record.sponsors.length === 0 ? (
+              "none"
+            ) : (
+              <ul className="flex flex-col gap-1">
+                {record.sponsors.map((s) => (
+                  <li key={s.sponsor}>
+                    {s.sponsor} — {s.amount.toString()} (raw units) @ {s.premiumBps}bps
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
           <dt className="text-[var(--muted)]">Line (delegatedIn)</dt>
           <dd>{record.delegatedIn.toString()} (raw units)</dd>
           <dt className="text-[var(--muted)]">Currently borrowed</dt>
