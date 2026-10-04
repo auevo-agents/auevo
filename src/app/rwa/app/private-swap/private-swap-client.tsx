@@ -141,7 +141,14 @@ export function PrivateSwapClient() {
     }
   }, []);
 
-  useEffect(() => { if (gateContinued) void loadTokens(""); }, [loadTokens, gateContinued]);
+  useEffect(() => {
+    if (!gateContinued) return;
+    // Deferred via setTimeout(0), not called directly, so loadTokens's own
+    // setState calls (setLoadingTokens/setError, before its first await)
+    // don't run synchronously inside this effect's call stack.
+    const id = window.setTimeout(() => { void loadTokens(""); }, 0);
+    return () => window.clearTimeout(id);
+  }, [loadTokens, gateContinued]);
 
   useEffect(() => {
     if (!search.trim()) return;

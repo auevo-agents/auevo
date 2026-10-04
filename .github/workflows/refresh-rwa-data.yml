@@ -9,12 +9,13 @@ name: Refresh RWA data
 # as a safety net in case this workflow is ever paused or disabled — the
 # routes are idempotent/checkpointed, so an extra daily call costs nothing.
 #
-# Budget check: this repo is private, so GitHub Actions' free tier is
-# 2,000 minutes/month. Five sequential calls per run, hourly, is 720
-# runs/month — comfortably inside budget even if each run takes a couple
-# of minutes. If GitHub ever did exhaust the free minutes, the schedule
-# just stops firing (no spending limit is set), it does not silently bill
-# anyone — see the repo's Settings → Billing if that ever needs raising.
+# Budget check: this repo is public (since 2026-10-04), so GitHub Actions
+# minutes on standard runners are unlimited and free — before that, on a
+# private repo, the free tier was 2,000 minutes/month, and five sequential
+# calls per run, hourly (720 runs/month), stayed comfortably inside it.
+# No spending limit is set regardless, so a quota being hit again in the
+# future (e.g. if the repo ever goes private) would just stop the schedule
+# firing, not silently bill anyone — see the repo's Settings → Billing.
 #
 # If prices alone need to be fresher than this (e.g. every 5–15 minutes),
 # that's the point where Vercel Pro (which also lifts the maxDuration

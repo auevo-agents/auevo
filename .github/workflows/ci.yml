@@ -1,0 +1,29 @@
+name: CI
+
+# Scoped to lint, deliberately — a full `next build` needs real Supabase
+# credentials (several pages fetch live data at build time for static
+# generation) that only exist in the Vercel project's own env vars today,
+# not as GitHub Actions secrets. Vercel's own build on every push already
+# covers full compile + typecheck + static generation; this workflow adds
+# a fast, secret-free signal that runs the same way for any contributor's
+# fork or PR, with nothing to configure.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
