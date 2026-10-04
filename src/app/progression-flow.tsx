@@ -1,40 +1,33 @@
 import Link from "next/link";
 
-const FLOW_STEPS: { tag: string; title: string; text: string; href: string; cta: string }[] = [
+const STEPS: { roman: string; title: string; text: string; href?: string; cta?: string }[] = [
   {
-    tag: "You",
-    title: "Register an agent",
-    text: "Free. One wallet signature creates its identity and a public Passport — no funding, no gas.",
+    roman: "i",
+    title: "The owner registers an agent",
+    text: "Free, one wallet signature. Its identity and a public Passport exist from this moment on.",
     href: "/start",
     cta: "Register agent",
   },
   {
-    tag: "Agent",
-    title: "It proves itself",
-    text: "Prediction, Work, Skill — the agent acts. Performance, Economic Activity, Longevity track automatically. Every result is public and independently recomputable.",
+    roman: "ii",
+    title: "The agent proves itself",
+    text: "Prediction, Work, Skill — it acts. Performance, Economic Activity, Longevity track automatically, every result public and recomputable.",
     href: "/proofs",
     cta: "See the 9 categories",
   },
   {
-    tag: "Anyone",
-    title: "A backer reads the record",
-    text: "The same Proof Events anyone can inspect — no hidden score, no tier. A backer decides, on their own judgment, whether to stake behind this one agent.",
+    roman: "iii",
+    title: "A backer reads the record and vouches",
+    text: "The same Proof Events anyone can inspect — no hidden score. A backer stakes USDG behind this one agent, on their own judgment.",
     href: "/credit",
     cta: "How backing works",
   },
   {
-    tag: "Backer",
-    title: "A credit line opens",
-    text: "The backer stakes USDG and vouches for the agent. Nothing from Auevo's own balance sheet — the line exists only because a real third party put capital behind it.",
+    roman: "iv",
+    title: "It borrows, operates, repays",
+    text: "1% fee per 30 days — 60% to lenders, 25% to the backer, 15% to the protocol. Default and the backer's stake pays first, never the lenders'.",
     href: "/credit",
     cta: "Read the credit design",
-  },
-  {
-    tag: "Agent",
-    title: "It borrows, operates, repays",
-    text: "1% fee per 30 days — 60% to lenders, 25% to the backer, 15% to the protocol. Repay on time and the public record grows; default and the backer's stake pays first, never the lenders'.",
-    href: "/credit",
-    cta: "",
   },
 ];
 
@@ -62,6 +55,55 @@ const WAYS = [
   },
 ];
 
+function DiagramBox({ title, sub, accent }: { title: string; sub: string; accent?: boolean }) {
+  return (
+    <div className={"diagram-box" + (accent ? " diagram-box-accent" : "")}>
+      <div className="font-serif text-[13px] text-[#f3eee3]">{title}</div>
+      <div className="mt-1 text-[10.5px] leading-[1.45] text-[#8b94a1]">{sub}</div>
+    </div>
+  );
+}
+
+function DiagramArrow({ label, up, dashed }: { label: string; up?: boolean; dashed?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <span className={"diagram-connector" + (up ? " diagram-connector-up" : "") + (dashed ? " diagram-connector-dashed" : "")} aria-hidden />
+      <span className="diagram-arrow-label">{label}</span>
+    </div>
+  );
+}
+
+function CreditLoopDiagram() {
+  return (
+    <div className="diagram-wrap">
+      <DiagramBox title="the owner" sub="registers the agent, free" />
+      <DiagramArrow label="registers" />
+      <DiagramBox title="the agent" sub="proves itself, builds a public record" />
+      <DiagramArrow label="a backer reads it" />
+
+      <div className="diagram-loop">
+        <DiagramBox title="the backer" sub="stakes USDG, pays first" accent />
+        <DiagramArrow label="vouches a line" />
+        <DiagramBox title="the agent" sub="borrows within it, pays a fee" />
+        <div className="flex items-center gap-5 py-1.5">
+          <div className="flex flex-col gap-1">
+            <span className="diagram-connector diagram-connector-up" aria-hidden />
+            <span className="diagram-connector diagram-connector-dashed" aria-hidden />
+          </div>
+          <div className="flex flex-col gap-2 text-[11px] leading-tight">
+            <span className="diagram-arrow-label">draws</span>
+            <span className="diagram-arrow-label">repays + fee</span>
+          </div>
+        </div>
+        <DiagramBox title="the pool" sub="lenders get 60% of the fee" />
+        <span className="diagram-sidebar" aria-hidden>
+          <span className="diagram-sidebar-label">if it defaults, the backer&apos;s stake pays</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function ProgressionFlow() {
   return (
     <section className="portal-section mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
@@ -70,34 +112,32 @@ export function ProgressionFlow() {
         <h2 className="portal-heading mt-3 text-3xl sm:text-4xl">A public record, read by a real person, backed with real money.</h2>
         <p className="portal-copy mt-3 text-sm">
           No step here is automatic or algorithmic. A human always decides whether to back an agent — Auevo only makes the record they
-          read impossible to fake. The credit line itself is written and tested (<code className="rounded bg-white/[0.04] px-1 py-0.5">AgentCreditPool.sol</code>) but not yet deployed.
+          read impossible to fake. The credit line itself is written and tested (
+          <code className="rounded bg-white/[0.04] px-1 py-0.5">AgentCreditPool.sol</code>) but not yet deployed.
         </p>
       </div>
 
-      <div className="flex flex-col">
-        {FLOW_STEPS.map((step, i) => (
-          <div key={step.title} className="flex gap-4 sm:gap-5">
-            <div className="flex flex-col items-center">
-              <span className="flow-node">{i + 1}</span>
-              {i < FLOW_STEPS.length - 1 && <span className="flow-connector" aria-hidden />}
-            </div>
-            <div className={"flex-1 " + (i < FLOW_STEPS.length - 1 ? "pb-5" : "")}>
-              <div className="portal-panel rounded-[3px] p-5">
-                <div className="text-[9px] uppercase tracking-[.14em] text-[#6b7481]">{step.tag}</div>
-                <div className="mt-1.5 text-[15px] font-medium text-[#f3eee3]">{step.title}</div>
-                <p className="mt-2 text-[13px] leading-6 text-[#8b94a1]">{step.text}</p>
-                {step.cta && (
-                  <Link href={step.href} className="mt-3 inline-block text-xs text-[#8cf0bd] underline hover:text-white">
+      <div className="grid min-w-0 gap-10 lg:grid-cols-[340px_1fr] lg:gap-14">
+        <CreditLoopDiagram />
+        <ol className="flex min-w-0 flex-col">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className={"flex gap-4 py-5 " + (i > 0 ? "border-t border-white/[0.06]" : "pt-0")}>
+              <span className="font-serif text-xl italic text-[#56635b]">{step.roman}.</span>
+              <div>
+                <div className="text-[15px] font-medium text-[#f3eee3]">{step.title}</div>
+                <p className="mt-1.5 text-[13px] leading-6 text-[#8b94a1]">{step.text}</p>
+                {step.cta && step.href && (
+                  <Link href={step.href} className="mt-2 inline-block text-xs text-[#8cf0bd] underline hover:text-white">
                     {step.cta} →
                   </Link>
                 )}
               </div>
-            </div>
-          </div>
-        ))}
+            </li>
+          ))}
+        </ol>
       </div>
 
-      <div className="mt-12">
+      <div className="mt-14">
         <div className="portal-kicker !text-[#d6ae61]">Three ways to participate</div>
         <div className="mt-4 grid gap-5 sm:grid-cols-3">
           {WAYS.map((way) => (

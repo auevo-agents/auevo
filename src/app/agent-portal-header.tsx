@@ -56,7 +56,9 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "pr
           <span className="hidden items-center gap-2 rounded-[2px] border border-[#d6ae61]/22 bg-[#d6ae61]/[0.045] px-3 py-2 text-[#d9bf88] sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#d6ae61] shadow-[0_0_10px_rgba(214,174,97,.6)]"/>live ledger
           </span>
-          <Link href="/start" className="portal-btn-primary hidden px-4 py-2 text-[13px] font-medium sm:inline-flex">Register agent</Link>
+          <div className="hidden sm:block">
+            <Link href="/start" className="portal-btn-primary px-4 py-2 text-[13px] font-medium">Register agent</Link>
+          </div>
           <button
             type="button"
             aria-label={open?"Close menu":"Open menu"}

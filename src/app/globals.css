@@ -15694,6 +15694,64 @@ body{
 }
 @keyframes flow-pulse{from{background-position:0 0}to{background-position:0 34px}}
 @media (prefers-reduced-motion: reduce){.flow-connector{animation:none;background:rgba(66,217,149,.35)}}
+
+.diagram-wrap{display:flex;flex-direction:column;align-items:flex-start;max-width:280px;min-width:0;width:100%}
+.diagram-box{
+  width:100%;border-radius:3px;padding:.85rem 1rem;
+  border:1px solid rgba(66,217,149,.22);
+  background:linear-gradient(180deg,rgba(14,32,22,.7),rgba(7,18,13,.7));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.diagram-box-accent{border-color:rgba(215,181,109,.3);background:linear-gradient(180deg,rgba(38,32,15,.5),rgba(10,16,10,.6))}
+.diagram-connector{
+  position:relative;width:2px;height:24px;flex-shrink:0;
+  background:repeating-linear-gradient(180deg,rgba(66,217,149,.9) 0 4px,transparent 4px 9px);
+  background-size:2px 26px;
+  animation:flow-pulse .9s linear infinite;
+}
+.diagram-connector::after{
+  content:"\25BE";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);
+  font-size:9px;line-height:1;color:rgba(66,217,149,.9);
+}
+.diagram-connector-up{
+  background:repeating-linear-gradient(0deg,rgba(66,217,149,.9) 0 4px,transparent 4px 9px);
+  background-size:2px 26px;
+  animation-direction:reverse;
+}
+.diagram-connector-up::after{content:"\25B4";bottom:auto;top:-9px}
+.diagram-connector-dashed{
+  background:repeating-linear-gradient(180deg,rgba(215,181,109,.85) 0 3px,transparent 3px 8px);
+  background-size:2px 22px;
+  animation-duration:1.3s;
+}
+.diagram-connector-dashed::after{content:"\25BE";color:rgba(215,181,109,.9)}
+.diagram-arrow-label{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:11px;color:#d7b56d}
+.diagram-loop{position:relative;display:flex;flex-direction:column;align-items:flex-start;width:100%;padding-right:34px}
+.diagram-sidebar{
+  position:absolute;top:0;bottom:0;right:4px;width:2px;
+  background:repeating-linear-gradient(180deg,rgba(215,181,109,.6) 0 3px,transparent 3px 8px);
+  background-size:2px 22px;
+  animation:flow-pulse 1.6s linear infinite;
+}
+.diagram-sidebar::after{content:"\25BE";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font-size:9px;color:rgba(215,181,109,.9)}
+.diagram-sidebar-label{
+  position:absolute;top:50%;left:14px;
+  transform:translateY(-50%) rotate(90deg);
+  transform-origin:left center;
+  white-space:nowrap;
+  font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:10.5px;color:#b89a5e;
+}
+@media (prefers-reduced-motion: reduce){
+  .diagram-connector,.diagram-connector-up,.diagram-connector-dashed,.diagram-sidebar{animation:none}
+}
+@media (max-width: 1023px){
+  .diagram-wrap{max-width:100%}
+  .diagram-loop{padding-right:40px}
+}
+@media (max-width: 480px){
+  .diagram-loop{padding-right:30px}
+  .diagram-sidebar-label{font-size:9.5px}
+}
 .portal-btn-secondary{
   border-color:rgba(124,176,148,.18);
   background-image:
