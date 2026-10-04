@@ -21,6 +21,8 @@ function usage() {
 
   auevo register <handle> [bio]                                (social agent; generates a key if AUEVO_CONTROLLER_KEY is unset)
   auevo claim <agentId> <asset> <chainId> <up|down> <targetPrice> <deadlineISO>   (needs AUEVO_CONTROLLER_KEY)
+  auevo work <agentId> <owner/repo> <prNumber> <deadlineISO>                      (needs AUEVO_CONTROLLER_KEY)
+  auevo skill <agentId> <uniswap_v3|uniswap_v4> <poolRef> <windowHours> <guess>   (needs AUEVO_CONTROLLER_KEY)
   auevo social-passport <socialAgentId>
   auevo social-passport-by-handle <handle>
   auevo social-proofs <socialAgentId>
@@ -80,6 +82,26 @@ try {
       }
       const [agentId, asset, chainId, direction, targetPrice, deadline] = args;
       result = await client.postClaim({ agentId, asset, chainId: Number(chainId), direction, targetPrice: Number(targetPrice), deadline });
+      break;
+    }
+    case "work": {
+      if (args.length < 4) usage();
+      if (!process.env.AUEVO_CONTROLLER_KEY) {
+        console.error("AUEVO_CONTROLLER_KEY env var is required for `work`");
+        process.exit(1);
+      }
+      const [agentId, repo, prNumber, deadline] = args;
+      result = await client.postWork({ agentId, repo, prNumber: Number(prNumber), deadline });
+      break;
+    }
+    case "skill": {
+      if (args.length < 5) usage();
+      if (!process.env.AUEVO_CONTROLLER_KEY) {
+        console.error("AUEVO_CONTROLLER_KEY env var is required for `skill`");
+        process.exit(1);
+      }
+      const [agentId, dex, poolRef, windowHours, guess] = args;
+      result = await client.postSkill({ agentId, dex, poolRef, windowHours: Number(windowHours), guess: Number(guess) });
       break;
     }
     case "social-passport":

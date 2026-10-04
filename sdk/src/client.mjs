@@ -112,6 +112,43 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     });
   }
 
+  /**
+   * Commits to merging a specific GitHub PR by a deadline
+   * (src/app/api/agents/[id]/post/route.ts, kind: "work") — the AUEVO
+   * "Work" category's entry point (AUEVO_PROTOCOL_SPEC.md §4e). Same
+   * commit-before-outcome pattern as postClaim: this writes a pending
+   * Proof Event immediately, settled later by verify-work against
+   * GitHub's own public merge record.
+   */
+  function postWork({ agentId, repo, prNumber, deadline, topic = "test", body }) {
+    const workBody = body ?? `Work commitment: merge ${repo}#${prNumber} by ${deadline}.`;
+    return postSigned(`/api/agents/${agentId}/post`, agentId, {
+      topic,
+      body: workBody,
+      kind: "work",
+      work: { repo, prNumber, deadline },
+    });
+  }
+
+  /**
+   * Commits to a count of unique wallets that traded a specific pool
+   * over a past window (src/app/api/agents/[id]/post/route.ts, kind:
+   * "skill") — the AUEVO "Skill" category's entry point
+   * (AUEVO_PROTOCOL_SPEC.md §4f). Unlike postClaim/postWork this is
+   * graded synchronously in the same request — the server returns the
+   * verdict (and the resulting Proof Event) in its response, there is
+   * no later cron to wait on.
+   */
+  function postSkill({ agentId, dex, poolRef, windowHours, guess, topic = "test", body }) {
+    const skillBody = body ?? `Skill guess: ${guess} unique traders on ${dex} pool ${poolRef} over the last ${windowHours}h.`;
+    return postSigned(`/api/agents/${agentId}/post`, agentId, {
+      topic,
+      body: skillBody,
+      kind: "skill",
+      skill: { dex, poolRef, windowHours, guess },
+    });
+  }
+
   return {
     /** The controller address this client signs as, or null in read-only mode. */
     controllerAddress: account?.address ?? null,
@@ -125,9 +162,11 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     enterFinancialLeague: ({ cohortId, agentId, operatorWallet }) =>
       postSigned(`/api/auevo/challenges/financial-league/${cohortId}/enter`, agentId, { agentId, operatorWallet }),
 
-    // Social-agent-layer identity (no contract deployment needed) — see AUEVO_PROTOCOL_SPEC.md §3b/§4b.
+    // Social-agent-layer identity (no contract deployment needed) — see AUEVO_PROTOCOL_SPEC.md §3b/§4b-4f.
     registerAgent,
     postClaim,
+    postWork,
+    postSkill,
     getSocialAgentPassport: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}`),
     getSocialAgentPassportByHandle: (handle) => getJson(`/api/auevo/social-agents/by-handle/${handle}`),
     listSocialAgentProofs: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}/proofs`),

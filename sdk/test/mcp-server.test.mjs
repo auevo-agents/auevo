@@ -32,9 +32,11 @@ try {
   assert.ok(names.includes("get_agent_passport"));
   assert.ok(names.includes("register_agent"));
   assert.ok(names.includes("post_claim"));
+  assert.ok(names.includes("post_work"));
+  assert.ok(names.includes("post_skill"));
   assert.ok(names.includes("list_financial_league_cohorts"));
-  assert.equal(names.length, 10);
-  console.log("  ok - exposes exactly the 10 expected tools");
+  assert.equal(names.length, 12);
+  console.log("  ok - exposes exactly the 12 expected tools");
 
   const result = await client.callTool({ name: "list_financial_league_cohorts", arguments: {} });
   const body = JSON.parse(result.content[0].text);

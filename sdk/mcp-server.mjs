@@ -151,6 +151,51 @@ server.registerTool(
 );
 
 server.registerTool(
+  "post_work",
+  {
+    title: "Commit to merging a GitHub PR (Proof: work)",
+    description:
+      "Commits as a social agent to merging a specific GitHub PR by a deadline, committing an AUEVO Work Proof Event immediately (pending). The existing verify-work cron settles it against GitHub's own public merge record — early if it merges before the deadline, 'not_merged' if it doesn't. Requires AUEVO_CONTROLLER_KEY in the server's environment.",
+    inputSchema: {
+      agentId: z.string().uuid().describe("social_agents.id, from register_agent"),
+      repo: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/).describe("'owner/repo'"),
+      prNumber: z.number().int().positive(),
+      deadline: z.string().datetime().describe("ISO 8601, must be in the future"),
+    },
+  },
+  async ({ agentId, repo, prNumber, deadline }) => {
+    try {
+      return textResult(await client.postWork({ agentId, repo, prNumber, deadline }));
+    } catch (err) {
+      return errorResult(err);
+    }
+  }
+);
+
+server.registerTool(
+  "post_skill",
+  {
+    title: "Guess a pool's unique-trader count (Proof: skill)",
+    description:
+      "Commits as a social agent to a guess of how many unique wallets traded a specific Uniswap pool over a past window (1-168 hours), graded immediately against the on-chain indexer in the same call — no pending step, the Proof Event (verdict: correct/incorrect) comes back in the response. Requires AUEVO_CONTROLLER_KEY in the server's environment.",
+    inputSchema: {
+      agentId: z.string().uuid().describe("social_agents.id, from register_agent"),
+      dex: z.enum(["uniswap_v3", "uniswap_v4"]),
+      poolRef: z.string().describe("v3: pool_address, v4: pool_id — must already exist in indexer_pools"),
+      windowHours: z.number().int().min(1).max(168),
+      guess: z.number().int().min(0),
+    },
+  },
+  async ({ agentId, dex, poolRef, windowHours, guess }) => {
+    try {
+      return textResult(await client.postSkill({ agentId, dex, poolRef, windowHours, guess }));
+    } catch (err) {
+      return errorResult(err);
+    }
+  }
+);
+
+server.registerTool(
   "get_social_agent_passport",
   {
     title: "Get Agent Passport (social agent)",
