@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
+import { OrbitBloom3D, type OrbitBloomAgent } from "@/app/proofs/orbit-bloom-3d";
 import { categoryLabel, categoryAccent, CATEGORY_ORDER } from "@/app/proofs/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
@@ -55,10 +55,10 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
 
     <div className="portal-hero relative overflow-hidden rounded-[4px]">
       <div className="flex items-center justify-between border-b border-white/[0.05] px-6 py-4">
-        <div><div className="text-[10px] uppercase tracking-[.25em] text-[#8b72ff]">3D Proof Citadel</div><div className="mt-1 text-xs text-[#5f6875]">Live geometry from the ledger</div></div>
+        <div><div className="text-[10px] uppercase tracking-[.25em] text-[#8b72ff]">3D Reputation Bloom</div><div className="mt-1 text-xs text-[#5f6875]">Every visible block is a real Proof Event</div></div>
         <div className="rounded-[2px] border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">auto orbit</div>
       </div>
-      <ProofCity3D
+      <OrbitBloom3D
         single
         autoRotate
         agents={[{
@@ -70,19 +70,20 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
           pending: record.pending,
           rejected: record.rejected,
           dominantCategory: record.dominantCategory,
-          categories: record.categories.map((category) => ({
-            category: category.category,
-            attempted: category.attempted,
-            verified: category.verified,
-            confidence: category.confidence,
+          proofs: record.proofs.map((p) => ({
+            id: p.id,
+            category: p.category,
+            status: p.status,
+            verification_method: p.verification_method,
+            created_at: p.created_at,
           })),
-        } satisfies ProofCityAgent]}
+        } satisfies OrbitBloomAgent]}
         className="h-[590px]"
       />
       <div className="grid grid-cols-3 border-t border-white/[0.05] text-center">
-       <div className="p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified blocks</div></div>
-       <div className="border-x border-white/[0.05] p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending layers</div></div>
-       <div className="p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.ageDays}d</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">foundation age</div></div>
+       <div className="p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified proofs</div></div>
+       <div className="border-x border-white/[0.05] p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending proofs</div></div>
+       <div className="p-4"><div className="text-lg font-semibold text-[#f0ece4]">{record.ageDays}d</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">identity age</div></div>
       </div>
     </div>
 
@@ -93,9 +94,9 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
       </div>
       <div className="portal-panel rounded-[4px] p-5">
        <div className="text-[10px] uppercase tracking-[.18em] text-[#d6ae61]">Visual encoding</div>
-       <div className="mt-4 space-y-2 text-xs text-[#7e8794]"><Row a="Mass" b="attempted"/><Row a="Light" b="verified"/><Row a="Cracks" b="failed"/><Row a="Ghost layer" b="pending"/><Row a="Foundation" b="identity age"/></div>
+       <div className="mt-4 space-y-2 text-xs text-[#7e8794]"><Row a="Each voxel" b="1 Proof Event"/><Row a="Violet" b="verified"/><Row a="Gold" b="deterministic / oracle"/><Row a="Lilac" b="pending"/><Row a="Red" b="failed / disputed"/><Row a="Orbit lane" b="proof category"/></div>
        <div className="mt-5 border-t border-white/[0.055] pt-4">
-        <div className="text-[9px] uppercase tracking-[.14em] text-[#5f6875]">9 towers, by color</div>
+        <div className="text-[9px] uppercase tracking-[.14em] text-[#5f6875]">9 categories, by orbit</div>
         <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">{CATEGORY_ORDER.map((cat)=><div key={cat} className="flex items-center gap-1.5 text-[10.5px] text-[#9299a6]"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:categoryAccent(cat)}}/>{categoryLabel(cat)}</div>)}</div>
        </div>
       </div>
