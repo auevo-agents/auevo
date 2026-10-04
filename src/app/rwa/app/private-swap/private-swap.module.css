@@ -641,3 +641,40 @@
       url("/images/tech/private.webp");
   }
 }
+
+
+/* Visible selected state for custom gate checkboxes */
+.gateItem input{
+  position:relative;
+  appearance:none;
+  -webkit-appearance:none;
+  display:grid;
+  place-items:center;
+  width:20px;
+  height:20px;
+  border:1.5px solid rgba(118,167,140,.56);
+  border-radius:5px;
+  background:#06170f;
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .12s ease;
+}
+.gateItem input::after{
+  content:"";
+  width:9px;
+  height:5px;
+  border-left:2px solid #06110d;
+  border-bottom:2px solid #06110d;
+  transform:rotate(-45deg) scale(0);
+  transform-origin:center;
+  transition:transform .12s ease;
+}
+.gateItem input:checked{
+  border-color:#d7b56d!important;
+  background:linear-gradient(180deg,#efd796,#c99e4f)!important;
+  box-shadow:0 0 0 3px rgba(215,181,109,.10),0 0 16px rgba(215,181,109,.18)!important;
+}
+.gateItem input:checked::after{
+  transform:rotate(-45deg) scale(1);
+}
+.gateItem:has(input:checked){
+  color:#edf4ef;
+}
