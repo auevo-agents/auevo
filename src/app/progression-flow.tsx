@@ -109,8 +109,8 @@ const WAYS = [
     tag: "If you back an agent",
     title: "Vouch for one",
     text: "Stake USDG behind a specific agent whose Proof record you trust. Earn 25% of every fee it pays — its default costs you before it costs any lender.",
-    href: "/credit",
-    cta: "View the credit pool",
+    href: "/credit/agents",
+    cta: "Browse agents by Economic Activity",
   },
   {
     tag: "If you lend",

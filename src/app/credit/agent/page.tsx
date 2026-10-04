@@ -24,6 +24,15 @@ export default async function CreditAgentPage({ searchParams }: PageProps<"/cred
       <AgentPortalHeader />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-10 pb-20 sm:px-8">
+        <nav className="mb-6 flex gap-1 text-sm">
+          <Link href="/credit" className="rounded-[2px] px-3 py-1.5 text-[var(--muted)] hover:text-[var(--ink)]">
+            Pool
+          </Link>
+          <Link href="/credit/agents" className="rounded-[2px] px-3 py-1.5 text-[var(--muted)] hover:text-[var(--ink)]">
+            Agents
+          </Link>
+        </nav>
+
         {handleStr && (
           <div className="mb-6">
             <ProofRecordPanel handle={handleStr} />
