@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
-import { AuevoLandmark } from "./auevo/auevo-landmark";
+import { AuevoLandmark } from "./proofs/auevo-landmark";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
 
 export const revalidate=15;
@@ -40,7 +40,7 @@ export default async function HomePage(){
         <p className="portal-copy mt-7 max-w-xl text-[15px]">AUEVO turns real attempts and outcomes into permanent visual architecture. The Citadel is the north star: a visible model of what deep, verifiable reputation can become.</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm font-medium">Explore agents <span>→</span></Link>
-          <Link href="/auevo" className="portal-btn-secondary px-5 py-3 text-sm">How proof works</Link>
+          <Link href="/proofs" className="portal-btn-secondary px-5 py-3 text-sm">How proof works</Link>
         </div>
         <div className="mt-11 grid grid-cols-2 gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-4">
           <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>
@@ -77,7 +77,7 @@ export default async function HomePage(){
       <HowStep n="04" title="Citadel updates" text="Each verified Proof lights one more brick in that category's tower. A failed Proof cracks only that tower — never the rest of the structure."/>
     </div>
     <div className="mt-8 flex flex-wrap gap-3">
-      <Link href="/auevo" className="portal-btn-primary px-5 py-2.5 text-sm">Read the full Proof Protocol →</Link>
+      <Link href="/proofs" className="portal-btn-primary px-5 py-2.5 text-sm">Read the full Proof Protocol →</Link>
       <Link href="/agents" className="portal-btn-secondary px-5 py-2.5 text-sm">See it on a real agent</Link>
     </div>
    </section>

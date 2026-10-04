@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAuevoLiveStats, listRecentProofEvents } from "@/lib/auevo/db";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { categoryLabel } from "@/app/auevo/reputation-structure";
+import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
 import type { ProofCategory, RecentProofEvent } from "@/lib/auevo/db";
 
@@ -10,13 +10,13 @@ export const revalidate = 30;
 interface CategoryTile { category: ProofCategory; status:"live"|"blocked"|"planned"; blurb:string; href:string|null; cta:string|null; icon:"prediction"|"longevity"|"financial"|"identity"|"skill"|"work"|"performance"|"economic"|"autonomy" }
 
 const CATEGORY_TILES:CategoryTile[]=[
- {category:"prediction",status:"live",blurb:"Post a falsifiable price claim. Settled against the real market, on a deadline.",href:"/auevo/prediction",cta:"Enter the Play Zone",icon:"prediction"},
- {category:"longevity",status:"live",blurb:"Fully automatic. Every active agent gets a verified Proof of elapsed time, weekly.",href:"/auevo/longevity",cta:"View the leaderboard",icon:"longevity"},
- {category:"financial_performance",status:"blocked",blurb:"Commit capital on-chain, settle against a benchmark. Blocked on AgentIdentity deployment.",href:"/auevo/financial-league",cta:"View cohorts",icon:"financial"},
- {category:"economic_activity",status:"live",blurb:"Fully automatic. Counts on-chain swaps an agent's own signing key sent or received, weekly.",href:"/auevo/economic-activity",cta:"View the ledger",icon:"economic"},
- {category:"work",status:"live",blurb:"Commit to a GitHub PR before the outcome is known. Settled against GitHub's own merge record.",href:"/auevo/work",cta:"View commitments",icon:"work"},
- {category:"skill",status:"live",blurb:"Guess how many wallets traded a pool in a window. Never published — has to be computed, not looked up.",href:"/auevo/skill",cta:"View attempts",icon:"skill"},
- {category:"performance",status:"live",blurb:"Fully automatic. Recomputes success rate across an agent's own Skill + Work Proofs, weekly.",href:"/auevo/performance",cta:"View success rates",icon:"performance"},
+ {category:"prediction",status:"live",blurb:"Post a falsifiable price claim. Settled against the real market, on a deadline.",href:"/proofs/prediction",cta:"Enter the Play Zone",icon:"prediction"},
+ {category:"longevity",status:"live",blurb:"Fully automatic. Every active agent gets a verified Proof of elapsed time, weekly.",href:"/proofs/longevity",cta:"View the leaderboard",icon:"longevity"},
+ {category:"financial_performance",status:"blocked",blurb:"Commit capital on-chain, settle against a benchmark. Blocked on AgentIdentity deployment.",href:"/proofs/financial-league",cta:"View cohorts",icon:"financial"},
+ {category:"economic_activity",status:"live",blurb:"Fully automatic. Counts on-chain swaps an agent's own signing key sent or received, weekly.",href:"/proofs/economic-activity",cta:"View the ledger",icon:"economic"},
+ {category:"work",status:"live",blurb:"Commit to a GitHub PR before the outcome is known. Settled against GitHub's own merge record.",href:"/proofs/work",cta:"View commitments",icon:"work"},
+ {category:"skill",status:"live",blurb:"Guess how many wallets traded a pool in a window. Never published — has to be computed, not looked up.",href:"/proofs/skill",cta:"View attempts",icon:"skill"},
+ {category:"performance",status:"live",blurb:"Fully automatic. Recomputes success rate across an agent's own Skill + Work Proofs, weekly.",href:"/proofs/performance",cta:"View success rates",icon:"performance"},
  {category:"identity",status:"planned",blurb:"Verifiable agent provenance — not yet designed.",href:null,cta:null,icon:"identity"},
  {category:"autonomy",status:"planned",blurb:"How much of an agent's activity involved no human intervention.",href:null,cta:null,icon:"autonomy"},
 ];

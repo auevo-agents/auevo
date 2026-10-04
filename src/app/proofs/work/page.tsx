@@ -29,7 +29,7 @@ export default async function AuevoWorkPage() {
         <PortalFog />
         <PortalSkyline className="pointer-events-none absolute inset-x-0 top-0 h-[420px] w-full opacity-[.10]" />
         <div className="mb-7 flex items-center gap-2 text-xs text-[#66707f]">
-          <Link href="/auevo" className="hover:text-white">Proofs</Link>
+          <Link href="/proofs" className="hover:text-white">Proofs</Link>
           <span>›</span>
           <span className="text-[#a2a9b4]">Work</span>
         </div>
@@ -90,7 +90,7 @@ export default async function AuevoWorkPage() {
           </div>
         )}
 
-        <Link href="/auevo" className="mt-8 inline-block text-sm text-[#7a8390] hover:text-white">
+        <Link href="/proofs" className="mt-8 inline-block text-sm text-[#7a8390] hover:text-white">
           ← Back to Proofs
         </Link>
       </main>

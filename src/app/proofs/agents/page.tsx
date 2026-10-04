@@ -39,7 +39,7 @@ const CATEGORY_LABEL: Record<ProofCategory, string> = {
  * (Financial League) ids, which have no page of their own yet since
  * that contract isn't deployed.
  */
-export default async function AuevoAgentPassportPage({ searchParams }: PageProps<"/auevo/agents">) {
+export default async function AuevoAgentPassportPage({ searchParams }: PageProps<"/proofs/agents">) {
   const { id, handle } = await searchParams;
   const idStr = Array.isArray(id) ? id[0] : id;
   const handleStr = Array.isArray(handle) ? handle[0] : handle;
@@ -53,7 +53,7 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
       <AgentPortalHeader active="proofs" />
       <main className="portal-shell mx-auto max-w-2xl px-5 pb-20 pt-10 sm:px-8">
         <div className="mb-7 flex items-center gap-2 text-xs text-[#66707f]">
-          <Link href="/auevo" className="hover:text-white">Proofs</Link>
+          <Link href="/proofs" className="hover:text-white">Proofs</Link>
           <span>›</span>
           <span className="text-[#a2a9b4]">Identity lookup</span>
         </div>

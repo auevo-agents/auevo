@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
-import { categoryLabel, categoryAccent, CATEGORY_ORDER } from "@/app/auevo/reputation-structure";
+import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
+import { categoryLabel, categoryAccent, CATEGORY_ORDER } from "@/app/proofs/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";

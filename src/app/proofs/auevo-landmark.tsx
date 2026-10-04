@@ -1,4 +1,4 @@
-import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
+import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
 
 const LANDMARK: ProofCityAgent = {
   id:"auevo-landmark",

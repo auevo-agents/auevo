@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { ProofCity3D, type ProofCityAgent } from "@/app/auevo/proof-city-3d";
-import { categoryLabel } from "@/app/auevo/reputation-structure";
+import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
+import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import type { ProofCategory } from "@/lib/auevo/db";
@@ -55,7 +55,7 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
           <Link href="/agents" className={!selected?"portal-chip":"rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9dfe8]"}>All</Link>
           {presentCategories.map(cat=><Link key={cat} href={"/agents?category="+cat} className={selected===cat?"portal-chip":"rounded-[2px] border border-white/[0.07] bg-[#0d1420]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9dfe8]"}>{categoryLabel(cat)}</Link>)}
         </div>
-        <form action="/auevo/agents" method="get" className="flex w-full max-w-md gap-2"><input name="handle" placeholder="Search by @handle, capability, or description" className="portal-input min-w-0 flex-1 rounded-[3px] px-4 py-3 text-sm"/><button className="portal-btn-primary px-5 py-3 text-sm font-medium">Open →</button></form>
+        <form action="/proofs/agents" method="get" className="flex w-full max-w-md gap-2"><input name="handle" placeholder="Search by @handle, capability, or description" className="portal-input min-w-0 flex-1 rounded-[3px] px-4 py-3 text-sm"/><button className="portal-btn-primary px-5 py-3 text-sm font-medium">Open →</button></form>
       </div>
     </div>
    </section>

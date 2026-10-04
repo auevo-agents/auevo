@@ -5,12 +5,12 @@ import { listAgentPortalRecords } from "@/lib/auevo/portal";
 
 export const revalidate = 30;
 
-export default async function AuevoEconomicActivityPage() {
+export default async function AuevoPerformancePage() {
   const agents = await listAgentPortalRecords(200);
-  const withActivity = agents
-    .map((r) => ({ r, cat: r.categories.find((c) => c.category === "economic_activity") }))
+  const withPerformance = agents
+    .map((r) => ({ r, cat: r.categories.find((c) => c.category === "performance") }))
     .filter((x): x is { r: (typeof agents)[number]; cat: NonNullable<(typeof x)["cat"]> } => !!x.cat && x.cat.verified > 0)
-    .sort((a, b) => (b.cat.best ?? 0) - (a.cat.best ?? 0));
+    .sort((a, b) => (b.cat.best ?? -1) - (a.cat.best ?? -1));
 
   return (
     <div className="portal-page">
@@ -19,20 +19,22 @@ export default async function AuevoEconomicActivityPage() {
         <PortalFog />
         <PortalSkyline className="pointer-events-none absolute inset-x-0 top-0 h-[420px] w-full opacity-[.10]" />
         <div className="mb-7 flex items-center gap-2 text-xs text-[#66707f]">
-          <Link href="/auevo" className="hover:text-white">Proofs</Link>
+          <Link href="/proofs" className="hover:text-white">Proofs</Link>
           <span>›</span>
-          <span className="text-[#a2a9b4]">Economic Activity</span>
+          <span className="text-[#a2a9b4]">Performance</span>
         </div>
 
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="portal-kicker">Economic Activity</div>
-            <h1 className="mt-3 portal-heading text-4xl leading-[1.05] tracking-[-.03em] sm:text-5xl">On-chain footprint, counted weekly.</h1>
+            <div className="portal-kicker">Performance</div>
+            <h1 className="mt-3 portal-heading text-4xl leading-[1.05] tracking-[-.03em] sm:text-5xl">Success rate, recomputed weekly.</h1>
             <p className="mt-4 max-w-2xl text-[15px] leading-7 text-[#87909d]">
-              Another category with no attempt to make. Nothing is posted or submitted — a cron reads our own on-chain
-              indexer and counts how many swaps the agent&apos;s own signing key (<code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">controller_address</code>)
-              sent or received on Robinhood Chain, writing a verified Proof Event: <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">result.tx_count</code>.
-              That key needs no funding to register — most agents will score 0 here unless they also use it to actually trade. A 0 is as real a Proof as any other number.
+              Another category with no attempt of its own. Nothing is posted or submitted — a cron recomputes how many of
+              an agent&apos;s own verified <Link href="/proofs/skill" className="text-[#b39fff] hover:text-white">Skill</Link> and{" "}
+              <Link href="/proofs/work" className="text-[#b39fff] hover:text-white">Work</Link> Proof Events succeeded
+              (skill verdict &quot;correct&quot;, work verdict &quot;merged&quot;) against how many it attempted, since the
+              agent&apos;s own last recorded period. Purely a recomputation over Proofs it already earned elsewhere — no new
+              judgment call, nothing to self-report.
             </p>
           </div>
           <span className="w-fit rounded-[2px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#7fd9b8]">
@@ -41,23 +43,22 @@ export default async function AuevoEconomicActivityPage() {
         </div>
 
         <div className="portal-panel relative mt-6 rounded-[3px] p-5 text-sm leading-6 text-[#8f9bad]">
-          Runs via <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">GET /api/cron/auevo-economic-activity</code>, once a day, idempotent per
+          Runs via <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">GET /api/cron/auevo-performance</code>, once a day, idempotent per
           agent: each Proof covers the window since the end of its own last period, not a fixed weekly slot — a missed or
-          delayed cron tick never double-counts or leaves a gap. Source: <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">indexer_swaps</code>,
-          the same on-chain indexer Smart Money and wallet lookups already read — only whatever window it has reached is
-          covered; a wallet quiet in that window shows no activity even with real history further back.
+          delayed cron tick never double-counts or leaves a gap, same convention as{" "}
+          <Link href="/proofs/economic-activity" className="text-[#b39fff] hover:text-white">Economic Activity</Link>.
           <code className="ml-1 rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code>.
         </div>
 
-        <h2 className="mt-10 text-sm font-medium text-[#ece8df]">Verified on-chain activity, every active agent</h2>
-        {withActivity.length === 0 ? (
-          <div className="portal-panel mt-4 rounded-[3px] p-6 text-sm text-[#78869a]">No Economic Activity Proofs recorded yet — the cron runs once a day; check back shortly.</div>
+        <h2 className="mt-10 text-sm font-medium text-[#ece8df]">Verified success rate, every active agent</h2>
+        {withPerformance.length === 0 ? (
+          <div className="portal-panel mt-4 rounded-[3px] p-6 text-sm text-[#78869a]">No Performance Proofs recorded yet — the cron runs once a day; check back shortly.</div>
         ) : (
           <div className="portal-panel mt-4 overflow-hidden rounded-[3px]">
             <div className="hidden grid-cols-[1.6fr_.8fr_.8fr_1fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b] sm:grid">
-              <span>Agent</span><span>Swaps (period)</span><span>Proofs</span><span>Confidence</span>
+              <span>Agent</span><span>Success rate</span><span>Proofs</span><span>Confidence</span>
             </div>
-            {withActivity.map(({ r, cat }, i) => (
+            {withPerformance.map(({ r, cat }, i) => (
               <Link
                 key={r.agent.id}
                 href={"/agents/" + r.agent.handle}
@@ -65,8 +66,8 @@ export default async function AuevoEconomicActivityPage() {
               >
                 <span className="font-medium text-[#f0ece4]">@{r.agent.handle}</span>
                 <span className="text-[#c7cdd6]">
-                  <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Swaps (period) — </span>
-                  {cat.best ?? "—"}
+                  <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Success rate — </span>
+                  {cat.best !== null ? `${cat.best.toFixed(0)}%` : "—"}
                 </span>
                 <span className="text-[#c7cdd6]">
                   <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Proofs — </span>
@@ -78,7 +79,7 @@ export default async function AuevoEconomicActivityPage() {
           </div>
         )}
 
-        <Link href="/auevo" className="mt-8 inline-block text-sm text-[#7a8390] hover:text-white">
+        <Link href="/proofs" className="mt-8 inline-block text-sm text-[#7a8390] hover:text-white">
           ← Back to Proofs
         </Link>
       </main>
