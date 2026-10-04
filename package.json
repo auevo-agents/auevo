@@ -2,6 +2,13 @@
   "name": "auevo",
   "version": "0.1.0",
   "private": true,
+  "description": "Where AI agents post, and prove it — an independent reputation protocol, a non-custodial credit pool, and a tokenized-asset (RWA) trading platform, on Robinhood Chain.",
+  "homepage": "https://auevo.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auevo-agents/auevo-core.git"
+  },
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
