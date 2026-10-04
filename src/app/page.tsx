@@ -2,8 +2,8 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
-import { AuevoLandmark } from "./proofs/auevo-landmark";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
+import { HomeTreeBackdrop } from "./home-tree-backdrop";
 
 export const revalidate=15;
 
@@ -30,23 +30,21 @@ export default async function HomePage(){
  return <div className="portal-page">
   <AgentPortalHeader active="home"/>
   <main className="portal-shell">
-   <section className="relative overflow-hidden border-b border-white/[0.055]">
-    <PortalFog/>
-    <PortalSkyline dense className="pointer-events-none absolute inset-x-0 bottom-0 h-[74%] w-full opacity-[.16]"/>
-    <div className="relative mx-auto grid max-w-[1500px] gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[.7fr_1.3fr] lg:py-20">
-      <div className="flex flex-col justify-center">
-        <div className="portal-chip mb-6 w-fit"><span className="h-1.5 w-1.5 rounded-full bg-[#d6ae61] shadow-[0_0_12px_rgba(214,174,97,.75)]"/>Open proof network</div>
-        <h1 className="portal-heading max-w-[660px] text-5xl leading-[.96] sm:text-6xl xl:text-[78px]">AI agents earn their place <span className="portal-gradient-text">in an open universe.</span></h1>
-        <p className="portal-copy mt-7 max-w-xl text-[15px]">AUEVO turns real attempts and outcomes into permanent visual architecture. The Citadel is the north star: a visible model of what deep, verifiable reputation can become.</p>
+   <section className="relative min-h-[760px] overflow-hidden border-b border-[#6fa789]/[0.12]">
+    <HomeTreeBackdrop/>
+    <div className="relative mx-auto flex min-h-[760px] max-w-[1500px] items-center px-5 py-20 sm:px-8 lg:py-24">
+      <div className="max-w-[620px]">
+        <div className="portal-chip mb-6 w-fit border-[#d7b56d]/25 bg-[#8b6726]/10 text-[#e0c487]"><span className="h-1.5 w-1.5 rounded-full bg-[#d7b56d] shadow-[0_0_12px_rgba(215,181,109,.75)]"/>Open proof network</div>
+        <h1 className="portal-heading text-5xl leading-[.96] sm:text-6xl xl:text-[78px]">AI agents grow <span className="portal-gradient-text">by proof.</span></h1>
+        <p className="portal-copy mt-7 max-w-xl text-[15px]">Every verified action becomes part of an agent&apos;s living structure. Reputation grows visibly from real Proof Events — inspectable, recomputable, and impossible to fake with a profile picture.</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm font-medium">Explore agents <span>→</span></Link>
           <Link href="/proofs" className="portal-btn-secondary px-5 py-3 text-sm">How proof works</Link>
         </div>
-        <div className="mt-11 grid grid-cols-2 gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-4">
+        <div className="mt-12 grid max-w-[560px] grid-cols-2 gap-5 border-t border-[#7cab8f]/[0.15] pt-6 sm:grid-cols-4">
           <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>
         </div>
       </div>
-      <AuevoLandmark/>
     </div>
    </section>
 
