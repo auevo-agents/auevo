@@ -17869,3 +17869,399 @@ body{
 .legal-green-page .legal-page a:hover{
   color:#efd798!important;
 }
+
+
+/* ============================================================
+   EMERALD UNIFICATION — /legacy/fees, /scanner, /token
+   Keep these legacy surfaces inside the same AUEVO visual system.
+   ============================================================ */
+
+.fees-premium,
+.scanner-premium,
+.token-page{
+  --bg:#06100c;
+  --bg-2:#07170f;
+  --panel:#081b12;
+  --panel-2:#0a2116;
+  --panel-3:#0c271a;
+  --ink:#f3efe6;
+  --muted:#94a89b;
+  --faint:#6f8578;
+  --line:rgba(112,177,141,.12);
+  --line-2:rgba(112,177,141,.21);
+  --red:#d86e75;
+  --red-dark:#bb5961;
+  --green:#55dfa0;
+  --au-bg:#06100c;
+  --au-surface:rgba(8,27,18,.94);
+  --au-surface-soft:rgba(10,33,22,.82);
+  --au-line:rgba(112,177,141,.16);
+  --au-line-strong:rgba(112,177,141,.28);
+  --au-ink:#f3efe6;
+  --au-muted:#94a89b;
+  --au-faint:#6f8578;
+  --au-gold:#d7b56d;
+  --au-gold-soft:#ead7a3;
+  min-height:100vh;
+  color:#edf3ef!important;
+  background:
+    radial-gradient(circle at 82% 4%,rgba(66,217,149,.085),transparent 28%),
+    radial-gradient(circle at 14% 24%,rgba(215,181,109,.035),transparent 24%),
+    linear-gradient(rgba(112,177,141,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,177,141,.015) 1px,transparent 1px),
+    #06100c!important;
+  background-size:auto,auto,88px 88px,88px 88px,auto;
+}
+
+/* shared topbar */
+.fees-premium>.topbar,
+.scanner-premium>.topbar,
+.token-page>.topbar{
+  border-bottom:1px solid rgba(112,177,141,.14)!important;
+  background:rgba(4,15,10,.94)!important;
+  box-shadow:0 16px 46px rgba(0,0,0,.20)!important;
+  backdrop-filter:blur(22px) saturate(112%)!important;
+}
+.fees-premium>.topbar nav,
+.scanner-premium>.topbar nav,
+.token-page>.topbar nav{
+  border-color:rgba(112,177,141,.14)!important;
+  background:rgba(8,27,18,.76)!important;
+}
+.fees-premium>.topbar nav a,
+.scanner-premium>.topbar nav a,
+.token-page>.topbar nav a{
+  color:#84998c!important;
+}
+.fees-premium>.topbar nav a:hover,
+.scanner-premium>.topbar nav a:hover,
+.token-page>.topbar nav a:hover,
+.scanner-premium>.topbar nav .trade-nav-active,
+.token-page>.topbar nav .trade-nav-active{
+  color:#edf3ef!important;
+  background:rgba(66,217,149,.065)!important;
+}
+.fees-premium .topbar-right,
+.scanner-premium .topbar-right,
+.token-page .topbar-right{
+  color:#d7bd82!important;
+}
+.fees-premium .network-dot,
+.scanner-premium .network-dot,
+.token-page .network-dot{
+  background:#42d995!important;
+  box-shadow:0 0 0 4px rgba(66,217,149,.08),0 0 13px rgba(66,217,149,.30)!important;
+}
+.fees-premium .brand-auevo .auevo-wordmark,
+.scanner-premium .brand-auevo .auevo-wordmark,
+.token-page .brand-auevo .auevo-wordmark{
+  color:#f2eee5!important;
+}
+
+/* FEE SCANNER */
+.fees-premium .hero{
+  border-color:rgba(112,177,141,.13)!important;
+  background:
+    radial-gradient(circle at 69% 34%,rgba(66,217,149,.08),transparent 30%),
+    radial-gradient(circle at 72% 40%,rgba(215,181,109,.055),transparent 23%),
+    linear-gradient(100deg,rgba(6,16,12,.99) 0%,rgba(6,16,12,.91) 46%,rgba(7,24,15,.42) 76%,rgba(6,16,12,.84) 100%)!important;
+}
+.fees-premium .hero::before{
+  filter:grayscale(.78) sepia(.72) hue-rotate(76deg) saturate(.52) brightness(.72) contrast(1.12)!important;
+  opacity:.58!important;
+}
+.fees-premium .hero::after{
+  background:
+    linear-gradient(90deg,rgba(6,16,12,.99) 0%,rgba(6,16,12,.90) 42%,rgba(6,16,12,.26) 70%,rgba(6,16,12,.55) 100%),
+    linear-gradient(180deg,transparent 62%,#06100c 100%)!important;
+}
+.fees-premium .hero-copy h1{
+  color:#f3efe6!important;
+}
+.fees-premium .hero-copy h1 span{
+  color:#d7bd82!important;
+}
+.fees-premium .hero-description{
+  color:#95a99c!important;
+}
+.fees-premium .pill,
+.scanner-premium .pill{
+  border-color:rgba(112,177,141,.17)!important;
+  background:rgba(7,24,15,.75)!important;
+  color:#7f9588!important;
+}
+.fees-premium .pill span,
+.scanner-premium .pill span{
+  color:#d7bd82!important;
+}
+.fees-premium .pill i,
+.scanner-premium .pill i{
+  background:#42d995!important;
+}
+.fees-premium .wallet-box,
+.scanner-premium .wallet-box{
+  border-color:rgba(112,177,141,.23)!important;
+  background:rgba(6,23,15,.90)!important;
+}
+.fees-premium .wallet-box:focus-within,
+.scanner-premium .wallet-box:focus-within{
+  border-color:rgba(66,217,149,.48)!important;
+  box-shadow:0 0 0 3px rgba(66,217,149,.06),0 22px 70px rgba(0,0,0,.35)!important;
+}
+.fees-premium .wallet-box button,
+.scanner-premium .wallet-box button{
+  border-color:rgba(215,181,109,.30)!important;
+  background:linear-gradient(180deg,#dfc17e,#aa7d35)!important;
+  color:#06110d!important;
+}
+.fees-premium .preview,
+.fees-premium .docs-section,
+.fees-premium .platform-teaser{
+  border-color:rgba(112,177,141,.11)!important;
+  background:#06100c!important;
+}
+.fees-premium .preview-window,
+.fees-premium .result-table,
+.fees-premium .empty-result,
+.fees-premium .notify-card,
+.fees-premium .terminal-preview{
+  border-color:rgba(112,177,141,.16)!important;
+  background:
+    radial-gradient(circle at 80% 0%,rgba(215,181,109,.035),transparent 28%),
+    linear-gradient(180deg,#081b12,#07170f)!important;
+  box-shadow:0 28px 85px rgba(0,0,0,.28),inset 0 1px rgba(224,244,231,.02)!important;
+}
+.fees-premium .preview-tabs button{
+  border-color:rgba(112,177,141,.14)!important;
+  background:rgba(6,22,14,.55)!important;
+  color:#71877a!important;
+}
+.fees-premium .preview-tabs button.active{
+  border-color:rgba(215,181,109,.26)!important;
+  background:rgba(104,76,25,.08)!important;
+  color:#e8d6a9!important;
+}
+.fees-premium .preview-table,
+.fees-premium .preview-row,
+.fees-premium .result-row{
+  border-color:rgba(112,177,141,.09)!important;
+}
+.fees-premium .preview-row:hover{
+  background:rgba(66,217,149,.035)!important;
+}
+.fees-premium .bot-icon{
+  border-color:rgba(112,177,141,.18)!important;
+  background:#0b2418!important;
+  color:#d7bd82!important;
+}
+.fees-premium .bar-cell i{
+  background:#153426!important;
+}
+.fees-premium .bar-cell b{
+  background:linear-gradient(90deg,#42d995,#8be5b6)!important;
+  box-shadow:0 0 10px rgba(66,217,149,.15)!important;
+}
+.fees-premium .preview-heading span,
+.fees-premium .docs-heading>span,
+.fees-premium .platform-intro>div>span,
+.fees-premium .result-title-row h1 strong,
+.fees-premium .result-title-row p{
+  color:#d7bd82!important;
+}
+.fees-premium .notify-form input{
+  border-color:rgba(112,177,141,.20)!important;
+  background:#06170f!important;
+  color:#eaf1ec!important;
+}
+.fees-premium .notify-form button{
+  background:linear-gradient(180deg,#dfc17e,#aa7d35)!important;
+  color:#06110d!important;
+}
+.fees-premium .terminal-sidebar{
+  border-color:rgba(112,177,141,.12)!important;
+  background:#07170f!important;
+}
+.fees-premium .terminal-sidebar nav button.active{
+  border-color:rgba(66,217,149,.16)!important;
+  background:rgba(66,217,149,.065)!important;
+  color:#78e4ae!important;
+}
+
+/* TOKEN */
+.token-page .token-hero{
+  position:relative;
+  max-width:760px;
+  margin-top:76px;
+  padding:58px 34px 42px;
+  border:1px solid rgba(112,177,141,.16);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 50% 10%,rgba(66,217,149,.08),transparent 34%),
+    radial-gradient(circle at 72% 28%,rgba(215,181,109,.05),transparent 24%),
+    rgba(7,23,15,.88);
+  box-shadow:0 28px 90px rgba(0,0,0,.24),inset 0 1px rgba(224,244,231,.025);
+}
+.token-page .token-hero-mark{
+  border:1px solid rgba(215,181,109,.18);
+  box-shadow:0 18px 54px rgba(0,0,0,.30),0 0 32px rgba(66,217,149,.055);
+}
+.token-page .token-hero h1{
+  color:#f3efe6!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:400;
+  font-size:clamp(44px,6vw,66px);
+  letter-spacing:-.05em;
+}
+.token-page .token-hero-badge{
+  border-color:rgba(215,181,109,.28)!important;
+  background:rgba(104,76,25,.07)!important;
+  color:#d7bd82!important;
+}
+.token-page .token-hero-lead{
+  color:#95a99c!important;
+}
+.token-page .token-hero-lead a,
+.token-page .token-links a{
+  color:#d7bd82!important;
+}
+.token-page .token-hero-lead a:hover,
+.token-page .token-links a:hover{
+  color:#efd79a!important;
+}
+.token-page .token-stats{
+  gap:16px;
+}
+.token-page .token-stat{
+  border-color:rgba(112,177,141,.16)!important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(215,181,109,.045),transparent 42%),
+    linear-gradient(145deg,rgba(47,124,82,.03),transparent 45%),
+    #081b12!important;
+  box-shadow:inset 0 1px rgba(224,244,231,.02),0 18px 55px rgba(0,0,0,.16);
+}
+.token-page .token-stat-label{
+  color:#71877a!important;
+}
+.token-page .token-stat-value{
+  color:#e4cf9e!important;
+}
+
+/* SCANNER */
+.scanner-premium{
+  background:
+    radial-gradient(circle at 78% 8%,rgba(66,217,149,.085),transparent 27%),
+    radial-gradient(circle at 18% 42%,rgba(215,181,109,.03),transparent 22%),
+    #06100c!important;
+}
+.scanner-premium .scan-layout{
+  position:relative;
+}
+.scanner-premium .scan-sidebar{
+  padding:22px;
+  border:1px solid rgba(112,177,141,.15);
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(215,181,109,.035),transparent 28%),
+    rgba(7,23,15,.82);
+  box-shadow:0 24px 70px rgba(0,0,0,.20),inset 0 1px rgba(224,244,231,.02);
+}
+.scanner-premium .scan-sidebar h1{
+  color:#f3efe6!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:400;
+  font-size:40px;
+  letter-spacing:-.045em;
+}
+.scanner-premium .scan-sidebar h1 span{
+  color:#d7bd82!important;
+}
+.scanner-premium .scan-lead{
+  color:#93a79b!important;
+}
+.scanner-premium .scan-sidebar-legend,
+.scanner-premium .scan-sources{
+  border-color:rgba(112,177,141,.10)!important;
+}
+.scanner-premium .scan-results{
+  min-height:480px;
+  padding:22px;
+  border:1px solid rgba(112,177,141,.14);
+  border-radius:16px;
+  background:rgba(7,23,15,.55);
+  box-shadow:0 24px 70px rgba(0,0,0,.14),inset 0 1px rgba(224,244,231,.018);
+}
+.scanner-premium .scan-empty{
+  border-color:rgba(112,177,141,.18)!important;
+  background:
+    radial-gradient(circle at 50% 25%,rgba(66,217,149,.045),transparent 28%),
+    rgba(6,22,14,.50)!important;
+  color:#71877a!important;
+}
+.scanner-premium .scan-verdict,
+.scanner-premium .scan-confidence,
+.scanner-premium .scan-fact,
+.scanner-premium .scan-finding,
+.scanner-premium .scan-holder-row,
+.scanner-premium .scan-evidence{
+  background:#081b12!important;
+  border-color:rgba(112,177,141,.14)!important;
+}
+.scanner-premium .scan-facts{
+  background:rgba(112,177,141,.09)!important;
+  border-color:rgba(112,177,141,.14)!important;
+}
+.scanner-premium .scan-holder-table{
+  border-color:rgba(112,177,141,.14)!important;
+}
+.scanner-premium .scan-verdict-critical,
+.scanner-premium .scan-finding-critical{
+  border-left-color:#d86e75!important;
+}
+.scanner-premium .scan-verdict-low-risk{
+  border-left-color:#55dfa0!important;
+}
+.scanner-premium .scan-confidence-high{
+  border-left-color:#55dfa0!important;
+}
+.scanner-premium .scan-confidence-low,
+.scanner-premium .scan-finding-medium{
+  border-left-color:#d7b56d!important;
+}
+.scanner-premium .scan-score-number strong,
+.scanner-premium .scan-fact strong,
+.scanner-premium .scan-section-heading strong{
+  color:#edf3ef!important;
+}
+.scanner-premium .scan-score-caveat,
+.scanner-premium .scan-finding-medium .scan-severity{
+  color:#d7bd82!important;
+}
+.scanner-premium .scan-gap-tags span{
+  border-color:rgba(112,177,141,.16)!important;
+  background:rgba(66,217,149,.035)!important;
+  color:#91a59a!important;
+}
+.scanner-premium .scan-evidence{
+  color:#899e91!important;
+}
+.scanner-premium .scan-holder-row a:hover,
+.scanner-premium .scan-fact-link:hover,
+.scanner-premium .scan-evidence-link:hover{
+  color:#d7bd82!important;
+}
+.scanner-premium .scan-note{
+  border-color:rgba(215,181,109,.22)!important;
+  color:#7d9285!important;
+}
+
+/* remove any accidental cobalt links/buttons inside these legacy pages */
+.fees-premium a:not(.brand-auevo),
+.scanner-premium a:not(.brand-auevo),
+.token-page a:not(.brand-auevo){
+  text-decoration-color:rgba(215,181,109,.22);
+}
+.fees-premium a:hover,
+.scanner-premium a:hover,
+.token-page a:hover{
+  text-decoration-color:rgba(215,181,109,.42);
+}
