@@ -17275,3 +17275,461 @@ body{
     margin-left:12px!important;margin-right:12px!important;
   }
 }
+
+
+/* ============================================================
+   RWA GREEN SYSTEM v3 — hard override of remaining blue/white UI
+   ============================================================ */
+
+/* LANDING HEADER / MEGA MENU */
+.landing2.rwa-green-theme .landing-header{
+  background:rgba(4,15,10,.94)!important;
+  border-bottom:1px solid rgba(112,177,141,.14)!important;
+  color:#dce6df!important;
+  box-shadow:0 10px 34px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(20px) saturate(115%)!important;
+}
+.landing2.rwa-green-theme .landing-header-wave{
+  opacity:.34!important;
+  filter:hue-rotate(88deg) saturate(.62) brightness(.72)!important;
+}
+.landing2.rwa-green-theme .landing-header-wave-glow{
+  background:radial-gradient(circle at var(--wave-x,50%) var(--wave-y,50%),rgba(66,217,149,.15),rgba(215,181,109,.055) 18%,transparent 43%)!important;
+}
+.landing2.rwa-green-theme .landing-nav{
+  color:#cbd7cf!important;
+}
+.landing2.rwa-green-theme .landing-nav-trigger,
+.landing2.rwa-green-theme .landing-nav-primary-link{
+  color:#a9bbb0!important;
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.landing2.rwa-green-theme .landing-nav-trigger:hover,
+.landing2.rwa-green-theme .landing-nav-primary-link:hover,
+.landing2.rwa-green-theme .landing-nav-trigger[aria-expanded="true"]{
+  color:#f0f5f1!important;
+  background:rgba(66,217,149,.065)!important;
+  border-color:rgba(112,177,141,.18)!important;
+}
+.landing2.rwa-green-theme .landing-nav-trigger[aria-expanded="true"]{
+  box-shadow:inset 0 0 0 1px rgba(66,217,149,.07),0 0 24px rgba(66,217,149,.035)!important;
+}
+.landing2.rwa-green-theme .landing-cta-ghost{
+  color:#e6d4a8!important;
+  background:linear-gradient(180deg,rgba(95,70,24,.10),rgba(44,32,12,.05))!important;
+  border:1px solid rgba(215,181,109,.25)!important;
+  box-shadow:inset 0 1px rgba(255,242,205,.04)!important;
+}
+.landing2.rwa-green-theme .landing-cta-ghost:hover{
+  color:#f3dfad!important;
+  background:rgba(112,82,28,.14)!important;
+  border-color:rgba(215,181,109,.42)!important;
+}
+.landing2.rwa-green-theme .landing-nav-panel{
+  border:1px solid rgba(112,177,141,.22)!important;
+  background:
+    radial-gradient(circle at 88% 0%,rgba(215,181,109,.055),transparent 24%),
+    radial-gradient(circle at 12% 100%,rgba(66,217,149,.065),transparent 30%),
+    rgba(5,20,13,.985)!important;
+  box-shadow:0 30px 90px rgba(0,0,0,.48),inset 0 1px rgba(222,243,229,.03)!important;
+  backdrop-filter:blur(24px) saturate(110%)!important;
+}
+.landing2.rwa-green-theme .landing-nav-group{
+  background:transparent!important;
+  border-color:rgba(112,177,141,.09)!important;
+}
+.landing2.rwa-green-theme .landing-nav-group-label{
+  color:#758b7e!important;
+}
+.landing2.rwa-green-theme .landing-nav-link{
+  border-radius:10px!important;
+  color:#dce6df!important;
+}
+.landing2.rwa-green-theme .landing-nav-link:hover{
+  background:linear-gradient(90deg,rgba(45,132,87,.10),rgba(215,181,109,.035))!important;
+}
+.landing2.rwa-green-theme .landing-nav-link-title{
+  color:#edf3ef!important;
+}
+.landing2.rwa-green-theme .landing-nav-link-body{
+  color:#83988b!important;
+}
+
+/* Generic removal of cobalt in landing */
+.landing2.rwa-green-theme :is(a,button,[role="button"]){
+  --legacy-blue:#42d995;
+}
+.landing2.rwa-green-theme :is(.landing2-section-title,.landing2-card h4,.landing2-flow-node-label,.landing2-stat-value){
+  text-shadow:none!important;
+}
+.landing2.rwa-green-theme .landing2-card-dot{
+  background:#42d995!important;
+  box-shadow:0 0 10px rgba(66,217,149,.28)!important;
+}
+
+/* Workspace top navigation */
+.app-shell.rwa-green-theme .app-topnav{
+  background:rgba(4,15,10,.96)!important;
+  border-bottom-color:rgba(112,177,141,.13)!important;
+}
+.app-shell.rwa-green-theme .app-nav-link{
+  color:#82968a!important;
+  border-color:transparent!important;
+  background:transparent!important;
+}
+.app-shell.rwa-green-theme .app-nav-link:hover{
+  color:#e6eee9!important;
+  background:rgba(66,217,149,.055)!important;
+  border-color:rgba(112,177,141,.12)!important;
+}
+.app-shell.rwa-green-theme .app-nav-link.active{
+  color:#dff5e8!important;
+  border-color:rgba(66,217,149,.32)!important;
+  background:linear-gradient(180deg,rgba(66,217,149,.10),rgba(32,93,61,.06))!important;
+  box-shadow:inset 0 0 0 1px rgba(66,217,149,.06),0 0 20px rgba(66,217,149,.03)!important;
+}
+.app-shell.rwa-green-theme .app-nav-group-panel{
+  background:rgba(5,20,13,.985)!important;
+  border-color:rgba(112,177,141,.20)!important;
+}
+.app-shell.rwa-green-theme .app-nav-group-link:hover,
+.app-shell.rwa-green-theme .app-nav-group-link.active{
+  background:rgba(66,217,149,.065)!important;
+  color:#e5efe9!important;
+}
+.app-shell.rwa-green-theme .app-topnav-trust{
+  color:#d7bd82!important;
+}
+.app-shell.rwa-green-theme .app-topnav-trust-dot{
+  background:#d7b56d!important;
+  box-shadow:0 0 12px rgba(215,181,109,.55)!important;
+}
+
+/* HARD OVERRIDE: rows/cards formerly navy-blue */
+.app-shell.rwa-green-theme :is(
+  .dash-basket-card,
+  .dash-list-row,
+  .money-row,
+  .desk-row,
+  .pools-row,
+  .rank-row,
+  .wallet-activity-row,
+  .position-row,
+  .wallet-card,
+  .token-stat,
+  .trade-field,
+  .trade-quote,
+  .wallet-modal-item,
+  .lend-reserve-card
+){
+  background:
+    linear-gradient(145deg,rgba(47,124,82,.022),transparent 44%),
+    #081b12!important;
+  border-color:rgba(112,177,141,.15)!important;
+  color:#dce6df!important;
+}
+.app-shell.rwa-green-theme :is(
+  .dash-list-row,
+  .money-row,
+  .desk-row,
+  .pools-row,
+  .rank-row,
+  .wallet-activity-row,
+  .position-row
+):hover{
+  background:linear-gradient(90deg,#0a2116,rgba(39,115,76,.09))!important;
+  border-color:rgba(66,217,149,.18)!important;
+}
+
+/* BASKETS: remove all blue photography, pills and numerics */
+.app-shell.rwa-green-theme .dash-basket-card--cinematic{
+  border-color:rgba(112,177,141,.17)!important;
+  background:#07180f!important;
+}
+.app-shell.rwa-green-theme .dash-basket-card--cinematic::before{
+  filter:grayscale(.96) sepia(.90) hue-rotate(76deg) saturate(.46) brightness(.36) contrast(1.30)!important;
+  opacity:.86!important;
+}
+.app-shell.rwa-green-theme .dash-basket-card--cinematic::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
+  width:auto!important;height:auto!important;
+  pointer-events:none!important;
+  background:
+    radial-gradient(circle at 78% 22%,rgba(215,181,109,.09),transparent 22%),
+    linear-gradient(180deg,rgba(7,24,15,.06),rgba(7,24,15,.24) 38%,rgba(5,18,11,.86) 82%)!important;
+}
+.app-shell.rwa-green-theme .dash-basket-card--cinematic>*{
+  position:relative!important;z-index:2!important;
+}
+.app-shell.rwa-green-theme .dash-basket-card-head h4{
+  color:#f3efe6!important;
+}
+.app-shell.rwa-green-theme .dash-basket-card-head p{
+  color:#a0b1a6!important;
+}
+.app-shell.rwa-green-theme .dash-basket-kind{
+  color:#d7bd82!important;
+  background:rgba(95,70,24,.09)!important;
+  border-color:rgba(215,181,109,.24)!important;
+}
+.app-shell.rwa-green-theme .dash-basket-instrument{
+  background:rgba(5,18,12,.84)!important;
+  border-color:rgba(112,177,141,.16)!important;
+}
+.app-shell.rwa-green-theme .dash-basket-allocation{
+  border-color:rgba(66,217,149,.26)!important;
+  color:#91e6b8!important;
+  background:rgba(66,217,149,.055)!important;
+}
+.app-shell.rwa-green-theme .dash-basket-card-index{
+  color:#82978a!important;
+}
+.app-shell.rwa-green-theme .dash-basket-foot,
+.app-shell.rwa-green-theme .dash-basket-foot a{
+  color:#d7bd82!important;
+}
+
+/* Pools and large list/table pages */
+.app-shell.rwa-green-theme .dash-list-card{
+  background:#07180f!important;
+}
+.app-shell.rwa-green-theme .dash-list-row{
+  background:#091d14!important;
+}
+.app-shell.rwa-green-theme .dash-list-row:nth-child(even){
+  background:#081b12!important;
+}
+.app-shell.rwa-green-theme .dash-list-name strong,
+.app-shell.rwa-green-theme .desk-pair,
+.app-shell.rwa-green-theme .money-row strong{
+  color:#edf3ef!important;
+}
+.app-shell.rwa-green-theme .dash-list-col,
+.app-shell.rwa-green-theme .desk-col-right,
+.app-shell.rwa-green-theme .desk-note{
+  color:#7d9285!important;
+}
+.app-shell.rwa-green-theme .dash-list-arrow,
+.app-shell.rwa-green-theme .dash-list-chevron,
+.app-shell.rwa-green-theme .desk-actions a{
+  color:#d7bd82!important;
+}
+.app-shell.rwa-green-theme .dash-list-avatar{
+  border-color:rgba(112,177,141,.20)!important;
+  background:#0b2518!important;
+  color:#88e4b4!important;
+}
+
+/* Scanner / market table */
+.app-shell.rwa-green-theme .desk-scroll{
+  background:#07170f!important;
+  border-color:rgba(112,177,141,.18)!important;
+}
+.app-shell.rwa-green-theme .desk-head,
+.app-shell.rwa-green-theme .money-head,
+.app-shell.rwa-green-theme .pools-head,
+.app-shell.rwa-green-theme .rank-head{
+  background:#0a2116!important;
+  color:#6f8678!important;
+}
+.app-shell.rwa-green-theme .desk-row,
+.app-shell.rwa-green-theme .money-row,
+.app-shell.rwa-green-theme .pools-row,
+.app-shell.rwa-green-theme .rank-row{
+  background:#091d14!important;
+  border-color:rgba(112,177,141,.09)!important;
+}
+.app-shell.rwa-green-theme .desk-row:nth-child(even),
+.app-shell.rwa-green-theme .money-row:nth-child(even),
+.app-shell.rwa-green-theme .pools-row:nth-child(even){
+  background:#081a12!important;
+}
+.app-shell.rwa-green-theme .desk-pair-icon{
+  border-color:rgba(112,177,141,.18)!important;
+  background:#0c2519!important;
+}
+.app-shell.rwa-green-theme .desk-tag-new{
+  color:#8fe6b9!important;
+  background:rgba(66,217,149,.085)!important;
+  border-color:rgba(66,217,149,.18)!important;
+}
+
+/* Inputs, selects, segmented controls */
+.app-shell.rwa-green-theme :is(.trade-field,.trade-quote,.desk-search,.dash-search,.wallet-modal,.token-chart-tabs,.desk-tabs){
+  color:#dce6df!important;
+}
+.app-shell.rwa-green-theme :is(input,select,textarea,.trade-field input,.trade-field select){
+  background:#06170f!important;
+  color:#e4ece7!important;
+  border-color:rgba(112,177,141,.20)!important;
+  box-shadow:none!important;
+}
+.app-shell.rwa-green-theme :is(input,select,textarea):focus{
+  border-color:rgba(66,217,149,.50)!important;
+  box-shadow:0 0 0 3px rgba(66,217,149,.07)!important;
+}
+.app-shell.rwa-green-theme select:not([multiple]){
+  background-color:#06170f!important;
+}
+.app-shell.rwa-green-theme option{
+  background:#07170f!important;
+  color:#e4ece7!important;
+}
+
+/* All button styles, except semantic danger */
+.app-shell.rwa-green-theme button:not(.app-untrack):not([data-danger="true"]){
+  border-color:rgba(112,177,141,.20)!important;
+  color:#cfe0d6!important;
+  background:linear-gradient(180deg,#0b2418,#081a12)!important;
+  box-shadow:inset 0 1px rgba(222,243,229,.025)!important;
+}
+.app-shell.rwa-green-theme button:not(.app-untrack):not([data-danger="true"]):hover:not(:disabled){
+  border-color:rgba(66,217,149,.34)!important;
+  color:#eff7f2!important;
+  background:linear-gradient(180deg,#0d2a1c,#092016)!important;
+}
+.app-shell.rwa-green-theme :is(.app-connect-button,.trade-submit,.landing2-cta){
+  border-color:rgba(215,181,109,.30)!important;
+  color:#06110d!important;
+  background:linear-gradient(180deg,#e0c17b,#aa7e36)!important;
+}
+
+/* Segmented active choices */
+.app-shell.rwa-green-theme :is(.desk-tab.active,.token-chart-tab.active,.trade-tab.active,.wallet-tab.active){
+  color:#dff6e9!important;
+  border-color:rgba(66,217,149,.40)!important;
+  background:rgba(66,217,149,.075)!important;
+}
+
+/* AI section: eliminate blue banner and button */
+.app-shell.rwa-green-theme :is(.agent-promo-banner,.agent-ai-card,.ai-panel,.ai-chat,.ai-chat-panel){
+  border-color:rgba(112,177,141,.18)!important;
+  background:
+    radial-gradient(circle at 80% 30%,rgba(215,181,109,.055),transparent 24%),
+    radial-gradient(circle at 55% 50%,rgba(66,217,149,.065),transparent 38%),
+    linear-gradient(125deg,#0a2116,#07170f 68%)!important;
+  color:#dce6df!important;
+}
+.app-shell.rwa-green-theme :is(.agent-promo-banner,.agent-ai-card,.ai-panel,.ai-chat,.ai-chat-panel)::before{
+  filter:grayscale(.95) sepia(.88) hue-rotate(76deg) saturate(.42) brightness(.40)!important;
+  opacity:.35!important;
+}
+.app-shell.rwa-green-theme :is(.ai-send,.agent-promo-cta){
+  color:#d7bd82!important;
+  border-color:rgba(215,181,109,.25)!important;
+  background:rgba(105,78,27,.08)!important;
+}
+
+/* Private swap / confirmation screens: force emerald */
+.app-shell.rwa-green-theme :is(.private-swap,.private-swap-shell,.private-swap-card,.private-confirm,.private-confirm-card,.private-panel){
+  background:
+    radial-gradient(circle at 18% 20%,rgba(66,217,149,.06),transparent 28%),
+    linear-gradient(145deg,#081b12,#06150e)!important;
+  border-color:rgba(112,177,141,.20)!important;
+  color:#dfe8e2!important;
+  box-shadow:0 30px 90px rgba(0,0,0,.28),inset 0 1px rgba(222,243,229,.03)!important;
+}
+.app-shell.rwa-green-theme :is(.private-swap,.private-swap-shell,.private-swap-card,.private-confirm,.private-confirm-card,.private-panel)::before{
+  filter:grayscale(.95) sepia(.90) hue-rotate(75deg) saturate(.45) brightness(.38)!important;
+}
+.app-shell.rwa-green-theme input[type="checkbox"]{
+  accent-color:#42d995!important;
+}
+
+/* Explicitly neutralize legacy blue-ish colors in component internals */
+.app-shell.rwa-green-theme [class*="blue"],
+.landing2.rwa-green-theme [class*="blue"]{
+  color:#d7bd82!important;
+  border-color:rgba(112,177,141,.18)!important;
+  background-color:rgba(7,23,15,.86)!important;
+}
+
+/* charts/maps/placeholders */
+.app-shell.rwa-green-theme :is(.market-map,.market-map-empty,.scanner-highlight-empty,.portfolio-empty){
+  background:
+    radial-gradient(circle at 50% 50%,rgba(66,217,149,.045),transparent 45%),
+    #071a11!important;
+  border-color:rgba(112,177,141,.18)!important;
+}
+.app-shell.rwa-green-theme :is(.market-map-empty,.scanner-highlight-empty,.portfolio-empty) *{
+  color:#71877a!important;
+}
+
+/* retain semantic positives and failures */
+.app-shell.rwa-green-theme :is(.desk-change-pos,.kpi-positive,.token-pulse-buy){
+  color:#5be0a1!important;
+}
+.app-shell.rwa-green-theme :is(.desk-change-neg,.kpi-negative,.token-pulse-sell,.error){
+  color:#d66d73!important;
+}
+
+/* Remove any blue image cast from every app hero/photo asset */
+.app-shell.rwa-green-theme :is([class*="product-header--"],[class*="dash-hero--"])::before,
+.app-shell.rwa-green-theme :is(.dash-basket-card--cinematic,.issuer-card--active,.landing2-card)::before,
+.app-shell.rwa-green-theme .landing2-card-art{
+  filter:grayscale(.96) sepia(.90) hue-rotate(75deg) saturate(.42) brightness(.39) contrast(1.30)!important;
+}
+
+/* Make all card borders consistently emerald, not electric blue */
+.app-shell.rwa-green-theme :is(
+  .dash-basket-card,
+  .dash-list-card,
+  .wallet-card,
+  .token-side-card,
+  .token-chart-card,
+  .trade-form,
+  .trade-panel,
+  .issuer-card,
+  .lend-reserve-card,
+  .asset-chart-wrap,
+  .constellation-wrap,
+  .desk-scroll,
+  .app-notice
+){
+  border-color:rgba(112,177,141,.16)!important;
+}
+
+/* numbers use gold/ivory rather than blue */
+.app-shell.rwa-green-theme :is(
+  .app-kpi-value,
+  .dash-stat-value,
+  .token-stat strong,
+  .token-detail-price strong,
+  .issuer-card-stats strong
+){
+  color:#e4cf9e!important;
+}
+
+/* small premium links */
+.app-shell.rwa-green-theme :is(
+  .dash-list-arrow,
+  .dash-list-chevron,
+  .desk-actions a,
+  .token-back,
+  .app-link-button,
+  .landing-cta-ghost,
+  .lend-reserve-supply-link
+){
+  color:#d7bd82!important;
+}
+
+/* RWA landing "Open workspace" desktop button specifically */
+.landing2.rwa-green-theme .landing-nav > .landing-cta-ghost{
+  padding:0 18px!important;
+  min-height:42px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:10px!important;
+}
+
+@media(max-width:760px){
+  .landing2.rwa-green-theme .landing-nav-panel{
+    background:rgba(5,20,13,.99)!important;
+  }
+}
