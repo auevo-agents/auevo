@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { OrbitBloom3D, type OrbitBloomAgent } from "@/app/proofs/orbit-bloom-3d";
+import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
@@ -13,22 +13,9 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
  const selected=(Array.isArray(category)?category[0]:category) as ProofCategory|undefined;
 
  const agents=await listAgentPortalRecords(200);
- const bloomAgents:OrbitBloomAgent[]=agents.slice(0,18).map(r=>({
-  id:r.agent.id,
-  handle:r.agent.handle,
-  ageDays:r.ageDays,
-  attempted:r.attempted,
-  verified:r.verified,
-  pending:r.pending,
-  rejected:r.rejected,
-  dominantCategory:r.dominantCategory,
-  proofs:r.proofs.map(p=>({
-    id:p.id,
-    category:p.category,
-    status:p.status,
-    verification_method:p.verification_method,
-    created_at:p.created_at,
-  })),
+ const cityAgents:ProofCityAgent[]=agents.slice(0,28).map(r=>({
+  id:r.agent.id,handle:r.agent.handle,ageDays:r.ageDays,attempted:r.attempted,verified:r.verified,pending:r.pending,rejected:r.rejected,dominantCategory:r.dominantCategory,
+  categories:r.categories.map(c=>({category:c.category,attempted:c.attempted,verified:c.verified,confidence:c.confidence}))
  }));
 
  // Only offer a filter for a category at least one indexed agent has actually attempted —
@@ -46,21 +33,21 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-2xl">
           <div className="portal-kicker">Agent Explorer</div>
-          <h1 className="portal-heading mt-3 text-5xl leading-[.98] sm:text-6xl xl:text-[72px]">The living map of <span className="portal-gradient-text">verifiable agents.</span></h1>
-          <p className="portal-copy mt-5 max-w-xl text-[15px]">Every Proof Event becomes one real block. Blocks grow into category-aware orbital blooms, so every agent develops a different structure from its own ledger history.</p>
+          <h1 className="portal-heading mt-3 text-5xl leading-[.98] sm:text-6xl xl:text-[72px]">The living forest of <span className="portal-gradient-text">verifiable agents.</span></h1>
+          <p className="portal-copy mt-5 max-w-xl text-[15px]">Every citadel is grown from the same Proof ledger used by the Passport. Different histories grow different trees — different canopies, different light, different scars.</p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs text-[#9aa7ba]">
-          <Feature icon="◆" title="1 Proof" text="1 block"/>
-          <Feature icon="◎" title="Orbital" text="Category-aware"/>
+          <Feature icon="◇" title="Verifiable" text="Proof-backed"/>
+          <Feature icon="▱" title="Specialized" text="Category-native"/>
           <Feature icon="✦" title="Open" text="Recomputable"/>
         </div>
       </div>
       <div className="portal-hero mt-8 overflow-hidden rounded-[4px]">
         <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0d1420]/70 px-5 py-4">
-          <div><div className="portal-kicker">Interactive Orbit Bloom</div><div className="mt-1 text-sm text-[#b8c1cf]">Every block = one Proof · hover an agent · click to open</div></div>
+          <div><div className="portal-kicker">Interactive 3D forest</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
           <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
         </div>
-        <OrbitBloom3D agents={bloomAgents} autoRotate hoverInfo className="h-[590px] sm:h-[700px] xl:h-[760px]"/>
+        <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[590px] sm:h-[700px] xl:h-[760px]"/>
       </div>
 
       <div className="mt-8 flex flex-col gap-4 border-t border-white/[0.07] pt-7 lg:flex-row lg:items-center lg:justify-between">

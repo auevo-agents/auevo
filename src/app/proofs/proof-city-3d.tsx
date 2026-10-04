@@ -103,7 +103,7 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
 
   // Trunk: plain bark, height purely from age — the undecorated passage of time the
   // canopy sits on top of. No category colour reaches down here.
-  const trunkH = ((landmark ? 1.7 : 1.25) + age * (landmark ? 0.26 : 0.20)) * scale;
+  const trunkH = ((landmark ? 1.3 : 1.15) + age * (landmark ? 0.20 : 0.17)) * scale;
   const trunkSegs = Math.max(3, Math.min(7, age + 2));
   let y = 0.16 * scale;
   for (let s = 0; s < trunkSegs; s++) {
@@ -126,24 +126,26 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
     const active = c.attempted > 0;
     const color = landmark ? saturate(CATEGORY_COLORS[category] ?? [0.52,0.45,0.78], 1.4) : (CATEGORY_COLORS[category] ?? [0.52,0.45,0.78]);
 
-    // Three loose tiers (low/mid/high), golden-angle spread within each — reads as a
-    // rounded, slightly asymmetric crown rather than a flat halo or a single sphere.
+    // Three tiers (low/mid/high), golden-angle spread within each — a rounded crown
+    // wide enough to wrap the top of the trunk, with big enough cubes and tight enough
+    // per-cluster jitter that neighbouring category clusters overlap into one canopy
+    // instead of nine separate puffs with daylight between them.
     const tier = i % 3;
-    const tierY = [0.18, 0.55, 0.92][tier];
-    const tierR = [1.0, 0.76, 0.46][tier];
+    const tierY = [0.30, 0.56, 0.84][tier];
+    const tierR = [0.95, 0.72, 0.44][tier];
     const theta = GOLDEN_ANGLE * i;
-    const branchLen = (landmark ? 0.62 : 0.50) * scale;
+    const branchLen = (landmark ? 0.56 : 0.45) * scale;
     const cx = ox + Math.cos(theta) * tierR * branchLen;
     const cz = oz + Math.sin(theta) * tierR * branchLen;
-    const cy = canopyBaseY + tierY * (landmark ? 0.95 : 0.7) * scale;
+    const cy = canopyBaseY + tierY * (landmark ? 0.8 : 0.6) * scale;
     clusterCenters.push({ x: cx, y: cy, z: cz });
 
     // Branch stub: a short bark segment partway from the trunk toward the cluster.
     boxes.push({x:ox+(cx-ox)*.4,y:canopyBaseY+(cy-canopyBaseY)*.35,z:oz+(cz-oz)*.4,sx:.05*scale,sy:.05*scale,sz:.05*scale,color:BARK,emissive:.02});
 
-    const CLUSTER_OFFSETS: [number,number,number][] = [[0,0,0],[.17,.08,.05],[-.15,.1,.08],[.06,.15,-.14],[-.1,-.08,-.16],[.14,-.1,.1],[-.05,.05,.17]];
+    const CLUSTER_OFFSETS: [number,number,number][] = [[0,0,0],[.13,.07,.05],[-.12,.08,.06],[.05,.12,-.11],[-.09,-.07,-.13],[.11,-.09,.09],[-.05,.05,.13]];
     const cubeCount = Math.max(1, Math.min(7, Math.round(1 + d * 6)));
-    const cubeSize = (landmark ? 0.17 : 0.14) * scale;
+    const cubeSize = (landmark ? 0.23 : 0.20) * scale;
     for (let p = 0; p < cubeCount; p++) {
       const [dx,dy,dz] = CLUSTER_OFFSETS[p % CLUSTER_OFFSETS.length];
       boxes.push({
@@ -196,22 +198,48 @@ function layoutAgents(agents: ProofCityAgent[], single: boolean): SceneAgent[] {
   });
 }
 
-function sceneBoxes(agents: ProofCityAgent[], single: boolean, landmark: boolean): Box[] {
-  const layout=layoutAgents(agents,single);
-  const boxes:Box[]=[];
-  if(!single){
-    // Shared ground plane + luminous guide strips = readable horizon/surface.
-    boxes.push({x:0,y:-.09,z:0,sx:34,sy:.12,sz:28,color:[.08,.12,.19],emissive:.01});
-    for(let i=-5;i<=5;i++){
-      boxes.push({x:i*2.5,y:-.015,z:0,sx:.025,sy:.02,sz:25,color:[.18,.22,.34],emissive:.04});
-      boxes.push({x:0,y:-.014,z:i*2.25,sx:30,sy:.02,sz:.025,color:[.20,.17,.36],emissive:.035});
+function hash2(x: number, y: number) {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/** A blocky pixel meadow — flat voxel tiles, mostly grass with the occasional sandy
+ * patch, instead of one plain slab. Reads as ground, not as a stage platform. */
+function pixelGround(halfX: number, halfZ: number, cell: number): Box[] {
+  const boxes: Box[] = [];
+  const cols = Math.max(2, Math.round((halfX * 2) / cell));
+  const rows = Math.max(2, Math.round((halfZ * 2) / cell));
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = -halfX + (c + 0.5) * cell, z = -halfZ + (r + 0.5) * cell;
+      const n = hash2(c, r);
+      const sand = n > 0.88;
+      const g = 0.15 + n * 0.09;
+      const color: [number, number, number] = sand ? [0.27, 0.22, 0.14] : [0.07 + n * 0.03, g, 0.07 + n * 0.035];
+      boxes.push({ x, y: -0.05, z, sx: cell * 0.94, sy: 0.08, sz: cell * 0.94, color, emissive: 0.012 });
     }
-  } else {
-    boxes.push({x:0,y:-.09,z:0,sx:12,sy:.12,sz:10,color:[.08,.12,.19],emissive:.01});
-    boxes.push({x:0,y:-.01,z:0,sx:9.6,sy:.025,sz:.05,color:[.88,.66,.32],emissive:.12});
-    boxes.push({x:0,y:-.009,z:0,sx:.05,sy:.025,sz:8.6,color:[.58,.44,1],emissive:.10});
   }
-  layout.forEach((item)=>boxes.push(...cityForAgent(item.agent,item.x,item.z,item.scale,landmark)));
+  return boxes;
+}
+
+function sceneBoxes(agents: ProofCityAgent[], single: boolean, landmark: boolean): Box[] {
+  const layout = layoutAgents(agents, single);
+  const boxes: Box[] = [];
+
+  const reach = single ? 0 : layout.reduce((m, l) => Math.max(m, Math.abs(l.x), Math.abs(l.z)), 0);
+  const halfX = single ? 3.4 : reach + 3.4;
+  const halfZ = single ? 2.9 : reach + 3.0;
+  const cell = single ? 0.42 : 2.3;
+  boxes.push(...pixelGround(halfX, halfZ, cell));
+
+  // Horizon: a warm line where the pixel meadow meets the sky, far behind the trees.
+  boxes.push({ x: 0, y: 0.04, z: -halfZ + 0.02, sx: halfX * 2, sy: 0.05, sz: 0.04, color: [0.62, 0.46, 0.3], emissive: 0.22 });
+
+  layout.forEach((item) => {
+    const shadowR = (single ? 0.55 : 0.42) * item.scale;
+    boxes.push({ x: item.x + 0.12 * item.scale, y: 0, z: item.z + 0.18 * item.scale, sx: shadowR * 2, sy: 0.02, sz: shadowR * 1.5, color: [0.03, 0.035, 0.03], emissive: 0 });
+    boxes.push(...cityForAgent(item.agent, item.x, item.z, item.scale, landmark));
+  });
   return boxes;
 }
 
@@ -240,11 +268,12 @@ varying vec3 v_worldPos;
 void main(){
   vec3 n=normalize(v_normal);
   float d=max(dot(n,normalize(u_light)),0.0);
-  float hemi=.30+.18*max(n.y,0.0);
+  float hemi=.26+.18*max(n.y,0.0);
   float rim=pow(1.0-max(dot(n,normalize(vec3(.15,.35,.92))),0.0),2.0)*.16;
   float heightGlow=clamp(v_worldPos.y/8.0,0.0,1.0)*.08;
-  float shade=hemi+d*.58+rim+heightGlow+u_emissive;
-  vec3 c=u_color*shade;
+  vec3 sunTint=vec3(1.1,1.0,0.86);
+  float shade=hemi+rim+heightGlow+u_emissive;
+  vec3 c=u_color*shade+u_color*sunTint*d*.62;
   gl_FragColor=vec4(c,1.0);
 }
 `;
@@ -313,7 +342,7 @@ export function ProofCity3D({
     const matrixLoc=gl.getUniformLocation(p,"u_matrix"),worldLoc=gl.getUniformLocation(p,"u_world"),colorLoc=gl.getUniformLocation(p,"u_color"),emissiveLoc=gl.getUniformLocation(p,"u_emissive"),lightLoc=gl.getUniformLocation(p,"u_light");
     const pb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.bufferData(gl.ARRAY_BUFFER,cubePositions,gl.STATIC_DRAW);gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,3,gl.FLOAT,false,0,0);
     const nb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nb);gl.bufferData(gl.ARRAY_BUFFER,cubeNormals,gl.STATIC_DRAW);gl.enableVertexAttribArray(normal);gl.vertexAttribPointer(normal,3,gl.FLOAT,false,0,0);
-    gl.uniform3f(lightLoc,-.35,.95,.48);
+    gl.uniform3f(lightLoc,-.52,.84,.3);
     gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
 
     let yaw=-0.68,pitch=single ? .52 : .64,zoom=single?(landmark?13.6:11.8):25.5;
@@ -409,7 +438,8 @@ export function ProofCity3D({
       <div className="pointer-events-none absolute inset-x-0 top-[42%] h-px bg-gradient-to-r from-transparent via-[#9b8cff]/20 to-transparent"/>
       <div className="pointer-events-none absolute inset-x-[-10%] top-[37%] h-[24%] bg-[radial-gradient(ellipse_at_center,rgba(214,174,97,.11),rgba(139,114,255,.08)_34%,transparent_72%)] blur-2xl"/>
       <div className="pointer-events-none absolute -bottom-[22%] left-[12%] h-[52%] w-[76%] rounded-full bg-[#243453]/30 blur-[90px]"/>
-      {landmark&&<div className="pointer-events-none absolute left-1/2 top-[38%] h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,196,92,.26),rgba(155,124,255,.20)_42%,transparent_72%)] blur-[55px] mix-blend-screen"/>}
+      <div className={"pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full blur-[55px] mix-blend-screen "+(landmark?"left-1/2 top-[38%] h-[46%] w-[46%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.26),rgba(155,124,255,.20)_42%,transparent_72%)]":"left-[70%] top-[14%] h-[28%] w-[28%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.20),rgba(155,124,255,.12)_46%,transparent_74%)]")}/>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] bg-gradient-to-t from-[#0b121d]/70 to-transparent"/>
       <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":hoverInfo?"cursor-pointer":"cursor-grab")}/>
 
       {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[250px] rounded-[3px] border border-[#9b8cff]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(139,114,255,.12)] backdrop-blur-xl">
