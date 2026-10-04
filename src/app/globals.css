@@ -17733,3 +17733,139 @@ body{
     background:rgba(5,20,13,.99)!important;
   }
 }
+
+
+/* ============================================================
+   RWA finishing pass: dark market ticker + emerald legal pages
+   ============================================================ */
+
+/* Market ticker — remove white strip */
+.landing2.rwa-green-theme .landing2-market-tapes,
+.landing2.rwa-green-theme .landing2-ticker{
+  background:
+    linear-gradient(180deg,rgba(12,34,23,.98),rgba(6,22,14,.98))!important;
+  border-color:rgba(112,177,141,.16)!important;
+  color:#c6d5cc!important;
+  box-shadow:
+    inset 0 1px 0 rgba(220,243,228,.025),
+    inset 0 -1px 0 rgba(112,177,141,.06)!important;
+}
+.landing2.rwa-green-theme .landing2-ticker::before{
+  background:linear-gradient(90deg,#081b12 10%,rgba(8,27,18,.88) 42%,transparent)!important;
+}
+.landing2.rwa-green-theme .landing2-ticker::after{
+  background:linear-gradient(270deg,#081b12 10%,rgba(8,27,18,.88) 42%,transparent)!important;
+}
+.landing2.rwa-green-theme .landing2-ticker-track{
+  color:#aebfb4!important;
+}
+.landing2.rwa-green-theme .landing2-ticker-item{
+  color:#9db0a4!important;
+}
+.landing2.rwa-green-theme .landing2-ticker-item b{
+  color:#eef3ef!important;
+}
+.landing2.rwa-green-theme .landing2-ticker-up{
+  color:#55dfa0!important;
+}
+.landing2.rwa-green-theme .landing2-ticker-down{
+  color:#de777c!important;
+}
+.landing2.rwa-green-theme .landing2-ticker-dot{
+  color:#456455!important;
+}
+.landing2.rwa-green-theme .landing2-ticker .brand-icon{
+  filter:saturate(.85) brightness(.92)!important;
+}
+
+/* Privacy + Policy */
+.legal-green-page{
+  position:relative;
+  isolation:isolate;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 80% 0%,rgba(66,217,149,.09),transparent 30%),
+    radial-gradient(circle at 12% 24%,rgba(215,181,109,.045),transparent 25%),
+    linear-gradient(180deg,#07140e 0%,#06100c 50%,#050d09 100%)!important;
+  color:#edf3ef!important;
+}
+.legal-green-page::before{
+  content:"";
+  position:absolute;
+  inset:72px 0 auto;
+  height:520px;
+  z-index:-1;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(112,177,141,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,177,141,.02) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:linear-gradient(to bottom,#000,transparent);
+}
+.legal-green-page .portal-sky-fog{
+  background:
+    radial-gradient(circle at 65% 18%,rgba(66,217,149,.10),transparent 28%),
+    radial-gradient(circle at 78% 31%,rgba(215,181,109,.05),transparent 20%),
+    linear-gradient(to top,rgba(6,16,12,.72),transparent 46%)!important;
+}
+.legal-green-page .legal-page{
+  max-width:900px!important;
+  margin-top:48px!important;
+  margin-bottom:84px!important;
+  border:1px solid rgba(112,177,141,.17)!important;
+  border-radius:16px!important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(215,181,109,.035),transparent 25%),
+    linear-gradient(145deg,rgba(52,131,87,.025),transparent 38%),
+    rgba(7,23,15,.91)!important;
+  box-shadow:
+    0 30px 100px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(224,244,231,.025)!important;
+  backdrop-filter:blur(18px)!important;
+}
+.legal-green-page .legal-page-back{
+  color:#d7bd82!important;
+}
+.legal-green-page .legal-page-back:hover{
+  color:#f1d79a!important;
+}
+.legal-green-page .legal-page h1{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-weight:400!important;
+  font-size:clamp(42px,6vw,68px)!important;
+  letter-spacing:-.05em!important;
+  color:#f4efe5!important;
+}
+.legal-green-page .legal-page-updated{
+  color:#72877b!important;
+  border-bottom:1px solid rgba(112,177,141,.11);
+  padding-bottom:28px;
+}
+.legal-green-page .legal-page section{
+  position:relative;
+  padding:24px 0 26px!important;
+  margin:0!important;
+  border-bottom:1px solid rgba(112,177,141,.09);
+}
+.legal-green-page .legal-page section:last-child{
+  border-bottom:0;
+}
+.legal-green-page .legal-page h2{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-weight:400!important;
+  font-size:23px!important;
+  color:#e9e3d7!important;
+}
+.legal-green-page .legal-page p{
+  max-width:760px;
+  color:#98aa9e!important;
+  font-size:15px!important;
+  line-height:1.8!important;
+}
+.legal-green-page .legal-page a{
+  color:#d7bd82!important;
+  text-decoration-color:rgba(215,181,109,.32)!important;
+}
+.legal-green-page .legal-page a:hover{
+  color:#efd798!important;
+}
