@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GeoBanner } from "@/app/geo-banner";
 import { Disclaimer } from "@/app/disclaimer";
-import { LandingOrbit } from "../landing-orbit";
+import { RwaMarketVisual } from "./rwa-market-visual";
 import { LandingHeaderWave } from "../landing-header-wave";
 import { LandingTicker } from "../landing-ticker";
 import { LandingCards } from "@/app/landing-cards";
@@ -266,7 +266,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </p>
             <GeoBanner />
           </div>
-          <LandingOrbit />
+          <RwaMarketVisual />
         </div>
       </section>
 
