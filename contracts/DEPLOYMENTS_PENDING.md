@@ -13,7 +13,10 @@ and produces a public, fundable mainnet address the moment it lands.
 
 | Contract | Source | Deploy script | Status |
 | --- | --- | --- | --- |
-| DcaVault | [`src/DcaVault.sol`](./src/DcaVault.sol) | [`script/deploy-dca.mjs`](./script/deploy-dca.mjs) | Written, 13 integration tests passing, Slither-clean. **Not independently audited.** Ready to deploy when the batch goes out. |
+| DcaVault | [`src/DcaVault.sol`](./src/DcaVault.sol) | [`script/deploy-dca.mjs`](./script/deploy-dca.mjs) | Written, 13 integration tests passing, Slither-clean. **Not independently audited.** Ready to deploy when the batch goes out. Deliberately held back for now — RWA trading-side feature, not part of the current agent/credit focus. |
+| DcaVaultV4 | [`src/DcaVaultV4.sol`](./src/DcaVaultV4.sol) | [`script/deploy-dca-v4.mjs`](./script/deploy-dca-v4.mjs) | Written, 15 integration tests passing. **This contract's own doc comment says it must not go to mainnet before an external audit** — the no-oracle fallback mode is a real, material sandwich-protection gap, chosen per-position by whoever calls `createPosition()`, not something a deploy-time flag can close. Deploy script exists and is ready whenever that tradeoff is consciously accepted; not run yet. |
+
+AgentCreditPool with seats (`vouchSeat()`) is written and tested (see `src/AgentCreditPool.sol`'s own doc comment and 118 integration-test assertions) but deliberately NOT redeployed yet — it needs a real `seatToken` address ($AUEVO), which doesn't exist on chain yet, and this contract has no admin to add one after deploy. The currently live AgentCreditPool (see "Deployed" below) predates seats entirely and keeps working as-is in the meantime.
 
 See "Deployed" below for AgentCreditPool and AgentIdentity, both now live.
 
