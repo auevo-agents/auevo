@@ -15,7 +15,7 @@ export function AuevoMark({ className = "", title }: MarkProps) {
       aria-label={title}
       aria-hidden={title ? undefined : true}
     >
-      <img src="/images/auevo-tree-logo.svg" alt="" />
+      <img src="/images/auevo-tree-logo.webp" alt="" />
     </span>
   );
 }
