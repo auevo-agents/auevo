@@ -80,7 +80,7 @@ export default async function TokenPage() {
       </header>
 
       <section className="token-hero">
-        <Image src="/images/auevo-mark.png" width={150} height={150} alt="AUEVO" className="token-hero-mark" />
+        <Image src="/images/auevo-tree-logo.svg" width={150} height={150} alt="AUEVO tree logo" className="token-hero-mark" />
         <h1>$AUEVO</h1>
         <span className="token-hero-badge">Launching soon</span>
         <p className="token-hero-lead">
