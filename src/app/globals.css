@@ -12006,6 +12006,40 @@ a {
   color: #11120f;
 }
 
+/* AUEVO section (.portal-page/.portal-shell) uses its own dark-emerald button
+   language everywhere else, so the shared gold wallet-connect pill gets a
+   scoped override here instead — same shimmer-on-hover/press-down treatment
+   as .portal-btn-primary, kept in one place rather than duplicated per page. */
+.portal-page .app-connect-button,
+.portal-shell .app-connect-button {
+  border-color: rgba(109,235,171,.38);
+  background-image:
+    linear-gradient(115deg,transparent 24%,rgba(255,255,255,.32) 40%,rgba(255,255,255,.32) 44%,transparent 62%),
+    linear-gradient(180deg,#3fce8e,#23875e);
+  background-size: 230% 230%, 100% 100%;
+  background-position: -50% 0%, 0 0;
+  color: #f7fff9;
+  box-shadow: 0 14px 42px rgba(25,121,78,.28), 0 0 30px rgba(66,217,149,.08), inset 0 1px 0 rgba(226,255,239,.22);
+  transition: background-position .5s ease, transform .15s ease, filter .15s ease, box-shadow .2s ease;
+}
+.portal-page .app-connect-button:hover,
+.portal-shell .app-connect-button:hover {
+  background-position: 150% 0%, 0 0;
+  border-color: rgba(109,235,171,.38);
+  color: #f7fff9;
+  filter: brightness(1.08);
+  box-shadow: 0 16px 46px rgba(25,121,78,.36), 0 0 34px rgba(66,217,149,.14), inset 0 1px 0 rgba(226,255,239,.24);
+}
+.portal-page .app-connect-button:active,
+.portal-shell .app-connect-button:active {
+  transform: scale(.96);
+  filter: brightness(.92);
+}
+.portal-page .wallet-modal-item:hover:not(:disabled),
+.portal-shell .wallet-modal-item:hover:not(:disabled) {
+  border-color: rgba(66,217,149,.4);
+}
+
 /*
  * .app-link-button is a plain inline text link (border:0/background:none/
  * padding:0 at its base rule) used for trailing "view more" CTAs — it was
@@ -12143,16 +12177,16 @@ a {
 /* Documentation — GitBook structure, Auevo identity */
 
 .docs-shell {
-  --docs-gold: #c9b27c;
+  --docs-gold: #42d995;
   --docs-ivory: #f2eee5;
   --docs-copy: #aaa9a3;
   --docs-line: rgba(232,224,207,.11);
   min-height: 100vh;
   background:
-    radial-gradient(ellipse 45% 24% at 74% 0%, rgba(178,145,83,.09), transparent 74%),
+    radial-gradient(ellipse 45% 24% at 74% 0%, rgba(66,217,149,.09), transparent 74%),
     linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px),
-    #080a0a;
+    #07120d;
   background-size: auto, 72px 72px, 72px 72px, auto;
 }
 
@@ -12189,7 +12223,7 @@ a {
 }
 
 .docs-brand-label {
-  color: #817f77;
+  color: #7c9087;
   font: 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -12208,14 +12242,14 @@ a {
 .docs-topbar-nav a {
   padding: 8px 13px;
   border-radius: 999px;
-  color: #7f817c;
+  color: #7c9087;
   text-decoration: none;
   font: 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .docs-topbar-nav a:hover {
   color: #e9e4da;
-  background: rgba(201,178,124,.065);
+  background: rgba(66,217,149,.065);
 }
 
 .docs-topbar-actions {
@@ -12226,7 +12260,7 @@ a {
 }
 
 .docs-version {
-  color: #767970;
+  color: #73847a;
   font: 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -12281,7 +12315,7 @@ a {
 }
 
 .docs-sidebar-intro > span {
-  color: #9d8e6d;
+  color: #6f8b7a;
   font: 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .13em;
   text-transform: uppercase;
@@ -12317,8 +12351,8 @@ a {
 }
 
 .docs-sidebar-search input:focus {
-  border-color: rgba(201,178,124,.36);
-  box-shadow: 0 0 0 4px rgba(201,178,124,.05);
+  border-color: rgba(66,217,149,.36);
+  box-shadow: 0 0 0 4px rgba(66,217,149,.05);
 }
 
 .docs-sidebar-search kbd {
@@ -12346,12 +12380,12 @@ a {
   align-items: center;
   gap: 9px;
   margin: 0 7px 8px;
-  color: #9d9b92;
+  color: #92a39a;
   font-size: 9px;
 }
 
 .docs-nav-section-title > span {
-  color: #786b50;
+  color: #56705f;
 }
 
 .docs-nav-link {
@@ -12362,7 +12396,7 @@ a {
   padding: 0 12px 0 15px;
   border: 1px solid transparent;
   border-radius: 9px;
-  color: #7f827d;
+  color: #7c9087;
   font-size: 12px;
 }
 
@@ -12383,13 +12417,13 @@ a {
 
 .docs-nav-link.active {
   color: #eee8dc;
-  border-color: rgba(201,178,124,.14);
-  background: linear-gradient(90deg, rgba(201,178,124,.085), rgba(201,178,124,.025));
+  border-color: rgba(66,217,149,.14);
+  background: linear-gradient(90deg, rgba(66,217,149,.085), rgba(66,217,149,.025));
 }
 
 .docs-nav-link.active::before {
   background: var(--docs-gold);
-  box-shadow: 0 0 10px rgba(201,178,124,.25);
+  box-shadow: 0 0 10px rgba(66,217,149,.25);
 }
 
 .docs-content {
@@ -12416,7 +12450,7 @@ a {
   align-items: center;
   gap: 8px;
   margin-bottom: 17px;
-  color: #9b8c6b;
+  color: #6e8a79;
   font-size: 10px;
 }
 
@@ -12457,7 +12491,7 @@ a {
   display: inline-block;
   width: 0;
   margin-left: -20px;
-  color: #776b51;
+  color: #56705f;
   text-decoration: none;
   opacity: 0;
   transform: translateX(-6px);
@@ -12477,7 +12511,7 @@ a {
 }
 
 .docs-article li::marker {
-  color: #ad9664;
+  color: #7fa088;
 }
 
 .docs-callout {
@@ -12485,11 +12519,11 @@ a {
   margin: 26px 0;
   padding: 20px 22px 20px 52px;
   overflow: hidden;
-  border: 1px solid rgba(201,178,124,.17);
+  border: 1px solid rgba(66,217,149,.17);
   border-radius: 14px;
   background:
-    radial-gradient(circle at 100% 0%, rgba(201,178,124,.09), transparent 45%),
-    rgba(201,178,124,.045);
+    radial-gradient(circle at 100% 0%, rgba(66,217,149,.09), transparent 45%),
+    rgba(66,217,149,.045);
   color: #c9c4b8;
   line-height: 1.7;
 }
@@ -12503,9 +12537,9 @@ a {
   place-items: center;
   width: 21px;
   height: 21px;
-  border: 1px solid rgba(201,178,124,.35);
+  border: 1px solid rgba(66,217,149,.35);
   border-radius: 50%;
-  color: #d6c292;
+  color: #a8d6ba;
   font: italic 600 12px/1 Georgia, serif;
 }
 
@@ -12531,9 +12565,9 @@ a {
 
 .docs-table th {
   padding: 13px 16px;
-  color: #93866a;
+  color: #688071;
   border-color: var(--docs-line);
-  background: rgba(201,178,124,.035);
+  background: rgba(66,217,149,.035);
   font-size: 9px;
 }
 
@@ -12559,12 +12593,12 @@ a {
 }
 
 .docs-pager-link:hover {
-  border-color: rgba(201,178,124,.28);
-  background: rgba(201,178,124,.045);
+  border-color: rgba(66,217,149,.28);
+  background: rgba(66,217,149,.045);
   transform: translateY(-2px);
 }
 
-.docs-pager-link span { color: #83785f; }
+.docs-pager-link span { color: #5c7568; }
 .docs-pager-link b { color: #e7e1d6; }
 
 .docs-toc {
@@ -12580,7 +12614,7 @@ a {
 
 .docs-toc-label {
   margin-bottom: 11px;
-  color: #9d8f6f;
+  color: #6f8c7b;
   font: 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -12605,7 +12639,7 @@ a {
   padding-top: 16px;
   border-top: 1px solid var(--docs-line);
   border-radius: 0;
-  color: #b8a477;
+  color: #86a692;
 }
 
 @media (max-width: 1180px) {
@@ -15631,19 +15665,32 @@ body{
 .portal-copy{color:#93a79b}
 .portal-btn-primary{
   border-color:rgba(109,235,171,.38);
-  background:linear-gradient(180deg,#3fce8e,#23875e);
+  background-image:
+    linear-gradient(115deg,transparent 24%,rgba(255,255,255,.32) 40%,rgba(255,255,255,.32) 44%,transparent 62%),
+    linear-gradient(180deg,#3fce8e,#23875e);
+  background-size:230% 230%,100% 100%;
+  background-position:-50% 0%,0 0;
   color:#f7fff9;
   box-shadow:
     0 14px 42px rgba(25,121,78,.28),
     0 0 30px rgba(66,217,149,.08),
     inset 0 1px 0 rgba(226,255,239,.22);
+  transition:background-position .5s ease,transform .15s ease,filter .15s ease,box-shadow .2s ease;
 }
-.portal-btn-primary:hover{filter:brightness(1.08);box-shadow:0 16px 46px rgba(25,121,78,.36),0 0 34px rgba(66,217,149,.14),inset 0 1px 0 rgba(226,255,239,.24)}
+.portal-btn-primary:hover{background-position:150% 0%,0 0;filter:brightness(1.08);box-shadow:0 16px 46px rgba(25,121,78,.36),0 0 34px rgba(66,217,149,.14),inset 0 1px 0 rgba(226,255,239,.24)}
+.portal-btn-primary:active{transform:scale(.96);filter:brightness(.92)}
 .portal-btn-secondary{
   border-color:rgba(124,176,148,.18);
-  background:linear-gradient(180deg,rgba(13,34,23,.92),rgba(8,24,16,.92));
+  background-image:
+    linear-gradient(115deg,transparent 24%,rgba(109,235,171,.16) 40%,rgba(109,235,171,.16) 44%,transparent 62%),
+    linear-gradient(180deg,rgba(13,34,23,.92),rgba(8,24,16,.92));
+  background-size:230% 230%,100% 100%;
+  background-position:-50% 0%,0 0;
   color:#dbe8df;
+  transition:background-position .5s ease,border-color .2s ease,transform .15s ease,filter .15s ease;
 }
+.portal-btn-secondary:hover{background-position:150% 0%,0 0;border-color:rgba(109,235,171,.34);color:#ece8df}
+.portal-btn-secondary:active{transform:scale(.96);filter:brightness(.9)}
 .portal-chip{
   border-color:rgba(66,217,149,.30);
   background:rgba(37,133,87,.13);
