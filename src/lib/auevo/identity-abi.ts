@@ -86,4 +86,24 @@ export const AGENT_IDENTITY_ABI = [
     ],
     outputs: [],
   },
+  {
+    type: "event",
+    name: "Transferred",
+    inputs: [
+      { name: "agentId", type: "uint256", indexed: true },
+      { name: "from", type: "address", indexed: true },
+      { name: "to", type: "address", indexed: true },
+    ],
+  },
 ] as const;
+
+/** The Transferred event item alone, typed for direct use with viem's getLogs({ event }) — see src/lib/auevo/identity.ts's listTransferEvents. */
+export const AGENT_IDENTITY_TRANSFERRED_EVENT = {
+  type: "event",
+  name: "Transferred",
+  inputs: [
+    { name: "agentId", type: "uint256", indexed: true },
+    { name: "from", type: "address", indexed: true },
+    { name: "to", type: "address", indexed: true },
+  ],
+} as const;

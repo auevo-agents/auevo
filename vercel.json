@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/auevo-performance",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/auevo-identity",
+      "schedule": "0 9 * * *"
     }
   ]
 }

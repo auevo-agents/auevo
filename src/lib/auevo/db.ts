@@ -166,6 +166,20 @@ export async function listProofEventsForSocialAgent(socialAgentId: string, limit
   return (data ?? []) as ProofEvent[];
 }
 
+/** Same as getLatestProofEventForSocialAgent, but for an on-chain AgentIdentity tokenId — used by the Identity cron. */
+export async function getLatestProofEventForAgent(agentId: string, category: ProofCategory): Promise<ProofEvent | null> {
+  const { data, error } = await db()
+    .from("auevo_proof_events")
+    .select(PROOF_COLUMNS)
+    .eq("agent_id", agentId)
+    .eq("category", category)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ProofEvent | null;
+}
+
 /** Most recent Proof Event of one category for one social agent, or null if it has none yet — used by the Longevity cron to decide whether a week has passed since the last record without needing a separate period key. */
 export async function getLatestProofEventForSocialAgent(socialAgentId: string, category: ProofCategory): Promise<ProofEvent | null> {
   const { data, error } = await db()
