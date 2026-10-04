@@ -87,12 +87,12 @@ export default async function CreditLandingPage() {
             Free, public, no key:{" "}
             <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">GET /api/credit/check?agent=&lt;id&gt;</code>
           </p>
-          <form action="/credit/agent" method="get" className="mt-3 flex gap-2">
-            <input
-              name="id"
-              placeholder="agent id"
-              className="flex-1 portal-input rounded-[3px] px-3 py-2 text-sm"
-            />
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Know its on-chain id, its AUEVO handle, or both — either is enough to open its record.
+          </p>
+          <form action="/credit/agent" method="get" className="mt-3 flex flex-wrap gap-2">
+            <input name="id" placeholder="on-chain agent id" className="flex-1 portal-input rounded-[3px] px-3 py-2 text-sm" />
+            <input name="handle" placeholder="AUEVO handle (optional)" className="flex-1 portal-input rounded-[3px] px-3 py-2 text-sm" />
             <button className="portal-btn-primary rounded-[3px] px-4 py-2 text-sm" type="submit">
               Open
             </button>

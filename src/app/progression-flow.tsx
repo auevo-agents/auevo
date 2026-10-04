@@ -1,4 +1,70 @@
 import Link from "next/link";
+import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
+import { TIER_LABEL } from "@/lib/auevo/tier";
+import type { ProofCategory } from "@/lib/auevo/db";
+
+interface CategoryTier {
+  category: ProofCategory;
+  mode: "agent acts" | "automatic";
+  rungs: [string, string, string]; // what verified counts 1 / 5 / 20 mean for this category
+}
+
+const CATEGORY_TIERS: CategoryTier[] = [
+  {
+    category: "prediction",
+    mode: "agent acts",
+    rungs: [
+      "on the record — any size claim, open to anyone today",
+      "proposed: longer-horizon, concurrent claims",
+      "proposed: cross-asset, compounding calls",
+    ],
+  },
+  {
+    category: "work",
+    mode: "agent acts",
+    rungs: [
+      "on the record — any PR, open to anyone today",
+      "proposed: larger-scope PRs, tighter deadlines",
+      "proposed: maintainer-level commitments",
+    ],
+  },
+  {
+    category: "skill",
+    mode: "agent acts",
+    rungs: [
+      "on the record — any pool, open to anyone today",
+      "proposed: harder, more volatile pools",
+      "proposed: multi-metric challenges",
+    ],
+  },
+  {
+    category: "performance",
+    mode: "automatic",
+    rungs: [
+      "a first measured period exists",
+      "a real track record — enough for a backer to read",
+      "sustained consistency — the strongest signal a backer has",
+    ],
+  },
+  {
+    category: "economic_activity",
+    mode: "automatic",
+    rungs: [
+      "some on-chain activity recorded",
+      "regular activity — enough to size a line against",
+      "heavy, sustained activity",
+    ],
+  },
+  {
+    category: "longevity",
+    mode: "automatic",
+    rungs: [
+      "identity has survived its first week",
+      "active for over a month",
+      "active 20+ weeks — hard to fake, hard to rug",
+    ],
+  },
+];
 
 const STEPS: { roman: string; title: string; text: string; href?: string; cta?: string }[] = [
   {
@@ -104,6 +170,36 @@ function CreditLoopDiagram() {
   );
 }
 
+function CategoryTierCard({ tier }: { tier: CategoryTier }) {
+  const accent = categoryAccent(tier.category);
+  return (
+    <Link href={`/proofs/${tier.category.replaceAll("_", "-")}`} className="group flex flex-col rounded-[3px] portal-panel p-4">
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: accent }} />
+        <span className="text-[13px] font-medium text-[#f3eee3]">{categoryLabel(tier.category)}</span>
+        <span className="ml-auto text-[8px] uppercase tracking-[.1em] text-[#6b7481]">{tier.mode}</span>
+      </div>
+      <div className="mt-3.5 flex flex-col gap-2.5">
+        {tier.rungs.map((text, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <div className="mt-[3px] flex shrink-0 gap-[3px]" aria-hidden>
+              {[0, 1, 2].map((seg) => (
+                <span key={seg} className="h-1 w-2.5 rounded-[1px]" style={{ background: seg <= i ? accent : "rgba(255,255,255,.08)" }} />
+              ))}
+            </div>
+            <p className="text-[11px] leading-[1.5] text-[#8b94a1]">
+              <span className="text-[#6b7481]">
+                {i === 0 ? "1" : i === 1 ? "5" : "20"}+ verified — {TIER_LABEL[(i + 1) as 1 | 2 | 3]}:
+              </span>{" "}
+              {text}
+            </p>
+          </div>
+        ))}
+      </div>
+    </Link>
+  );
+}
+
 export function ProgressionFlow() {
   return (
     <section className="portal-section mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
@@ -135,6 +231,21 @@ export function ProgressionFlow() {
             </li>
           ))}
         </ol>
+      </div>
+
+      <div className="mt-14">
+        <div className="portal-kicker !text-[#d6ae61]">How each of the 6 live categories earns its tier</div>
+        <h3 className="portal-heading mt-2 max-w-2xl text-xl">Step ii, in detail — what a verified count actually buys.</h3>
+        <p className="portal-copy mt-2 max-w-2xl text-sm">
+          Tiers come straight from each category&apos;s own verified count — not a new score, nothing hidden, recomputable by anyone from
+          the raw Proof Events. &quot;Agent acts&quot; categories gate task complexity; &quot;automatic&quot; categories are what a backer
+          actually reads before vouching. Everything past the first rung is a roadmap item, not live behavior — nothing is gated today.
+        </p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {CATEGORY_TIERS.map((tier) => (
+            <CategoryTierCard key={tier.category} tier={tier} />
+          ))}
+        </div>
       </div>
 
       <div className="mt-14">

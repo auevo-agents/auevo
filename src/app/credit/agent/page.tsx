@@ -3,6 +3,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
 import { CreditAgentActions } from "./credit-agent-actions";
+import { ProofRecordPanel } from "./proof-record";
 
 export const revalidate = 15;
 
@@ -14,16 +15,39 @@ function verdictChip(verdict: string) {
 }
 
 export default async function CreditAgentPage({ searchParams }: PageProps<"/credit/agent">) {
-  const { id } = await searchParams;
+  const { id, handle } = await searchParams;
   const idStr = Array.isArray(id) ? id[0] : id;
+  const handleStr = Array.isArray(handle) ? handle[0] : handle;
 
   return (
     <div className="portal-page">
       <AgentPortalHeader />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-10 pb-20 sm:px-8">
+        {handleStr && (
+          <div className="mb-6">
+            <ProofRecordPanel handle={handleStr} />
+          </div>
+        )}
+
+        <form action="/credit/agent" method="get" className="mb-6 flex flex-wrap items-end gap-2">
+          {handleStr && <input type="hidden" name="handle" value={handleStr} />}
+          <label className="flex-1">
+            <span className="mb-1 block text-xs text-[var(--muted)]">On-chain agent id</span>
+            <input
+              name="id"
+              defaultValue={idStr}
+              placeholder="agent id (uint256)"
+              className="w-full portal-input rounded-[3px] px-3 py-2 text-sm"
+            />
+          </label>
+          <button className="portal-btn-secondary rounded-[3px] px-4 py-2 text-sm" type="submit">
+            {idStr ? "Update" : "Check credit record"}
+          </button>
+        </form>
+
         {!idStr ? (
-          <p className="text-[var(--muted)]">No agent id given.</p>
+          !handleStr && <p className="text-[var(--muted)]">No agent id or handle given.</p>
         ) : (
           <AgentLookup idStr={idStr} />
         )}

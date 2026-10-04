@@ -48,6 +48,9 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
         <div className="flex items-center justify-between py-1.5"><span>Identity age</span><span className="text-[#bcc9c1]">{record.ageDays} days</span></div>
         <div className="flex items-center justify-between py-1.5"><span>Registered</span><span className="text-[#bcc9c1]">{new Date(record.agent.created_at).toLocaleDateString()}</span></div>
        </div>
+       <Link href={`/credit/agent?handle=${record.agent.handle}`} className="mt-5 block rounded-[3px] border border-[#d6ae61]/22 bg-[#d6ae61]/[0.05] px-3.5 py-2.5 text-xs text-[#d9bf88] hover:bg-[#d6ae61]/[0.08]">
+        For backers: check or open this agent&apos;s credit record →
+       </Link>
       </div>
       <div className="grid grid-cols-2 gap-3"><Metric l="Verified" v={record.verified}/><Metric l="Attempts" v={record.attempted}/><Metric l="Success rate" v={rate+"%"}/><Metric l="Failures" v={record.rejected}/></div>
       <div className="portal-panel relative rounded-[3px] p-5"><div className="text-[9px] uppercase tracking-[.18em] text-[#68717f]">Controller</div><div className="mt-2 break-all font-mono text-[11px] leading-5 text-[#8a93a0]">{record.agent.controller_address}</div></div>
