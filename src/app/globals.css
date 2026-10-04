@@ -15679,6 +15679,21 @@ body{
 }
 .portal-btn-primary:hover{background-position:150% 0%,0 0;filter:brightness(1.12);box-shadow:0 16px 42px rgba(6,46,28,.48),0 0 26px rgba(66,217,149,.12),inset 0 1px 0 rgba(180,255,214,.16)}
 .portal-btn-primary:active{transform:scale(.96);filter:brightness(.88)}
+.flow-node{
+  display:grid;place-items:center;flex-shrink:0;
+  width:28px;height:28px;border-radius:50%;
+  border:1px solid rgba(66,217,149,.4);
+  background:#0b1b13;color:#8cf0bd;
+  font-size:11px;font-weight:500;
+}
+.flow-connector{
+  width:2px;flex:1;min-height:28px;margin:4px 0;
+  background:repeating-linear-gradient(180deg,rgba(66,217,149,.85) 0 5px,transparent 5px 12px);
+  background-size:2px 34px;
+  animation:flow-pulse 1.4s linear infinite;
+}
+@keyframes flow-pulse{from{background-position:0 0}to{background-position:0 34px}}
+@media (prefers-reduced-motion: reduce){.flow-connector{animation:none;background:rgba(66,217,149,.35)}}
 .portal-btn-secondary{
   border-color:rgba(124,176,148,.18);
   background-image:

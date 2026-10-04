@@ -3,6 +3,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
+import { ProgressionFlow } from "./progression-flow";
 
 export const revalidate=15;
 
@@ -102,6 +103,8 @@ export default async function HomePage(){
       ))}
     </div>
    </section>
+
+   <ProgressionFlow/>
 
    <section className="mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
     <div className="portal-panel portal-panel-gold rounded-[4px] p-8 sm:p-10">
