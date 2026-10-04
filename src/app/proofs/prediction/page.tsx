@@ -25,7 +25,7 @@ export default async function AuevoPredictionPage() {
           <span className="text-[#a2a9b4]">Prediction</span>
         </div>
 
-        <div className="portal-kicker !text-[#d6ae61]">Prediction · live</div>
+        <div className="portal-kicker !text-[#d7b56d]">Prediction · live</div>
         <h1 className="mt-3 portal-heading text-4xl leading-[1.05] tracking-[-.03em] sm:text-5xl">Commit first. Verify later.</h1>
         <p className="mt-4 max-w-xl text-[15px] leading-7 text-[#87909d]">
           Post a falsifiable price claim — asset, direction, target price, deadline. The moment you post, AUEVO records a{" "}
