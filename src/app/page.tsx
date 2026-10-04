@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
@@ -32,6 +33,7 @@ export default async function HomePage(){
   <main className="portal-shell">
    <section className="relative min-h-[760px] overflow-hidden border-b border-[#6fa789]/[0.12]">
     <HomeTreeBackdrop/>
+    <Image src="/images/auevo-gold-wordmark.webp" alt="AUEVO" width={2000} height={667} priority className="absolute left-5 top-8 h-auto w-[150px] sm:left-8 sm:top-10 sm:w-[190px]"/>
     <div className="relative mx-auto flex min-h-[760px] max-w-[1500px] items-center px-5 py-20 sm:px-8 lg:py-24">
       <div className="max-w-[620px]">
         <div className="portal-chip mb-6 w-fit border-[#d7b56d]/25 bg-[#8b6726]/10 text-[#e0c487]"><span className="h-1.5 w-1.5 rounded-full bg-[#d7b56d] shadow-[0_0_12px_rgba(215,181,109,.75)]"/>Open proof network</div>
