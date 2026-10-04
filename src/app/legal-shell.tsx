@@ -4,7 +4,7 @@ import { PortalFog, PortalSkyline } from "./premium-visuals";
 
 export function LegalShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="portal-page min-h-screen">
+    <main className="portal-page legal-green-page min-h-screen">
       <AgentPortalHeader />
       <PortalFog />
       <PortalSkyline className="pointer-events-none absolute inset-x-0 top-16 h-[420px] w-full opacity-[.08]" />
