@@ -25,10 +25,10 @@ export type OrbitBloomAgent = {
 type Box={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];emissive:number;ry?:number};
 type Node={agent:OrbitBloomAgent;x:number;z:number;scale:number};
 
-const SLATE:[number,number,number]=[0.15,0.19,0.29];
-const SLATE_2:[number,number,number]=[0.10,0.13,0.21];
-const VIOLET:[number,number,number]=[0.56,0.39,1.0];
-const VIOLET_SOFT:[number,number,number]=[0.72,0.64,1.0];
+const SLATE:[number,number,number]=[0.10,0.19,0.14];
+const SLATE_2:[number,number,number]=[0.07,0.15,0.10];
+const VIOLET:[number,number,number]=[0.26,0.85,0.56];
+const VIOLET_SOFT:[number,number,number]=[0.56,0.92,0.72];
 const GOLD:[number,number,number]=[0.90,0.67,0.30];
 const RED:[number,number,number]=[0.94,0.22,0.28];
 
@@ -74,7 +74,7 @@ function radialPetals(boxes:Box[],cx:number,cz:number,scale:number,count=12){
     boxes.push({
       x:cx+Math.cos(a)*r,y:.16*scale,z:cz+Math.sin(a)*r,
       sx:.64*scale,sy:.10*scale,sz:.28*scale,
-      color:i%3===0?[.16,.20,.31]:[.12,.16,.25],
+      color:i%3===0?[.12,.24,.17]:[.08,.18,.12],
       emissive:.018,ry:-a,
     });
   }
@@ -87,17 +87,17 @@ function bloomForAgent(agent:OrbitBloomAgent,ox:number,oz:number,scale=1,detail=
   boxes.push({x:ox+.05*scale,y:.018,z:oz+.08*scale,sx:3.0*scale,sy:.03,sz:2.65*scale,color:[.018,.025,.040],emissive:0});
   for(let i=0;i<Math.min(4,age);i++){
     const side=(2.32-i*.18)*scale;
-    boxes.push({x:ox,y:.055+i*.06,z:oz,sx:side,sy:.075*scale,sz:side,color:i===Math.min(4,age)-1?[.17,.21,.32]:[.10,.14,.22],emissive:.018});
+    boxes.push({x:ox,y:.055+i*.06,z:oz,sx:side,sy:.075*scale,sz:side,color:i===Math.min(4,age)-1?[.12,.23,.16]:[.10,.14,.22],emissive:.018});
   }
 
   radialPetals(boxes,ox,oz,scale,12);
-  arcRing(boxes,ox,oz,.95,.20*scale,44,[.45,.34,.78],.055,scale,.038);
+  arcRing(boxes,ox,oz,.95,.20*scale,44,[.24,.58,.39],.055,scale,.038);
   arcRing(boxes,ox,oz,1.28,.155*scale,56,[.52,.40,.18],.045,scale,.032);
 
   const maturity=.30+Math.min(.55,Math.log1p(agent.ageDays)/9);
-  boxes.push({x:ox,y:.27*scale,z:oz,sx:.82*scale,sy:.24*scale,sz:.82*scale,color:[.15,.19,.30],emissive:.02});
-  boxes.push({x:ox,y:.40*scale,z:oz,sx:.54*scale,sy:.22*scale,sz:.54*scale,color:[.20,.20,.34],emissive:.035});
-  boxes.push({x:ox,y:(.52+maturity*.08)*scale,z:oz,sx:.26*scale,sy:(.24+maturity*.10)*scale,sz:.26*scale,color:[.38,.29,.65],emissive:.12});
+  boxes.push({x:ox,y:.27*scale,z:oz,sx:.82*scale,sy:.24*scale,sz:.82*scale,color:[.10,.21,.14],emissive:.02});
+  boxes.push({x:ox,y:.40*scale,z:oz,sx:.54*scale,sy:.22*scale,sz:.54*scale,color:[.13,.25,.17],emissive:.035});
+  boxes.push({x:ox,y:(.52+maturity*.08)*scale,z:oz,sx:.26*scale,sy:(.24+maturity*.10)*scale,sz:.26*scale,color:[.22,.54,.36],emissive:.12});
 
   const proofs=[...agent.proofs].sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
   const byCategory=new Map<string,OrbitProof[]>();
@@ -111,7 +111,7 @@ function bloomForAgent(agent:OrbitBloomAgent,ox:number,oz:number,scale=1,detail=
     boxes.push({
       x:ox+Math.cos(lane)*sr,y:.30*scale,z:oz+Math.sin(lane)*sr,
       sx:.12*scale,sy:.07*scale,sz:.12*scale,
-      color:[.19,.23,.34],emissive:.025,ry:-lane,
+      color:[.13,.24,.17],emissive:.025,ry:-lane,
     });
 
     items.forEach((p,j)=>{
@@ -163,20 +163,20 @@ function layoutAgents(agents:OrbitBloomAgent[],single:boolean):Node[]{
 function sceneBoxes(agents:OrbitBloomAgent[],single:boolean):Box[]{
   const boxes:Box[]=[];
   if(single){
-    boxes.push({x:0,y:-.16,z:0,sx:7.6,sy:.12,sz:7.6,color:[.055,.082,.13],emissive:.008});
-    arcRing(boxes,0,0,2.55,.005,96,[.38,.28,.68],.07,1,.026);
+    boxes.push({x:0,y:-.16,z:0,sx:7.6,sy:.12,sz:7.6,color:[.035,.085,.055],emissive:.008});
+    arcRing(boxes,0,0,2.55,.005,96,[.21,.55,.35],.07,1,.026);
     arcRing(boxes,0,0,3.25,.002,116,[.56,.42,.18],.045,1,.022);
   }else{
-    boxes.push({x:0,y:-.18,z:0,sx:18.0,sy:.10,sz:18.0,color:[.05,.075,.12],emissive:.004});
-    arcRing(boxes,0,0,4.15,.004,120,[.36,.26,.68],.065,1,.028);
+    boxes.push({x:0,y:-.18,z:0,sx:18.0,sy:.10,sz:18.0,color:[.03,.075,.05],emissive:.004});
+    arcRing(boxes,0,0,4.15,.004,120,[.18,.52,.33],.065,1,.028);
     arcRing(boxes,0,0,6.45,.002,154,[.56,.42,.18],.045,1,.024);
-    arcRing(boxes,0,0,8.25,.001,188,[.34,.25,.62],.035,1,.022);
+    arcRing(boxes,0,0,8.25,.001,188,[.17,.48,.31],.035,1,.022);
 
     for(let i=0;i<3;i++){
-      boxes.push({x:0,y:.05+i*.09,z:0,sx:2.15-i*.28,sy:.10,sz:2.15-i*.28,color:i===2?[.18,.21,.34]:[.10,.14,.22],emissive:.02});
+      boxes.push({x:0,y:.05+i*.09,z:0,sx:2.15-i*.28,sy:.10,sz:2.15-i*.28,color:i===2?[.12,.24,.17]:[.10,.14,.22],emissive:.02});
     }
     radialPetals(boxes,0,0,1.45,16);
-    boxes.push({x:0,y:.36,z:0,sx:.78,sy:.34,sz:.78,color:[.20,.22,.37],emissive:.05});
+    boxes.push({x:0,y:.36,z:0,sx:.78,sy:.34,sz:.78,color:[.14,.27,.19],emissive:.05});
     boxes.push({x:0,y:.58,z:0,sx:.32,sy:.48,sz:.32,color:GOLD,emissive:.62});
     boxes.push({x:0,y:.88,z:0,sx:.22,sy:.22,sz:.22,color:GOLD,emissive:.90});
   }
@@ -300,20 +300,20 @@ export function OrbitBloom3D({agents,single=false,autoRotate=true,hoverInfo=fals
     return()=>{cancelAnimationFrame(raf);canvas.removeEventListener("pointerdown",down);canvas.removeEventListener("pointermove",move);canvas.removeEventListener("pointerup",up);canvas.removeEventListener("pointercancel",up);canvas.removeEventListener("pointerleave",leave);canvas.removeEventListener("wheel",wheel)};
   },[boxes,nodes,single,autoRotate,hoverInfo]);
 
-  return <div className={"relative overflow-hidden bg-[#0d1421] "+className}>
-    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_47%,rgba(119,91,223,.22),transparent_30%),radial-gradient(circle_at_56%_40%,rgba(214,174,97,.10),transparent_19%),linear-gradient(180deg,#18243a_0%,#101a2b_46%,#0a111d_100%)]"/>
-    <div className="pointer-events-none absolute inset-x-0 top-[44%] h-px bg-gradient-to-r from-transparent via-[#9d8dff]/20 to-transparent"/>
-    <div className="pointer-events-none absolute -bottom-[20%] left-[8%] h-[48%] w-[84%] rounded-full bg-[#334b76]/32 blur-[110px]"/><div className="pointer-events-none absolute left-1/2 top-[48%] h-[36%] w-[64%] -translate-x-1/2 rounded-full bg-[#8b72ff]/[0.07] blur-[70px]"/>
+  return <div className={"relative overflow-hidden bg-[#07130e] "+className}>
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_47%,rgba(66,217,149,.18),transparent_30%),radial-gradient(circle_at_56%_40%,rgba(214,174,97,.10),transparent_19%),linear-gradient(180deg,#0d2418_0%,#091a12_46%,#050e0a_100%)]"/>
+    <div className="pointer-events-none absolute inset-x-0 top-[44%] h-px bg-gradient-to-r from-transparent via-[#60e1a0]/20 to-transparent"/>
+    <div className="pointer-events-none absolute -bottom-[20%] left-[8%] h-[48%] w-[84%] rounded-full bg-[#1d5134]/32 blur-[110px]"/><div className="pointer-events-none absolute left-1/2 top-[48%] h-[36%] w-[64%] -translate-x-1/2 rounded-full bg-[#42d995]/[0.07] blur-[70px]"/>
     <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":hoverInfo?"cursor-pointer":"cursor-grab")}/>
-    {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[260px] rounded-2xl border border-[#9b8cff]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(139,114,255,.12)] backdrop-blur-xl">
-      <div className="text-[9px] uppercase tracking-[.18em] text-[#9f8cff]">Reputation Bloom</div>
+    {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[260px] rounded-2xl border border-[#55e1a0]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(66,217,149,.12)] backdrop-blur-xl">
+      <div className="text-[9px] uppercase tracking-[.18em] text-[#73e5aa]">Reputation Bloom</div>
       <div className="mt-2 truncate text-sm font-medium text-[#f3eee6]">@{hovered.handle}</div>
       <div className="mt-4 grid grid-cols-4 gap-1.5 text-center">
-        <Metric v={hovered.verified} l="verified" c="#8b72ff"/><Metric v={hovered.proofs.filter(p=>p.status==="verified"&&((p.verification_method||"").toUpperCase().includes("DETERMINISTIC")||(p.verification_method||"").toUpperCase().includes("ORACLE"))).length} l="elite" c="#d6ae61"/><Metric v={hovered.pending} l="pending" c="#b9a9ff"/><Metric v={hovered.rejected} l="failed" c="#ef4444"/>
+        <Metric v={hovered.verified} l="verified" c="#42d995"/><Metric v={hovered.proofs.filter(p=>p.status==="verified"&&((p.verification_method||"").toUpperCase().includes("DETERMINISTIC")||(p.verification_method||"").toUpperCase().includes("ORACLE"))).length} l="elite" c="#d6ae61"/><Metric v={hovered.pending} l="pending" c="#8fe8ba"/><Metric v={hovered.rejected} l="failed" c="#ef4444"/>
       </div>
       <div className="mt-3 text-[9px] uppercase tracking-[.12em] text-[#d6ae61]">Click to open passport →</div>
     </div>}
-    <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-white/[0.08] bg-[#0b121d]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#8794a8] backdrop-blur-md">Auto orbit · drag · scroll to zoom</div>
+    <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-white/[0.08] bg-[#07140e]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#879b8e] backdrop-blur-md">Auto orbit · drag · scroll to zoom</div>
   </div>
 }
 function Metric({v,l,c}:{v:number;l:string;c:string}){return <div className="rounded-lg border border-white/[0.06] bg-white/[0.025] p-2"><span className="mx-auto mb-1 block h-1.5 w-1.5 rounded-full" style={{background:c}}/><div className="text-xs text-[#eee9e1]">{v}</div><div className="mt-1 text-[6px] uppercase tracking-[.09em] text-[#718095]">{l}</div></div>}
