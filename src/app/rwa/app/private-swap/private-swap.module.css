@@ -678,3 +678,33 @@
 .gateItem:has(input:checked){
   color:#edf4ef;
 }
+
+
+/* Reliable native checkbox state — Chrome/Safari/Firefox */
+.gateItem input{
+  appearance:auto!important;
+  -webkit-appearance:checkbox!important;
+  display:block!important;
+  width:20px!important;
+  height:20px!important;
+  margin:2px 0 0!important;
+  border:0!important;
+  border-radius:4px!important;
+  background:transparent!important;
+  accent-color:#d7b56d!important;
+  box-shadow:none!important;
+  cursor:pointer!important;
+}
+.gateItem input::after{
+  content:none!important;
+}
+.gateItem input:checked{
+  appearance:auto!important;
+  -webkit-appearance:checkbox!important;
+  background:transparent!important;
+  box-shadow:0 0 0 3px rgba(215,181,109,.10)!important;
+  accent-color:#d7b56d!important;
+}
+.gateItem:has(input:checked){
+  color:#edf4ef!important;
+}
