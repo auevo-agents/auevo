@@ -23,6 +23,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/docs", label: "Docs" },
       { href: "/credit/protocol", label: "Credit protocol" },
       { href: "/credit/protocol/dev-log", label: "Dev log" },
+      { href: "https://github.com/auevo-agents/auevo-core", label: "GitHub" },
     ],
   },
   {
@@ -62,13 +63,20 @@ export function PortalFooter() {
               <div key={col.title}>
                 <p className="text-[10px] uppercase tracking-[.14em] text-[#5c6c63]">{col.title}</p>
                 <ul className="mt-3 flex flex-col gap-2">
-                  {col.links.map((link) => (
-                    <li key={link.href}>
-                      <Link href={link.href} className="text-xs text-[#9aad9f] transition hover:text-[#f4f0e8]">
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {col.links.map((link) => {
+                    const external = link.href.startsWith("http");
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="text-xs text-[#9aad9f] transition hover:text-[#f4f0e8]"
+                          {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
