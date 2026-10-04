@@ -22,7 +22,7 @@ export type OrbitBloomAgent = {
   proofs: OrbitProof[];
 };
 
-type Box={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];emissive:number};
+type Box={x:number;y:number;z:number;sx:number;sy:number;sz:number;color:[number,number,number];emissive:number;ry?:number};
 type Node={agent:OrbitBloomAgent;x:number;z:number;scale:number};
 
 const SLATE:[number,number,number]=[0.15,0.19,0.29];
@@ -54,10 +54,29 @@ function statusEmissive(p:OrbitProof){
   return .03;
 }
 
-function ring(boxes:Box[],cx:number,cz:number,r:number,y:number,count:number,color:[number,number,number],emissive:number,scale=1){
+function arcRing(boxes:Box[],cx:number,cz:number,r:number,y:number,count:number,color:[number,number,number],emissive:number,scale=1,width=.045){
+  const circumference=Math.PI*2*r*scale;
+  const segLen=(circumference/count)*.88;
   for(let i=0;i<count;i++){
     const a=(i/count)*Math.PI*2;
-    boxes.push({x:cx+Math.cos(a)*r*scale,y,z:cz+Math.sin(a)*r*scale,sx:.055*scale,sy:.035*scale,sz:.055*scale,color,emissive});
+    boxes.push({
+      x:cx+Math.cos(a)*r*scale,y,z:cz+Math.sin(a)*r*scale,
+      sx:segLen,sy:width*scale,sz:width*scale,
+      color,emissive,ry:-a,
+    });
+  }
+}
+
+function radialPetals(boxes:Box[],cx:number,cz:number,scale:number,count=12){
+  for(let i=0;i<count;i++){
+    const a=(i/count)*Math.PI*2;
+    const r=.72*scale;
+    boxes.push({
+      x:cx+Math.cos(a)*r,y:.16*scale,z:cz+Math.sin(a)*r,
+      sx:.64*scale,sy:.10*scale,sz:.28*scale,
+      color:i%3===0?[.16,.20,.31]:[.12,.16,.25],
+      emissive:.018,ry:-a,
+    });
   }
 }
 
@@ -65,91 +84,101 @@ function bloomForAgent(agent:OrbitBloomAgent,ox:number,oz:number,scale=1,detail=
   const boxes:Box[]=[];
   const age=Math.max(1,Math.min(8,Math.ceil(agent.ageDays/45)));
 
-  // layered pedestal: identity age
-  for(let i=0;i<Math.min(5,age);i++){
-    const side=(2.15-i*.20)*scale;
-    boxes.push({x:ox,y:.05+i*.075,z:oz,sx:side,sy:.09*scale,sz:side,color:i===Math.min(5,age)-1?[.18,.22,.33]:SLATE_2,emissive:.02});
+  boxes.push({x:ox+.05*scale,y:.018,z:oz+.08*scale,sx:3.0*scale,sy:.03,sz:2.65*scale,color:[.018,.025,.040],emissive:0});
+  for(let i=0;i<Math.min(4,age);i++){
+    const side=(2.32-i*.18)*scale;
+    boxes.push({x:ox,y:.055+i*.06,z:oz,sx:side,sy:.075*scale,sz:side,color:i===Math.min(4,age)-1?[.17,.21,.32]:[.10,.14,.22],emissive:.018});
   }
 
-  // core spire
-  const coreH=(.78+Math.log1p(Math.max(1,agent.proofs.length))*.33)*scale;
-  boxes.push({x:ox,y:.34+coreH/2,z:oz,sx:.38*scale,sy:coreH,sz:.38*scale,color:SLATE,emissive:.03});
-  boxes.push({x:ox,y:.42+coreH*.72,z:oz,sx:.17*scale,sy:coreH*.62,sz:.17*scale,color:GOLD,emissive:.62});
-  boxes.push({x:ox,y:.38+coreH+.12,z:oz,sx:.18*scale,sy:.18*scale,sz:.18*scale,color:GOLD,emissive:.86});
+  radialPetals(boxes,ox,oz,scale,12);
+  arcRing(boxes,ox,oz,.95,.20*scale,44,[.45,.34,.78],.055,scale,.038);
+  arcRing(boxes,ox,oz,1.28,.155*scale,56,[.52,.40,.18],.045,scale,.032);
 
-  // local orbit guides
-  ring(boxes,ox,oz,.82,.25*scale,32,VIOLET,.13,scale);
-  ring(boxes,ox,oz,1.22,.20*scale,44,GOLD,.10,scale);
+  const maturity=.30+Math.min(.55,Math.log1p(agent.ageDays)/9);
+  boxes.push({x:ox,y:.27*scale,z:oz,sx:.82*scale,sy:.24*scale,sz:.82*scale,color:[.15,.19,.30],emissive:.02});
+  boxes.push({x:ox,y:.40*scale,z:oz,sx:.54*scale,sy:.22*scale,sz:.54*scale,color:[.20,.20,.34],emissive:.035});
+  boxes.push({x:ox,y:(.52+maturity*.08)*scale,z:oz,sx:.26*scale,sy:(.24+maturity*.10)*scale,sz:.26*scale,color:[.38,.29,.65],emissive:.12});
 
-  // One real Proof Event = one real voxel. Category determines angular lane.
   const proofs=[...agent.proofs].sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
-  proofs.forEach((p,i)=>{
-    const cat=CATEGORY_INDEX[p.category]??0;
-    const lane=(cat/9)*Math.PI*2;
-    const localIndex=Math.floor(i/9);
-    const radius=(.55 + (localIndex%5)*.16 + (cat%2)*.06)*scale;
-    const wobble=((i*2.399963229728653)%0.46)-.23;
-    const angle=lane+wobble;
-    const layer=Math.floor(localIndex/5);
-    const y=(.44 + layer*.16 + (i%3)*.045)*scale;
-    const size=(.11+(p.status==="verified" ? .025 : 0))*scale;
+  const byCategory=new Map<string,OrbitProof[]>();
+  proofs.forEach(p=>{const arr=byCategory.get(p.category)||[];arr.push(p);byCategory.set(p.category,arr)});
+
+  Object.entries(CATEGORY_INDEX).forEach(([category,cat])=>{
+    const lane=(cat/9)*Math.PI*2-.35;
+    const items=byCategory.get(category)||[];
+    const sr=.66*scale;
+
     boxes.push({
-      x:ox+Math.cos(angle)*radius,
-      y,
-      z:oz+Math.sin(angle)*radius,
-      sx:size,sy:size,sz:size,
-      color:statusColor(p),
-      emissive:statusEmissive(p),
+      x:ox+Math.cos(lane)*sr,y:.30*scale,z:oz+Math.sin(lane)*sr,
+      sx:.12*scale,sy:.07*scale,sz:.12*scale,
+      color:[.19,.23,.34],emissive:.025,ry:-lane,
+    });
+
+    items.forEach((p,j)=>{
+      const radial=.76+(j%5)*.20;
+      const tier=Math.floor(j/5);
+      const sideways=(j%2===0?-.08:.08);
+      const x=ox+Math.cos(lane)*(radial*scale)+Math.cos(lane+Math.PI/2)*(sideways*scale);
+      const z=oz+Math.sin(lane)*(radial*scale)+Math.sin(lane+Math.PI/2)*(sideways*scale);
+      const y=(.38+tier*.20+(j%3)*.035)*scale;
+      const size=(p.status==="verified" ? .17 : .15)*scale;
+      boxes.push({x,y,z,sx:size,sy:size,sz:size,color:statusColor(p),emissive:statusEmissive(p),ry:-lane});
+      if(p.status==="verified"){
+        boxes.push({x,y:y-.105*scale,z,sx:size*.58,sy:.028*scale,sz:size*.58,color:statusColor(p),emissive:.18,ry:-lane});
+      }
     });
   });
 
-  // If the ledger has no events yet, keep a visible seed.
   if(proofs.length===0){
-    boxes.push({x:ox+.62*scale,y:.48*scale,z:oz,sx:.12*scale,sy:.12*scale,sz:.12*scale,color:SLATE,emissive:.04});
-  }
-
-  // Failures leave an explicit scar near the base.
-  if(agent.rejected>0){
-    boxes.push({x:ox-.52*scale,y:.36*scale,z:oz+.42*scale,sx:.18*scale,sy:.18*scale,sz:.18*scale,color:RED,emissive:.42});
+    boxes.push({x:ox+.72*scale,y:.36*scale,z:oz,sx:.13*scale,sy:.13*scale,sz:.13*scale,color:[.28,.32,.42],emissive:.03});
   }
 
   if(detail){
-    // subtle signal pixels around the bloom
-    const signal=Math.min(10,Math.max(2,agent.verified));
+    const signal=Math.min(9,Math.max(2,agent.verified+agent.pending));
     for(let i=0;i<signal;i++){
-      const a=(i/signal)*Math.PI*2+.4;
-      boxes.push({x:ox+Math.cos(a)*1.48*scale,y:(.32+(i%3)*.08)*scale,z:oz+Math.sin(a)*1.48*scale,sx:.05*scale,sy:.05*scale,sz:.05*scale,color:i%3===0?GOLD:VIOLET,emissive:.55});
+      const a=(i/signal)*Math.PI*2+.23*(i%3);
+      const rr=(1.48+(i%2)*.11)*scale;
+      boxes.push({
+        x:ox+Math.cos(a)*rr,y:(.27+(i%3)*.075)*scale,z:oz+Math.sin(a)*rr,
+        sx:.045*scale,sy:.045*scale,sz:.045*scale,
+        color:i%4===0?GOLD:VIOLET,emissive:.42,
+      });
     }
   }
   return boxes;
 }
 
 function layoutAgents(agents:OrbitBloomAgent[],single:boolean):Node[]{
-  if(single) return agents.length?[{agent:agents[0],x:0,z:0,scale:1.75}]:[];
-  const shown=agents.slice(0,18);
+  if(single) return agents.length?[{agent:agents[0],x:0,z:0,scale:1.90}]:[];
+  const shown=agents.slice(0,14);
+  if(shown.length<=1) return shown.map(agent=>({agent,x:0,z:0,scale:1.35}));
   return shown.map((agent,i)=>{
-    const count=Math.max(1,shown.length);
-    const a=(i/count)*Math.PI*2-.45;
-    const r=count<=6?5.2:6.0+(i%2)*1.25;
-    return {agent,x:Math.cos(a)*r,z:Math.sin(a)*r,scale:count<=6?1.25:.92};
+    const a=(i/shown.length)*Math.PI*2-.35;
+    const ring=shown.length<=7?5.1:(i%2===0?4.9:7.2);
+    const scale=shown.length<=7?1.28:.98;
+    return {agent,x:Math.cos(a)*ring,z:Math.sin(a)*ring,scale};
   });
 }
 
 function sceneBoxes(agents:OrbitBloomAgent[],single:boolean):Box[]{
   const boxes:Box[]=[];
   if(single){
-    boxes.push({x:0,y:-.12,z:0,sx:9.5,sy:.16,sz:9.5,color:[.07,.10,.16],emissive:.01});
-    ring(boxes,0,0,2.4,.01,72,VIOLET,.12,1);
-    ring(boxes,0,0,3.25,.008,88,GOLD,.08,1);
+    boxes.push({x:0,y:-.16,z:0,sx:7.6,sy:.12,sz:7.6,color:[.055,.082,.13],emissive:.008});
+    arcRing(boxes,0,0,2.55,.005,96,[.38,.28,.68],.07,1,.026);
+    arcRing(boxes,0,0,3.25,.002,116,[.56,.42,.18],.045,1,.022);
   }else{
-    boxes.push({x:0,y:-.15,z:0,sx:22,sy:.18,sz:22,color:[.07,.10,.16],emissive:.01});
-    ring(boxes,0,0,4.2,.015,96,VIOLET,.14,1);
-    ring(boxes,0,0,6.25,.012,128,GOLD,.09,1);
-    ring(boxes,0,0,8.0,.01,160,VIOLET,.07,1);
-    // central AUEVO hub
-    boxes.push({x:0,y:.55,z:0,sx:.92,sy:1.05,sz:.92,color:SLATE,emissive:.03});
-    boxes.push({x:0,y:.82,z:0,sx:.35,sy:1.30,sz:.35,color:GOLD,emissive:.62});
-    boxes.push({x:0,y:1.58,z:0,sx:.26,sy:.26,sz:.26,color:GOLD,emissive:.90});
+    boxes.push({x:0,y:-.18,z:0,sx:18.0,sy:.10,sz:18.0,color:[.05,.075,.12],emissive:.004});
+    arcRing(boxes,0,0,4.15,.004,120,[.36,.26,.68],.065,1,.028);
+    arcRing(boxes,0,0,6.45,.002,154,[.56,.42,.18],.045,1,.024);
+    arcRing(boxes,0,0,8.25,.001,188,[.34,.25,.62],.035,1,.022);
+
+    for(let i=0;i<3;i++){
+      boxes.push({x:0,y:.05+i*.09,z:0,sx:2.15-i*.28,sy:.10,sz:2.15-i*.28,color:i===2?[.18,.21,.34]:[.10,.14,.22],emissive:.02});
+    }
+    radialPetals(boxes,0,0,1.45,16);
+    boxes.push({x:0,y:.36,z:0,sx:.78,sy:.34,sz:.78,color:[.20,.22,.37],emissive:.05});
+    boxes.push({x:0,y:.58,z:0,sx:.32,sy:.48,sz:.32,color:GOLD,emissive:.62});
+    boxes.push({x:0,y:.88,z:0,sx:.22,sy:.22,sz:.22,color:GOLD,emissive:.90});
   }
   const nodes=layoutAgents(agents,single);
   nodes.forEach(n=>boxes.push(...bloomForAgent(n.agent,n.x,n.z,n.scale,true)));
