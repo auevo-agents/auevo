@@ -14,8 +14,8 @@ and produces a public, fundable mainnet address the moment it lands.
 | Contract | Source | Deploy script | Status |
 | --- | --- | --- | --- |
 | DcaVault | [`src/DcaVault.sol`](./src/DcaVault.sol) | [`script/deploy-dca.mjs`](./script/deploy-dca.mjs) | Written, 13 integration tests passing, Slither-clean. **Not independently audited.** Ready to deploy when the batch goes out. |
-| AgentCreditPool | [`src/AgentCreditPool.sol`](./src/AgentCreditPool.sol) | [`script/deploy-credit-pool.mjs`](./script/deploy-credit-pool.mjs) | Written, 30 integration tests passing, one real bug found by an independent security review and fixed (see README.md). **Not independently audited.** Not yet ready — needs a conscious decision on which identity registry to trust (`CREDIT_IDENTITY_ADDRESS`) before it goes in the batch; see README.md's own section on this contract and the deploy script's header. |
-| AgentIdentity | [`src/AgentIdentity.sol`](./src/AgentIdentity.sol) | [`script/deploy-identity.mjs`](./script/deploy-identity.mjs) | Written, 21 integration tests passing, internally reviewed + Slither-clean (one real bug found and fixed, see README.md). **Not independently (paid, professional) audited.** No constructor arguments and no owner, so no deploy-time decision is needed beyond the usual key/gas — ready to deploy when the batch goes out. If deployed, `CREDIT_IDENTITY_ADDRESS` for AgentCreditPool above could point at this instead of a third party's registry. |
+
+See "Deployed" below for AgentCreditPool and AgentIdentity, both now live.
 
 ## When it's time to deploy
 
@@ -31,4 +31,9 @@ and produces a public, fundable mainnet address the moment it lands.
 
 ## Deployed
 
-_Nothing yet._
+| Contract | Address | Deploy tx | Date |
+| --- | --- | --- | --- |
+| AgentIdentity | [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) | `0x85344514ef0267a06ef0e0d1528a68b7fde1623974fc223596ea084b5a2e868b` | 2026-10-04 |
+| AgentCreditPool | [`0xc7a04d94361de7a30d099057c6746217b6aa0d2e`](https://robinhoodchain.blockscout.com/address/0xc7a04d94361de7a30d099057c6746217b6aa0d2e) | `0x812fce9687060ab5ff23829bf3da1c7b78548cfe65bab889c1618aef7dd76577` | 2026-10-04 |
+
+AgentCreditPool deploy params: `CREDIT_ASSET_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (USDG, 6 decimals), `CREDIT_IDENTITY_ADDRESS=0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b` (this deploy's own AgentIdentity, not Priors' shared registry), `CREDIT_RESERVE_ADDRESS=0x77772e5e78ab5EA22D33B2caD8a701133aa95b85`, default loan bounds ($5–$500, 1% fee/30d, $10 min root stake). `NEXT_PUBLIC_CREDIT_POOL_ADDRESS` is set in Vercel; `/credit/agent` and `/api/credit/check` are live against the real pool.

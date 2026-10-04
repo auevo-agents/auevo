@@ -150,7 +150,7 @@ V3 vault, not just the plumbing. Short version:
   follow the same "show the honest not-deployed status, no placeholder
   address" pattern once this contract has an audit and a deployment.
 
-## AgentCreditPool — status: written, tested. **Not deployed — one open decision first.**
+## AgentCreditPool — status: written, tested. **Deployed to mainnet** at [`0xc7a04d94361de7a30d099057c6746217b6aa0d2e`](https://robinhoodchain.blockscout.com/address/0xc7a04d94361de7a30d099057c6746217b6aa0d2e) — see [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed) for deploy params and tx hash.
 
 Unsecured-from-the-agent, fully-backed-by-a-third-party credit pool for AI
 agents on Robinhood Chain, modeled on Priors' public v2 design
@@ -228,7 +228,7 @@ anything else here. Short version:
   DcaVault.
 - **No backend/frontend wiring yet** — this is the contract layer only.
 
-## AgentIdentity — status: written, tested, reviewed. **Not deployed.**
+## AgentIdentity — status: written, tested, reviewed. **Deployed to mainnet** at [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) — this is the `CREDIT_IDENTITY_ADDRESS` AgentCreditPool above actually points at. See [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed).
 
 Minimal, non-upgradeable agent identity registry for AUEVO's reputation
 protocol (see the "AUEVO as an Independent Reputation & Verification
