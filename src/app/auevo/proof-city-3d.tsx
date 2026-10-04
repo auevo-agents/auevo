@@ -71,110 +71,117 @@ function saturate(c: [number, number, number], amount: number): [number, number,
   return [clamp(avg + (c[0] - avg) * amount), clamp(avg + (c[1] - avg) * amount), clamp(avg + (c[2] - avg) * amount)];
 }
 
+/**
+ * A tree, not a tower — deliberately: a real tree ring can't be widened, thinned, or
+ * erased after it hardens, only built on top of. That's the same property an append-only
+ * Proof ledger has, which a skyscraper (nothing stops you redesigning any floor) doesn't
+ * carry. Each ring here is one fixed Proof category, in the same order for every agent
+ * (not a chronological year — nine categories exist, not nine years), so ring position is
+ * directly comparable across trees. Ring width = how much the agent has attempted there;
+ * glow = how much of that came back verified.
+ */
 function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, landmark = false): Box[] {
   const boxes: Box[] = [];
-  const age = Math.max(1, Math.min(7, Math.ceil(agent.ageDays / 45)));
+  const order = Object.keys(CATEGORY_COLORS);
+  const cats = agent.categories;
 
-  // Contact shadow + readable slate foundation — kept compact so it never dominates the frame.
-  boxes.push({x:ox+.2*scale,y:.015,z:oz+.24*scale,sx:3.0*scale,sy:.02,sz:2.7*scale,color:[.015,.02,.032],emissive:0});
-  for (let r = 0; r < age + 2; r++) {
-    const side = (2.6 - r * 0.17) * scale;
-    boxes.push({
-      x: ox,
-      y: 0.07 + r * 0.075,
-      z: oz,
-      sx: side,
-      sy: 0.1 * scale,
-      sz: side,
-      color: r === age + 1 ? [0.16, 0.20, 0.30] : [0.11, 0.15, 0.23],
-      emissive: r === age + 1 ? 0.035 : 0.01,
-    });
+  // Overall girth comes from TOTAL activity, not any one category — the silhouette must
+  // taper smoothly (a real trunk never bulges outward above a narrower point), so per-
+  // category data drives band height and colour/glow, never the trunk's own radius.
+  const activity = volume(agent.attempted + agent.verified);
+  const baseR = ((landmark ? 0.80 : 0.70) + activity * (landmark ? 0.60 : 0.46)) * scale;
+  const topR = baseR * 0.3;
+
+  // Root flare: a short stack of low rings that hug the trunk's own base width, not an
+  // independent plaza — the ground a trunk actually flares into, not a building footprint.
+  boxes.push({x:ox+.15*scale,y:.012,z:oz+.18*scale,sx:baseR*2.3,sy:.018,sz:baseR*2.0,color:[.015,.02,.032],emissive:0});
+  const rootRings = 3;
+  for (let r = 0; r < rootRings; r++) {
+    const side = baseR * (1.85 - r * 0.22);
+    boxes.push({x:ox,y:0.05+r*0.06,z:oz,sx:side,sy:0.075*scale,sz:side,color:[0.12,0.15,0.23],emissive:0.012});
   }
 
-  if (!landmark) {
-    // Corner pylons: neutral = slate, verified = violet, elite = gold, failed = red.
-    const corner = 0.98 * scale;
-    [[-corner,-corner],[corner,-corner],[-corner,corner],[corner,corner]].forEach(([dx,dz],i)=>{
-      const h=(0.62 + age * 0.07 + (agent.verified>0 && i%2===0 ? 0.2 : 0)) * scale;
-      boxes.push({x:ox+dx,y:0.3+h/2,z:oz+dz,sx:0.26*scale,sy:h,sz:0.26*scale,color:[0.14,0.18,0.28],emissive:0.025});
-      boxes.push({x:ox+dx,y:0.34+h,z:oz+dz,sx:0.13*scale,sy:0.12*scale,sz:0.13*scale,color:i%2?[0.88,0.66,0.32]:[0.58,0.44,1],emissive:0.58});
-    });
-  }
-
-  const cats = agent.categories.length ? agent.categories : [{ category: "identity", attempted: 0, verified: 0, confidence: "INSUFFICIENT" }];
-  const allCategories = Object.keys(CATEGORY_COLORS);
-  allCategories.slice(0, 9).forEach((category, i) => {
-    const c = cats.find((item)=>item.category===category) ?? { category, attempted:0, verified:0, confidence:"INSUFFICIENT" };
+  // Pass 1: each category's own band height (activity-driven) and stats — radius is NOT decided here.
+  const bands = order.map((category, i) => {
+    const c = cats.find((item) => item.category === category) ?? { category, attempted: 0, verified: 0, confidence: "INSUFFICIENT" };
     const d = volume(c.attempted);
-    const color = landmark ? saturate(CATEGORY_COLORS[c.category] ?? [0.52, 0.45, 0.78], 1.7) : (CATEGORY_COLORS[c.category] ?? [0.52, 0.45, 0.78]);
-    const ratio = c.attempted ? c.verified / c.attempted : 0;
+    const h = ((landmark ? 0.26 : 0.20) + d * (landmark ? 0.50 : 0.38)) * scale;
+    return { i, c, d, h, color: landmark ? saturate(CATEGORY_COLORS[category] ?? [0.52,0.45,0.78], 1.7) : (CATEGORY_COLORS[category] ?? [0.52,0.45,0.78]) };
+  });
+  const trunkH = bands.reduce((s,b)=>s+b.h, 0) || 1;
+
+  let y = 0.34 * scale;
+  let dominantIdx = 0, dominantAttempted = -1;
+  const ringMidY: number[] = [];
+  bands.forEach(({ i, c, h, color }) => {
+    if (c.attempted > dominantAttempted) { dominantAttempted = c.attempted; dominantIdx = i; }
     const conf = CONFIDENCE[c.confidence] ?? 0.18;
+    const ratio = c.attempted ? c.verified / c.attempted : 0;
+    const active = c.attempted > 0;
 
-    // Landmark: a tight radial cluster hugging the dominant centre spire — true volume on every side, not a flat row.
-    const angle = (i / 9) * Math.PI * 2;
-    const radius = landmark ? 0.46 : 0.88 + (i % 2) * 0.27;
-    const height = landmark ? (0.55 + d * 2.0) * scale : (0.58 + d * 3.55) * scale;
-    const width = landmark ? (0.22 + d * 0.11) * scale : (0.26 + d * 0.34) * scale;
-    const x = ox + Math.cos(angle) * radius * scale;
-    const z = oz + Math.sin(angle) * radius * scale;
+    const tMid = (y - 0.34*scale + h/2) / trunkH;
+    const r = baseR + (topR - baseR) * Math.pow(clamp(tMid), 0.75);
 
-    const tiers = Math.max(2, Math.min(9, Math.ceil(2 + d * 7)));
-    for (let t = 0; t < tiers; t++) {
-      const th = height / tiers;
-      const taper = 1 - (t / tiers) * 0.32;
-      const lit = c.attempted > 0 && t / tiers < ratio;
+    boxes.push({
+      x: ox, y: y + h / 2, z: oz,
+      sx: r, sy: Math.max(0.09 * scale, h * 0.94), sz: r,
+      color: active ? color : [0.14, 0.17, 0.24],
+      emissive: active ? (landmark ? 0.30 + conf * ratio * 0.9 : 0.19 + conf * ratio * 0.58) : 0.02,
+    });
+    ringMidY.push(y + h / 2);
+
+    // Grain flecks: verified proofs as small bright accents set right into this band's own surface.
+    const flecks = Math.min(5, c.verified);
+    for (let p = 0; p < flecks; p++) {
+      const a = (p / flecks) * Math.PI * 2 + i * 0.7;
       boxes.push({
-        x,
-        y: 0.38 + t * th + th / 2,
-        z,
-        sx: width * taper,
-        sy: Math.max(0.11, th * 0.86),
-        sz: width * taper,
-        color: lit ? color : [0.14, 0.18, 0.28],
-        emissive: lit ? (landmark ? 0.46 + conf * 0.85 : 0.30 + conf * 0.60) : 0.018,
+        x: ox + Math.cos(a) * r * 0.78, y: y + h * (0.3 + (p % 3) * 0.2), z: oz + Math.sin(a) * r * 0.78,
+        sx: 0.05 * scale, sy: 0.05 * scale, sz: 0.05 * scale, color, emissive: landmark ? 0.95 : 0.78,
       });
     }
 
-    // Verified proof pixels make reputation discrete and visible.
-    const pixels = Math.min(14, c.verified);
-    for(let p=0;p<pixels;p++){
-      const px=x + (((p%3)-1)*0.17)*scale;
-      const pz=z + ((((p*2)%3)-1)*0.15)*scale;
-      const py=0.48 + height + (p%5)*0.078*scale;
-      boxes.push({x:px,y:py,z:pz,sx:0.075*scale,sy:0.075*scale,sz:0.075*scale,color,emissive:landmark?0.95:0.78});
-    }
-
-    if (agent.pending > 0 && i === 0) {
-      boxes.push({x,y:0.44+height+0.14,z,sx:width*.78,sy:.12*scale,sz:width*.78,color:[.71,.64,1],emissive:.28});
-    }
-    if (agent.rejected > 0 && i === 1) {
-      boxes.push({x:x+.16*scale,y:.42+height*.42,z:z+.12*scale,sx:width*.35,sy:.10*scale,sz:width*1.18,color:[.95,.22,.28],emissive:.34});
-    }
+    y += h;
   });
 
-  // The crown: one dominant centre spire, always the tallest mass in the structure.
-  // A single glowing gold shaft (nesting a dimmer box inside a wider one made it invisible — fully occluded), a
-  // violet collar band wider than the shaft so it actually protrudes, and a violet tip above the shaft's top.
-  const coreHeight = (landmark ? 3.6 : 1.24) + volume(agent.verified + agent.attempted) * (landmark ? 5.6 : 3.45);
-  const ch=coreHeight*scale;
-  const shaftW=(landmark?.4:.46)*scale;
-  boxes.push({x:ox,y:.50+ch/2,z:oz,sx:shaftW,sy:ch,sz:shaftW,color:[.95,.74,.38],emissive:landmark?.85:.55});
-  boxes.push({x:ox,y:.50+ch*.62,z:oz,sx:shaftW*1.3,sy:ch*.04,sz:shaftW*1.3,color:[.66,.48,1],emissive:landmark?1.0:.75});
-  boxes.push({x:ox,y:.50+ch+.20,z:oz,sx:(landmark?.22:.24)*scale,sy:(landmark?.34:.28)*scale,sz:(landmark?.22:.24)*scale,color:[.66,.48,1],emissive:landmark?1.15:.92});
+  // A rejected proof is a scar carved into the band where it happened — visible for good,
+  // never papered over. Placed on whichever category has the most attempts (per-category
+  // rejection counts aren't tracked yet, same aggregate-level approximation as before).
+  if (agent.rejected > 0) {
+    boxes.push({x:ox+topR*.5,y:ringMidY[dominantIdx]??y*.5,z:oz+topR*.2,sx:topR*.4,sy:.08*scale,sz:topR*.7,color:[.32,.13,.13],emissive:.12});
+  }
 
-  const bridgeCount=Math.max(4,Math.min(18,agent.attempted+agent.verified+4));
-  for(let i=0;i<bridgeCount;i++){
-    const a=(i/bridgeCount)*Math.PI*2;
-    const rr=(landmark?0.78+(i%3)*.09:1.72+(i%3)*.12)*scale;
+  // Pending: the newest growth, still soft — a translucent-looking band above every hardened ring.
+  if (agent.pending > 0) {
+    boxes.push({x:ox,y:y+.05*scale,z:oz,sx:topR*1.05,sy:.08*scale,sz:topR*1.05,color:[.62,.56,.88],emissive:.22});
+    y += 0.12 * scale;
+  }
+
+  // Bud: new growth tapers to a point and closes into a small cluster, like a sprouting
+  // tip — not a separate antenna bolted on top.
+  const budScale = (landmark ? 1.25 : 1) * scale;
+  boxes.push({x:ox,y:y+topR*.5,z:oz,sx:topR*.7,sy:topR,sz:topR*.7,color:[.68,.52,1],emissive:landmark?.55:.4});
+  y += topR*.9;
+  [[0,0],[1,0],[-1,.6],[.6,-1],[-.6,-.7]].forEach(([dx,dz],k)=>{
     boxes.push({
-      x:ox+Math.cos(a)*rr,
-      y:(.34+(i%2)*.075)*scale,
-      z:oz+Math.sin(a)*rr,
-      sx:.085*scale,sy:.085*scale,sz:.085*scale,
-      color:i%2?[.95,.74,.38]:[.66,.48,1],
-      emissive:landmark?.85:.54,
+      x:ox+dx*0.075*budScale, y:y+(k%2)*0.05*budScale, z:oz+dz*0.075*budScale,
+      sx:.09*budScale,sy:.09*budScale,sz:.09*budScale,
+      color:k%2?[.95,.74,.38]:[.78,.6,1], emissive:landmark?1.05:.8,
+    });
+  });
+
+  // Fallen seeds: this agent's cumulative record, settled close at its own base — a forest
+  // shares one ground, not a ring of satellites orbiting each tree.
+  const seedCount = Math.max(2, Math.min(10, Math.round(activity * 10)));
+  for (let i = 0; i < seedCount; i++) {
+    const a = (i / seedCount) * Math.PI * 2 + 0.4;
+    const rr = baseR * 1.35 + (i % 3) * 0.05 * scale;
+    boxes.push({
+      x: ox + Math.cos(a) * rr, y: (0.05 + (i % 2) * 0.02) * scale, z: oz + Math.sin(a) * rr,
+      sx: 0.045 * scale, sy: 0.045 * scale, sz: 0.045 * scale,
+      color: i % 2 ? [.95,.74,.38] : [.66,.48,1], emissive: landmark ? 0.65 : 0.38,
     });
   }
+
   return boxes;
 }
 
