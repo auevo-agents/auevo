@@ -1,114 +1,137 @@
-# Auevo Credit — ТЗ
+# Auevo Credit — Technical Spec
 
-> Для Claude Code. Читай целиком перед работой на этой фиче. Перед
-> написанием кода прочитай `AGENTS.md`: это Next.js 16, API отличается
-> от привычного — сверяйся с `node_modules/next/dist/docs/`.
+> For Claude Code. Read the whole thing before working on this feature.
+> Before writing any code, read `AGENTS.md`: this is Next.js 16, the API
+> differs from what you're used to — check against
+> `node_modules/next/dist/docs/`.
 
-## 1. Цель
+> **Status note:** this spec was written, and §3-4 below describe the
+> state of the repo, *before* `AgentCreditPool` was deployed. It has
+> since been deployed to Robinhood Chain mainnet — 30 integration
+> tests, see [`contracts/README.md`](../contracts/README.md) and
+> [`contracts/DEPLOYMENTS_PENDING.md`](../contracts/DEPLOYMENTS_PENDING.md)
+> for the live address, deploy tx and current status (including seats,
+> which came later and are documented there and in
+> [`AUEVO_PROTOCOL_SPEC.md`](AUEVO_PROTOCOL_SPEC.md)). The rest of
+> this document is kept as the original design record, not updated
+> line by line for post-deploy facts.
 
-Кредит для AI-агентов, смоделированный на **Priors**
-(github.com/priors-agents/priors, priors.trade) — необеспеченный от
-агента, но **полностью обеспеченный конкретным сторонним backer'ом**
-кредит в стейблкоине на Robinhood Chain. Прямое решение пользователя:
-**AUEVO никогда не бэкает агентов своим капиталом** — линия существует
-только если третья сторона явно поручилась (EIP-712 подпись владельца
-агента + стейк backer'а).
+## 1. Goal
 
-Полный построчный аудит Priors (механика v1/v2, score, GO MODE,
-монетизация, адреса контрактов, карта всех страниц сайта) — в Claude
-Doc: https://claude.ai/code/artifact/26627c27-74fd-49da-8aa4-2bbf2063f23b.
-Этот файл не повторяет аудит — только архитектурные решения и статус
-реализации у нас.
+Credit for AI agents, modeled on **Priors**
+(github.com/priors-agents/priors, priors.trade) — unsecured from the
+agent's side, but **fully backed by a specific third-party backer** —
+a stablecoin credit line on Robinhood Chain. A direct decision by the
+user: **AUEVO never backs agents with its own capital** — a line
+exists only if a third party has explicitly vouched for it (an
+EIP-712 signature from the agent's owner + the backer's stake).
 
-## 2. Решения (чем мы отличаемся от Priors и почему)
+A full, line-by-line audit of Priors (v1/v2 mechanics, score, GO MODE,
+monetization, contract addresses, a map of every page on the site) —
+in a Claude Doc: https://claude.ai/code/artifact/26627c27-74fd-49da-8aa4-2bbf2063f23b.
+This file does not repeat that audit — only our own architectural
+decisions and implementation status.
 
-- **Только сторонние backer'ы.** Нет аналога `TreasurySponsorV4` —
-  AUEVO не кладёт свои деньги под риск дефолта. (Явное решение
-  пользователя, см. историю сессии.)
-- **Один sponsor, один открытый заём на агента одновременно.**
-  Упрощение v2-модели Priors — она допускает несколько заёмов и
-  несколько типов backer'ов (treasury/seat/stock-vault). У нас пока
-  только «root»-бэкер (любой с ≥ minRootStake). Расширяемо позже.
-  **Это не баг, это сознательное сужение scope** — см. doc comment
-  контракта.
-- **Переиспользуем существующий identity registry** (ERC-8004 или
-  любой ERC-721-совместимый `ownerOf`), а не минтим свой. Какой адрес
-  использовать — **открытое решение на момент деплоя**, не код: см.
-  `contracts/script/deploy-credit-pool.mjs`. Переиспользование
-  registry Priors (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`) даёт
-  бесплатную совместимость (агент Priors может сразу пользоваться нашим
-  пулом), но означает доверие единственному EOA-владельцу того
-  registry — риск, найденный в аудите.
-- **Сеть — Robinhood Chain (4663)**, не BNB: совместимость с открытым
-  стандартом ERC-8004 и уже живой USDG важнее размера сети для этой
-  конкретной фичи (см. то же обсуждение в истории сессии). У AUEVO уже
-  вся инфра под эту сеть (`src/lib/chains.ts`, RWA-токены, Uniswap v4).
-- **Lock комиссии в момент выдачи займа** — прямой перенос фикса,
-  который сами Priors внесли в v2 после эксплойта self-backing loop в
-  v1. Встроено с первого дня, не задним числом.
-- **Score — пока НЕ реализован как число 0–1000.** У Priors on-chain
-  score требует `dollarSecondsRepaid` (накопленный «принципал × дни
-  удержания»), которого в нашем `AgentAccount` нет — сознательно, чтобы
-  не раздувать контракт до первого реального использования. Вместо
-  этого `verdictOf()` отдаёт `no record | defaulted | no repayments yet
-  | repaid`, как `verdict` в `/api/check` у Priors. Полноценный score
-  (возможно, сразу v2-стиль: кто дал риск, доход через x402, анти-sybil)
-  — следующая фаза, после реального трафика.
+## 2. Decisions (where we differ from Priors, and why)
 
-## 3. Текущее состояние репо
+- **Only third-party backers.** There is no analog of
+  `TreasurySponsorV4` — AUEVO does not put its own money at risk of
+  default. (An explicit decision by the user, see the session
+  history.)
+- **One sponsor, one open loan per agent at a time.** A simplification
+  of Priors' v2 model — it allows multiple loans and multiple backer
+  types (treasury/seat/stock-vault). We currently have only the
+  "root" backer (anyone with ≥ minRootStake). Extensible later.
+  **This is not a bug, it's a deliberate narrowing of scope** — see
+  the contract's doc comment.
+- **We reuse an existing identity registry** (ERC-8004, or any
+  ERC-721-compatible `ownerOf`) rather than minting our own. Which
+  address to use is **an open decision at deploy time**, not a code
+  decision: see `contracts/script/deploy-credit-pool.mjs`. Reusing
+  Priors' registry (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`)
+  gives free compatibility (a Priors agent could use our pool right
+  away), but it means trusting that registry's single EOA owner — a
+  risk flagged in the audit.
+- **The network is Robinhood Chain (4663)**, not BNB: compatibility
+  with the open ERC-8004 standard and an already-live USDG matters
+  more than network size for this specific feature (see the same
+  discussion in the session history). AUEVO already has all its
+  infrastructure built for this network (`src/lib/chains.ts`, RWA
+  tokens, Uniswap v4).
+- **Locking the fee at loan-issuance time** — a direct carry-over of
+  the fix Priors themselves introduced in v2 after the self-backing
+  loop exploit in v1. Built in from day one, not bolted on after the
+  fact.
+- **Score — NOT yet implemented as a 0–1000 number.** Priors' on-chain
+  score requires `dollarSecondsRepaid` (an accumulated "principal ×
+  days held"), which our `AgentAccount` deliberately does not have —
+  so as not to bloat the contract before any real usage. Instead,
+  `verdictOf()` returns `no record | defaulted | no repayments yet |
+  repaid`, matching the `verdict` field in Priors' `/api/check`. A
+  full-fledged score (possibly going straight to a v2-style one: who
+  took on the risk, revenue via x402, anti-sybil) — a later phase,
+  after there's real traffic.
 
-- **Контракт**: `contracts/src/AgentCreditPool.sol` — написан,
-  скомпилирован (`evmVersion: cancun` — нужен из-за OZ EIP712, Robinhood
-  Chain это умеет, см. комментарий в `compile-all.js`), 29
-  интеграционных тестов зелёные (`contracts/test/run-credit.mjs`).
-  **Не задеплоен.**
-- **Deploy-скрипт**: `contracts/script/deploy-credit-pool.mjs` — требует
-  явно asset/identity/reserve адреса и decimals, без хардкода. Не
-  запускался.
-- **Backend-чтение**: `src/lib/credit/contract.ts` +
-  `src/lib/credit/abi.ts` — живые чтения с чейна через
-  `getRobinhoodClient()`, без индексера (нет смысла индексировать то,
-  чего нет на чейне).
-- **Публичный API**: `GET /api/credit/check?agent=<id>` — зеркалит
-  форму ответа `/api/check` у Priors. `?address=` **не реализован**
-  (нужен индекс всех identity, которого пока нет) — отдаёт 501 с
-  понятным сообщением, а не тихо пустой ответ.
-- **Страницы**: `/credit` (статус пула, параметры), `/credit/agent?id=`
-  (запись агента + кошелёк-формы). Честно показывают «Not deployed
-  yet» вместо плейсхолдер-адреса — та же конвенция, что `/rwa/app/bots`
-  для `DcaVault`.
-- **UI-формы** (`src/app/credit/agent/credit-agent-actions.tsx`,
-  wagmi, свой `CreditProviders` — не делится с `/rwa/app/providers.tsx`
-  по той же причине, по которой `chains.ts` держит сеть обособленно):
-  подписать consent (owner, бесплатно, EIP-712), задепозитить/стать
-  backer'ом, vouch по вставленному consent, borrow, repay/markDefault.
-- **Нет пока**: Supabase-схемы (не нужна без реального трафика — вся
-  правда живёт в контракте), SDK/CLI по типу `npx priors-v2`, MCP-сервера,
-  x402-интеграции, «Go Mode» (социальный вход без кошелька — у AUEVO
-  уже есть Privy-инфраструктура из фичи Wallet, подключить можно быстро,
-  когда решим это делать).
+## 3. Current state of the repo
 
-## 4. Открытые решения перед деплоем
+- **Contract**: `contracts/src/AgentCreditPool.sol` — written,
+  compiled (`evmVersion: cancun` — needed because of OZ's EIP712,
+  which Robinhood Chain supports, see the comment in
+  `compile-all.js`), 29 integration tests passing
+  (`contracts/test/run-credit.mjs`). **Not deployed.**
+- **Deploy script**: `contracts/script/deploy-credit-pool.mjs` —
+  requires explicit asset/identity/reserve addresses and decimals, no
+  hardcoding. Has not been run.
+- **Backend reads**: `src/lib/credit/contract.ts` +
+  `src/lib/credit/abi.ts` — live on-chain reads via
+  `getRobinhoodClient()`, no indexer (no point indexing what isn't on
+  chain yet).
+- **Public API**: `GET /api/credit/check?agent=<id>` — mirrors the
+  shape of Priors' `/api/check` response. `?address=` **is not
+  implemented** (it needs an index of every identity, which we don't
+  have yet) — it returns a 501 with a clear message rather than a
+  silently empty response.
+- **Pages**: `/credit` (pool status, parameters), `/credit/agent?id=`
+  (agent record + wallet forms). They honestly show "Not deployed
+  yet" instead of a placeholder address — the same convention as
+  `/rwa/app/bots` uses for `DcaVault`.
+- **UI forms** (`src/app/credit/agent/credit-agent-actions.tsx`,
+  wagmi, its own `CreditProviders` — not shared with
+  `/rwa/app/providers.tsx`, for the same reason `chains.ts` keeps this
+  network separate): sign consent (owner, free, EIP-712), deposit/
+  become a backer, vouch using a pasted-in consent, borrow,
+  repay/markDefault.
+- **Not yet there**: Supabase schema (not needed without real
+  traffic — all the truth lives in the contract), an SDK/CLI like
+  `npx priors-v2`, an MCP server, x402 integration, "Go Mode" (wallet-
+  less social sign-in — AUEVO already has the Privy infrastructure
+  from the Wallet feature, could be wired up quickly once we decide to
+  do it).
 
-Зафиксировано в задаче #61 таск-листа:
+## 4. Open decisions before deploy
 
-1. Какой identity registry использовать (`CREDIT_IDENTITY_ADDRESS`) —
-   Priors' публичный или свой.
-2. Какой стейблкоин (`CREDIT_ASSET_ADDRESS` + decimals) — USDG (тот же,
-   что у Priors) или другой.
-3. Адрес резерва протокола (`CREDIT_RESERVE_ADDRESS`) — куда уходит
-   15% с каждой комиссии.
-4. Деплой выполняется **пользователем, с его ключом**, не мной — см.
-   `contracts/README.md`.
+Recorded in task #61 of the task list:
 
-## 5. Следующие кандидаты (не начаты, ждут приоритизации)
+1. Which identity registry to use (`CREDIT_IDENTITY_ADDRESS`) —
+   Priors' public one, or our own.
+2. Which stablecoin (`CREDIT_ASSET_ADDRESS` + decimals) — USDG (the
+   same one Priors uses) or something else.
+3. The protocol reserve address (`CREDIT_RESERVE_ADDRESS`) — where
+   15% of every fee goes.
+4. The deploy is carried out **by the user, with their own key**, not
+   by me — see `contracts/README.md`.
 
-- Независимый платный аудит контракта перед реальными деньгами.
-- Богатый score (v2-style) + Supabase-кэш, когда появится реальный
-  трафик, которому есть смысл индексировать.
-- «Go Mode» — онбординг без кошелька через существующий Privy.
-- SDK/CLI и MCP-сервер по образцу `@priors/mcp`/`npx priors-v2`, чтобы
-  агенты могли подключаться программно, не только через браузер.
-- Объединение с лентой агентов (`/`, `src/lib/social/*`) — Priors и
-  Parley-модель должны слиться в один продукт, как решено раньше в
-  стратегическом документе (см. Claude Doc выше).
+## 5. Next candidates (not started, awaiting prioritization)
+
+- An independent, paid audit of the contract before real money is at
+  stake.
+- A richer score (v2-style) + a Supabase cache, once there's real
+  traffic worth indexing.
+- "Go Mode" — walletless onboarding through the existing Privy setup.
+- An SDK/CLI and MCP server along the lines of `@priors/mcp`/
+  `npx priors-v2`, so agents can connect programmatically, not just
+  through the browser.
+- Merging with the agent feed (`/`, `src/lib/social/*`) — the Priors
+  model and the Parley model should merge into one product, as
+  decided earlier in the strategic document (see the Claude Doc
+  above).

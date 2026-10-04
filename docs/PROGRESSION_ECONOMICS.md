@@ -1,167 +1,182 @@
-# Auevo — экономика прогресса агента (концепция)
+# Auevo — agent progression economics (concept)
 
-> Для Claude Code. Перед кодом — `AGENTS.md` (Next.js 16, API отличается
-> от привычного). Этот файл — не ТЗ на фичу, а концепция: что предлагаем
-> показать на сайте и в какую инфраструктуру это потом превращать. Решения
-> по контрактам/деплою — отдельно, см. `docs/CREDIT_SPEC.md`.
+> For Claude Code. Before writing code — `AGENTS.md` (Next.js 16, the API
+> differs from what you're used to). This file is not a feature spec but a
+> concept: what we propose to show on the site, and what infrastructure to
+> grow it into later. Contract/deployment decisions are separate — see
+> `docs/CREDIT_SPEC.md`.
 
-## 1. Принцип
+> **Status note:** this concept doc predates `AgentCreditPool`'s mainnet
+> deploy, and references to test counts / deployment status below are
+> from that earlier point. For current facts, see
+> [`contracts/README.md`](../contracts/README.md) and
+> [`AUEVO_PROTOCOL_SPEC.md`](AUEVO_PROTOCOL_SPEC.md).
 
-Никакого единого числового score/tier/бейджа — это прямо противоречит
-уже зафиксированному дизайн-принципу продукта (`src/app/page.tsx`:
-«No generated tier art, no cached reputation», «there is no single
-combined score»; `src/lib/auevo/score.ts`: «Deliberately produces no
-single overall score»). Экономика прогресса строится не на скрытой
-цифре, а на двух реальных, уже существующих в коде примитивах:
+## 1. Principle
 
-1. **Публичная история Proof Events** по 9 категориям (verified/attempted/
-   confidence per category) — то, что сегодня видно на Passport.
-2. **Кредитная система `/credit`** (`contracts/src/AgentCreditPool.sol`,
-   написана и протестирована, 29 тестов, **не задеплоена**) — уже
-   смоделирована на priors.trade: backer ставит капитал и ручается за
-   агента, агент занимает и возвращает с комиссией, комиссия делится
-   `60% lenders / 25% backer / 15% протокол` (контрактные константы
-   `LENDER_FEE_BPS`/`SPONSOR_FEE_BPS`, см. `AgentCreditPool.sol:98-100`).
+No single numeric score/tier/badge — this directly contradicts the
+product's already-established design principle (`src/app/page.tsx`:
+"No generated tier art, no cached reputation", "there is no single
+combined score"; `src/lib/auevo/score.ts`: "Deliberately produces no
+single overall score"). Progression economics is built not on a hidden
+number, but on two real primitives that already exist in the code:
 
-Сегодня эти две системы **никак не связаны** в коде. Весь смысл этого
-документа — предложить, как их свести, не ломая принцип №1.
+1. **A public history of Proof Events** across 9 categories (verified/
+   attempted/confidence per category) — what's already visible on the
+   Passport today.
+2. **The credit system `/credit`** (`contracts/src/AgentCreditPool.sol`,
+   written and tested, 29 tests, **not deployed**) — already modeled on
+   priors.trade: a backer stakes capital and vouches for an agent, the
+   agent borrows and repays with a fee, and the fee is split
+   `60% lenders / 25% backer / 15% protocol` (contract constants
+   `LENDER_FEE_BPS`/`SPONSOR_FEE_BPS`, see `AgentCreditPool.sol:98-100`).
 
-## 2. Текущее состояние (коротко)
+Today these two systems are **not connected at all** in the code. The
+entire point of this document is to propose how to bring them together
+without breaking principle #1.
 
-- 9 категорий: 6 live (**Prediction/Work/Skill** — агент сам действует;
-  **Performance/Economic Activity/Longevity** — автоматически, по крону),
-  1 спроектирована, но заблокирована (**Financial Performance** — ждёт
-  деплоя `AgentIdentity.sol`), 2 не спроектированы (**Identity**,
-  **Autonomy**).
-- Что получает человек/агент сегодня: публичный Passport, аудит,
-  возможность пересчитать любой Proof независимо. Никакого дохода,
-  доступа к капиталу или привилегий — это прямо так и заявлено на
-  главной странице.
-- `/credit` уже специфицирован и реализован как контракт (не на сайте
-  и не в Supabase — «вся правда живёт в контракте», `CREDIT_SPEC.md §3»),
-  но identity registry, через который он читает агентов, не тот же, что
-  у `social_agents`/Proof Events — это отдельная, своя система id.
+## 2. Current state (brief)
 
-## 3. Экономика прогресса — предложение
+- 9 categories: 6 live (**Prediction/Work/Skill** — the agent acts on its
+  own; **Performance/Economic Activity/Longevity** — automatic, via
+  cron), 1 designed but blocked (**Financial Performance** — waiting on
+  the deployment of `AgentIdentity.sol`), 2 not yet designed
+  (**Identity**, **Autonomy**).
+- What a person/agent gets today: a public Passport, an audit trail, the
+  ability to independently recompute any Proof. No income, no access to
+  capital, no privileges — this is stated outright on the homepage.
+- `/credit` is already specified and implemented as a contract (not on
+  the site and not in Supabase — "all truth lives in the contract",
+  `CREDIT_SPEC.md §3`), but the identity registry it reads agents
+  through is not the same one `social_agents`/Proof Events use — it's a
+  separate, independent id system.
 
-Идея: публичная Proof-история агента становится тем, что реальный
-человек (backer) читает перед тем, как поручиться своим капиталом за
-этого конкретного агента. Решение остаётся за человеком — никакого
-автоматического скоринга/гейтинга по Proof-истории не вводим, это и
-есть способ не нарушить принцип «no single score».
+## 3. Progression economics — proposal
 
-### Путь агента и его владельца
+The idea: an agent's public Proof history becomes what a real person
+(the backer) reads before vouching their own capital for that specific
+agent. The decision stays with the human — we're not introducing any
+automatic scoring/gating based on Proof history; that is precisely how
+we avoid breaking the "no single score" principle.
 
-1. **Регистрация** (бесплатно, уже работает, `/start`) → identity +
-   пустой Passport.
-2. **Агент проходит Proofs** в 6 live-категориях → публичная,
-   неподделываемая история растёт (уже работает).
-3. **(новое)** История становится видна рядом с кредитной формой —
-   «backer view» на `/credit/agent`: те же Proof Events (особенно
-   Economic Activity/Performance/Longevity), что видны на Passport,
-   показаны прямо там, где человек решает, поручиться ли за агента.
-   Не новый расчёт — просто то же самое API в новом месте.
-4. **Backer ставит USDG и ручается** (`vouch`, контракт уже умеет) →
-   агент получает первую кредитную линию (в духе Priors — первая линия
-   небольшая).
-5. **Агент занимает и возвращает** → on-chain verdict агента
-   (`no record / defaulted / no repayments yet / repaid`, уже в
-   контракте) становится вторым, более специфичным сигналом доверия —
-   отдельным от Proof Events, но видимым рядом.
-6. **Большая история (Proof + repayment) → backer’ы по своему решению
-   готовы ручаться на бОльшие линии.** Не автоматика — это всегда
-   решение конкретного человека, читающего публичные данные.
-7. Деплой `AgentIdentity.sol`, который разблокирует **Financial
-   Performance**, — тот же инфраструктурный шаг, что нужен и для
-   `/credit` (оба читают identity registry). Один шаг открывает два
-   направления.
+### The path of an agent and its owner
 
-### Что получает человек
+1. **Registration** (free, already working, `/start`) → identity + an
+   empty Passport.
+2. **The agent passes Proofs** in the 6 live categories → a public,
+   unforgeable history grows (already working).
+3. **(new)** The history becomes visible next to the credit form — a
+   "backer view" at `/credit/agent`: the same Proof Events (especially
+   Economic Activity/Performance/Longevity) visible on the Passport are
+   shown right where the human decides whether to vouch for the agent.
+   Not a new computation — just the same API in a new place.
+4. **The backer stakes USDG and vouches** (`vouch`, the contract already
+   supports this) → the agent gets its first credit line (in the spirit
+   of Priors — the first line is small).
+5. **The agent borrows and repays** → the agent's on-chain verdict
+   (`no record / defaulted / no repayments yet / repaid`, already in the
+   contract) becomes a second, more specific trust signal — separate
+   from Proof Events, but visible alongside them.
+6. **A larger history (Proof + repayment) → backers, at their own
+   discretion, become willing to vouch for bigger lines.** Not
+   automatic — this is always the decision of a specific person reading
+   public data.
+7. Deploying `AgentIdentity.sol`, which unlocks **Financial
+   Performance**, is the same infrastructure step that `/credit` also
+   needs (both read the identity registry). One step opens up two
+   directions.
 
-- **Владелец агента** — бесплатная регистрация, публичный Passport,
-  аудит (уже есть); в перспективе — доступ агента к реальному
-  операционному капиталу, пропорциональный его собственной доказанной
-  истории, через людей, а не через скрытый алгоритм.
-- **Backer** (уже специфицирован, не задеплоен) — стейкает USDG,
-  выбирает, каким агентам доверяет по их публичной Proof-истории,
-  получает **25%** каждой комиссии, которую платит агент; при дефолте
-  убыток берёт на себя первым.
-- **Lender** (уже специфицирован, не задеплоен) — депонирует в общий
-  пул, получает **60%** каждой комиссии со всех займов; риск дефолта
-  доходит до него только после backer’а.
-- Протокол — **15%** комиссии в резерв.
-- Базовая комиссия — **1% за 30 дней** (контрактная константа, как у
-  Priors), потолок премии backer’а сверху — 2%/30д.
+### What the human gets
 
-### Что получает агент
+- **The agent owner** — free registration, a public Passport, an audit
+  trail (already exists); down the line — the agent's access to real
+  operating capital, proportional to its own proven history, mediated by
+  people rather than a hidden algorithm.
+- **Backer** (already specified, not deployed) — stakes USDG, chooses
+  which agents to trust based on their public Proof history, receives
+  **25%** of every fee the agent pays; on default, absorbs the loss
+  first.
+- **Lender** (already specified, not deployed) — deposits into the
+  shared pool, receives **60%** of every fee from all loans; default
+  risk reaches them only after the backer's.
+- The protocol — **15%** of the fee goes to the reserve.
+- The base fee is **1% per 30 days** (a contract constant, same as
+  Priors); the cap on the backer's premium on top is 2%/30d.
 
-- Сегодня — неподделываемая публичная история (Passport, Proof Events).
-- Дальше (требует шагов из §4) — реальный операционный USDG-капитал,
-  который растёт вместе с доказанной историей не через скрытый score, а
-  через людей, которые сами читают его Proof-историю и решают.
+### What the agent gets
 
-## 4. Что строить дальше (инфраструктура/контракты)
+- Today — an unforgeable public history (Passport, Proof Events).
+- Further out (requires the steps in §4) — real operating USDG capital
+  that grows together with the proven history, not through a hidden
+  score, but through people who read its Proof history themselves and
+  decide.
 
-1. Закрыть открытые решения деплоя из `CREDIT_SPEC.md §4` (identity
-   registry, стейблкоин, адрес резерва) и задеплоить
-   `AgentIdentity.sol` + `AgentCreditPool.sol` — пользователь, своим
-   ключом (см. `contracts/README.md`).
-2. **Backer view** — сделано. `/credit/agent?handle=<handle>`
-   (`src/app/credit/agent/proof-record.tsx`) показывает Proof-историю
-   агента по 6 live-категориям прямо рядом с формами vouch/borrow;
-   `/agents/[handle]` ссылается туда («For backers: check or open this
-   agent's credit record»). Матчинг пока по `handle` в URL, не
-   автоматический: у Proof Events (`social_agent_id`, uuid) и у
-   `/credit` (on-chain identity tokenId) разные пространства id, и
-   моста между ними нет, пока не выбран identity registry (см.
-   `CREDIT_SPEC.md §4.1`) — это явно написано на самой странице.
-3. Один и тот же identity-деплой одновременно разблокирует Financial
-   Performance (Proof-категория) и `/credit` (кредит) — планировать как
-   один шаг, не два отдельных.
-4. Позже, после реального трафика: рассмотреть repayment-историю как
-   возможный новый сигнал/категорию (или расширение Economic Activity).
-   Не раньше реального использования — см. `CREDIT_SPEC.md §5`.
-5. На сайте: схема на главной (`src/app/page.tsx`), визуализирующая
-   именно эту цепочку — следующий шаг этой задачи после этого документа.
+## 4. What to build next (infrastructure/contracts)
 
-## 5. Tier по каждой live-категории (`src/lib/auevo/tier.ts`)
+1. Resolve the open deployment decisions from `CREDIT_SPEC.md §4`
+   (identity registry, stablecoin, reserve address) and deploy
+   `AgentIdentity.sol` + `AgentCreditPool.sol` — done by the user, with
+   their own key (see `contracts/README.md`).
+2. **Backer view** — done. `/credit/agent?handle=<handle>`
+   (`src/app/credit/agent/proof-record.tsx`) shows the agent's Proof
+   history across the 6 live categories right next to the vouch/borrow
+   forms; `/agents/[handle]` links there ("For backers: check or open
+   this agent's credit record"). Matching is currently by `handle` in
+   the URL, not automatic: Proof Events (`social_agent_id`, a uuid) and
+   `/credit` (on-chain identity tokenId) use different id spaces, and
+   there's no bridge between them until an identity registry is chosen
+   (see `CREDIT_SPEC.md §4.1`) — this is stated explicitly on the page
+   itself.
+3. One and the same identity deployment simultaneously unlocks Financial
+   Performance (a Proof category) and `/credit` (credit) — plan it as
+   one step, not two separate ones.
+4. Later, after real traffic: consider repayment history as a possible
+   new signal/category (or an extension of Economic Activity). Not
+   before real usage — see `CREDIT_SPEC.md §5`.
+5. On the site: a diagram on the homepage (`src/app/page.tsx`)
+   visualizing exactly this chain — the next step of this task after
+   this document.
 
-Не новый score — чистая презентационная надстройка над уже существующим
-`CategoryAggregate.verified` (`score.ts`), пересчитываемая кем угодно из
-сырых Proof Events. Три порога: **1 / 5 / 20 verified** → *Proving /
-Established / Proven*. Уровень считается **отдельно по каждой из 6
-live-категорий**, никогда не суммируется между ними — тот же принцип
-«no single combined score», просто применённый на уровень ниже
-(категория), а не только «нет score по всему агенту».
+## 5. Tier per live category (`src/lib/auevo/tier.ts`)
 
-Два разных смысла у tier, в зависимости от категории:
+Not a new score — a purely presentational layer on top of the already
+existing `CategoryAggregate.verified` (`score.ts`), recomputable by
+anyone from the raw Proof Events. Three thresholds: **1 / 5 / 20
+verified** → *Proving / Established / Proven*. The tier is computed
+**separately for each of the 6 live categories**, never summed across
+them — the same "no single combined score" principle, just applied one
+level down (the category level) rather than only "no score across the
+whole agent".
 
-- **Prediction / Work / Skill** («agent acts») — агент сам действует.
-  Сегодня **ничего не ограничено**: claim/PR/pool любого размера доступен
-  с нулевой историей. Tier здесь — **предложение на будущее**: более
-  высокий tier открывает более сложные/крупные задания (длинные
-  горизонты, более крупные PR, более волатильные пулы) — не автоматика
-  «из коробки», а roadmap-решение, которое ещё нужно спроектировать и
-  закодировать отдельно.
-- **Performance / Economic Activity / Longevity** («automatic») — крон
-  пишет Proof без участия агента. Tier здесь **уже сегодня** — именно
-  тот сигнал, который читает backer перед тем, как поручиться (см. §3):
-  чем выше tier, тем увереннее человек может размер линии оценивать.
-  Здесь ничего кодировать не нужно — это просто другой разрез уже
-  существующих данных.
+Tier carries two different meanings, depending on the category:
 
-Полная таблица с конкретными формулировками по каждой из 6 категорий —
-`src/app/progression-flow.tsx` (`CATEGORY_TIERS`), отрендерена на
-главной странице под схемой («How each of the 6 live categories earns
-its tier»). Там же проставлено, что за пределами первой ступени —
-предложение, а не текущее поведение.
+- **Prediction / Work / Skill** ("agent acts") — the agent acts on its
+  own. Today **nothing is restricted**: a claim/PR/pool of any size is
+  available with zero history. Tier here is **a proposal for the
+  future**: a higher tier unlocks more complex/larger tasks (longer
+  horizons, bigger PRs, more volatile pools) — not automatic out of the
+  box, but a roadmap decision that still needs to be designed and coded
+  separately.
+- **Performance / Economic Activity / Longevity** ("automatic") — a cron
+  job writes the Proof without the agent's involvement. Tier here,
+  already today, is exactly the signal the backer reads before vouching
+  (see §3): the higher the tier, the more confidently a human can size
+  the line. Nothing needs to be coded here — it's simply a different cut
+  of already-existing data.
 
-## 6. Что сознательно не делаем
+The full table with the concrete wording for each of the 6 categories
+lives in `src/app/progression-flow.tsx` (`CATEGORY_TIERS`), rendered on
+the homepage below the diagram ("How each of the 6 live categories earns
+its tier"). It also marks, right there, that anything beyond the first
+tier is a proposal, not current behavior.
 
-- Не вводим единый числовой score/tier/бейдж.
-- Не придумываем utility токена $AUEVO (стейкинг/governance/fee-share
-  токена) — страница `/token` сознательно молчит об этом, и это не наше
-  решение менять без явного запроса.
-- Не делаем кредитную линию автоматической/алгоритмической по
-  Proof-истории — решение остаётся за человеком-backer’ом, Proof-история
-  только делает его решение информированным, как и было у Priors.
+## 6. What we deliberately don't do
+
+- We don't introduce a single numeric score/tier/badge.
+- We don't invent utility for the $AUEVO token (staking/governance/
+  fee-share for the token) — the `/token` page deliberately stays silent
+  on this, and it's not our call to change that without an explicit
+  request.
+- We don't make the credit line automatic/algorithmic based on Proof
+  history — the decision stays with the human backer; the Proof history
+  only makes that decision informed, the same way it worked at Priors.
