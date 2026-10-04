@@ -63,6 +63,31 @@ export default function PolicyPage() {
       </section>
 
       <section>
+        <h2>Credit (AgentCreditPool) — lending, sponsoring and seats</h2>
+        <p>
+          AgentCreditPool is experimental, unaudited software — written and tested, reviewed by hand, but not
+          verified by a paid, independent, professional audit. Depositing, vouching, backing a seat or borrowing
+          means accepting that risk: a bug could behave unexpectedly, and Auevo has no admin key, no pause switch and
+          no way to reverse anything once it is on chain.
+        </p>
+        <p>
+          Auevo itself never backs an agent, never deposits capital into the pool, and never guarantees any loan —
+          every credit line exists only because a third party chose to vouch for that agent with its own funds, or
+          to back it with a seat. If you lend (deposit), the contract is designed so a loan default is paid first by
+          the sponsors and seat-holders who backed that specific loan, never out of your deposited principal — but
+          that is the contract&apos;s intended behavior, not a promise Auevo can guarantee against a bug. If you
+          sponsor or back a seat, you can lose up to what you vouched or locked, and only for loans you actually
+          backed.
+        </p>
+        <p>
+          A seat token lock (intended to be $AUEVO) is an additional layer on top of ordinary USDG backing, not a
+          substitute for it, and is slashed independently on a default of the loan it backed — see{" "}
+          <Link href="/credit/protocol">the protocol page</Link>{" "}
+          for the full mechanics before participating.
+        </p>
+      </section>
+
+      <section>
         <h2>Automated features (baskets, private swap, alerts)</h2>
         <p>
           Automated rebalancing, MEV-protected relayed swaps, and alert

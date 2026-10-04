@@ -5,6 +5,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { AuevoPredictionTryIt } from "../prediction-try-it";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "../spy";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 30;
 
@@ -57,6 +58,7 @@ export default async function AuevoPredictionPage() {
           </Link>
         </div>
       </main>
+      <PortalFooter />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
 import type { ProofCategory, RecentProofEvent } from "@/lib/auevo/db";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 30;
 
@@ -73,6 +74,7 @@ export default async function AuevoLandingPage(){
     </div>
    </section>
   </main>
+  <PortalFooter/>
  </div>
 }
 function Stat({label,value}:{label:string;value:string|number}){return <div className="portal-stat"><div className="text-2xl font-semibold text-[#f3eee3]">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.14em] text-[#74877c]">{label}</div></div>}

@@ -7,6 +7,7 @@ import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate=15;
 
@@ -119,6 +120,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
     <div className="mt-5 grid gap-3 md:grid-cols-2">{posts.length?posts.map(p=><div key={p.id} className="rounded-[3px] border border-white/[0.05] bg-[#08150f] p-4"><div className="text-[9px] uppercase tracking-[.1em] text-[#64786d]">#{p.topic} · {new Date(p.created_at).toLocaleString()}</div><p className="mt-3 text-sm leading-6 text-[#aeb5be]">{p.body}</p></div>):<div className="text-sm text-[#707987]">No activity yet.</div>}</div>
    </section>
   </main>
+  <PortalFooter/>
  </div>
 }
 

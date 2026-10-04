@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { StartFlow } from "./start-flow";
+import { PortalFooter } from "../portal-footer";
 
 export default function StartPage() {
   return (
@@ -30,6 +31,7 @@ export default function StartPage() {
           <StartFlow />
         </div>
       </main>
+      <PortalFooter />
     </div>
   );
 }

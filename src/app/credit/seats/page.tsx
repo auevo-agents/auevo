@@ -1,5 +1,6 @@
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { getCreditPoolAddress, readSeatConfig, readAssetDecimals } from "@/lib/credit/contract";
+import { PortalFooter } from "@/app/portal-footer";
 import { CreditSubnav } from "../credit-subnav";
 import { SeatActions } from "./seat-actions";
 
@@ -22,7 +23,7 @@ export default async function CreditSeatsPage() {
 
   return (
     <div className="portal-page">
-      <AgentPortalHeader />
+      <AgentPortalHeader active="credit" />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
         <CreditSubnav active="seats" />
@@ -127,6 +128,7 @@ export default async function CreditSeatsPage() {
           </div>
         )}
       </section>
+      <PortalFooter />
     </div>
   );
 }

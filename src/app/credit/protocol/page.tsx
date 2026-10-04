@@ -2,6 +2,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { CreditSubnav } from "../credit-subnav";
 import { ProtocolSubnav } from "./protocol-subnav";
 import { getCreditPoolAddress, readPoolParams, readSeatConfig } from "@/lib/credit/contract";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 60;
 
@@ -39,7 +40,7 @@ export default async function CreditProtocolPage() {
 
   return (
     <div className="portal-page">
-      <AgentPortalHeader />
+      <AgentPortalHeader active="credit" />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-20 sm:px-8">
         <CreditSubnav active="protocol" />
@@ -256,6 +257,7 @@ share price: never falls for an uninvolved lender or sponsor`}</Code>
           </div>
         </Section>
       </section>
+      <PortalFooter />
     </div>
   );
 }

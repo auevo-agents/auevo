@@ -4,6 +4,7 @@ import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
 import { tierOf, TIER_LABEL } from "@/lib/auevo/tier";
 import type { ProofCategory } from "@/lib/auevo/db";
+import { PortalFooter } from "@/app/portal-footer";
 import { CreditSubnav } from "../credit-subnav";
 
 export const revalidate = 60;
@@ -49,7 +50,7 @@ export default async function CreditAgentsPage() {
 
   return (
     <div className="portal-page">
-      <AgentPortalHeader />
+      <AgentPortalHeader active="credit" />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
         <CreditSubnav active="agents" />
@@ -97,6 +98,7 @@ export default async function CreditAgentsPage() {
           </div>
         )}
       </section>
+      <PortalFooter />
     </div>
   );
 }

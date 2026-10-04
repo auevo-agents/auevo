@@ -5,6 +5,7 @@ import { readAgentIdentity } from "@/lib/auevo/identity";
 import { listProofEventsForAgent } from "@/lib/auevo/db";
 import { aggregateCategory, CATEGORY_RESULT_FIELD, type CategoryAggregate } from "@/lib/auevo/score";
 import type { ProofCategory } from "@/lib/auevo/db";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 15;
 
@@ -69,6 +70,7 @@ export default async function AuevoAgentPassportPage({ searchParams }: PageProps
           </div>
         )}
       </main>
+      <PortalFooter />
     </div>
   );
 }

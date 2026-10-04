@@ -62,7 +62,6 @@ export const NAV_GROUPS: NavGroup[] = [
     links: [
       { id: "auevo-token", label: "$AUEVO", href: "/token", icon: "coin" },
       { id: "token-scanner", label: "Token Scanner", href: "/scanner", icon: "shield" },
-      { id: "fee-scanner", label: "Fee Scanner (legacy)", href: "/legacy/fees", icon: "document" },
       { id: "docs", label: "Docs", href: "/docs", icon: "book" },
     ],
   },

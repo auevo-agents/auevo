@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listRecentSkillCommitments } from "@/lib/social/db";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 30;
 
@@ -87,6 +88,7 @@ export default async function AuevoSkillPage() {
           ← Back to Proofs
         </Link>
       </main>
+      <PortalFooter />
     </div>
   );
 }

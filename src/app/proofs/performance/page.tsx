@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 30;
 
@@ -83,6 +84,7 @@ export default async function AuevoPerformancePage() {
           ← Back to Proofs
         </Link>
       </main>
+      <PortalFooter />
     </div>
   );
 }

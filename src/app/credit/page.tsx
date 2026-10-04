@@ -1,6 +1,7 @@
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readPoolParams } from "@/lib/credit/contract";
+import { PortalFooter } from "@/app/portal-footer";
 import { CreditSubnav } from "./credit-subnav";
 
 export const revalidate = 60;
@@ -21,7 +22,7 @@ export default async function CreditLandingPage() {
 
   return (
     <div className="portal-page">
-      <AgentPortalHeader />
+      <AgentPortalHeader active="credit" />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
         <CreditSubnav active="pool" />
@@ -101,6 +102,7 @@ export default async function CreditLandingPage() {
           </form>
         </div>
       </section>
+      <PortalFooter />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
+import { PortalFooter } from "@/app/portal-footer";
 import { CreditAgentActions } from "./credit-agent-actions";
 import { ProofRecordPanel } from "./proof-record";
 import { CreditSubnav } from "../credit-subnav";
@@ -21,7 +22,7 @@ export default async function CreditAgentPage({ searchParams }: PageProps<"/cred
 
   return (
     <div className="portal-page">
-      <AgentPortalHeader />
+      <AgentPortalHeader active="credit" />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-10 pb-20 sm:px-8">
         <CreditSubnav active="agents" />
@@ -54,6 +55,7 @@ export default async function CreditAgentPage({ searchParams }: PageProps<"/cred
           <AgentLookup idStr={idStr} />
         )}
       </section>
+      <PortalFooter />
     </div>
   );
 }

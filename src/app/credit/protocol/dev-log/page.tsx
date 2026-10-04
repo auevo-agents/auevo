@@ -2,6 +2,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { CreditSubnav } from "../../credit-subnav";
 import { ProtocolSubnav } from "../protocol-subnav";
 import { CREDIT_DEV_LOG } from "@/lib/credit/dev-log";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 300;
 
@@ -13,7 +14,7 @@ export const revalidate = 300;
 export default function CreditDevLogPage() {
   return (
     <div className="portal-page">
-      <AgentPortalHeader />
+      <AgentPortalHeader active="credit" />
 
       <section className="portal-shell relative mx-auto max-w-[900px] px-5 pt-14 pb-20 sm:px-8">
         <CreditSubnav active="protocol" />
@@ -43,6 +44,7 @@ export default function CreditDevLogPage() {
           ))}
         </div>
       </section>
+      <PortalFooter />
     </div>
   );
 }

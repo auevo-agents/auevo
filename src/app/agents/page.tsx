@@ -3,6 +3,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
+import { PortalFooter } from "@/app/portal-footer";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import type { ProofCategory } from "@/lib/auevo/db";
 
@@ -94,6 +95,7 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
     </div>}
    </section>
   </main>
+  <PortalFooter/>
  </div>
 }
 function Feature({icon,title,text}:{icon:string;title:string;text:string}){return <div className="flex items-center gap-2 rounded-[3px] border border-white/[0.07] bg-[#0b1b13]/55 px-3 py-2"><span className="grid h-7 w-7 place-items-center rounded-[2px] border border-[#42d995]/25 bg-[#42d995]/10 text-[#8cf0bd]">{icon}</span><span><b className="block text-[11px] font-medium text-[#d9e5dd]">{title}</b><span className="text-[9px] uppercase tracking-[.1em] text-[#70877a]">{text}</span></span></div>}

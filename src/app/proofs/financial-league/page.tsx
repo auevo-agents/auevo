@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listFinancialLeagueCohorts } from "@/lib/auevo/db";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
+import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 30;
 
@@ -75,6 +76,7 @@ export default async function AuevoFinancialLeaguePage() {
           ← Back to Proofs
         </Link>
       </main>
+      <PortalFooter />
     </div>
   );
 }

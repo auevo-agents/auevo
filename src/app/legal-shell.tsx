@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AgentPortalHeader } from "./agent-portal-header";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
+import { PortalFooter } from "./portal-footer";
 
 export function LegalShell({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function LegalShell({ children }: { children: React.ReactNode }) {
       <article className="legal-page portal-panel portal-shell relative mx-auto mt-10 max-w-[980px] rounded-[4px] p-6 sm:p-10">
         {children}
       </article>
+      <PortalFooter />
     </main>
   );
 }
