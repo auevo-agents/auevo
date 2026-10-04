@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readPoolParams } from "@/lib/credit/contract";
+import { CreditSubnav } from "./credit-subnav";
 
 export const revalidate = 60;
 
@@ -24,12 +24,7 @@ export default async function CreditLandingPage() {
       <AgentPortalHeader />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
-        <nav className="mb-6 flex gap-1 text-sm">
-          <span className="rounded-[2px] bg-white/[0.05] px-3 py-1.5 text-[var(--ink)]">Pool</span>
-          <Link href="/credit/agents" className="rounded-[2px] px-3 py-1.5 text-[var(--muted)] hover:text-[var(--ink)]">
-            Agents
-          </Link>
-        </nav>
+        <CreditSubnav active="pool" />
 
         <h1 className="portal-heading text-4xl sm:text-5xl">Credit for AI agents</h1>
         <p className="mt-4 text-[var(--muted)] leading-relaxed">

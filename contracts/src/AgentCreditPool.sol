@@ -104,7 +104,38 @@ import {IAgentIdentity} from "./interfaces/IAgentIdentity.sol";
 ///      sponsors per agent and an operator-wallet delegate are both
 ///      supported as of this version. Addable later without touching the
 ///      invariants above: multiple concurrent loans per agent, other
-///      backer types (treasury/seat/stock-vault).
+///      backer types (treasury/stock-vault).
+///
+///      Seats (`vouchSeat`): an agent that already has
+///      `SEAT_MIN_REPAID_LOANS` or more repaid loans can ALSO be backed
+///      with a seat — a normal `vouch()`-equivalent commitment (same
+///      consent signature, same real-USDG-capacity check via
+///      `freeCapacity`, same pro-rata loan split, same pool-share burn on
+///      default) with one addition: the seat-holder must ALSO lock a
+///      fixed-ratio amount of a separate `seatToken` (intended to be
+///      $AUEVO once it exists; any ERC-20 works, or seats can be left
+///      disabled entirely by deploying with `seatToken_ = address(0)`).
+///      A seat's `seatToken` lock is NEVER a substitute for real USDG
+///      backing — it is purely an ADDITIONAL penalty/incentive layer on
+///      top. This matters because every loan is funded out of the SAME
+///      shared lender pool regardless of which sponsor backs which share
+///      of it, so only a sponsor's own real pool-share burn can ever make
+///      a lender whole; burning an unrelated token instead, with nothing
+///      backing it in the shared pool, would silently let a lender's
+///      share price drop on a seat-backed default — a correctness bug a
+///      naive "just burn the token" design was caught making during this
+///      contract's own design review (see contracts/README.md). On
+///      default of a loan a seat actually backed, `SEAT_BURN_BPS` (50%,
+///      matching Priors' own number) of that seat's locked `seatToken` is
+///      sent to a canonical burn address and the rest returned to the
+///      seat-holder; a seat that never backed the defaulted loan (vouched
+///      after it was drawn, or for a different still-open loan) gets its
+///      `seatToken` returned in full, same "agent can never borrow again
+///      so nothing stays locked" principle as an ordinary sponsor's
+///      released capacity. The `seatToken`-per-USDG ratio is a fixed
+///      constant set at deploy time, not a live oracle price — there is
+///      no liquid market for $AUEVO to price it from yet; see
+///      contracts/README.md for the tradeoff.
 ///
 ///      What this is NOT: an audited contract. It has been reviewed by
 ///      hand and tested against a local chain (see test/run-credit.mjs)
@@ -133,6 +164,14 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     ///      it is paid out immediately on every repay(), never accrues here.
     address public immutable reserveAddress;
 
+    /// @dev address(0) disables seats entirely — vouchSeat() reverts.
+    IERC20 public immutable seatToken;
+    /// @dev seatTokenRequired = amount * seatRatioNumerator / seatRatioDenominator.
+    ///      A fixed, deploy-time constant — not a live oracle price (see the
+    ///      contract-level doc comment for why).
+    uint256 public immutable seatRatioNumerator;
+    uint256 public immutable seatRatioDenominator;
+
     uint256 public constant BPS_DENOM = 10_000;
     uint256 public constant LENDER_FEE_BPS = 6_000; // 60%
     uint256 public constant SPONSOR_FEE_BPS = 2_500; // 25%
@@ -148,6 +187,18 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     ///      future call on that agent revert on gas (a griefing vector that
     ///      does not exist in a single-sponsor design).
     uint256 public constant MAX_SPONSORS_PER_AGENT = 20;
+    /// @dev Only an agent with at least this many repaid loans can be
+    ///      backed by a seat — matches Priors' own "growth vault" gate.
+    uint32 public constant SEAT_MIN_REPAID_LOANS = 10;
+    /// @dev Fraction of a seat's locked seatToken burned on a default of
+    ///      the loan it backed — matches Priors' own number. The other
+    ///      half returns to the seat-holder (same loan), same as any
+    ///      stake not involved in the defaulted loan returning in full.
+    uint16 public constant SEAT_BURN_BPS = 5_000;
+    /// @dev Canonical no-owner burn sink — used instead of a token
+    ///      burn() call since an arbitrary ERC-20 (including a future
+    ///      $AUEVO) is not guaranteed to implement one.
+    address public constant SEAT_BURN_ADDRESS = 0x000000000000000000000000000000000000dEaD;
 
     bytes32 private constant CONSENT_TYPEHASH = keccak256(
         "Consent(uint256 agentId,address sponsor,uint16 maxPremiumBps,uint256 nonce,uint256 deadline)"
@@ -190,13 +241,26 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         Defaulted
     }
 
+    /// @dev Pool: a normal vouch(), backed entirely by the sponsor's own
+    ///      real pool-share value. Seat: a vouchSeat(), which carries all
+    ///      the same guarantees PLUS an additional seatToken lock burned
+    ///      (partially) on default — see the contract-level doc comment.
+    enum StakeKind {
+        Pool,
+        Seat
+    }
+
     /// @dev One sponsor's standing commitment behind one agent — not a
-    ///      per-loan amount. `amount` only grows (via vouch()) or is wiped
-    ///      to zero (on that agent's default); it is the ceiling a given
-    ///      loan's pro-rata split is computed against, not "what's left".
+    ///      per-loan amount. `amount` only grows (via vouch()/vouchSeat())
+    ///      or is wiped to zero (on that agent's default); it is the
+    ///      ceiling a given loan's pro-rata split is computed against, not
+    ///      "what's left". `seatTokenLocked` is only ever nonzero when
+    ///      `kind == Seat`.
     struct SponsorStake {
         uint256 amount;
         uint16 premiumBps;
+        StakeKind kind;
+        uint256 seatTokenLocked;
     }
 
     /// @dev One sponsor's frozen contribution to one specific loan, recorded
@@ -207,6 +271,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         address sponsor;
         uint256 principal;
         uint256 fee;
+        StakeKind kind;
     }
 
     struct AgentAccount {
@@ -248,7 +313,16 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     event Defaulted(uint256 indexed loanId, uint256 indexed agentId, uint256 loss);
     event SponsorBurned(uint256 indexed loanId, address indexed sponsor, uint256 sharesBurned, uint256 writeOff);
     event BadDebt(uint256 indexed loanId, address indexed sponsor, uint256 amount);
+    event SeatVouched(uint256 indexed agentId, address indexed sponsor, uint256 amount, uint256 seatTokenLocked);
+    event SeatBurned(uint256 indexed loanId, address indexed sponsor, uint256 seatTokenBurned, uint256 seatTokenReturned);
+    event SeatReleased(uint256 indexed agentId, address indexed sponsor, uint256 seatTokenReturned);
 
+    /// @param seatToken_ address(0) disables seats entirely (vouchSeat()
+    ///        always reverts); any other address enables them.
+    /// @param seatRatioNumerator_ / seatRatioDenominator_ Fixed conversion
+    ///        rate: seatTokenRequired = amount * numerator / denominator.
+    ///        Ignored (but must still satisfy the sanity checks below) when
+    ///        seats are disabled.
     constructor(
         IERC20 asset_,
         IAgentIdentity identity_,
@@ -256,12 +330,19 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         uint256 maxLoan_,
         uint16 feeBps_,
         uint256 minRootStake_,
-        address reserveAddress_
+        address reserveAddress_,
+        IERC20 seatToken_,
+        uint256 seatRatioNumerator_,
+        uint256 seatRatioDenominator_
     ) EIP712("AgentCreditPool", "1") {
         require(address(asset_) != address(0), "asset=0");
         require(address(identity_) != address(0), "identity=0");
         require(minLoan_ > 0 && minLoan_ <= maxLoan_, "bad loan bounds");
         require(reserveAddress_ != address(0), "reserve=0");
+        require(seatRatioDenominator_ > 0, "seat ratio denom=0");
+        if (address(seatToken_) != address(0)) {
+            require(seatRatioNumerator_ > 0, "seat ratio num=0");
+        }
         asset = asset_;
         identity = identity_;
         minLoan = minLoan_;
@@ -269,6 +350,9 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         feeBps = feeBps_;
         minRootStake = minRootStake_;
         reserveAddress = reserveAddress_;
+        seatToken = seatToken_;
+        seatRatioNumerator = seatRatioNumerator_;
+        seatRatioDenominator = seatRatioDenominator_;
     }
 
     // ---------------------------------------------------------------
@@ -324,9 +408,25 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         return agentAccounts[agentId].sponsorList;
     }
 
-    function sponsorStakeOf(uint256 agentId, address sponsor) external view returns (uint256 amount, uint16 premiumBps) {
+    function sponsorStakeOf(uint256 agentId, address sponsor)
+        external
+        view
+        returns (uint256 amount, uint16 premiumBps, StakeKind kind, uint256 seatTokenLocked)
+    {
         SponsorStake storage s = agentAccounts[agentId].sponsorStakes[sponsor];
-        return (s.amount, s.premiumBps);
+        return (s.amount, s.premiumBps, s.kind, s.seatTokenLocked);
+    }
+
+    /// @notice Whether an agent currently qualifies to be backed by a seat.
+    function seatEligible(uint256 agentId) public view returns (bool) {
+        return agentAccounts[agentId].loansRepaid >= SEAT_MIN_REPAID_LOANS;
+    }
+
+    /// @notice How much seatToken a vouchSeat(agentId, amount, ...) call
+    ///         would currently require to be locked, at this contract's
+    ///         fixed deploy-time rate.
+    function seatTokenRequiredFor(uint256 amount) public view returns (uint256) {
+        return (amount * seatRatioNumerator) / seatRatioDenominator;
     }
 
     function loanInfo(uint256 loanId)
@@ -431,21 +531,81 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         require(signer == owner_, "bad consent");
 
         AgentAccount storage a = agentAccounts[agentId];
-        require(!a.defaulted, "agent defaulted");
-        require(amount <= freeCapacity(msg.sender), "over free capacity");
+        _recordVouch(a, msg.sender, amount, premiumBps, StakeKind.Pool);
+        emit Vouched(agentId, msg.sender, amount, premiumBps);
+    }
 
-        SponsorStake storage stake = a.sponsorStakes[msg.sender];
+    /// @notice Same as vouch(), except the sponsor ALSO locks a fixed-ratio
+    ///         amount of seatToken as an additional penalty/incentive layer
+    ///         — see the contract-level doc comment. Only usable on an
+    ///         agent that already has SEAT_MIN_REPAID_LOANS or more repaid
+    ///         loans. Reverts unconditionally if seats are disabled
+    ///         (seatToken == address(0)).
+    function vouchSeat(
+        uint256 agentId,
+        uint256 amount,
+        uint16 premiumBps,
+        uint16 maxPremiumBps,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external nonReentrant {
+        require(address(seatToken) != address(0), "seats disabled");
+        require(isRoot[msg.sender], "not a root");
+        require(amount > 0, "amount=0");
+        require(premiumBps <= maxPremiumBps, "premium>ceiling");
+        require(maxPremiumBps <= MAX_PREMIUM_BPS, "ceiling too high");
+        require(block.timestamp <= deadline, "consent expired");
+
+        address owner_ = identity.ownerOf(agentId);
+        require(!consentNonceUsed[owner_][nonce], "nonce used");
+        consentNonceUsed[owner_][nonce] = true;
+
+        bytes32 structHash = keccak256(
+            abi.encode(CONSENT_TYPEHASH, agentId, msg.sender, maxPremiumBps, nonce, deadline)
+        );
+        address signer = ECDSA.recover(_hashTypedDataV4(structHash), signature);
+        require(signer == owner_, "bad consent");
+
+        AgentAccount storage a = agentAccounts[agentId];
+        require(seatEligible(agentId), "agent not seat-eligible");
+
+        uint256 seatTokenRequired = seatTokenRequiredFor(amount);
+        require(seatTokenRequired > 0, "amount too small for a seat");
+        seatToken.safeTransferFrom(msg.sender, address(this), seatTokenRequired);
+
+        _recordVouch(a, msg.sender, amount, premiumBps, StakeKind.Seat);
+        a.sponsorStakes[msg.sender].seatTokenLocked += seatTokenRequired;
+
+        emit SeatVouched(agentId, msg.sender, amount, seatTokenRequired);
+    }
+
+    /// @dev Shared bookkeeping for vouch() and vouchSeat(), after each has
+    ///      done its own consent/signature verification above. Reverting
+    ///      on a kind mismatch (an address that already vouched Pool-style
+    ///      for this agent trying to vouchSeat() the same stake, or vice
+    ///      versa) keeps each stake's accounting unambiguous — never a
+    ///      blend of "some of this is seat-backed, some isn't" for one
+    ///      sponsor on one agent.
+    function _recordVouch(AgentAccount storage a, address sponsor, uint256 amount, uint16 premiumBps, StakeKind kind)
+        internal
+    {
+        require(!a.defaulted, "agent defaulted");
+        require(amount <= freeCapacity(sponsor), "over free capacity");
+
+        SponsorStake storage stake = a.sponsorStakes[sponsor];
         if (stake.amount == 0) {
             require(a.sponsorList.length < MAX_SPONSORS_PER_AGENT, "too many sponsors");
-            a.sponsorList.push(msg.sender);
+            a.sponsorList.push(sponsor);
             a.enrolledAt = a.enrolledAt == 0 ? uint64(block.timestamp) : a.enrolledAt;
+            stake.kind = kind;
+        } else {
+            require(stake.kind == kind, "kind mismatch");
         }
         stake.amount += amount;
         stake.premiumBps = premiumBps;
         a.delegatedIn += amount;
-        delegatedOut[msg.sender] += amount;
-
-        emit Vouched(agentId, msg.sender, amount, premiumBps);
+        delegatedOut[sponsor] += amount;
     }
 
     // ---------------------------------------------------------------
@@ -476,7 +636,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
             feeLocked[s] += sponsorFee;
             totalFee += sponsorFee;
 
-            loan.shares.push(SponsorShare({sponsor: s, principal: sponsorPrincipal, fee: sponsorFee}));
+            loan.shares.push(SponsorShare({sponsor: s, principal: sponsorPrincipal, fee: sponsorFee, kind: stake.kind}));
         }
     }
 
@@ -564,6 +724,24 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
             SponsorShare storage sh = loan.shares[i];
             uint256 loss = sh.principal + sh.fee;
             feeLocked[sh.sponsor] -= sh.fee;
+
+            if (sh.kind == StakeKind.Seat) {
+                // Additional penalty on top of the pool-share burn below —
+                // never a substitute for it. See the contract-level doc
+                // comment for why a seat's token lock can never by itself
+                // make a lender whole.
+                SponsorStake storage seatStake = a.sponsorStakes[sh.sponsor];
+                uint256 locked = seatStake.seatTokenLocked;
+                if (locked > 0) {
+                    uint256 burnAmt = (locked * SEAT_BURN_BPS) / BPS_DENOM;
+                    uint256 returnAmt = locked - burnAmt;
+                    seatStake.seatTokenLocked = 0;
+                    if (burnAmt > 0) seatToken.safeTransfer(SEAT_BURN_ADDRESS, burnAmt);
+                    if (returnAmt > 0) seatToken.safeTransfer(sh.sponsor, returnAmt);
+                    emit SeatBurned(loanId, sh.sponsor, burnAmt, returnAmt);
+                }
+            }
+
             if (loss == 0 || totalAssets == 0) continue;
 
             uint256 toBurn = (loss * totalShares + totalAssets - 1) / totalAssets; // ceil, favours the pool
@@ -593,10 +771,22 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         // borrow again after this, so nothing should stay locked against it.
         uint256 m = a.sponsorList.length;
         for (uint256 i = 0; i < m; i++) {
-            SponsorStake storage stake = a.sponsorStakes[a.sponsorList[i]];
+            address s = a.sponsorList[i];
+            SponsorStake storage stake = a.sponsorStakes[s];
             if (stake.amount > 0) {
-                delegatedOut[a.sponsorList[i]] -= stake.amount;
+                delegatedOut[s] -= stake.amount;
                 stake.amount = 0;
+            }
+            // Any seatTokenLocked remaining here belongs to a seat that did
+            // NOT back the loan that just defaulted (the first loop above
+            // already zeroed it for the ones that did) — returned in full,
+            // same "agent can never borrow again so nothing stays locked"
+            // principle as the pool-capacity release just above.
+            if (stake.seatTokenLocked > 0) {
+                uint256 ret = stake.seatTokenLocked;
+                stake.seatTokenLocked = 0;
+                seatToken.safeTransfer(s, ret);
+                emit SeatReleased(loan.agentId, s, ret);
             }
         }
 

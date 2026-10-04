@@ -4,6 +4,7 @@ import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
 import { tierOf, TIER_LABEL } from "@/lib/auevo/tier";
 import type { ProofCategory } from "@/lib/auevo/db";
+import { CreditSubnav } from "../credit-subnav";
 
 export const revalidate = 60;
 
@@ -51,12 +52,7 @@ export default async function CreditAgentsPage() {
       <AgentPortalHeader />
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
-        <nav className="mb-6 flex gap-1 text-sm">
-          <Link href="/credit" className="rounded-[2px] px-3 py-1.5 text-[var(--muted)] hover:text-[var(--ink)]">
-            Pool
-          </Link>
-          <span className="rounded-[2px] bg-white/[0.05] px-3 py-1.5 text-[var(--ink)]">Agents</span>
-        </nav>
+        <CreditSubnav active="agents" />
 
         <h1 className="portal-heading text-4xl sm:text-5xl">Agents ready to back</h1>
         <p className="mt-4 text-[var(--muted)] leading-relaxed">

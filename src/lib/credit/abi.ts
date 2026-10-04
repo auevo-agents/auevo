@@ -44,8 +44,29 @@ export const AGENT_CREDIT_POOL_ABI = [
     outputs: [
       { name: "amount", type: "uint256" },
       { name: "premiumBps", type: "uint16" },
+      { name: "kind", type: "uint8" },
+      { name: "seatTokenLocked", type: "uint256" },
     ],
   },
+  {
+    type: "function",
+    name: "seatEligible",
+    stateMutability: "view",
+    inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "seatTokenRequiredFor",
+    stateMutability: "view",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
+  { type: "function", name: "seatToken", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "seatRatioNumerator", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "seatRatioDenominator", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "SEAT_MIN_REPAID_LOANS", stateMutability: "view", inputs: [], outputs: [{ type: "uint32" }] },
+  { type: "function", name: "SEAT_BURN_BPS", stateMutability: "view", inputs: [], outputs: [{ type: "uint16" }] },
   {
     type: "function",
     name: "loanInfo",
@@ -73,6 +94,7 @@ export const AGENT_CREDIT_POOL_ABI = [
           { name: "sponsor", type: "address" },
           { name: "principal", type: "uint256" },
           { name: "fee", type: "uint256" },
+          { name: "kind", type: "uint8" },
         ],
       },
     ],
@@ -174,7 +196,24 @@ export const AGENT_CREDIT_POOL_ABI = [
     inputs: [{ name: "loanId", type: "uint256" }],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "vouchSeat",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+      { name: "premiumBps", type: "uint16" },
+      { name: "maxPremiumBps", type: "uint16" },
+      { name: "nonce", type: "uint256" },
+      { name: "deadline", type: "uint256" },
+      { name: "signature", type: "bytes" },
+    ],
+    outputs: [],
+  },
 ] as const;
+
+export const STAKE_KIND = ["Pool", "Seat"] as const;
 
 export const CONSENT_EIP712_TYPES = {
   Consent: [

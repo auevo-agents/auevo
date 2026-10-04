@@ -120,13 +120,27 @@ const operatorClient = walletFor(operatorAcct);
 console.log("Deploying mocks and AgentCreditPool...");
 const token = await deploy(deployerClient, MockERC20, ["USDG", "USDG"]);
 const identity = await deploy(deployerClient, MockAgentIdentity);
+const seatToken = await deploy(deployerClient, MockERC20, ["AUEVO", "AUEVO"]);
 
 const MIN_LOAN = parseUnits("5", 18);
 const MAX_LOAN = parseUnits("500", 18);
 const FEE_BPS = 100; // 1% per 30 days
 const MIN_ROOT_STAKE = parseUnits("10", 18);
+const SEAT_RATIO_NUMERATOR = 1n; // 1:1 — seatTokenRequired == vouch amount, for simple test math
+const SEAT_RATIO_DENOMINATOR = 1n;
 
-const pool = await deploy(deployerClient, Pool, [token, identity, MIN_LOAN, MAX_LOAN, FEE_BPS, MIN_ROOT_STAKE, reserve]);
+const pool = await deploy(deployerClient, Pool, [
+  token,
+  identity,
+  MIN_LOAN,
+  MAX_LOAN,
+  FEE_BPS,
+  MIN_ROOT_STAKE,
+  reserve,
+  seatToken,
+  SEAT_RATIO_NUMERATOR,
+  SEAT_RATIO_DENOMINATOR,
+]);
 console.log("AgentCreditPool deployed at", pool);
 
 // Fund everyone who needs USDG, approve the pool.
@@ -169,6 +183,13 @@ async function vouchFor(sponsorClientLocal, sponsorAddr, amount, premiumBps = 0,
   const deadline = await chainDeadline();
   const sig = await signConsent(ownerClient, { agentId: forAgentId, sponsor: sponsorAddr, maxPremiumBps: premiumBps, nonce, deadline });
   return write(sponsorClientLocal, pool, Pool.abi, "vouch", [forAgentId, amount, premiumBps, premiumBps, nonce, deadline, sig]);
+}
+
+async function vouchSeatFor(sponsorClientLocal, sponsorAddr, amount, premiumBps = 0, forAgentId = agentId) {
+  const nonce = nextNonce++;
+  const deadline = await chainDeadline();
+  const sig = await signConsent(ownerClient, { agentId: forAgentId, sponsor: sponsorAddr, maxPremiumBps: premiumBps, nonce, deadline });
+  return write(sponsorClientLocal, pool, Pool.abi, "vouchSeat", [forAgentId, amount, premiumBps, premiumBps, nonce, deadline, sig]);
 }
 
 console.log("\n1) lender deposits, sponsor stakes and enrolls as root");
@@ -483,6 +504,136 @@ console.log("\n11) a registry with no operatorWalletOf concept still works (owne
   await write(ownerClient, pool, Pool.abi, "borrow", [agent4Id, parseUnits("10", 18), 7n, owner]);
   const loan = await read(pool, Pool.abi, "loanInfo", [5n]);
   check("the owner itself can still always borrow regardless of operatorWallet", loan[1] === parseUnits("10", 18));
+}
+
+console.log("\n12) a seat can only back an agent with SEAT_MIN_REPAID_LOANS already repaid");
+{
+  await write(deployerClient, identity, MockAgentIdentity.abi, "mint", [owner]);
+  const agent5Id = 4n;
+
+  // Set operatorWallet up as an ordinary root + seat-token holder, reused
+  // below as the seat-backer for the rest of this test file.
+  await write(deployerClient, token, MockERC20.abi, "mint", [operatorWallet, parseUnits("100", 18)]);
+  await write(operatorClient, token, MockERC20.abi, "approve", [pool, parseUnits("100", 18)]);
+  await write(operatorClient, pool, Pool.abi, "deposit", [parseUnits("100", 18)]);
+  await write(operatorClient, pool, Pool.abi, "enrollRoot", []);
+  await write(deployerClient, seatToken, MockERC20.abi, "mint", [operatorWallet, parseUnits("1000", 18)]);
+  await write(operatorClient, seatToken, MockERC20.abi, "approve", [pool, parseUnits("1000", 18)]);
+
+  const tooEarly = await expectRevert(vouchSeatFor(operatorClient, operatorWallet, parseUnits("5", 18), 0, agent5Id));
+  check("vouchSeat reverts before the agent has any repaid loans", tooEarly);
+
+  // Give agent5 a small pool-backed line and repay SEAT_MIN_REPAID_LOANS
+  // (10) tiny loans to earn seat eligibility.
+  await vouchFor(sponsor3Client, sponsor3, parseUnits("5", 18), 0, agent5Id);
+  for (let i = 0; i < 10; i++) {
+    const loanId = await read(pool, Pool.abi, "nextLoanId", []);
+    await write(ownerClient, pool, Pool.abi, "borrow", [agent5Id, parseUnits("5", 18), 1n, owner]);
+    await write(ownerClient, pool, Pool.abi, "repay", [loanId]);
+  }
+
+  const eligible = await read(pool, Pool.abi, "seatEligible", [agent5Id]);
+  check("agent5 is seat-eligible after 10 repaid loans", eligible === true);
+}
+
+console.log("\n13) vouchSeat locks seatToken and backs an eligible agent alongside its pool sponsor");
+{
+  const agent5Id = 4n;
+  const seatBalBefore = await read(seatToken, MockERC20.abi, "balanceOf", [operatorWallet]);
+
+  await vouchSeatFor(operatorClient, operatorWallet, parseUnits("5", 18), 0, agent5Id);
+
+  const seatBalAfter = await read(seatToken, MockERC20.abi, "balanceOf", [operatorWallet]);
+  check(
+    "vouchSeat pulled exactly the 1:1 seatToken amount from the seat-holder",
+    seatBalBefore - seatBalAfter === parseUnits("5", 18)
+  );
+
+  const [, , kind, seatTokenLocked] = await read(pool, Pool.abi, "sponsorStakeOf", [agent5Id, operatorWallet]);
+  check(
+    "the seat stake is recorded with kind=Seat and the locked seatToken amount",
+    kind === 1 && seatTokenLocked === parseUnits("5", 18)
+  );
+
+  const mismatchFromPoolSide = await expectRevert(
+    vouchFor(operatorClient, operatorWallet, parseUnits("1", 18), 0, agent5Id)
+  );
+  check("the same address cannot also plain-vouch the agent it already seat-vouched", mismatchFromPoolSide);
+  const mismatchFromSeatSide = await expectRevert(
+    vouchSeatFor(sponsor3Client, sponsor3, parseUnits("1", 18), 0, agent5Id)
+  );
+  check("the pool sponsor of the same agent cannot switch its own stake to seat-vouching", mismatchFromSeatSide);
+
+  const loanId = await read(pool, Pool.abi, "nextLoanId", []);
+  await write(ownerClient, pool, Pool.abi, "borrow", [agent5Id, parseUnits("10", 18), 7n, owner]);
+  const shares = await read(pool, Pool.abi, "loanSharesOf", [loanId]);
+  check("the loan splits pro-rata across both the pool sponsor and the seat", shares.length === 2);
+  const seatShare = shares.find((s) => s.sponsor.toLowerCase() === operatorWallet.toLowerCase());
+  check("the seat's own share is tagged kind=Seat", Boolean(seatShare) && seatShare.kind === 1);
+}
+
+console.log("\n14) repay credits the seat-holder its 25% cut as real pool shares, same as a pool sponsor");
+{
+  const loanId = (await read(pool, Pool.abi, "nextLoanId", [])) - 1n; // the loan drawn in the previous group
+  const seatSharesBefore = await read(pool, Pool.abi, "shares", [operatorWallet]);
+
+  await write(ownerClient, pool, Pool.abi, "repay", [loanId]);
+
+  const seatSharesAfter = await read(pool, Pool.abi, "shares", [operatorWallet]);
+  check("the seat-holder was minted new pool shares for its own fee cut", seatSharesAfter > seatSharesBefore);
+}
+
+console.log(
+  "\n15) default burns half the seat token that backed the defaulted loan; a late-joining seat on the same agent is returned in full"
+);
+{
+  const agent5Id = 4n;
+  const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
+
+  // A late seat-backer: joins AFTER the next loan is drawn, so it carries
+  // none of that loan's risk — reusing `stranger`, which already has
+  // enough pool-share value from group 6's deposit to enroll as root.
+  await write(strangerClient, pool, Pool.abi, "enrollRoot", []);
+  await write(deployerClient, seatToken, MockERC20.abi, "mint", [stranger, parseUnits("1000", 18)]);
+  await write(strangerClient, seatToken, MockERC20.abi, "approve", [pool, parseUnits("1000", 18)]);
+
+  const loanId = await read(pool, Pool.abi, "nextLoanId", []);
+  await write(ownerClient, pool, Pool.abi, "borrow", [agent5Id, parseUnits("10", 18), 7n, owner]);
+
+  await vouchSeatFor(strangerClient, stranger, parseUnits("5", 18), 0, agent5Id);
+  const sharesAtBorrow = await read(pool, Pool.abi, "loanSharesOf", [loanId]);
+  check(
+    "the late seat is not part of this loan's frozen snapshot",
+    sharesAtBorrow.length === 2 && !sharesAtBorrow.some((s) => s.sponsor.toLowerCase() === stranger.toLowerCase())
+  );
+
+  const operatorSeatBalBefore = await read(seatToken, MockERC20.abi, "balanceOf", [operatorWallet]);
+  const strangerSeatBalBefore = await read(seatToken, MockERC20.abi, "balanceOf", [stranger]);
+  const burnAddrBalBefore = await read(seatToken, MockERC20.abi, "balanceOf", [BURN_ADDRESS]);
+
+  await increaseTime(7 * 24 * 3600 + 3 * 24 * 3600 + 1);
+  await write(strangerClient, pool, Pool.abi, "markDefault", [loanId]);
+
+  const operatorSeatBalAfter = await read(seatToken, MockERC20.abi, "balanceOf", [operatorWallet]);
+  const strangerSeatBalAfter = await read(seatToken, MockERC20.abi, "balanceOf", [stranger]);
+  const burnAddrBalAfter = await read(seatToken, MockERC20.abi, "balanceOf", [BURN_ADDRESS]);
+
+  check("half the defaulting seat's locked token was burned", burnAddrBalAfter - burnAddrBalBefore === parseUnits("2.5", 18));
+  check(
+    "the other half of the defaulting seat's locked token returned to it",
+    operatorSeatBalAfter - operatorSeatBalBefore === parseUnits("2.5", 18)
+  );
+  check(
+    "the late seat (not part of this loan) got its full locked token back on release",
+    strangerSeatBalAfter - strangerSeatBalBefore === parseUnits("5", 18)
+  );
+
+  const [, , , operatorSeatLockedAfter] = await read(pool, Pool.abi, "sponsorStakeOf", [agent5Id, operatorWallet]);
+  const [, , , strangerSeatLockedAfter] = await read(pool, Pool.abi, "sponsorStakeOf", [agent5Id, stranger]);
+  check(
+    "both seats' locked amounts are zeroed out after the default",
+    operatorSeatLockedAfter === 0n && strangerSeatLockedAfter === 0n
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -47,6 +47,18 @@
 //   CREDIT_MIN_LOAN_USD=5 CREDIT_MAX_LOAN_USD=500 CREDIT_FEE_BPS=100
 //   CREDIT_MIN_ROOT_STAKE_USD=10
 //
+// Seats (vouchSeat()) are OFF by default — leave CREDIT_SEAT_TOKEN_ADDRESS
+// unset and the pool deploys with seats permanently disabled (no way to
+// turn them on later; this contract has no admin). To enable:
+//   CREDIT_SEAT_TOKEN_ADDRESS=0x...   The ERC-20 a seat locks (e.g. $AUEVO).
+//   CREDIT_SEAT_RATIO_NUMERATOR=...   seatTokenRequired = vouchAmount *
+//   CREDIT_SEAT_RATIO_DENOMINATOR=... numerator / denominator — a fixed,
+//                                     deploy-time rate, not a live oracle
+//                                     price (see AgentCreditPool.sol's own
+//                                     doc comment for why). Both required
+//                                     together if CREDIT_SEAT_TOKEN_ADDRESS
+//                                     is set.
+//
 // DEPLOYER_PRIVATE_KEY is read from the environment only, never as a CLI
 // argument (arguments can end up in shell history) and never written to
 // a file by this script.
@@ -83,6 +95,15 @@ const maxLoan = parseUnits(process.env.CREDIT_MAX_LOAN_USD || "500", assetDecima
 const feeBps = Number(process.env.CREDIT_FEE_BPS || "100");
 const minRootStake = parseUnits(process.env.CREDIT_MIN_ROOT_STAKE_USD || "10", assetDecimals);
 
+const seatTokenAddress = process.env.CREDIT_SEAT_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000";
+const seatsEnabled = seatTokenAddress !== "0x0000000000000000000000000000000000000000";
+let seatRatioNumerator = 0n;
+let seatRatioDenominator = 1n;
+if (seatsEnabled) {
+  seatRatioNumerator = BigInt(requireEnv("CREDIT_SEAT_RATIO_NUMERATOR"));
+  seatRatioDenominator = BigInt(requireEnv("CREDIT_SEAT_RATIO_DENOMINATOR"));
+}
+
 const build = JSON.parse(fs.readFileSync(new URL("../build.json", import.meta.url)));
 const { abi, evm } = build.contracts["src/AgentCreditPool.sol"].AgentCreditPool;
 const bytecode = `0x${evm.bytecode.object}`;
@@ -114,6 +135,12 @@ console.log("Reserve address (15% fee share):", reserveAddress);
 console.log("Loan bounds:", process.env.CREDIT_MIN_LOAN_USD || "5", "-", process.env.CREDIT_MAX_LOAN_USD || "500");
 console.log("Fee:", feeBps, "bps per 30-day term");
 console.log("Min root stake:", process.env.CREDIT_MIN_ROOT_STAKE_USD || "10");
+console.log(
+  "Seats:",
+  seatsEnabled
+    ? `enabled, token ${seatTokenAddress}, ratio ${seatRatioNumerator}/${seatRatioDenominator}`
+    : "disabled (permanently — no admin to turn on later)"
+);
 console.log("RPC:", rpcUrl);
 console.log(
   "\nThis contract has NO owner and NO admin function — these parameters are permanent once deployed."
@@ -125,7 +152,18 @@ await new Promise((resolve) => setTimeout(resolve, 10_000));
 const hash = await walletClient.deployContract({
   abi,
   bytecode,
-  args: [assetAddress, identityAddress, minLoan, maxLoan, feeBps, minRootStake, reserveAddress],
+  args: [
+    assetAddress,
+    identityAddress,
+    minLoan,
+    maxLoan,
+    feeBps,
+    minRootStake,
+    reserveAddress,
+    seatTokenAddress,
+    seatRatioNumerator,
+    seatRatioDenominator,
+  ],
 });
 console.log("Transaction sent:", hash);
 

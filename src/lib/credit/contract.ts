@@ -1,6 +1,6 @@
 import { getRobinhoodClient } from "@/lib/evm/client";
 import { ERC20_ABI } from "@/lib/erc20-abi";
-import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS } from "./abi";
+import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS, STAKE_KIND } from "./abi";
 
 /**
  * Server-only reads against AgentCreditPool (contracts/src/AgentCreditPool.sol).
@@ -17,6 +17,8 @@ export type SponsorStake = {
   sponsor: `0x${string}`;
   amount: bigint;
   premiumBps: number;
+  kind: (typeof STAKE_KIND)[number];
+  seatTokenLocked: bigint;
 };
 
 export type AgentRecord = {
@@ -70,13 +72,13 @@ export async function readAgentRecord(agentId: bigint): Promise<AgentRecord | nu
 
   const sponsors = await Promise.all(
     sponsorAddresses.map(async (sponsor) => {
-      const [amount, premiumBps] = await client.readContract({
+      const [amount, premiumBps, kind, seatTokenLocked] = await client.readContract({
         address: pool,
         abi: AGENT_CREDIT_POOL_ABI,
         functionName: "sponsorStakeOf",
         args: [agentId, sponsor],
       });
-      return { sponsor, amount, premiumBps };
+      return { sponsor, amount, premiumBps, kind: STAKE_KIND[kind], seatTokenLocked };
     })
   );
 
@@ -171,6 +173,65 @@ export async function readPoolParams() {
   ]);
 
   return { pool, minLoan, maxLoan, feeBps, minRootStake, asset };
+}
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+export type SeatConfig =
+  | { deployed: false }
+  | { deployed: true; supported: false } // the live pool predates vouchSeat()/seatToken() — needs redeploy
+  | {
+      deployed: true;
+      supported: true;
+      enabled: boolean;
+      seatToken: `0x${string}`;
+      seatTokenDecimals: number | null;
+      ratioNumerator: bigint;
+      ratioDenominator: bigint;
+      minRepaidLoans: number;
+      burnBps: number;
+    };
+
+/**
+ * Reads seat config from the live pool. A pool deployed before vouchSeat()
+ * existed simply has no such function on its deployed bytecode — that read
+ * reverts, not "seats disabled" (which is a real, distinct on-chain state:
+ * seatToken() returning address(0) on a pool that DOES have the function).
+ * Both cases are reported honestly rather than collapsed into one.
+ */
+export async function readSeatConfig(): Promise<SeatConfig> {
+  const pool = getCreditPoolAddress();
+  if (!pool) return { deployed: false };
+
+  const client = getRobinhoodClient();
+  try {
+    const [seatToken, ratioNumerator, ratioDenominator, minRepaidLoans, burnBps] = await Promise.all([
+      client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "seatToken" }),
+      client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "seatRatioNumerator" }),
+      client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "seatRatioDenominator" }),
+      client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "SEAT_MIN_REPAID_LOANS" }),
+      client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "SEAT_BURN_BPS" }),
+    ]);
+
+    const enabled = seatToken.toLowerCase() !== ZERO_ADDRESS;
+    const seatTokenDecimals = enabled
+      ? await client.readContract({ address: seatToken, abi: ERC20_ABI, functionName: "decimals" }).catch(() => null)
+      : null;
+
+    return {
+      deployed: true,
+      supported: true,
+      enabled,
+      seatToken,
+      seatTokenDecimals,
+      ratioNumerator,
+      ratioDenominator,
+      minRepaidLoans,
+      burnBps,
+    };
+  } catch {
+    return { deployed: true, supported: false };
+  }
 }
 
 /** Null when the pool isn't deployed — the asset's own decimals(), read live. */
