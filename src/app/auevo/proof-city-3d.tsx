@@ -71,114 +71,115 @@ function saturate(c: [number, number, number], amount: number): [number, number,
   return [clamp(avg + (c[0] - avg) * amount), clamp(avg + (c[1] - avg) * amount), clamp(avg + (c[2] - avg) * amount)];
 }
 
+const BARK: [number, number, number] = [0.30, 0.17, 0.12];
+const BARK_LIT: [number, number, number] = [0.38, 0.23, 0.16];
+const GOLDEN_ANGLE = 2.399963229728653;
+
 /**
- * A tree, not a tower — deliberately: a real tree ring can't be widened, thinned, or
- * erased after it hardens, only built on top of. That's the same property an append-only
- * Proof ledger has, which a skyscraper (nothing stops you redesigning any floor) doesn't
- * carry. Each ring here is one fixed Proof category, in the same order for every agent
- * (not a chronological year — nine categories exist, not nine years), so ring position is
- * directly comparable across trees. Ring width = how much the agent has attempted there;
- * glow = how much of that came back verified.
+ * A tree, not a tower — a plain bark trunk (trustworthy, undecorated, just elapsed time)
+ * holding up a crown of cube clusters, one per fixed Proof category, scattered around the
+ * top in three loose tiers (not a flat ring, not a single blob — a real canopy reads from
+ * further off than any single branch does). Cluster size = how much the agent has
+ * attempted there; glow = how much of that came back verified; a cold grey cluster means
+ * never attempted. The point of a tree over a skyscraper: a verified cube, once placed,
+ * can't be moved, resized, or quietly removed — only ever added to, same as a Proof.
  */
 function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, landmark = false): Box[] {
   const boxes: Box[] = [];
   const order = Object.keys(CATEGORY_COLORS);
   const cats = agent.categories;
-
-  // Overall girth comes from TOTAL activity, not any one category — the silhouette must
-  // taper smoothly (a real trunk never bulges outward above a narrower point), so per-
-  // category data drives band height and colour/glow, never the trunk's own radius.
+  const age = Math.max(1, Math.min(7, Math.ceil(agent.ageDays / 45)));
   const activity = volume(agent.attempted + agent.verified);
-  const baseR = ((landmark ? 0.80 : 0.70) + activity * (landmark ? 0.60 : 0.46)) * scale;
-  const topR = baseR * 0.3;
 
-  // Root flare: a short stack of low rings that hug the trunk's own base width, not an
-  // independent plaza — the ground a trunk actually flares into, not a building footprint.
-  boxes.push({x:ox+.15*scale,y:.012,z:oz+.18*scale,sx:baseR*2.3,sy:.018,sz:baseR*2.0,color:[.015,.02,.032],emissive:0});
-  const rootRings = 3;
-  for (let r = 0; r < rootRings; r++) {
-    const side = baseR * (1.85 - r * 0.22);
-    boxes.push({x:ox,y:0.05+r*0.06,z:oz,sx:side,sy:0.075*scale,sz:side,color:[0.12,0.15,0.23],emissive:0.012});
+  const baseR = ((landmark ? 0.30 : 0.26) + activity * (landmark ? 0.10 : 0.08)) * scale;
+  const topR = baseR * 0.55;
+
+  // Root flare, hugging the trunk's own base width.
+  boxes.push({x:ox+.08*scale,y:.012,z:oz+.1*scale,sx:baseR*2.6,sy:.016,sz:baseR*2.3,color:[.01,.015,.02],emissive:0});
+  for (let r = 0; r < 3; r++) {
+    const side = baseR * (2.0 - r * 0.35);
+    boxes.push({x:ox,y:0.045+r*0.05,z:oz,sx:side,sy:0.06*scale,sz:side,color:BARK,emissive:0.02});
   }
 
-  // Pass 1: each category's own band height (activity-driven) and stats — radius is NOT decided here.
-  const bands = order.map((category, i) => {
-    const c = cats.find((item) => item.category === category) ?? { category, attempted: 0, verified: 0, confidence: "INSUFFICIENT" };
-    const d = volume(c.attempted);
-    const h = ((landmark ? 0.26 : 0.20) + d * (landmark ? 0.50 : 0.38)) * scale;
-    return { i, c, d, h, color: landmark ? saturate(CATEGORY_COLORS[category] ?? [0.52,0.45,0.78], 1.7) : (CATEGORY_COLORS[category] ?? [0.52,0.45,0.78]) };
-  });
-  const trunkH = bands.reduce((s,b)=>s+b.h, 0) || 1;
+  // Trunk: plain bark, height purely from age — the undecorated passage of time the
+  // canopy sits on top of. No category colour reaches down here.
+  const trunkH = ((landmark ? 1.7 : 1.25) + age * (landmark ? 0.26 : 0.20)) * scale;
+  const trunkSegs = Math.max(3, Math.min(7, age + 2));
+  let y = 0.16 * scale;
+  for (let s = 0; s < trunkSegs; s++) {
+    const segH = trunkH / trunkSegs;
+    const r = baseR + (topR - baseR) * (s / trunkSegs);
+    boxes.push({x:ox,y:y+segH/2,z:oz,sx:r,sy:segH*0.96,sz:r,color:s%2?BARK:BARK_LIT,emissive:0.03});
+    y += segH;
+  }
+  const canopyBaseY = y;
 
-  let y = 0.34 * scale;
   let dominantIdx = 0, dominantAttempted = -1;
-  const ringMidY: number[] = [];
-  bands.forEach(({ i, c, h, color }) => {
+  const clusterCenters: { x: number; y: number; z: number }[] = [];
+
+  order.forEach((category, i) => {
+    const c = cats.find((item) => item.category === category) ?? { category, attempted: 0, verified: 0, confidence: "INSUFFICIENT" };
     if (c.attempted > dominantAttempted) { dominantAttempted = c.attempted; dominantIdx = i; }
+    const d = volume(c.attempted);
     const conf = CONFIDENCE[c.confidence] ?? 0.18;
     const ratio = c.attempted ? c.verified / c.attempted : 0;
     const active = c.attempted > 0;
+    const color = landmark ? saturate(CATEGORY_COLORS[category] ?? [0.52,0.45,0.78], 1.4) : (CATEGORY_COLORS[category] ?? [0.52,0.45,0.78]);
 
-    const tMid = (y - 0.34*scale + h/2) / trunkH;
-    const r = baseR + (topR - baseR) * Math.pow(clamp(tMid), 0.75);
+    // Three loose tiers (low/mid/high), golden-angle spread within each — reads as a
+    // rounded, slightly asymmetric crown rather than a flat halo or a single sphere.
+    const tier = i % 3;
+    const tierY = [0.18, 0.55, 0.92][tier];
+    const tierR = [1.0, 0.76, 0.46][tier];
+    const theta = GOLDEN_ANGLE * i;
+    const branchLen = (landmark ? 0.62 : 0.50) * scale;
+    const cx = ox + Math.cos(theta) * tierR * branchLen;
+    const cz = oz + Math.sin(theta) * tierR * branchLen;
+    const cy = canopyBaseY + tierY * (landmark ? 0.95 : 0.7) * scale;
+    clusterCenters.push({ x: cx, y: cy, z: cz });
 
-    boxes.push({
-      x: ox, y: y + h / 2, z: oz,
-      sx: r, sy: Math.max(0.09 * scale, h * 0.94), sz: r,
-      color: active ? color : [0.14, 0.17, 0.24],
-      emissive: active ? (landmark ? 0.30 + conf * ratio * 0.9 : 0.19 + conf * ratio * 0.58) : 0.02,
-    });
-    ringMidY.push(y + h / 2);
+    // Branch stub: a short bark segment partway from the trunk toward the cluster.
+    boxes.push({x:ox+(cx-ox)*.4,y:canopyBaseY+(cy-canopyBaseY)*.35,z:oz+(cz-oz)*.4,sx:.05*scale,sy:.05*scale,sz:.05*scale,color:BARK,emissive:.02});
 
-    // Grain flecks: verified proofs as small bright accents set right into this band's own surface.
-    const flecks = Math.min(5, c.verified);
-    for (let p = 0; p < flecks; p++) {
-      const a = (p / flecks) * Math.PI * 2 + i * 0.7;
+    const CLUSTER_OFFSETS: [number,number,number][] = [[0,0,0],[.17,.08,.05],[-.15,.1,.08],[.06,.15,-.14],[-.1,-.08,-.16],[.14,-.1,.1],[-.05,.05,.17]];
+    const cubeCount = Math.max(1, Math.min(7, Math.round(1 + d * 6)));
+    const cubeSize = (landmark ? 0.17 : 0.14) * scale;
+    for (let p = 0; p < cubeCount; p++) {
+      const [dx,dy,dz] = CLUSTER_OFFSETS[p % CLUSTER_OFFSETS.length];
       boxes.push({
-        x: ox + Math.cos(a) * r * 0.78, y: y + h * (0.3 + (p % 3) * 0.2), z: oz + Math.sin(a) * r * 0.78,
-        sx: 0.05 * scale, sy: 0.05 * scale, sz: 0.05 * scale, color, emissive: landmark ? 0.95 : 0.78,
+        x: cx+dx*scale, y: cy+dy*scale, z: cz+dz*scale,
+        sx: cubeSize, sy: cubeSize, sz: cubeSize,
+        color: active ? color : [0.17, 0.20, 0.18],
+        emissive: active ? (landmark ? 0.30 + conf * ratio * 0.9 : 0.18 + conf * ratio * 0.55) : 0.02,
       });
     }
-
-    y += h;
   });
 
-  // A rejected proof is a scar carved into the band where it happened — visible for good,
-  // never papered over. Placed on whichever category has the most attempts (per-category
-  // rejection counts aren't tracked yet, same aggregate-level approximation as before).
+  // A rejected proof is a scar embedded in the cluster where it happened — visible for
+  // good, never papered over. Placed on whichever category has the most attempts
+  // (per-category rejection counts aren't tracked yet, same aggregate-level approximation
+  // the earlier design used).
   if (agent.rejected > 0) {
-    boxes.push({x:ox+topR*.5,y:ringMidY[dominantIdx]??y*.5,z:oz+topR*.2,sx:topR*.4,sy:.08*scale,sz:topR*.7,color:[.32,.13,.13],emissive:.12});
+    const d0 = clusterCenters[dominantIdx];
+    boxes.push({x:d0.x+.1*scale,y:d0.y-.08*scale,z:d0.z+.08*scale,sx:.09*scale,sy:.09*scale,sz:.09*scale,color:[.32,.13,.13],emissive:.14});
   }
 
-  // Pending: the newest growth, still soft — a translucent-looking band above every hardened ring.
+  // Pending: new growth, still soft — a small pale cluster set slightly apart from the hardened canopy.
   if (agent.pending > 0) {
-    boxes.push({x:ox,y:y+.05*scale,z:oz,sx:topR*1.05,sy:.08*scale,sz:topR*1.05,color:[.62,.56,.88],emissive:.22});
-    y += 0.12 * scale;
+    const px = ox, py = canopyBaseY + (landmark?1.05:0.78)*scale, pz = oz;
+    boxes.push({x:px,y:py,z:pz,sx:.13*scale,sy:.13*scale,sz:.13*scale,color:[.68,.62,.92],emissive:.24});
   }
 
-  // Bud: new growth tapers to a point and closes into a small cluster, like a sprouting
-  // tip — not a separate antenna bolted on top.
-  const budScale = (landmark ? 1.25 : 1) * scale;
-  boxes.push({x:ox,y:y+topR*.5,z:oz,sx:topR*.7,sy:topR,sz:topR*.7,color:[.68,.52,1],emissive:landmark?.55:.4});
-  y += topR*.9;
-  [[0,0],[1,0],[-1,.6],[.6,-1],[-.6,-.7]].forEach(([dx,dz],k)=>{
-    boxes.push({
-      x:ox+dx*0.075*budScale, y:y+(k%2)*0.05*budScale, z:oz+dz*0.075*budScale,
-      sx:.09*budScale,sy:.09*budScale,sz:.09*budScale,
-      color:k%2?[.95,.74,.38]:[.78,.6,1], emissive:landmark?1.05:.8,
-    });
-  });
-
-  // Fallen seeds: this agent's cumulative record, settled close at its own base — a forest
+  // Fallen seeds: this agent's cumulative record, settled at its own base — a forest
   // shares one ground, not a ring of satellites orbiting each tree.
   const seedCount = Math.max(2, Math.min(10, Math.round(activity * 10)));
   for (let i = 0; i < seedCount; i++) {
     const a = (i / seedCount) * Math.PI * 2 + 0.4;
-    const rr = baseR * 1.35 + (i % 3) * 0.05 * scale;
+    const rr = baseR * 1.9 + (i % 3) * 0.05 * scale;
     boxes.push({
       x: ox + Math.cos(a) * rr, y: (0.05 + (i % 2) * 0.02) * scale, z: oz + Math.sin(a) * rr,
       sx: 0.045 * scale, sy: 0.045 * scale, sz: 0.045 * scale,
-      color: i % 2 ? [.95,.74,.38] : [.66,.48,1], emissive: landmark ? 0.65 : 0.38,
+      color: i % 2 ? [.72,.56,.3] : [.4,.48,.28], emissive: landmark ? 0.4 : 0.22,
     });
   }
 
