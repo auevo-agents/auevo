@@ -15693,3 +15693,21 @@ body{
 .portal-panel tr:hover td{
   background:rgba(39,116,77,.055);
 }
+
+.auevo-wordmark-gold{
+  background:linear-gradient(90deg,#f6d99b 0%,#d7b56d 54%,#b98c43 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent!important;
+  text-shadow:0 0 24px rgba(215,181,109,.10);
+}
+.portal-logo .auevo-mark{
+  width:42px;
+  height:42px;
+  filter:drop-shadow(0 8px 24px rgba(215,181,109,.14));
+}
+.portal-logo .auevo-wordmark{
+  font-size:16px;
+  letter-spacing:.34em;
+  font-weight:500;
+}
