@@ -47,7 +47,7 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
           <div><div className="portal-kicker">Interactive 3D forest</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
           <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
         </div>
-        <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[590px] sm:h-[700px] xl:h-[760px]"/>
+        <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[380px] sm:h-[440px] xl:h-[480px]"/>
       </div>
 
       <div className="mt-8 flex flex-col gap-4 border-t border-white/[0.07] pt-7 lg:flex-row lg:items-center lg:justify-between">

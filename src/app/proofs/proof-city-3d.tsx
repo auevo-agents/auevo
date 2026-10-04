@@ -20,15 +20,15 @@ export type ProofCityAgent = {
 };
 
 const CATEGORY_COLORS: Record<string, [number, number, number]> = {
-  identity: [0.70, 0.73, 0.82],
-  skill: [0.53, 0.43, 0.94],
-  work: [0.36, 0.63, 0.82],
-  performance: [0.66, 0.49, 0.96],
-  economic_activity: [0.35, 0.69, 0.58],
-  financial_performance: [0.88, 0.66, 0.32],
-  prediction: [0.58, 0.44, 1.0],
-  autonomy: [0.38, 0.73, 0.62],
-  longevity: [0.66, 0.61, 0.52],
+  identity: [0.38, 0.42, 0.54],
+  skill: [0.28, 0.14, 0.48],
+  work: [0.07, 0.15, 0.40],
+  performance: [0.42, 0.07, 0.27],
+  economic_activity: [0.09, 0.32, 0.21],
+  financial_performance: [0.60, 0.43, 0.13],
+  prediction: [0.29, 0.13, 0.54],
+  autonomy: [0.08, 0.28, 0.25],
+  longevity: [0.38, 0.045, 0.09],
 };
 
 const CONFIDENCE: Record<string, number> = {
@@ -66,14 +66,24 @@ function volume(n: number) {
   return clamp(Math.log1p(n) / Math.log(101));
 }
 
-function saturate(c: [number, number, number], amount: number): [number, number, number] {
-  const avg = (c[0] + c[1] + c[2]) / 3;
-  return [clamp(avg + (c[0] - avg) * amount), clamp(avg + (c[1] - avg) * amount), clamp(avg + (c[2] - avg) * amount)];
-}
-
 const BARK: [number, number, number] = [0.30, 0.17, 0.12];
 const BARK_LIT: [number, number, number] = [0.38, 0.23, 0.16];
 const GOLDEN_ANGLE = 2.399963229728653;
+
+/** Deterministic Fibonacci-sphere point set — fills a cluster with as many little
+ * leaf-cubes as it needs without ever looking like a random scatter or a grid. */
+function fibSphere(n: number, rx: number, ry: number, rz: number): [number, number, number][] {
+  if (n <= 1) return [[0, 0, 0]];
+  const pts: [number, number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n;
+    const y = 1 - 2 * t;
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = GOLDEN_ANGLE * i;
+    pts.push([Math.cos(theta) * r * rx, y * ry, Math.sin(theta) * r * rz]);
+  }
+  return pts;
+}
 
 /**
  * A tree, not a tower — a plain bark trunk (trustworthy, undecorated, just elapsed time)
@@ -124,7 +134,7 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
     const conf = CONFIDENCE[c.confidence] ?? 0.18;
     const ratio = c.attempted ? c.verified / c.attempted : 0;
     const active = c.attempted > 0;
-    const color = landmark ? saturate(CATEGORY_COLORS[category] ?? [0.52,0.45,0.78], 1.4) : (CATEGORY_COLORS[category] ?? [0.52,0.45,0.78]);
+    const color = CATEGORY_COLORS[category] ?? [0.52,0.45,0.78];
 
     // Three tiers (low/mid/high), golden-angle spread within each — a rounded crown
     // wide enough to wrap the top of the trunk, with big enough cubes and tight enough
@@ -134,25 +144,26 @@ function cityForAgent(agent: ProofCityAgent, ox: number, oz: number, scale = 1, 
     const tierY = [0.30, 0.56, 0.84][tier];
     const tierR = [0.95, 0.72, 0.44][tier];
     const theta = GOLDEN_ANGLE * i;
-    const branchLen = (landmark ? 0.56 : 0.45) * scale;
+    const branchLen = (landmark ? 0.48 : 0.45) * scale;
     const cx = ox + Math.cos(theta) * tierR * branchLen;
     const cz = oz + Math.sin(theta) * tierR * branchLen;
-    const cy = canopyBaseY + tierY * (landmark ? 0.8 : 0.6) * scale;
+    const cy = canopyBaseY + tierY * (landmark ? 1.15 : 0.6) * scale;
     clusterCenters.push({ x: cx, y: cy, z: cz });
 
     // Branch stub: a short bark segment partway from the trunk toward the cluster.
     boxes.push({x:ox+(cx-ox)*.4,y:canopyBaseY+(cy-canopyBaseY)*.35,z:oz+(cz-oz)*.4,sx:.05*scale,sy:.05*scale,sz:.05*scale,color:BARK,emissive:.02});
 
-    const CLUSTER_OFFSETS: [number,number,number][] = [[0,0,0],[.13,.07,.05],[-.12,.08,.06],[.05,.12,-.11],[-.09,-.07,-.13],[.11,-.09,.09],[-.05,.05,.13]];
-    const cubeCount = Math.max(1, Math.min(7, Math.round(1 + d * 6)));
-    const cubeSize = (landmark ? 0.23 : 0.20) * scale;
+    const maxCubes = landmark ? 18 : 9;
+    const cubeCount = Math.max(1, Math.min(maxCubes, Math.round(1 + d * (maxCubes - 1))));
+    const cubeSize = (landmark ? 0.19 : 0.17) * scale;
+    const clusterOffsets = landmark ? fibSphere(cubeCount, 0.19, 0.17, 0.19) : fibSphere(cubeCount, 0.14, 0.11, 0.14);
     for (let p = 0; p < cubeCount; p++) {
-      const [dx,dy,dz] = CLUSTER_OFFSETS[p % CLUSTER_OFFSETS.length];
+      const [dx,dy,dz] = clusterOffsets[p];
       boxes.push({
         x: cx+dx*scale, y: cy+dy*scale, z: cz+dz*scale,
         sx: cubeSize, sy: cubeSize, sz: cubeSize,
         color: active ? color : [0.17, 0.20, 0.18],
-        emissive: active ? (landmark ? 0.30 + conf * ratio * 0.9 : 0.18 + conf * ratio * 0.55) : 0.02,
+        emissive: active ? 0.08 + conf * ratio * 0.26 : 0.02,
       });
     }
   });
@@ -199,24 +210,34 @@ function layoutAgents(agents: ProofCityAgent[], single: boolean): SceneAgent[] {
 }
 
 function hash2(x: number, y: number) {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-  return s - Math.floor(s);
+  const a = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  const b = Math.sin(x * 39.346 + y * 11.135) * 24634.6345;
+  const h = (a - Math.floor(a)) * 0.6 + (b - Math.floor(b)) * 0.4;
+  return h - Math.floor(h);
 }
 
-/** A blocky pixel meadow — flat voxel tiles, mostly grass with the occasional sandy
- * patch, instead of one plain slab. Reads as ground, not as a stage platform. */
+/** A fine pixel meadow — small voxel tiles in several grass shades plus rare dirt
+ * flecks, not two alternating colours. Reads as noisy ground cover, never a game
+ * board, however far the camera pulls back. */
 function pixelGround(halfX: number, halfZ: number, cell: number): Box[] {
   const boxes: Box[] = [];
   const cols = Math.max(2, Math.round((halfX * 2) / cell));
   const rows = Math.max(2, Math.round((halfZ * 2) / cell));
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const x = -halfX + (c + 0.5) * cell, z = -halfZ + (r + 0.5) * cell;
       const n = hash2(c, r);
-      const sand = n > 0.88;
-      const g = 0.15 + n * 0.09;
-      const color: [number, number, number] = sand ? [0.27, 0.22, 0.14] : [0.07 + n * 0.03, g, 0.07 + n * 0.035];
-      boxes.push({ x, y: -0.05, z, sx: cell * 0.94, sy: 0.08, sz: cell * 0.94, color, emissive: 0.012 });
+      const n2 = hash2(c + 91.3, r - 47.7);
+      // Jitter every tile off the lattice so the grout lines never line up into a
+      // literal board — reads as scattered ground cover, not a checkerboard.
+      const jx = (hash2(c + 13.1, r + 4.7) - 0.5) * cell * 0.4;
+      const jz = (hash2(c - 7.3, r + 19.2) - 0.5) * cell * 0.4;
+      const jy = (n2 - 0.5) * 0.03;
+      const x = -halfX + (c + 0.5) * cell + jx, z = -halfZ + (r + 0.5) * cell + jz;
+      let color: [number, number, number];
+      if (n > 0.95) color = [0.24, 0.19, 0.12]; // rare dirt fleck
+      else if (n > 0.86) color = [0.07 + n2 * 0.02, 0.22 + n2 * 0.05, 0.09 + n2 * 0.02]; // dark moss patch
+      else color = [0.06 + n2 * 0.025, 0.16 + n2 * 0.1, 0.065 + n2 * 0.03];
+      boxes.push({ x, y: -0.05 + jy, z, sx: cell * 0.82, sy: 0.07, sz: cell * 0.82, color, emissive: 0.01 });
     }
   }
   return boxes;
@@ -226,20 +247,20 @@ function sceneBoxes(agents: ProofCityAgent[], single: boolean, landmark: boolean
   const layout = layoutAgents(agents, single);
   const boxes: Box[] = [];
 
-  const reach = single ? 0 : layout.reduce((m, l) => Math.max(m, Math.abs(l.x), Math.abs(l.z)), 0);
-  const halfX = single ? 3.4 : reach + 3.4;
-  const halfZ = single ? 2.9 : reach + 3.0;
-  const cell = single ? 0.42 : 2.3;
-  boxes.push(...pixelGround(halfX, halfZ, cell));
+  // The homepage hero tree floats free — no ground, no horizon, no shadow slab,
+  // nothing under it at all.
+  if (!single) {
+    const reach = layout.reduce((m, l) => Math.max(m, Math.abs(l.x), Math.abs(l.z)), 0);
+    const halfX = reach + 3.4, halfZ = reach + 3.0;
+    boxes.push(...pixelGround(halfX, halfZ, 1.1));
+    boxes.push({ x: 0, y: 0.04, z: -halfZ + 0.02, sx: halfX * 2, sy: 0.05, sz: 0.04, color: [0.62, 0.46, 0.3], emissive: 0.22 });
+    layout.forEach((item) => {
+      const shadowR = 0.42 * item.scale;
+      boxes.push({ x: item.x + 0.12 * item.scale, y: 0, z: item.z + 0.18 * item.scale, sx: shadowR * 2, sy: 0.02, sz: shadowR * 1.5, color: [0.03, 0.035, 0.03], emissive: 0 });
+    });
+  }
 
-  // Horizon: a warm line where the pixel meadow meets the sky, far behind the trees.
-  boxes.push({ x: 0, y: 0.04, z: -halfZ + 0.02, sx: halfX * 2, sy: 0.05, sz: 0.04, color: [0.62, 0.46, 0.3], emissive: 0.22 });
-
-  layout.forEach((item) => {
-    const shadowR = (single ? 0.55 : 0.42) * item.scale;
-    boxes.push({ x: item.x + 0.12 * item.scale, y: 0, z: item.z + 0.18 * item.scale, sx: shadowR * 2, sy: 0.02, sz: shadowR * 1.5, color: [0.03, 0.035, 0.03], emissive: 0 });
-    boxes.push(...cityForAgent(item.agent, item.x, item.z, item.scale, landmark));
-  });
+  layout.forEach((item) => boxes.push(...cityForAgent(item.agent, item.x, item.z, item.scale, landmark)));
   return boxes;
 }
 
@@ -268,12 +289,12 @@ varying vec3 v_worldPos;
 void main(){
   vec3 n=normalize(v_normal);
   float d=max(dot(n,normalize(u_light)),0.0);
-  float hemi=.26+.18*max(n.y,0.0);
-  float rim=pow(1.0-max(dot(n,normalize(vec3(.15,.35,.92))),0.0),2.0)*.16;
-  float heightGlow=clamp(v_worldPos.y/8.0,0.0,1.0)*.08;
-  vec3 sunTint=vec3(1.1,1.0,0.86);
-  float shade=hemi+rim+heightGlow+u_emissive;
-  vec3 c=u_color*shade+u_color*sunTint*d*.62;
+  float hemi=.26+.12*max(n.y,0.0);
+  float rim=pow(1.0-max(dot(n,normalize(vec3(.15,.35,.92))),0.0),2.0)*.08;
+  float heightGlow=clamp(v_worldPos.y/8.0,0.0,1.0)*.04;
+  vec3 sunTint=vec3(1.05,1.0,0.94);
+  float shade=hemi+rim+heightGlow+u_emissive*.55;
+  vec3 c=u_color*shade+u_color*sunTint*d*.3;
   gl_FragColor=vec4(c,1.0);
 }
 `;
