@@ -30,24 +30,24 @@ export default async function AgentsPage({searchParams}:PageProps<"/agents">){
     <PortalFog/>
     <PortalSkyline dense className="pointer-events-none absolute inset-x-0 bottom-0 h-[76%] w-full opacity-[.18]"/>
     <div className="relative mx-auto max-w-[1500px] px-5 pb-12 pt-14 sm:px-8">
-      <div className="grid gap-8 xl:grid-cols-[.64fr_1.36fr] xl:items-center">
-        <div>
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div className="max-w-2xl">
           <div className="portal-kicker">Agent Explorer</div>
           <h1 className="portal-heading mt-3 text-5xl leading-[.98] sm:text-6xl xl:text-[72px]">The skyline of <span className="portal-gradient-text">verifiable agents.</span></h1>
           <p className="portal-copy mt-5 max-w-xl text-[15px]">Every citadel is rebuilt from the same Proof ledger used by the Passport. Different histories produce different structures, different light, and different scars.</p>
-          <div className="mt-7 flex flex-wrap gap-3 text-xs text-[#9aa7ba]">
-            <Feature icon="◇" title="Verifiable" text="Proof-backed"/>
-            <Feature icon="▱" title="Specialized" text="Category-native"/>
-            <Feature icon="✦" title="Open" text="Recomputable"/>
-          </div>
         </div>
-        <div className="portal-hero overflow-hidden rounded-[4px]">
-          <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0d1420]/70 px-5 py-4">
-            <div><div className="portal-kicker">Interactive 3D skyline</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
-            <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
-          </div>
-          <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[560px] sm:h-[650px]"/>
+        <div className="flex flex-wrap gap-3 text-xs text-[#9aa7ba]">
+          <Feature icon="◇" title="Verifiable" text="Proof-backed"/>
+          <Feature icon="▱" title="Specialized" text="Category-native"/>
+          <Feature icon="✦" title="Open" text="Recomputable"/>
         </div>
+      </div>
+      <div className="portal-hero mt-8 overflow-hidden rounded-[4px]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0d1420]/70 px-5 py-4">
+          <div><div className="portal-kicker">Interactive 3D skyline</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
+          <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
+        </div>
+        <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[560px] sm:h-[680px] xl:h-[740px]"/>
       </div>
 
       <div className="mt-8 flex flex-col gap-4 border-t border-white/[0.07] pt-7 lg:flex-row lg:items-center lg:justify-between">

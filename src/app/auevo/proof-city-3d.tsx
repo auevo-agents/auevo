@@ -291,6 +291,7 @@ export function ProofCity3D({
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const pointerRef=useRef({x:-9999,y:-9999,inside:false});
   const hoveredRef=useRef(-1);
+  const zoomControlRef=useRef<{in:()=>void;out:()=>void}|null>(null);
   const [active,setActive]=useState(false);
   const [hovered,setHovered]=useState<ProofCityAgent|null>(null);
   const layout=useMemo(()=>layoutAgents(agents,single),[agents,single]);
@@ -311,6 +312,11 @@ export function ProofCity3D({
     let dragging=false,lastX=0,lastY=0,raf=0,moved=0,lastTime=performance.now();
     let buildStart:number|null=null;
     const maxTop=landmark?Math.max(1,...boxes.map(b=>b.y+b.sy/2)):1;
+    const zoomMin=single?7.5:13,zoomMax=single?(landmark?22:18):40,zoomStep=(zoomMax-zoomMin)*.12;
+    zoomControlRef.current={
+      in:()=>{zoom=clamp(zoom-zoomStep,zoomMin,zoomMax)},
+      out:()=>{zoom=clamp(zoom+zoomStep,zoomMin,zoomMax)},
+    };
 
     const resize=()=>{
       const dpr=Math.min(window.devicePixelRatio||1,2);
@@ -382,7 +388,7 @@ export function ProofCity3D({
       dragging=false;setActive(false)
     };
     const leave=()=>{pointerRef.current.inside=false;if(!dragging){hoveredRef.current=-1;setHovered(null)}};
-    const wheel=(e:WheelEvent)=>{e.preventDefault();zoom=clamp(zoom+e.deltaY*.012,single?7.5:13,single?(landmark?22:18):40)};
+    const wheel=(e:WheelEvent)=>{e.preventDefault();zoom=clamp(zoom+e.deltaY*.012,zoomMin,zoomMax)};
 
     canvas.addEventListener("pointerdown",down);canvas.addEventListener("pointermove",move);canvas.addEventListener("pointerup",up);canvas.addEventListener("pointercancel",up);canvas.addEventListener("pointerleave",leave);canvas.addEventListener("wheel",wheel,{passive:false});
     raf=requestAnimationFrame(draw);
@@ -412,6 +418,16 @@ export function ProofCity3D({
 
       {background&&<div className="pointer-events-none absolute bottom-4 left-4 rounded-[2px] border border-white/[0.08] bg-[#0b121d]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#8794a8] backdrop-blur-md">
         {autoRotate?"Auto orbit · ":""}Drag to orbit · Scroll to zoom
+      </div>}
+
+      {background&&<div className="absolute bottom-4 right-4 flex flex-col overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#0b121d]/75 backdrop-blur-md">
+        <button type="button" aria-label="Zoom in" onClick={()=>zoomControlRef.current?.in()} className="grid h-8 w-8 place-items-center text-[#d9dfe8] transition hover:bg-white/[0.08]">
+          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        </button>
+        <div className="h-px w-full bg-white/[0.08]"/>
+        <button type="button" aria-label="Zoom out" onClick={()=>zoomControlRef.current?.out()} className="grid h-8 w-8 place-items-center text-[#d9dfe8] transition hover:bg-white/[0.08]">
+          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 8h10"/></svg>
+        </button>
       </div>}
     </div>
   );
