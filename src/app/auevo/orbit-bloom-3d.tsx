@@ -92,7 +92,7 @@ function bloomForAgent(agent:OrbitBloomAgent,ox:number,oz:number,scale=1,detail=
     const angle=lane+wobble;
     const layer=Math.floor(localIndex/5);
     const y=(.44 + layer*.16 + (i%3)*.045)*scale;
-    const size=(.11+(p.status==="verified"?.025:0))*scale;
+    const size=(.11+(p.status==="verified" ? .025 : 0))*scale;
     boxes.push({
       x:ox+Math.cos(angle)*radius,
       y,
@@ -237,7 +237,7 @@ export function OrbitBloom3D({agents,single=false,autoRotate=true,hoverInfo=fals
     const nb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nb);gl.bufferData(gl.ARRAY_BUFFER,cubeNormals,gl.STATIC_DRAW);gl.enableVertexAttribArray(normal);gl.vertexAttribPointer(normal,3,gl.FLOAT,false,0,0);
     gl.uniform3f(lightLoc,-.45,.95,.52);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
 
-    let yaw=-.58,pitch=single?.54:.62,zoom=single?12.8:25.5,dragging=false,lastX=0,lastY=0,moved=0,lastTime=performance.now(),raf=0;
+    let yaw=-.58,pitch=single ? .54 : .62,zoom=single ? 12.8 : 25.5,dragging=false,lastX=0,lastY=0,moved=0,lastTime=performance.now(),raf=0;
     const resize=()=>{const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.floor(canvas.clientWidth*dpr)),h=Math.max(1,Math.floor(canvas.clientHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}};
     const draw=(now:number)=>{
       resize();const dt=Math.min(40,now-lastTime);lastTime=now;if(autoRotate&&!dragging&&hoveredRef.current<0)yaw-=dt*.00005;
