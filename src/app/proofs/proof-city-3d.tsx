@@ -219,10 +219,15 @@ function hash2(x: number, y: number) {
 /** A fine pixel meadow — small voxel tiles in several grass shades plus rare dirt
  * flecks, not two alternating colours. Reads as noisy ground cover, never a game
  * board, however far the camera pulls back. */
+// The colour the meadow dissolves into at the edges — matches the panel's own dark
+// emerald sky, so the field reads as unbounded instead of a finite tile stopping short.
+const GROUND_FOG: [number, number, number] = [0.027, 0.07, 0.051];
+
 function pixelGround(halfX: number, halfZ: number, cell: number): Box[] {
   const boxes: Box[] = [];
   const cols = Math.max(2, Math.round((halfX * 2) / cell));
   const rows = Math.max(2, Math.round((halfZ * 2) / cell));
+  const maxDist = Math.hypot(halfX, halfZ);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const n = hash2(c, r);
@@ -237,7 +242,16 @@ function pixelGround(halfX: number, halfZ: number, cell: number): Box[] {
       if (n > 0.95) color = [0.24, 0.19, 0.12]; // rare dirt fleck
       else if (n > 0.86) color = [0.07 + n2 * 0.02, 0.22 + n2 * 0.05, 0.09 + n2 * 0.02]; // dark moss patch
       else color = [0.06 + n2 * 0.025, 0.16 + n2 * 0.1, 0.065 + n2 * 0.03];
-      boxes.push({ x, y: -0.05 + jy, z, sx: cell * 0.82, sy: 0.07, sz: cell * 0.82, color, emissive: 0.01 });
+      // Fade into the background fog well before the true edge — no tile line is ever
+      // visibly "where the field stops," so the ground reads as endless.
+      const dist = Math.hypot(x, z) / maxDist;
+      const fade = clamp((dist - 0.45) / 0.4, 0, 1);
+      const fogged: [number, number, number] = [
+        color[0] + (GROUND_FOG[0] - color[0]) * fade,
+        color[1] + (GROUND_FOG[1] - color[1]) * fade,
+        color[2] + (GROUND_FOG[2] - color[2]) * fade,
+      ];
+      boxes.push({ x, y: -0.05 + jy, z, sx: cell * 0.82, sy: 0.07, sz: cell * 0.82, color: fogged, emissive: 0.01 * (1 - fade) });
     }
   }
   return boxes;
@@ -251,9 +265,10 @@ function sceneBoxes(agents: ProofCityAgent[], single: boolean, landmark: boolean
   // nothing under it at all.
   if (!single) {
     const reach = layout.reduce((m, l) => Math.max(m, Math.abs(l.x), Math.abs(l.z)), 0);
-    const halfX = reach + 3.4, halfZ = reach + 3.0;
+    // No horizon strip, no hard rim — the fade-to-fog inside pixelGround is what
+    // makes the field read as endless, not a line marking where it stops.
+    const halfX = reach + 9, halfZ = reach + 8;
     boxes.push(...pixelGround(halfX, halfZ, 1.1));
-    boxes.push({ x: 0, y: 0.04, z: -halfZ + 0.02, sx: halfX * 2, sy: 0.05, sz: 0.04, color: [0.62, 0.46, 0.3], emissive: 0.22 });
     layout.forEach((item) => {
       const shadowR = 0.42 * item.scale;
       boxes.push({ x: item.x + 0.12 * item.scale, y: 0, z: item.z + 0.18 * item.scale, sx: shadowR * 2, sy: 0.02, sz: shadowR * 1.5, color: [0.03, 0.035, 0.03], emissive: 0 });
@@ -454,13 +469,13 @@ export function ProofCity3D({
   },[boxes,layout,single,landmark,autoRotate,hoverInfo]);
 
   return (
-    <div className={"relative overflow-hidden "+(background?"bg-[#101827] ":"")+className}>
-      {background&&<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#152033_0%,#101827_46%,#07140e_100%)]"/>}
+    <div className={"relative overflow-hidden "+(background?"bg-[#07120d] ":"")+className}>
+      {background&&<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#0b1b13_0%,#07120d_46%,#06100c_100%)]"/>}
       <div className="pointer-events-none absolute inset-x-0 top-[42%] h-px bg-gradient-to-r from-transparent via-[#55e1a0]/20 to-transparent"/>
-      <div className="pointer-events-none absolute inset-x-[-10%] top-[37%] h-[24%] bg-[radial-gradient(ellipse_at_center,rgba(214,174,97,.11),rgba(139,114,255,.08)_34%,transparent_72%)] blur-2xl"/>
-      <div className="pointer-events-none absolute -bottom-[22%] left-[12%] h-[52%] w-[76%] rounded-full bg-[#243453]/30 blur-[90px]"/>
-      <div className={"pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full blur-[55px] mix-blend-screen "+(landmark?"left-1/2 top-[38%] h-[46%] w-[46%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.26),rgba(155,124,255,.20)_42%,transparent_72%)]":"left-[70%] top-[14%] h-[28%] w-[28%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.20),rgba(155,124,255,.12)_46%,transparent_74%)]")}/>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] bg-gradient-to-t from-[#07140e]/70 to-transparent"/>
+      <div className="pointer-events-none absolute inset-x-[-10%] top-[37%] h-[24%] bg-[radial-gradient(ellipse_at_center,rgba(214,174,97,.11),rgba(66,217,149,.08)_34%,transparent_72%)] blur-2xl"/>
+      <div className="pointer-events-none absolute -bottom-[22%] left-[12%] h-[52%] w-[76%] rounded-full bg-[#0b1b13]/60 blur-[90px]"/>
+      <div className={"pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full blur-[55px] mix-blend-screen "+(landmark?"left-1/2 top-[38%] h-[46%] w-[46%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.26),rgba(66,217,149,.20)_42%,transparent_72%)]":"left-[70%] top-[14%] h-[28%] w-[28%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.20),rgba(66,217,149,.12)_46%,transparent_74%)]")}/>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] bg-gradient-to-t from-[#06100c]/70 to-transparent"/>
       <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":hoverInfo?"cursor-pointer":"cursor-grab")}/>
 
       {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[250px] rounded-[3px] border border-[#55e1a0]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(66,217,149,.12)] backdrop-blur-xl">
