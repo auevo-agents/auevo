@@ -231,11 +231,35 @@ Prediction). Крон `GET /api/cron/verify-work` (`*/10 * * * *`,
 Prediction. `/auevo/skill` — лента попыток (гипотеза/факт/вердикт), не
 агрегированный лидерборд, та же логика, что у `/auevo/work` (4e).
 
-### 4g. Не начато — уточнено после попытки реализации (2026-10-03)
+### 4g. Performance — седьмая живая категория, пассивная (2026-10-04)
 
-identity/performance/autonomy — ещё без challenge. Для двух из трёх
-прошлая гипотеза источника истины при проверке кода не подтвердилась —
-честно зафиксировано ниже, не буду делать вид, что готово, когда нет.
+В отличие от 4c/4d — не читает внешний источник вообще: пересчитывает
+**уже существующие** Proof Event'ы агента под skill (4f) и work (4e).
+Крон (`GET /api/cron/auevo-performance`, `0 8 * * *`,
+`src/lib/auevo/performance.ts`) раз в ~неделю берёт все verified Proof'ы
+категорий `skill`/`work` агента за период и считает `attempted`
+(сколько всего) против `succeeded` (skill `verdict: "correct"` или work
+`verdict: "merged"`) → `success_rate = succeeded / attempted * 100`.
+Период непрерывный — та же самозаживляющаяся логика, что у Economic
+Activity (4d): следующий период начинается там, где кончился
+`period_end` предыдущего.
+
+Технически была готова строить сразу после появления Skill/Work — я
+просто не стал тащить её в тот же заход (2026-10-03), построена
+отдельно по прямому запросу пользователя (2026-10-04). Ноль новой
+инфраструктуры: ни нового внешнего источника данных, ни новой точки
+входа для агента — агент ничего не постит специально под Performance,
+она сама появляется, если у него уже есть verified Proof'ы под
+skill/work. Challenge `agent-performance-success-rate` посеян в проде
+(миграция 0027). `CATEGORY_RESULT_FIELD.performance = "success_rate"`.
+`/auevo/performance` — лидерборд, та же структура, что у `/auevo/longevity`/
+`/auevo/economic-activity`.
+
+### 4h. Не начато — уточнено после попытки реализации (2026-10-03)
+
+identity/autonomy — ещё без challenge, и обе реально заблокированы (не
+просто не начаты) — честно зафиксировано ниже, не буду делать вид, что
+готово, когда нет.
 
 **identity — сигнала пока нет.** Проверены обе идеи:
 - «ключ не менялся с регистрации» — у social-агента ключ технически
@@ -263,11 +287,6 @@ CLI"/"я браузер" в теле запроса — но это ровно s
 накрутить себе "автономность"). Не строить, пока не появится реальный
 недекларативный сигнал канала.
 
-**performance** — обобщение work/skill во времени: агрегат (success
-rate) по потоку Proof Event'ов, которые уже пишутся под work/skill
-(оба теперь живые, §4e/§4f). Технически не новая инфраструктура
-(`src/lib/auevo/score.ts`) — можно строить в любой момент.
-
 ## 5. Текущее состояние репо
 
 - **Контракт**: `contracts/src/AgentIdentity.sol` — написан, 25/25
@@ -285,11 +304,11 @@ rate) по потоку Proof Event'ов, которые уже пишутся �
   же конвенция, что `AgentCreditPool` — деплой руками пользователя, не
   мной).
 - **Схема**: `supabase/migrations/0020_auevo_proofs.sql` →
-  `0026_auevo_skill_unique_traders.sql` (включая `0022`, бэкфилл
+  `0027_auevo_performance_success_rate.sql` (включая `0022`, бэкфилл
   `auevo_proofs_social_identity`, §3b/§4b) — применены в проде
   (`nsljxhxpccbyvhjcdjoy`). RLS включен, без policy (сервис читает через
   service-role key).
-- **Backend**: `src/lib/auevo/{identity,db,score,settle-financial-league,longevity,economic-activity,skill}.ts`
+- **Backend**: `src/lib/auevo/{identity,db,score,settle-financial-league,longevity,economic-activity,skill,performance}.ts`
   + `src/lib/social/verify-work.ts` (Work, §4e).
 - **Публичный API** (все free, no-key, с try/catch → 500 JSON при ошибке):
   - `GET /api/auevo/challenges/financial-league` — список cohort'ов.
@@ -305,7 +324,8 @@ rate) по потоку Proof Event'ов, которые уже пишутся �
   теперь двойного назначения — settl'ит claim и зеркалит его Proof) +
   `GET /api/cron/auevo-longevity` (`0 6 * * *`, §4c) +
   `GET /api/cron/auevo-economic-activity` (`0 7 * * *`, §4d) +
-  `GET /api/cron/verify-work` (`*/10 * * * *`, §4e). Skill (§4f) не
+  `GET /api/cron/verify-work` (`*/10 * * * *`, §4e) +
+  `GET /api/cron/auevo-performance` (`0 8 * * *`, §4g). Skill (§4f) не
   добавляет крон — оценивается синхронно в запросе.
 - **Страницы**: `/auevo` — обзор, живой proof-feed, сетка всех 9
   категорий. `/auevo/prediction` — Play Zone, живой интерактивный блок
@@ -315,18 +335,19 @@ rate) по потоку Proof Event'ов, которые уже пишутся �
   `layout.tsx` с wagmi, та же конвенция, что у `/credit`).
   `/auevo/longevity` — лидерборд (см. §4c). `/auevo/economic-activity` —
   лидерборд (см. §4d). `/auevo/work` — лента коммитментов (см. §4e).
-  `/auevo/skill` — лента попыток (см. §4f). `/auevo/financial-league` —
+  `/auevo/skill` — лента попыток (см. §4f). `/auevo/performance` —
+  лидерборд (см. §4g). `/auevo/financial-league` —
   список cohort'ов (бейдж "not enterable yet", пока `AgentIdentity` не
   задеплоен). `/auevo/agents?id=` (§3a) или `?handle=` (§3b, редиректит
   на `/agents/{handle}`) — Passport lookup.
-- **Данные в проде**: 6 challenge (`beat-spy-30d`,
+- **Данные в проде**: 7 challenge (`beat-spy-30d`,
   `price-claim-prediction`, `agent-longevity`, `agent-economic-activity`,
-  `agent-work-github-pr`, `agent-skill-unique-traders`), 1 открытый
-  cohort, 0 входов в Financial League (блокер — см. §4a). Prediction,
-  Work и Skill готовы принимать реальные claim'ы/коммитменты/попытки
-  прямо сейчас — зависит только от того, постит ли их кто-нибудь.
-  Longevity и Economic Activity полностью автоматичны — ничьих действий
-  не ждут.
+  `agent-work-github-pr`, `agent-skill-unique-traders`,
+  `agent-performance-success-rate`), 1 открытый cohort, 0 входов в
+  Financial League (блокер — см. §4a). Prediction, Work и Skill готовы
+  принимать реальные claim'ы/коммитменты/попытки прямо сейчас — зависит
+  только от того, постит ли их кто-нибудь. Longevity, Economic Activity
+  и Performance полностью автоматичны — ничьих действий не ждут.
 - **SDK/CLI/MCP ещё не расширены** на `work`/`skill` — покрывают только
   Financial League + social-агент/Prediction (см. SDK ниже). Оба новых
   kind'а пока доступны только напрямую через `POST /api/agents/{id}/post`
@@ -363,18 +384,18 @@ rate) по потоку Proof Event'ов, которые уже пишутся �
   продакшена (не мок) — плюс отдельно прогнан полный
   `register_agent`→`post_claim`→passport путь через MCP до коммита.
 - **Нет пока**: деплой `AgentIdentity` (блокер для §4a),
-  identity/performance/autonomy challenge'и (§4g) — identity и autonomy
-  честно упёрлись в реальные ограничения (см. §4g, не просто "руки не
-  дошли"), SDK/CLI/MCP поддержка `work`/`skill` (см. §5), UI-форма
-  входа в Financial League (сознательно не делал — вход это
-  controller-signed запрос агента, а не человека с кошельком в
-  браузере; CLI/SDK — правильный интерфейс).
+  identity/autonomy challenge'и (§4h) — обе честно упёрлись в реальные
+  ограничения (см. §4h, не просто "руки не дошли"), SDK/CLI/MCP
+  поддержка `work`/`skill`/`performance` (см. §5), UI-форма входа в
+  Financial League (сознательно не делал — вход это controller-signed
+  запрос агента, а не человека с кошельком в браузере; CLI/SDK —
+  правильный интерфейс).
 
 ## 6. Открытые решения
 
 1. Деплой `AgentIdentity.sol` — пользователь, своим ключом, когда
    решит (см. ту же конвенцию, что задача #61 для `AgentCreditPool`).
-   Разблокирует и настоящий Identity Proof (§4g), не только §4a.
+   Разблокирует и настоящий Identity Proof (§4h), не только §4a.
 2. Токен — **будет**, встроен в экономику поддержки проекта, но дизайн
    отложен на отдельное обсуждение (явное решение пользователя,
    2026-10-03). Не проектировать и не кодировать как часть текущего MVP.
@@ -385,11 +406,14 @@ rate) по потоку Proof Event'ов, которые уже пишутся �
   `npx @auevo/sdk/mcp-server.mjs`) — пакет уже готов к публикации
   (см. §5), ждёт только `npm login` + `private:false` от пользователя.
 - Расширить SDK/CLI/MCP на `work`/`skill` (см. §5) — оба kind'а сейчас
-  доступны только напрямую через подписанный HTTP.
-- Седьмая живая категория — после приоритизации оставшихся трёх (§4g,
-  все три реально заблокированы, не просто не начаты) или ещё один
-  financial_performance cohort. Skill стала шестой (§4f), Work пятой
-  (§4e), Economic Activity четвёртой (§4d), все 2026-10-03, Longevity
+  доступны только напрямую через подписанный HTTP. Performance (§4g)
+  добавлять некуда — она ничего не постит.
+- Восьмая живая категория — после разблокировки identity/autonomy (§4h,
+  обе реально заблокированы, не просто не начаты — identity ждёт
+  деплоя `AgentIdentity`, autonomy ждёт недекларативного сигнала
+  канала) или ещё один financial_performance cohort. Performance стала
+  седьмой (§4g, 2026-10-04), Skill шестой (§4f), Work пятой (§4e),
+  Economic Activity четвёртой (§4d), все три 2026-10-03, Longevity
   третьей (§4c).
 - ~~Независимый аудит `AgentIdentity.sol`~~ — сделан (2026-10-03, второй
   internal review, см. §5 и `contracts/README.md`); остаётся платный

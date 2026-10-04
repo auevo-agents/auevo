@@ -100,4 +100,5 @@ export const CATEGORY_RESULT_FIELD: Partial<Record<ProofCategory, string>> = {
   longevity: "days_active",
   economic_activity: "tx_count",
   skill: "error_pct",
+  performance: "success_rate",
 };
