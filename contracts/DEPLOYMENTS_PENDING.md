@@ -18,7 +18,9 @@ and produces a public, fundable mainnet address the moment it lands.
 
 AgentCreditPool with seats (`vouchSeat()`) is written and tested (see `src/AgentCreditPool.sol`'s own doc comment and 118 integration-test assertions) but deliberately NOT redeployed yet — it needs a real `seatToken` address ($AUEVO), which doesn't exist on chain yet, and this contract has no admin to add one after deploy. The currently live AgentCreditPool (see "Deployed" below) predates seats entirely and keeps working as-is in the meantime.
 
-See "Deployed" below for AgentCreditPool and AgentIdentity, both now live.
+See "Deployed" below for AgentCreditPool and both AgentIdentity deployments, all now live.
+
+**Note (2026-10-04):** there are two separate `AgentIdentity` deployments, by design, not by accident — Credit and the AUEVO reputation protocol are kept on independent identity registries, each with its own agentId namespace (an agent registered in one does not exist in the other). On-chain bytecode comparison (`eth_getCode` on both addresses) confirms both instances are **byte-identical** (8506 bytes each, the same current `src/AgentIdentity.sol` source), so this is a deliberate choice about namespace separation, not a difference in contract capability — both support `controller`/`operatorWallet` equally.
 
 ## When it's time to deploy
 
@@ -36,7 +38,10 @@ See "Deployed" below for AgentCreditPool and AgentIdentity, both now live.
 
 | Contract | Address | Deploy tx | Date |
 | --- | --- | --- | --- |
-| AgentIdentity | [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) | `0x85344514ef0267a06ef0e0d1528a68b7fde1623974fc223596ea084b5a2e868b` | 2026-10-04 |
+| AgentIdentity (credit registry — `CREDIT_IDENTITY_ADDRESS` below, Credit only) | [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) | `0x85344514ef0267a06ef0e0d1528a68b7fde1623974fc223596ea084b5a2e868b` | 2026-10-04 |
 | AgentCreditPool | [`0xc7a04d94361de7a30d099057c6746217b6aa0d2e`](https://robinhoodchain.blockscout.com/address/0xc7a04d94361de7a30d099057c6746217b6aa0d2e) | `0x812fce9687060ab5ff23829bf3da1c7b78548cfe65bab889c1618aef7dd76577` | 2026-10-04 |
+| AgentIdentity (AUEVO protocol registry — `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS` below, Financial League + Identity Proof) | [`0x12d4dfd622b9089453596e809c2e247bc4b75be8`](https://robinhoodchain.blockscout.com/address/0x12d4dfd622b9089453596e809c2e247bc4b75be8) | `0x1fda88b813f40e2e18979121adb267327fc0d886a3720361104ac1e5cf1c8622` | 2026-10-04 |
 
-AgentCreditPool deploy params: `CREDIT_ASSET_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (USDG, 6 decimals), `CREDIT_IDENTITY_ADDRESS=0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b` (this deploy's own AgentIdentity, not Priors' shared registry), `CREDIT_RESERVE_ADDRESS=0x77772e5e78ab5EA22D33B2caD8a701133aa95b85`, default loan bounds ($5–$500, 1% fee/30d, $10 min root stake). `NEXT_PUBLIC_CREDIT_POOL_ADDRESS` is set in Vercel; `/credit/agent` and `/api/credit/check` are live against the real pool.
+AgentCreditPool deploy params: `CREDIT_ASSET_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (USDG, 6 decimals), `CREDIT_IDENTITY_ADDRESS=0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`, `CREDIT_RESERVE_ADDRESS=0x77772e5e78ab5EA22D33B2caD8a701133aa95b85`, default loan bounds ($5–$500, 1% fee/30d, $10 min root stake). `NEXT_PUBLIC_CREDIT_POOL_ADDRESS` is set in Vercel; `/credit/agent` and `/api/credit/check` are live against the real pool.
+
+Set `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS=0x12d4dfd622b9089453596e809c2e247bc4b75be8` in Vercel to bring Financial Agent League entry (`/proofs/financial-league`) and the Identity Proof category live — a separate agentId namespace from Credit's, by design (see the note above).

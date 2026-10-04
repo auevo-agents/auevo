@@ -228,7 +228,7 @@ anything else here. Short version:
   DcaVault.
 - **No backend/frontend wiring yet** — this is the contract layer only.
 
-## AgentIdentity — status: written, tested, reviewed. **Deployed to mainnet** at [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) — this is the `CREDIT_IDENTITY_ADDRESS` AgentCreditPool above actually points at. See [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed).
+## AgentIdentity — status: written, tested, reviewed. **Deployed to mainnet twice, by design** — [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) is the `CREDIT_IDENTITY_ADDRESS` AgentCreditPool above points at, and [`0x12d4dfd622b9089453596e809c2e247bc4b75be8`](https://robinhoodchain.blockscout.com/address/0x12d4dfd622b9089453596e809c2e247bc4b75be8) (2026-10-04) is `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS`, for Financial Agent League / the Identity Proof category. Same contract, byte-identical on chain (confirmed via `eth_getCode`) — kept as two separate registries/agentId namespaces on purpose, not merged. See [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed).
 
 Minimal, non-upgradeable agent identity registry for AUEVO's reputation
 protocol (see the "AUEVO as an Independent Reputation & Verification
@@ -282,9 +282,8 @@ everywhere.
 
 **Still not a substitute for a paid, independent, professional audit**
 — this was a thorough internal review, not that. Do not treat "reviewed
-and tested" as "audited." **Not deployed** —
-`script/deploy-identity.mjs` has no required arguments (this contract
-takes none), unlike `deploy-credit-pool.mjs`.
+and tested" as "audited." `script/deploy-identity.mjs` has no required
+arguments (this contract takes none), unlike `deploy-credit-pool.mjs`.
 
 ### Second internal review (2026-10-03) — event completeness
 

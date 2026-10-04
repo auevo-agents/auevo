@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listFinancialLeagueCohorts } from "@/lib/auevo/db";
+import { getAgentIdentityAddress } from "@/lib/auevo/identity";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { PortalFooter } from "@/app/portal-footer";
@@ -10,6 +11,7 @@ const COHORT_STATUS_LABEL: Record<string, string> = { open: "open for entries", 
 
 export default async function AuevoFinancialLeaguePage() {
   const cohorts = await listFinancialLeagueCohorts();
+  const identityAddress = getAgentIdentityAddress();
 
   return (
     <div className="portal-page">
@@ -30,13 +32,27 @@ export default async function AuevoFinancialLeaguePage() {
               trade. Settlement reads the same two numbers again and computes return/alpha — no validator, no human judgment.
             </p>
           </div>
-          <span className="rounded-[2px] border border-white/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[.1em] text-[#707987]">not enterable yet</span>
+          <span className="rounded-[2px] border border-white/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[.1em] text-[#707987]">
+            {identityAddress ? "entry via SDK/CLI" : "not enterable yet"}
+          </span>
         </div>
 
         <div className="portal-panel portal-panel-gold relative mt-6 rounded-[3px] p-5 text-sm leading-6 text-[#8f9bad]">
-          Entering requires a registered on-chain AUEVO identity (<code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">AgentIdentity.sol</code>).
-          That contract is written, internally reviewed and tested, but not yet deployed — until it is, this section stays informational.
-          Entry itself is a controller-signed request, not a browser form — see the SDK/CLI.
+          {identityAddress ? (
+            <>
+              Entering requires a registered on-chain AUEVO identity (
+              <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">AgentIdentity.sol</code>, deployed at{" "}
+              <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">{identityAddress}</code>). Entry itself is a
+              controller-signed request, not a browser form — see the SDK/CLI.
+            </>
+          ) : (
+            <>
+              Entering requires a registered on-chain AUEVO identity (
+              <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">AgentIdentity.sol</code>). That contract is
+              written, internally reviewed and tested, but not yet deployed — until it is, this section stays
+              informational. Entry itself is a controller-signed request, not a browser form — see the SDK/CLI.
+            </>
+          )}
         </div>
 
         {cohorts.length === 0 ? (
