@@ -9,12 +9,12 @@ export function PortalSkyline({ className = "", dense = false }: { className?: s
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={className} aria-hidden>
       <defs>
         <linearGradient id="au-sky-building" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1b2333"/>
-          <stop offset="100%" stopColor="#0a0f18"/>
+          <stop offset="0%" stopColor="#153024"/>
+          <stop offset="100%" stopColor="#06110c"/>
         </linearGradient>
         <linearGradient id="au-sky-violet" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#b39cff"/>
-          <stop offset="100%" stopColor="#6f55de"/>
+          <stop offset="0%" stopColor="#8cf0bd"/>
+          <stop offset="100%" stopColor="#1f9a68"/>
         </linearGradient>
         <linearGradient id="au-sky-gold" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#ffe09a"/>
@@ -25,18 +25,18 @@ export function PortalSkyline({ className = "", dense = false }: { className?: s
       <g opacity=".88">
         {towers.map(([x,y,w,h],i)=>(
           <g key={i}>
-            <rect x={x} y={y} width={w} height={h} rx="1.4" fill="url(#au-sky-building)" stroke="#344058" strokeWidth=".24"/>
+            <rect x={x} y={y} width={w} height={h} rx="1.4" fill="url(#au-sky-building)" stroke="#315c47" strokeWidth=".24"/>
             <rect x={x+w*.49} y={y+3} width=".6" height={h-6} fill={i%3===0?"url(#au-sky-gold)":"url(#au-sky-violet)"} opacity={i%2?.38:.72} filter="url(#au-sky-glow)"/>
             {Array.from({length:4}).map((_,j)=><rect key={j} x={x+3+j*(w-6)/3.4} y={y+h*.32} width=".5" height={h*.38} fill="#d8c287" opacity={.08+(j%2)*.06}/>)}
           </g>
         ))}
       </g>
       <g fill="none" strokeLinecap="round">
-        <path d="M-4 79 C18 58, 39 64, 55 51 S82 38, 106 45" stroke="#8b72ff" strokeWidth=".35" opacity=".34"/>
+        <path d="M-4 79 C18 58, 39 64, 55 51 S82 38, 106 45" stroke="#42d995" strokeWidth=".35" opacity=".34"/>
         <path d="M-3 84 C19 71, 38 78, 57 63 S81 52, 105 59" stroke="#d6ae61" strokeWidth=".35" opacity=".30"/>
       </g>
       <g>
-        {[[20,58],[47,35],[64,48],[81,54]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r=".75" fill={i%2?"#d6ae61":"#8b72ff"} opacity=".9"/>)}
+        {[[20,58],[47,35],[64,48],[81,54]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r=".75" fill={i%2?"#d6ae61":"#42d995"} opacity=".9"/>)}
       </g>
     </svg>
   );
@@ -45,10 +45,10 @@ export function PortalSkyline({ className = "", dense = false }: { className?: s
 export function PortalFog({ className = "" }: { className?: string }) {
   return (
     <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-      <div className="absolute -left-[8%] top-[12%] h-[44%] w-[44%] rounded-full bg-[#6f55de]/10 blur-[110px]"/>
+      <div className="absolute -left-[8%] top-[12%] h-[44%] w-[44%] rounded-full bg-[#1f9a68]/10 blur-[110px]"/>
       <div className="absolute right-[2%] top-[8%] h-[34%] w-[34%] rounded-full bg-[#d6ae61]/[0.07] blur-[120px]"/>
-      <div className="absolute bottom-[-18%] left-[22%] h-[50%] w-[58%] rounded-full bg-[#22304a]/30 blur-[130px]"/>
-      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-t from-[#0a0f18]/90 via-[#111827]/35 to-transparent"/>
+      <div className="absolute bottom-[-18%] left-[22%] h-[50%] w-[58%] rounded-full bg-[#123925]/30 blur-[130px]"/>
+      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-t from-[#06110c]/90 via-[#0a1d13]/35 to-transparent"/>
     </div>
   );
 }
