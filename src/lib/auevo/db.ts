@@ -203,6 +203,50 @@ export async function getAuevoLiveStats(): Promise<AuevoLiveStats> {
   return { agents: agents ?? 0, proofEvents: proofEvents ?? 0, verifiedProofEvents: verifiedProofEvents ?? 0 };
 }
 
+export interface RecentProofEvent {
+  id: string;
+  category: ProofCategory;
+  status: ProofStatus;
+  createdAt: string;
+  handle: string | null;
+}
+
+/**
+ * Newest Proof Events across every agent, for the landing page's "Live
+ * proof feed" panel — previously a hardcoded, unchanging list of fake
+ * timestamps, which is exactly the kind of unverifiable claim AUEVO
+ * exists to not make. Two queries + an in-memory join (same pattern as
+ * /api/wallets/[address]/activity) rather than a nested postgrest
+ * select, to keep the shape explicit. agent_id (on-chain) rows resolve
+ * `handle` to null — nothing has entered Financial League yet (§4a), so
+ * this path is untested against real data, but degrades safely either way.
+ */
+export async function listRecentProofEvents(limit = 6): Promise<RecentProofEvent[]> {
+  const { data: rows, error } = await db()
+    .from("auevo_proof_events")
+    .select("id, category, status, created_at, social_agent_id")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  if (!rows || rows.length === 0) return [];
+
+  const agentIds = [...new Set(rows.map((r) => r.social_agent_id as string | null).filter((id): id is string => !!id))];
+  const handleById = new Map<string, string>();
+  if (agentIds.length > 0) {
+    const { data: agents, error: agentsError } = await db().from("social_agents").select("id, handle").in("id", agentIds);
+    if (agentsError) throw agentsError;
+    for (const a of agents ?? []) handleById.set(a.id as string, a.handle as string);
+  }
+
+  return rows.map((r) => ({
+    id: r.id as string,
+    category: r.category as ProofCategory,
+    status: r.status as ProofStatus,
+    createdAt: r.created_at as string,
+    handle: r.social_agent_id ? (handleById.get(r.social_agent_id as string) ?? null) : null,
+  }));
+}
+
 export interface Challenge {
   id: string;
   slug: string;

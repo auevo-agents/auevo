@@ -53,48 +53,6 @@ export function PortalFog({ className = "" }: { className?: string }) {
   );
 }
 
-export function ProofMonolith({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 420 360" className={className} role="img" aria-label="AUEVO proof monolith">
-      <defs>
-        <linearGradient id="pm-body" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#1a2130"/><stop offset="1" stopColor="#090d15"/></linearGradient>
-        <linearGradient id="pm-v" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#d1c3ff"/><stop offset=".45" stopColor="#8b72ff"/><stop offset="1" stopColor="#5f47d6"/></linearGradient>
-        <linearGradient id="pm-g" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#ffe2a4"/><stop offset="1" stopColor="#bc8736"/></linearGradient>
-        <filter id="pm-glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>
-      <ellipse cx="210" cy="314" rx="118" ry="24" fill="#000" opacity=".38"/>
-      <g>
-        <path d="M126 280 210 326 294 280 210 238Z" fill="#0d121d" stroke="#2e3649"/>
-        <path d="M153 246 210 278 267 246 210 218Z" fill="#121823" stroke="#364057"/>
-      </g>
-      <g>
-        <rect x="176" y="86" width="68" height="154" rx="6" fill="url(#pm-body)" stroke="#3a4560"/>
-        <rect x="188" y="102" width="44" height="122" rx="4" fill="#0b0f18" stroke="#514b77"/>
-        <path d="M210 107 228 117 210 127 192 117Z" fill="none" stroke="#a790ff" strokeWidth="2" filter="url(#pm-glow)"/>
-        <path d="M192 117v21l18 10 18-10v-21M210 127v21" fill="none" stroke="#8b72ff" strokeWidth="1.4"/>
-        <rect x="205" y="149" width="10" height="56" rx="4" fill="url(#pm-v)" opacity=".9" filter="url(#pm-glow)"/>
-        <rect x="170" y="166" width="6" height="50" rx="3" fill="url(#pm-g)" opacity=".8"/>
-        <rect x="244" y="142" width="6" height="74" rx="3" fill="url(#pm-g)" opacity=".8"/>
-      </g>
-      <g opacity=".82">
-        <rect x="96" y="145" width="57" height="92" rx="8" fill="#0c111b" stroke="#303a51"/>
-        <rect x="268" y="122" width="57" height="112" rx="8" fill="#0c111b" stroke="#303a51"/>
-        <rect x="106" y="160" width="37" height="4" rx="2" fill="#8b72ff" opacity=".65"/>
-        <rect x="106" y="176" width="28" height="3" rx="1.5" fill="#758198" opacity=".42"/>
-        <rect x="106" y="187" width="32" height="3" rx="1.5" fill="#758198" opacity=".35"/>
-        <rect x="279" y="140" width="34" height="4" rx="2" fill="#d6ae61" opacity=".72"/>
-        <circle cx="286" cy="172" r="10" fill="none" stroke="#8b72ff" strokeWidth="2"/>
-        <path d="m281 172 4 4 7-9" fill="none" stroke="#d6ae61" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      </g>
-      <g fill="none" strokeLinecap="round">
-        <path d="M48 270 C105 226, 132 218, 175 190" stroke="#8b72ff" strokeWidth="1.1" opacity=".45"/>
-        <path d="M244 190 C293 203, 333 226, 374 260" stroke="#d6ae61" strokeWidth="1.1" opacity=".4"/>
-      </g>
-      <circle cx="210" cy="75" r="4" fill="#c8b7ff" filter="url(#pm-glow)"/>
-      <path d="M210 70V44" stroke="#8b72ff" strokeWidth="2" strokeLinecap="round" filter="url(#pm-glow)"/>
-    </svg>
-  );
-}
 
 export function PremiumIcon({ kind, className = "" }: { kind: "prediction"|"longevity"|"financial"|"identity"|"skill"|"work"|"performance"|"economic"|"autonomy"; className?: string }) {
   const common = "currentColor";
