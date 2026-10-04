@@ -13984,6 +13984,13 @@ a {
   color: #fff !important;
   background: none !important;
   transform: none;
+  /* The legacy ".brand span{font-size:0}" underline-sweep rule (still used
+     for a different, non-logo brand pattern elsewhere) has higher
+     specificity than the base ".auevo-wordmark{font-size:20px}" rule
+     because it adds an element selector — so without restating a real
+     size here too, the wordmark silently collapses to unreadable 0. */
+  font-size: 20px;
+  line-height: normal;
 }
 
 .brand-auevo span::after,
@@ -15959,10 +15966,15 @@ body{
   -webkit-backdrop-filter:blur(18px);
 }
 .rwa-green-theme .landing-brand .auevo-wordmark{
-  background:linear-gradient(90deg,#f4d593,#d7b56d 55%,#ad7d38);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent!important;
+  /* Was a gradient-text (background-clip:text + color:transparent) treatment,
+     but its background wasn't painting in practice, leaving fully transparent
+     — i.e. invisible — text. Matches the flat #d7b56d gold used everywhere
+     else via .auevo-wordmark-gold now instead of re-fighting that. */
+  color:#d7b56d!important;
+  background:none!important;
+  -webkit-background-clip:border-box!important;
+  background-clip:border-box!important;
+  -webkit-text-fill-color:currentColor!important;
 }
 .rwa-green-theme .landing-nav-trigger{
   color:#cbd7cf;
@@ -18276,6 +18288,7 @@ body{
   gap:10px!important;
 }
 .auevo-tree-mark{
+  background:transparent;
   width:34px;
   height:34px;
   flex:0 0 auto;
@@ -18296,7 +18309,7 @@ body{
   letter-spacing:.22em!important;
   text-shadow:0 0 22px rgba(215,181,109,.06);
 }
-.landing-brand .auevo-tree-mark{width:31px;height:31px}
+.landing-brand .auevo-tree-mark{width:31px;height:31px;background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important}
 .landing-brand .auevo-wordmark-gold{font-size:19px!important}
 .app-topnav-logo .auevo-tree-mark{width:31px;height:31px}
 .app-topnav-logo .auevo-wordmark-gold{font-size:18px!important}
