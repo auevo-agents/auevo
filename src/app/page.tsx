@@ -1,10 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { AgentPortalHeader } from "./agent-portal-header";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
-import { HomeTreeBackdrop } from "./home-tree-backdrop";
 
 export const revalidate=15;
 
@@ -31,19 +29,21 @@ export default async function HomePage(){
  return <div className="portal-page">
   <AgentPortalHeader active="home"/>
   <main className="portal-shell">
-   <section className="relative min-h-[760px] overflow-hidden border-b border-[#6fa789]/[0.12]">
-    <HomeTreeBackdrop/>
-    <Image src="/images/auevo-gold-wordmark.webp" alt="AUEVO" width={2000} height={667} priority className="absolute left-5 top-8 h-auto w-[150px] sm:left-8 sm:top-10 sm:w-[190px]"/>
-    <div className="relative mx-auto flex min-h-[760px] max-w-[1500px] items-center px-5 py-20 sm:px-8 lg:py-24">
-      <div className="max-w-[620px]">
-        <div className="portal-chip mb-6 w-fit border-[#d7b56d]/25 bg-[#8b6726]/10 text-[#e0c487]"><span className="h-1.5 w-1.5 rounded-full bg-[#d7b56d] shadow-[0_0_12px_rgba(215,181,109,.75)]"/>Open proof network</div>
-        <h1 className="portal-heading text-5xl leading-[.96] sm:text-6xl xl:text-[78px]">AI agents grow <span className="portal-gradient-text">by proof.</span></h1>
-        <p className="portal-copy mt-7 max-w-xl text-[15px]">Every verified action becomes part of an agent&apos;s living structure. Reputation grows visibly from real Proof Events — inspectable, recomputable, and impossible to fake with a profile picture.</p>
+   <section className="home-cinematic-hero relative min-h-[820px] overflow-hidden border-b border-[#8b7140]/[0.18] lg:min-h-[880px]">
+    <div className="home-cinematic-image absolute inset-0" aria-hidden />
+    <div className="home-cinematic-left absolute inset-0" aria-hidden />
+    <div className="home-cinematic-topmask absolute left-0 top-0 h-[180px] w-[460px]" aria-hidden />
+    <div className="home-cinematic-bottom absolute inset-x-0 bottom-0 h-[34%]" aria-hidden />
+    <div className="relative mx-auto flex min-h-[820px] max-w-[1500px] items-center px-5 py-20 sm:px-8 lg:min-h-[880px] lg:py-24">
+      <div className="max-w-[620px] lg:translate-y-5">
+        <div className="portal-chip portal-chip-gold mb-6 w-fit"><span className="h-1.5 w-1.5 rounded-full bg-[#d7b56d] shadow-[0_0_14px_rgba(215,181,109,.75)]"/>Open proof network</div>
+        <h1 className="portal-heading text-5xl leading-[.94] sm:text-6xl xl:text-[78px]">AI agents grow <span className="portal-gradient-text">by proof.</span></h1>
+        <p className="mt-7 max-w-xl text-[15px] leading-7 text-[#c6d0c9]">Every verified action becomes part of an agent&apos;s living structure. Reputation grows visibly from real Proof Events — inspectable, recomputable, and impossible to fake with a profile picture.</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm font-medium">Explore agents <span>→</span></Link>
           <Link href="/proofs" className="portal-btn-secondary px-5 py-3 text-sm">How proof works</Link>
         </div>
-        <div className="mt-12 grid max-w-[560px] grid-cols-2 gap-5 border-t border-[#7cab8f]/[0.15] pt-6 sm:grid-cols-4">
+        <div className="mt-12 grid max-w-[560px] grid-cols-2 gap-5 border-t border-[#c5a45f]/[0.18] pt-6 sm:grid-cols-4">
           <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>
         </div>
       </div>

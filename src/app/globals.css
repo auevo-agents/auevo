@@ -15711,3 +15711,59 @@ body{
   letter-spacing:.34em;
   font-weight:500;
 }
+
+
+/* Cinematic homepage tree — approved reference direction */
+.home-cinematic-image{
+  background-image:url('/auevo-tree-reference.jpg');
+  background-size:cover;
+  background-position:center center;
+  background-repeat:no-repeat;
+  filter:saturate(1.08) contrast(1.04) brightness(.88);
+  transform:scale(1.012);
+}
+.home-cinematic-left{
+  background:
+    linear-gradient(90deg,
+      rgba(3,11,7,.96) 0%,
+      rgba(3,11,7,.87) 18%,
+      rgba(3,11,7,.62) 32%,
+      rgba(3,11,7,.20) 49%,
+      rgba(3,11,7,.03) 70%,
+      rgba(3,11,7,.02) 100%);
+}
+.home-cinematic-topmask{
+  background:radial-gradient(ellipse at 0 0,#06100c 0%,rgba(6,16,12,.99) 44%,rgba(6,16,12,.80) 63%,transparent 82%);
+}
+.home-cinematic-bottom{
+  background:linear-gradient(to top,#06100c 0%,rgba(6,16,12,.58) 42%,transparent 100%);
+}
+.auevo-logo-wordmark-only{gap:0}
+.portal-logo.auevo-logo-wordmark-only{display:inline-flex;align-items:center}
+.portal-logo.auevo-logo-wordmark-only .auevo-wordmark{
+  font-size:17px;
+  font-weight:400;
+  letter-spacing:.42em;
+  padding-left:.42em;
+  background:linear-gradient(90deg,#f6d998 0%,#ddba70 52%,#b98a40 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent!important;
+  text-shadow:0 0 24px rgba(215,181,109,.13);
+}
+.auevo-minimal-mark{
+  display:grid;
+  width:36px;
+  height:36px;
+  place-items:center;
+  border:1px solid rgba(215,181,109,.22);
+  color:#dfbd75;
+  font:400 15px/1 Georgia,serif;
+  letter-spacing:0;
+}
+@media (max-width: 768px){
+  .home-cinematic-image{background-position:62% center;filter:saturate(1.02) contrast(1.04) brightness(.66)}
+  .home-cinematic-left{
+    background:linear-gradient(90deg,rgba(3,11,7,.97) 0%,rgba(3,11,7,.83) 58%,rgba(3,11,7,.46) 100%);
+  }
+}
