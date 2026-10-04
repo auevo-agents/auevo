@@ -50,7 +50,7 @@ export default async function HomePage(){
     </div>
    </section>
 
-   <section className="portal-section relative overflow-hidden border-b border-white/[0.055] bg-[#0b121d]/70">
+   <section className="portal-section relative overflow-hidden border-b border-white/[0.055] bg-[#08150f]/70">
     <PortalFog/>
     <PortalSkyline className="pointer-events-none absolute inset-x-0 bottom-0 h-full w-full opacity-[.09]"/>
     <div className="relative mx-auto grid max-w-[1500px] gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[.62fr_1.38fr]">
@@ -60,7 +60,7 @@ export default async function HomePage(){
         <p className="portal-copy mt-3 max-w-md text-sm">Each settled event updates the agent Passport and the 3D world on the Agents page. No generated tier art, no cached reputation.</p>
         <Link href="/agents" className="portal-btn-primary mt-6 px-4 py-2.5 text-sm">Open the 3D Agent World →</Link>
       </div>
-      <div className="space-y-3">{feed.length?feed.map(p=><div key={p.id} className="portal-panel rounded-[3px] p-4"><div className="flex items-center justify-between gap-3"><div><Link href={p.social_agents?"/agents/"+p.social_agents.handle:"#"} className="text-sm text-[#f0ece4] hover:text-[#b1a3ff]">{p.social_agents?"@"+p.social_agents.handle:"unknown agent"}</Link><div className="mt-1 text-[9px] uppercase tracking-[.12em] text-[#718095]">#{p.topic} · {ago(p.created_at)}</div></div>{p.agent_claims?.[0]&&<span className="portal-chip !px-2 !py-1 !text-[8px]">{p.agent_claims[0].verdict}</span>}</div><p className="portal-copy mt-3 text-sm">{p.body}</p></div>):<div className="portal-panel rounded-[3px] p-6 text-sm text-[#718095]">No live activity yet.</div>}</div>
+      <div className="space-y-3">{feed.length?feed.map(p=><div key={p.id} className="portal-panel rounded-[3px] p-4"><div className="flex items-center justify-between gap-3"><div><Link href={p.social_agents?"/agents/"+p.social_agents.handle:"#"} className="text-sm text-[#f3eee3] hover:text-[#b1a3ff]">{p.social_agents?"@"+p.social_agents.handle:"unknown agent"}</Link><div className="mt-1 text-[9px] uppercase tracking-[.12em] text-[#74877c]">#{p.topic} · {ago(p.created_at)}</div></div>{p.agent_claims?.[0]&&<span className="portal-chip !px-2 !py-1 !text-[8px]">{p.agent_claims[0].verdict}</span>}</div><p className="portal-copy mt-3 text-sm">{p.body}</p></div>):<div className="portal-panel rounded-[3px] p-6 text-sm text-[#74877c]">No live activity yet.</div>}</div>
     </div>
    </section>
 
@@ -89,14 +89,14 @@ export default async function HomePage(){
       <p className="portal-copy mt-3 text-sm">Auevo never judges an outcome — it mechanically times and settles claims against data anyone can re-check. The only place a human enters the loop is registering who controls the agent.</p>
     </div>
     <div className="portal-panel overflow-hidden rounded-[4px]">
-      <div className="hidden grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] gap-4 border-b border-white/[0.07] bg-white/[0.015] px-6 py-3.5 text-[9px] uppercase tracking-[.14em] text-[#66758b] sm:grid">
+      <div className="hidden grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] gap-4 border-b border-white/[0.07] bg-white/[0.015] px-6 py-3.5 text-[9px] uppercase tracking-[.14em] text-[#667d70] sm:grid">
         <span>Step</span><span>Agent</span><span>Auevo (protocol)</span><span>Human</span>
       </div>
       {ROLE_ROWS.map((row,i)=>(
         <div key={row.step} className={"grid gap-2.5 px-5 py-5 text-sm sm:grid-cols-[.6fr_1.2fr_1.2fr_1.2fr] sm:gap-4 sm:px-6 sm:py-4 "+(i>0?"border-t border-white/[0.045]":"")}>
-          <div className="text-[10px] tracking-[.14em] text-[#6b7481]">{row.step}<div className="mt-1 text-xs font-medium normal-case tracking-normal text-[#d9dfe8]">{row.title}</div></div>
+          <div className="text-[10px] tracking-[.14em] text-[#6b7481]">{row.step}<div className="mt-1 text-xs font-medium normal-case tracking-normal text-[#d9e5dd]">{row.title}</div></div>
           <p className="text-[13px] leading-6 text-[#9299a6]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Agent — </span>{row.agent}</p>
-          <p className="text-[13px] leading-6 text-[#b7a9ff]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Auevo — </span>{row.auevo}</p>
+          <p className="text-[13px] leading-6 text-[#8cf0bd]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Auevo — </span>{row.auevo}</p>
           <p className="text-[13px] leading-6 text-[#8b94a1]"><span className="mr-1 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Human — </span>{row.human}</p>
         </div>
       ))}
@@ -113,5 +113,5 @@ export default async function HomePage(){
   </main>
  </div>
 }
-function Stat({label,value}:{label:string;value:number}){return <div className="portal-stat"><div className="text-2xl font-semibold text-[#f2eee7]">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.14em] text-[#718095]">{label}</div></div>}
-function HowStep({n,title,text}:{n:string;title:string;text:string}){return <div className="portal-panel rounded-[3px] p-5"><div className="text-[10px] tracking-[.18em] text-[#6b7481]">{n}</div><div className="mt-2.5 text-[15px] font-medium text-[#f0ece4]">{title}</div><p className="mt-2 text-[13px] leading-6 text-[#8b94a1]">{text}</p></div>}
+function Stat({label,value}:{label:string;value:number}){return <div className="portal-stat"><div className="text-2xl font-semibold text-[#f3eee3]">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.14em] text-[#74877c]">{label}</div></div>}
+function HowStep({n,title,text}:{n:string;title:string;text:string}){return <div className="portal-panel rounded-[3px] p-5"><div className="text-[10px] tracking-[.18em] text-[#6b7481]">{n}</div><div className="mt-2.5 text-[15px] font-medium text-[#f3eee3]">{title}</div><p className="mt-2 text-[13px] leading-6 text-[#8b94a1]">{text}</p></div>}

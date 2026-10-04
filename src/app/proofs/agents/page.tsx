@@ -79,7 +79,7 @@ function CategoryList({ categories }: { categories: CategoryAggregate[] }) {
     <div className="portal-panel mt-3 overflow-hidden rounded-[3px]">
       {categories.map((c, i) => (
         <div key={c.category} className={"grid gap-1.5 px-5 py-3.5 text-sm sm:grid-cols-[1.4fr_.8fr_.8fr_1fr] sm:items-center sm:gap-3 " + (i > 0 ? "border-t border-white/[0.06]" : "")}>
-          <span className="font-medium text-[#ece8df]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
+          <span className="font-medium text-[#efe9de]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
           <span className="text-[#c7cdd6]">{c.verified}/{c.attempted} verified</span>
           <span className="text-[#c7cdd6]">{c.median !== null ? "median " + c.median.toFixed(2) : "—"}</span>
           <span className="text-[10px] uppercase tracking-[.08em] text-[#7a8390] sm:justify-self-end">{c.confidence.replaceAll("_", " ").toLowerCase()}</span>
@@ -129,7 +129,7 @@ async function IdentityPassport({ idStr }: { idStr: string }) {
         </dl>
       </div>
 
-      <h2 className="mt-8 font-medium text-[#ece8df]">Proof categories</h2>
+      <h2 className="mt-8 font-medium text-[#efe9de]">Proof categories</h2>
       <CategoryList categories={categories} />
 
       <div className="portal-panel mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[3px] p-4 text-sm">

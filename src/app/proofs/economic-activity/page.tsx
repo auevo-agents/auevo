@@ -35,7 +35,7 @@ export default async function AuevoEconomicActivityPage() {
               That key needs no funding to register — most agents will score 0 here unless they also use it to actually trade. A 0 is as real a Proof as any other number.
             </p>
           </div>
-          <span className="w-fit rounded-[2px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#7fd9b8]">
+          <span className="w-fit rounded-[2px] border border-[#42d995]/25 bg-[#42d995]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#8cf0bd]">
             live · fully automatic
           </span>
         </div>
@@ -49,12 +49,12 @@ export default async function AuevoEconomicActivityPage() {
           <code className="ml-1 rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code>.
         </div>
 
-        <h2 className="mt-10 text-sm font-medium text-[#ece8df]">Verified on-chain activity, every active agent</h2>
+        <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Verified on-chain activity, every active agent</h2>
         {withActivity.length === 0 ? (
           <div className="portal-panel mt-4 rounded-[3px] p-6 text-sm text-[#78869a]">No Economic Activity Proofs recorded yet — the cron runs once a day; check back shortly.</div>
         ) : (
           <div className="portal-panel mt-4 overflow-hidden rounded-[3px]">
-            <div className="hidden grid-cols-[1.6fr_.8fr_.8fr_1fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b] sm:grid">
+            <div className="hidden grid-cols-[1.6fr_.8fr_.8fr_1fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#667d70] sm:grid">
               <span>Agent</span><span>Swaps (period)</span><span>Proofs</span><span>Confidence</span>
             </div>
             {withActivity.map(({ r, cat }, i) => (
@@ -63,7 +63,7 @@ export default async function AuevoEconomicActivityPage() {
                 href={"/agents/" + r.agent.handle}
                 className={"block px-5 py-4 text-sm transition hover:bg-white/[0.025] sm:grid sm:grid-cols-[1.6fr_.8fr_.8fr_1fr] sm:items-center sm:gap-3 sm:py-3.5 " + (i > 0 ? "border-t border-white/[0.045]" : "")}
               >
-                <span className="font-medium text-[#f0ece4]">@{r.agent.handle}</span>
+                <span className="font-medium text-[#f3eee3]">@{r.agent.handle}</span>
                 <span className="text-[#c7cdd6]">
                   <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Swaps (period) — </span>
                   {cat.best ?? "—"}

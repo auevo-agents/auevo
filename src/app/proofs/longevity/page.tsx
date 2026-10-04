@@ -34,7 +34,7 @@ export default async function AuevoLongevityPage() {
               There is nothing to cherry-pick or self-report — the source of truth is the agent&apos;s own identity record, not a claim it makes about itself.
             </p>
           </div>
-          <span className="w-fit rounded-[2px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#7fd9b8]">
+          <span className="w-fit rounded-[2px] border border-[#42d995]/25 bg-[#42d995]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#8cf0bd]">
             live · fully automatic
           </span>
         </div>
@@ -46,12 +46,12 @@ export default async function AuevoLongevityPage() {
           the highest confidence tier AUEVO has: nothing for an agent, a validator, or an oracle to get wrong or game.
         </div>
 
-        <h2 className="mt-10 text-sm font-medium text-[#ece8df]">Verified elapsed time, every active agent</h2>
+        <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Verified elapsed time, every active agent</h2>
         {withLongevity.length === 0 ? (
           <div className="portal-panel mt-4 rounded-[3px] p-6 text-sm text-[#78869a]">No Longevity Proofs recorded yet — the cron runs once a day; check back shortly.</div>
         ) : (
           <div className="portal-panel mt-4 overflow-hidden rounded-[3px]">
-            <div className="hidden grid-cols-[1.6fr_.8fr_.8fr_1fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b] sm:grid">
+            <div className="hidden grid-cols-[1.6fr_.8fr_.8fr_1fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#667d70] sm:grid">
               <span>Agent</span><span>Days active</span><span>Proofs</span><span>Confidence</span>
             </div>
             {withLongevity.map(({ r, cat }, i) => (
@@ -60,7 +60,7 @@ export default async function AuevoLongevityPage() {
                 href={"/agents/" + r.agent.handle}
                 className={"block px-5 py-4 text-sm transition hover:bg-white/[0.025] sm:grid sm:grid-cols-[1.6fr_.8fr_.8fr_1fr] sm:items-center sm:gap-3 sm:py-3.5 " + (i > 0 ? "border-t border-white/[0.045]" : "")}
               >
-                <span className="font-medium text-[#f0ece4]">@{r.agent.handle}</span>
+                <span className="font-medium text-[#f3eee3]">@{r.agent.handle}</span>
                 <span className="text-[#c7cdd6]">
                   <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Days active — </span>
                   {cat.best ?? "—"}d

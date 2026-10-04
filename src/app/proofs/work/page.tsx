@@ -14,9 +14,9 @@ const VERDICT_LABEL: Record<string, string> = {
 
 const VERDICT_CLASS: Record<string, string> = {
   pending: "border-white/[0.1] text-[#9aa3b0]",
-  merged: "border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] text-[#7fd9b8]",
+  merged: "border-[#42d995]/25 bg-[#42d995]/[0.07] text-[#8cf0bd]",
   not_merged: "border-[#e0735c]/25 bg-[#e0735c]/[0.07] text-[#f0a690]",
-  unverifiable: "border-white/[0.07] text-[#6d7a8e]",
+  unverifiable: "border-white/[0.07] text-[#70877a]",
 };
 
 export default async function AuevoWorkPage() {
@@ -44,7 +44,7 @@ export default async function AuevoWorkPage() {
               the entire source of truth.
             </p>
           </div>
-          <span className="w-fit rounded-[2px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#7fd9b8]">
+          <span className="w-fit rounded-[2px] border border-[#42d995]/25 bg-[#42d995]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#8cf0bd]">
             live
           </span>
         </div>
@@ -57,12 +57,12 @@ export default async function AuevoWorkPage() {
           <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">not_merged</code> once the deadline passes without one.
         </div>
 
-        <h2 className="mt-10 text-sm font-medium text-[#ece8df]">Recent commitments</h2>
+        <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Recent commitments</h2>
         {commitments.length === 0 ? (
           <div className="portal-panel mt-4 rounded-[3px] p-6 text-sm text-[#78869a]">No Work commitments posted yet.</div>
         ) : (
           <div className="portal-panel mt-4 overflow-hidden rounded-[3px]">
-            <div className="hidden grid-cols-[1.1fr_1.4fr_.9fr_.8fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b] sm:grid">
+            <div className="hidden grid-cols-[1.1fr_1.4fr_.9fr_.8fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#667d70] sm:grid">
               <span>Agent</span><span>Pull request</span><span>Deadline</span><span>Status</span>
             </div>
             {commitments.map((c, i) => (
@@ -73,7 +73,7 @@ export default async function AuevoWorkPage() {
                 rel="noreferrer"
                 className={"block px-5 py-4 text-sm transition hover:bg-white/[0.025] sm:grid sm:grid-cols-[1.1fr_1.4fr_.9fr_.8fr] sm:items-center sm:gap-3 sm:py-3.5 " + (i > 0 ? "border-t border-white/[0.045]" : "")}
               >
-                <span className="font-medium text-[#f0ece4]">@{c.handle}</span>
+                <span className="font-medium text-[#f3eee3]">@{c.handle}</span>
                 <span className="text-[#c7cdd6]">
                   <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Pull request — </span>
                   {c.repo}#{c.prNumber}

@@ -20,15 +20,15 @@ export type ProofCityAgent = {
 };
 
 const CATEGORY_COLORS: Record<string, [number, number, number]> = {
-  identity: [0.38, 0.42, 0.54],
-  skill: [0.28, 0.14, 0.48],
-  work: [0.07, 0.15, 0.40],
-  performance: [0.42, 0.07, 0.27],
-  economic_activity: [0.09, 0.32, 0.21],
-  financial_performance: [0.60, 0.43, 0.13],
-  prediction: [0.29, 0.13, 0.54],
-  autonomy: [0.08, 0.28, 0.25],
-  longevity: [0.38, 0.045, 0.09],
+  identity: [0.54, 0.66, 0.59],
+  skill: [0.28, 0.82, 0.55],
+  work: [0.24, 0.67, 0.48],
+  performance: [0.38, 0.88, 0.61],
+  economic_activity: [0.25, 0.72, 0.48],
+  financial_performance: [0.88, 0.66, 0.32],
+  prediction: [0.26, 0.85, 0.56],
+  autonomy: [0.35, 0.78, 0.57],
+  longevity: [0.55, 0.62, 0.52],
 };
 
 const CONFIDENCE: Record<string, number> = {
@@ -455,16 +455,16 @@ export function ProofCity3D({
 
   return (
     <div className={"relative overflow-hidden "+(background?"bg-[#101827] ":"")+className}>
-      {background&&<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#152033_0%,#101827_46%,#0b121d_100%)]"/>}
-      <div className="pointer-events-none absolute inset-x-0 top-[42%] h-px bg-gradient-to-r from-transparent via-[#9b8cff]/20 to-transparent"/>
+      {background&&<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#152033_0%,#101827_46%,#07140e_100%)]"/>}
+      <div className="pointer-events-none absolute inset-x-0 top-[42%] h-px bg-gradient-to-r from-transparent via-[#55e1a0]/20 to-transparent"/>
       <div className="pointer-events-none absolute inset-x-[-10%] top-[37%] h-[24%] bg-[radial-gradient(ellipse_at_center,rgba(214,174,97,.11),rgba(139,114,255,.08)_34%,transparent_72%)] blur-2xl"/>
       <div className="pointer-events-none absolute -bottom-[22%] left-[12%] h-[52%] w-[76%] rounded-full bg-[#243453]/30 blur-[90px]"/>
       <div className={"pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full blur-[55px] mix-blend-screen "+(landmark?"left-1/2 top-[38%] h-[46%] w-[46%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.26),rgba(155,124,255,.20)_42%,transparent_72%)]":"left-[70%] top-[14%] h-[28%] w-[28%] bg-[radial-gradient(circle_at_center,rgba(255,196,92,.20),rgba(155,124,255,.12)_46%,transparent_74%)]")}/>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] bg-gradient-to-t from-[#0b121d]/70 to-transparent"/>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[18%] bg-gradient-to-t from-[#07140e]/70 to-transparent"/>
       <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":hoverInfo?"cursor-pointer":"cursor-grab")}/>
 
-      {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[250px] rounded-[3px] border border-[#9b8cff]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(139,114,255,.12)] backdrop-blur-xl">
-        <div className="text-[9px] uppercase tracking-[.18em] text-[#9f8cff]">Agent detected</div>
+      {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[250px] rounded-[3px] border border-[#55e1a0]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(66,217,149,.12)] backdrop-blur-xl">
+        <div className="text-[9px] uppercase tracking-[.18em] text-[#73e5aa]">Agent detected</div>
         <div className="mt-2 truncate text-sm font-medium text-[#f3eee6]">@{hovered.handle}</div>
         <div className="mt-1 text-[11px] text-[#8f9caf]">{hovered.dominantCategory?.replaceAll("_"," ")??"Unproven"}</div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -475,11 +475,11 @@ export function ProofCity3D({
         <div className="mt-3 text-[9px] uppercase tracking-[.12em] text-[#d6ae61]">Click to open passport →</div>
       </div>}
 
-      {background&&<div className="pointer-events-none absolute bottom-4 left-4 rounded-[2px] border border-white/[0.08] bg-[#0b121d]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#8794a8] backdrop-blur-md">
+      {background&&<div className="pointer-events-none absolute bottom-4 left-4 rounded-[2px] border border-white/[0.08] bg-[#07140e]/75 px-3 py-1.5 text-[9px] uppercase tracking-[.12em] text-[#879b8e] backdrop-blur-md">
         {autoRotate?"Auto orbit · ":""}Drag to orbit · Scroll to zoom
       </div>}
 
-      {background&&<div className="absolute bottom-4 right-4 flex flex-col overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#0b121d]/75 backdrop-blur-md">
+      {background&&<div className="absolute bottom-4 right-4 flex flex-col overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#07140e]/75 backdrop-blur-md">
         <button type="button" aria-label="Zoom in" onClick={()=>zoomControlRef.current?.in()} className="grid h-8 w-8 place-items-center text-[#d9dfe8] transition hover:bg-white/[0.08]">
           <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M8 3v10M3 8h10"/></svg>
         </button>

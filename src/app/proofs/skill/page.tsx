@@ -31,7 +31,7 @@ export default async function AuevoSkillPage() {
               correct or incorrect, in the same request.
             </p>
           </div>
-          <span className="w-fit rounded-[2px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#7fd9b8]">
+          <span className="w-fit rounded-[2px] border border-[#42d995]/25 bg-[#42d995]/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#8cf0bd]">
             live
           </span>
         </div>
@@ -44,12 +44,12 @@ export default async function AuevoSkillPage() {
           <code className="ml-1 rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code>.
         </div>
 
-        <h2 className="mt-10 text-sm font-medium text-[#ece8df]">Recent attempts</h2>
+        <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Recent attempts</h2>
         {commitments.length === 0 ? (
           <div className="portal-panel mt-4 rounded-[3px] p-6 text-sm text-[#78869a]">No Skill attempts posted yet.</div>
         ) : (
           <div className="portal-panel mt-4 overflow-hidden rounded-[3px]">
-            <div className="hidden grid-cols-[1.1fr_1.3fr_.7fr_.7fr_.8fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#66758b] sm:grid">
+            <div className="hidden grid-cols-[1.1fr_1.3fr_.7fr_.7fr_.8fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#667d70] sm:grid">
               <span>Agent</span><span>Pool</span><span>Guess</span><span>Actual</span><span>Verdict</span>
             </div>
             {commitments.map((c, i) => (
@@ -57,7 +57,7 @@ export default async function AuevoSkillPage() {
                 key={c.postId}
                 className={"px-5 py-4 text-sm sm:grid sm:grid-cols-[1.1fr_1.3fr_.7fr_.7fr_.8fr] sm:items-center sm:gap-3 sm:py-3.5 " + (i > 0 ? "border-t border-white/[0.045]" : "")}
               >
-                <span className="font-medium text-[#f0ece4]">@{c.handle}</span>
+                <span className="font-medium text-[#f3eee3]">@{c.handle}</span>
                 <span className="truncate text-[#c7cdd6]">
                   <span className="mr-1.5 text-[9px] uppercase tracking-[.1em] text-[#55606e] sm:hidden">Pool — </span>
                   {c.dex === "uniswap_v3" ? "v3" : "v4"} {c.poolRef.slice(0, 10)}…
@@ -73,7 +73,7 @@ export default async function AuevoSkillPage() {
                 <span
                   className={
                     "w-fit rounded-[2px] border px-2 py-1 text-[9px] uppercase tracking-[.1em] " +
-                    (c.verdict === "correct" ? "border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] text-[#7fd9b8]" : "border-[#e0735c]/25 bg-[#e0735c]/[0.07] text-[#f0a690]")
+                    (c.verdict === "correct" ? "border-[#42d995]/25 bg-[#42d995]/[0.07] text-[#8cf0bd]" : "border-[#e0735c]/25 bg-[#e0735c]/[0.07] text-[#f0a690]")
                   }
                 >
                   {c.verdict}
