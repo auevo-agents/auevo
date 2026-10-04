@@ -242,7 +242,15 @@ function v3Normalize(v:number[]){const l=Math.hypot(v[0],v[1],v[2])||1;return[v[
 function v3Cross(a:number[],b:number[]){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}
 function v3Sub(a:number[],b:number[]){return[a[0]-b[0],a[1]-b[1],a[2]-b[2]]}
 function m4LookAt(eye:number[],target:number[],up:number[]){const z=v3Normalize(v3Sub(eye,target)),x=v3Normalize(v3Cross(up,z)),y=v3Cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]),-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]),-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]),1])}
-function m4World(b:Box){const m=m4Identity();m[0]=b.sx;m[5]=b.sy;m[10]=b.sz;m[12]=b.x;m[13]=b.y;m[14]=b.z;return m}
+function m4World(b:Box){
+  const a=b.ry??0,c=Math.cos(a),s=Math.sin(a);
+  const m=m4Identity();
+  m[0]=c*b.sx;m[2]=-s*b.sx;
+  m[5]=b.sy;
+  m[8]=s*b.sz;m[10]=c*b.sz;
+  m[12]=b.x;m[13]=b.y;m[14]=b.z;
+  return m;
+}
 function transformPoint(m:Float32Array,p:[number,number,number]){const[x,y,z]=p;return[m[0]*x+m[4]*y+m[8]*z+m[12],m[1]*x+m[5]*y+m[9]*z+m[13],m[2]*x+m[6]*y+m[10]*z+m[14],m[3]*x+m[7]*y+m[11]*z+m[15]]}
 function shader(gl:WebGLRenderingContext,type:number,src:string){const s=gl.createShader(type)!;gl.shaderSource(s,src);gl.compileShader(s);return s}
 function program(gl:WebGLRenderingContext){const p=gl.createProgram()!;gl.attachShader(p,shader(gl,gl.VERTEX_SHADER,VS));gl.attachShader(p,shader(gl,gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);return p}
@@ -266,13 +274,13 @@ export function OrbitBloom3D({agents,single=false,autoRotate=true,hoverInfo=fals
     const nb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nb);gl.bufferData(gl.ARRAY_BUFFER,cubeNormals,gl.STATIC_DRAW);gl.enableVertexAttribArray(normal);gl.vertexAttribPointer(normal,3,gl.FLOAT,false,0,0);
     gl.uniform3f(lightLoc,-.45,.95,.52);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(0,0,0,0);
 
-    let yaw=-.58,pitch=single ? .54 : .62,zoom=single ? 12.8 : 25.5,dragging=false,lastX=0,lastY=0,moved=0,lastTime=performance.now(),raf=0;
+    let yaw=-.62,pitch=single ? .44 : .50,zoom=single ? 11.6 : 23.8,dragging=false,lastX=0,lastY=0,moved=0,lastTime=performance.now(),raf=0;
     const resize=()=>{const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.floor(canvas.clientWidth*dpr)),h=Math.max(1,Math.floor(canvas.clientHeight*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}};
     const draw=(now:number)=>{
       resize();const dt=Math.min(40,now-lastTime);lastTime=now;if(autoRotate&&!dragging&&hoveredRef.current<0)yaw-=dt*.00005;
       gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
       const proj=m4Perspective(Math.PI/4.15,canvas.width/canvas.height,.1,140);
-      const targetY=single?1.15:.65;
+      const targetY=single ? .58 : .38;
       const eye=[Math.cos(yaw)*Math.cos(pitch)*zoom,Math.sin(pitch)*zoom,Math.sin(yaw)*Math.cos(pitch)*zoom];
       const vp=m4Multiply(proj,m4LookAt(eye,[0,targetY,0],[0,1,0]));gl.uniformMatrix4fv(matrixLoc,false,vp);
       boxes.forEach(b=>{gl.uniformMatrix4fv(worldLoc,false,m4World(b));gl.uniform3f(colorLoc,...b.color);gl.uniform1f(emissiveLoc,b.emissive);gl.drawArrays(gl.TRIANGLES,0,36)});
@@ -293,9 +301,9 @@ export function OrbitBloom3D({agents,single=false,autoRotate=true,hoverInfo=fals
   },[boxes,nodes,single,autoRotate,hoverInfo]);
 
   return <div className={"relative overflow-hidden bg-[#0d1421] "+className}>
-    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_44%,rgba(139,114,255,.16),transparent_34%),radial-gradient(circle_at_56%_42%,rgba(214,174,97,.08),transparent_22%),linear-gradient(180deg,#121d30_0%,#0d1522_54%,#091019_100%)]"/>
+    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_47%,rgba(119,91,223,.22),transparent_30%),radial-gradient(circle_at_56%_40%,rgba(214,174,97,.10),transparent_19%),linear-gradient(180deg,#18243a_0%,#101a2b_46%,#0a111d_100%)]"/>
     <div className="pointer-events-none absolute inset-x-0 top-[44%] h-px bg-gradient-to-r from-transparent via-[#9d8dff]/20 to-transparent"/>
-    <div className="pointer-events-none absolute -bottom-[18%] left-[10%] h-[45%] w-[80%] rounded-full bg-[#293a5d]/25 blur-[100px]"/>
+    <div className="pointer-events-none absolute -bottom-[20%] left-[8%] h-[48%] w-[84%] rounded-full bg-[#334b76]/32 blur-[110px]"/><div className="pointer-events-none absolute left-1/2 top-[48%] h-[36%] w-[64%] -translate-x-1/2 rounded-full bg-[#8b72ff]/[0.07] blur-[70px]"/>
     <canvas ref={canvasRef} className={"relative block h-full w-full touch-none "+(active?"cursor-grabbing":hoverInfo?"cursor-pointer":"cursor-grab")}/>
     {hovered&&hoverInfo&&<div className="pointer-events-none absolute right-5 top-5 z-20 w-[260px] rounded-2xl border border-[#9b8cff]/25 bg-[#0d1624]/92 p-4 shadow-[0_22px_70px_rgba(0,0,0,.42),0_0_35px_rgba(139,114,255,.12)] backdrop-blur-xl">
       <div className="text-[9px] uppercase tracking-[.18em] text-[#9f8cff]">Reputation Bloom</div>
