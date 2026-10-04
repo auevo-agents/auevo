@@ -18265,3 +18265,115 @@ body{
 .token-page a:hover{
   text-decoration-color:rgba(215,181,109,.42);
 }
+
+
+/* ============================================================
+   AUEVO tree identity — shared across portal, RWA and legacy pages
+   ============================================================ */
+.auevo-logo-tree{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:10px!important;
+}
+.auevo-tree-mark{
+  width:34px;
+  height:34px;
+  flex:0 0 auto;
+  display:inline-grid;
+  place-items:center;
+  overflow:visible;
+}
+.auevo-tree-mark img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 4px 12px rgba(215,181,109,.18));
+}
+.auevo-wordmark-gold{
+  color:#d7b56d!important;
+  font-weight:500!important;
+  letter-spacing:.22em!important;
+  text-shadow:0 0 22px rgba(215,181,109,.06);
+}
+.landing-brand .auevo-tree-mark{width:31px;height:31px}
+.landing-brand .auevo-wordmark-gold{font-size:19px!important}
+.app-topnav-logo .auevo-tree-mark{width:31px;height:31px}
+.app-topnav-logo .auevo-wordmark-gold{font-size:18px!important}
+.portal-logo .auevo-tree-mark{width:30px;height:30px}
+.portal-logo .auevo-wordmark-gold{font-size:16px!important;letter-spacing:.28em!important}
+
+/* Token page: remove legacy blue visual language and feature the tree mark */
+.token-page .token-hero{
+  max-width:1120px!important;
+  min-height:540px;
+  justify-content:center;
+  margin-top:56px!important;
+  padding:68px 40px 56px!important;
+  overflow:hidden;
+  border-color:rgba(112,177,141,.18)!important;
+  background:
+    radial-gradient(circle at 50% 31%,rgba(215,181,109,.075),transparent 18%),
+    radial-gradient(circle at 50% 24%,rgba(66,217,149,.095),transparent 31%),
+    linear-gradient(145deg,#0a2116 0%,#07170f 58%,#06120d 100%)!important;
+  box-shadow:0 32px 100px rgba(0,0,0,.28),inset 0 1px rgba(224,244,231,.025)!important;
+}
+.token-page .token-hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(rgba(112,177,141,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,177,141,.015) 1px,transparent 1px);
+  background-size:58px 58px;
+  mask-image:radial-gradient(circle at 50% 45%,#000,transparent 72%);
+}
+.token-page .token-hero::after{
+  content:"";
+  position:absolute;
+  width:430px;
+  height:430px;
+  right:-120px;
+  bottom:-180px;
+  border:1px solid rgba(215,181,109,.08);
+  border-radius:50%;
+  box-shadow:0 0 0 56px rgba(66,217,149,.018),0 0 0 112px rgba(215,181,109,.012);
+  pointer-events:none;
+}
+.token-page .token-hero > *{position:relative;z-index:1}
+.token-page .token-hero-mark{
+  width:176px!important;
+  height:176px!important;
+  margin-bottom:20px!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  object-fit:contain!important;
+  filter:drop-shadow(0 20px 45px rgba(215,181,109,.20))!important;
+}
+.token-page .token-hero h1{
+  color:#d7b56d!important;
+  font-size:clamp(54px,7vw,84px)!important;
+  letter-spacing:-.055em!important;
+  text-shadow:0 0 32px rgba(215,181,109,.06);
+}
+.token-page .token-hero-badge{
+  margin-top:18px!important;
+}
+
+/* Ensure the shared tree identity remains readable on dark green headers */
+.rwa-green-theme .auevo-wordmark-gold,
+.fees-premium .auevo-wordmark-gold,
+.scanner-premium .auevo-wordmark-gold,
+.token-page .auevo-wordmark-gold,
+.legal-green-page .auevo-wordmark-gold{
+  color:#d7b56d!important;
+}
+
+@media(max-width:640px){
+  .auevo-tree-mark{width:28px;height:28px}
+  .auevo-wordmark-gold{font-size:15px!important;letter-spacing:.18em!important}
+  .token-page .token-hero{min-height:430px;padding:48px 22px!important}
+  .token-page .token-hero-mark{width:132px!important;height:132px!important}
+}
