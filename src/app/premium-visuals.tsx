@@ -45,14 +45,18 @@ export function PortalSkyline({ className = "", dense = false }: { className?: s
 export function PortalFog({ className = "" }: { className?: string }) {
   return (
     <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
-      <div className="absolute -left-[8%] top-[12%] h-[44%] w-[44%] rounded-full bg-[#1f9a68]/10 blur-[110px]"/>
-      <div className="absolute right-[2%] top-[8%] h-[34%] w-[34%] rounded-full bg-[#d6ae61]/[0.07] blur-[120px]"/>
-      <div className="absolute bottom-[-18%] left-[22%] h-[50%] w-[58%] rounded-full bg-[#123925]/30 blur-[130px]"/>
-      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-gradient-to-t from-[#06110c]/90 via-[#0a1d13]/35 to-transparent"/>
+      <div className="absolute -left-[8%] top-[8%] h-[46%] w-[46%] rounded-full bg-[#2fb879]/14 blur-[120px]"/>
+      <div className="absolute right-[0%] top-[4%] h-[38%] w-[38%] rounded-full bg-[#d7b56d]/[0.08] blur-[130px]"/>
+      <div className="absolute bottom-[-20%] left-[18%] h-[58%] w-[66%] rounded-full bg-[#16462e]/38 blur-[150px]"/>
+      <div className="absolute left-[8%] top-[42%] h-px w-[84%] bg-gradient-to-r from-transparent via-[#5ce0a0]/20 to-transparent"/>
+      <div className="absolute left-[16%] top-[47%] h-[34%] w-[68%] rounded-[50%] border border-[#5ce0a0]/[0.07] [transform:perspective(700px)_rotateX(72deg)]"/>
+      <div className="absolute left-[22%] top-[51%] h-[26%] w-[56%] rounded-[50%] border border-[#d7b56d]/[0.06] [transform:perspective(700px)_rotateX(72deg)]"/>
+      <div className="absolute left-[42%] top-[14%] h-28 w-px bg-gradient-to-b from-transparent via-[#d7b56d]/25 to-transparent shadow-[0_0_28px_rgba(215,181,109,.16)]"/>
+      <div className="absolute left-[67%] top-[20%] h-20 w-px bg-gradient-to-b from-transparent via-[#42d995]/20 to-transparent shadow-[0_0_24px_rgba(66,217,149,.12)]"/>
+      <div className="absolute inset-x-0 bottom-0 h-[36%] bg-gradient-to-t from-[#06110c]/94 via-[#0a1d13]/48 to-transparent"/>
     </div>
   );
 }
-
 
 export function PremiumIcon({ kind, className = "" }: { kind: "prediction"|"longevity"|"financial"|"identity"|"skill"|"work"|"performance"|"economic"|"autonomy"; className?: string }) {
   const common = "currentColor";
