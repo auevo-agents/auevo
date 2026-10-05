@@ -6,6 +6,7 @@ import { listSuggestedSkillPools, computeSkillWindow, type SuggestedSkillPool } 
 import { submitSkillAttempt, SkillSubmitError, submitClaimAttempt, ClaimSubmitError } from "@/lib/auevo/submit";
 import { submitVirtualPortfolioAttempt, VirtualPortfolioSubmitError, VIRTUAL_PORTFOLIO_STARTING_BALANCE_USD, VIRTUAL_PORTFOLIO_FEE_BPS, VIRTUAL_PORTFOLIO_HORIZON_HOURS } from "@/lib/auevo/virtual-portfolio";
 import { EXECUTOR_ALLOWED_MODELS, type ExecutorModel } from "@/lib/auevo/executor-models";
+import { getHostedAgentOrbioKey } from "@/lib/auevo/hosted-agent";
 import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "@/app/proofs/spy";
 
@@ -21,6 +22,15 @@ import { SPY_ADDRESS, SPY_CHAIN_ID } from "@/app/proofs/spy";
  */
 const DEFAULT_EXECUTOR_MODEL: ExecutorModel = "claude-haiku-4-5";
 
+// Orbio (orbio.so) exposes an Anthropic-SDK-compatible endpoint at this
+// base URL — per their own "migration" docs, only the base URL and key
+// change; model names, streaming and tool calls work unchanged through
+// the same @anthropic-ai/sdk client this file already uses. Letting an
+// agent owner supply their own Orbio key here (migration 0035) is what
+// lifts both the two-model allowlist AND AUEVO's own per-run cost —
+// from that point on the run is on the owner's Orbio account, not ours.
+const ORBIO_BASE_URL = "https://api.orbio.so/api/v1";
+
 const SKILL_FIXED_WINDOW_HOURS = 24; // Same horizon for every agent's run — "одинаковые условия для сравниваемых агентов" (doc §4f).
 const PREDICTION_FIXED_HORIZON_HOURS = 24; // Same horizon for every agent's run, same reasoning.
 const TOOL_ROW_LIMIT = 800;
@@ -31,8 +41,28 @@ export class ExecutorError extends Error {}
 
 type TranscriptEntry = Record<string, unknown>;
 
-async function resolveExecutorModel(agent: { model: string | null }): Promise<ExecutorModel> {
-  return (EXECUTOR_ALLOWED_MODELS as readonly string[]).includes(agent.model ?? "") ? (agent.model as ExecutorModel) : DEFAULT_EXECUTOR_MODEL;
+/**
+ * Picks the Anthropic client AND the model string together, since which
+ * client is valid depends on which model is being trusted. No Orbio key
+ * on file (the common case): AUEVO's own ANTHROPIC_API_KEY, restricted
+ * to EXECUTOR_ALLOWED_MODELS — exactly the previous behavior, unchanged.
+ * An Orbio key on file: that key against ORBIO_BASE_URL, and agent.model
+ * is trusted as-is (any model Orbio offers) — it's the owner's account
+ * and cost from here on, so AUEVO has no reason to restrict their choice.
+ */
+async function resolveExecutorClient(
+  supabase: SupabaseClient,
+  agent: { id: string; model: string | null }
+): Promise<{ anthropic: Anthropic; model: string }> {
+  const orbioKey = await getHostedAgentOrbioKey(supabase, agent.id);
+  if (orbioKey) {
+    const model = agent.model?.trim() || DEFAULT_EXECUTOR_MODEL;
+    return { anthropic: new Anthropic({ apiKey: orbioKey, baseURL: ORBIO_BASE_URL }), model };
+  }
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new ExecutorError("The executor is not configured on the server (no ANTHROPIC_API_KEY)");
+  const model = (EXECUTOR_ALLOWED_MODELS as readonly string[]).includes(agent.model ?? "") ? (agent.model as ExecutorModel) : DEFAULT_EXECUTOR_MODEL;
+  return { anthropic: new Anthropic({ apiKey }), model };
 }
 
 async function createRunRow(supabase: SupabaseClient, agentId: string, category: string, model: string): Promise<string> {
@@ -150,8 +180,6 @@ export interface ExecutorRunOutcome {
 export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOutcome> {
   const supabase = getSupabaseServer();
   if (!supabase) throw new ExecutorError("Supabase is not configured on the server");
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new ExecutorError("The executor is not configured on the server (no ANTHROPIC_API_KEY)");
 
   const agent = await getAgentById(agentId);
   if (!agent || agent.retired_at) throw new ExecutorError("Unknown or retired agent");
@@ -163,11 +191,10 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
 
   const windowHours = SKILL_FIXED_WINDOW_HOURS;
   const window = computeSkillWindow(windowHours);
-  const model = await resolveExecutorModel(agent);
+  const { anthropic, model } = await resolveExecutorClient(supabase, agent);
   const runId = await createRunRow(supabase, agentId, "skill", model);
 
   const transcript: TranscriptEntry[] = [];
-  const anthropic = new Anthropic({ apiKey });
   const system = buildSkillSystemPrompt(candidate, windowHours, window);
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: "Work out the distinct trader count for the pool and window described in your system prompt, then call submit_answer." },
@@ -291,8 +318,6 @@ const SUBMIT_DIRECTION_TOOL: Anthropic.Tool = {
 export async function runPredictionChallenge(agentId: string): Promise<ExecutorRunOutcome> {
   const supabase = getSupabaseServer();
   if (!supabase) throw new ExecutorError("Supabase is not configured on the server");
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new ExecutorError("The executor is not configured on the server (no ANTHROPIC_API_KEY)");
 
   const agent = await getAgentById(agentId);
   if (!agent || agent.retired_at) throw new ExecutorError("Unknown or retired agent");
@@ -303,11 +328,10 @@ export async function runPredictionChallenge(agentId: string): Promise<ExecutorR
   if (!currentPrice) throw new ExecutorError("No live SPY price available right now — try again later");
 
   const deadline = new Date(Date.now() + PREDICTION_FIXED_HORIZON_HOURS * 60 * 60 * 1000);
-  const model = await resolveExecutorModel(agent);
+  const { anthropic, model } = await resolveExecutorClient(supabase, agent);
   const runId = await createRunRow(supabase, agentId, "prediction", model);
 
   const transcript: TranscriptEntry[] = [];
-  const anthropic = new Anthropic({ apiKey });
   const system = buildPredictionSystemPrompt(currentPrice, deadline.toISOString());
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: "Make your call now by calling submit_direction." },
@@ -416,8 +440,6 @@ const SUBMIT_ALLOCATION_TOOL: Anthropic.Tool = {
 export async function runFinancialChallenge(agentId: string): Promise<ExecutorRunOutcome> {
   const supabase = getSupabaseServer();
   if (!supabase) throw new ExecutorError("Supabase is not configured on the server");
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new ExecutorError("The executor is not configured on the server (no ANTHROPIC_API_KEY)");
 
   const agent = await getAgentById(agentId);
   if (!agent || agent.retired_at) throw new ExecutorError("Unknown or retired agent");
@@ -428,11 +450,10 @@ export async function runFinancialChallenge(agentId: string): Promise<ExecutorRu
   if (!currentPrice) throw new ExecutorError("No live SPY price available right now — try again later");
 
   const closesAt = new Date(Date.now() + VIRTUAL_PORTFOLIO_HORIZON_HOURS * 60 * 60 * 1000);
-  const model = await resolveExecutorModel(agent);
+  const { anthropic, model } = await resolveExecutorClient(supabase, agent);
   const runId = await createRunRow(supabase, agentId, "financial_performance", model);
 
   const transcript: TranscriptEntry[] = [];
-  const anthropic = new Anthropic({ apiKey });
   const system = buildFinancialSystemPrompt(currentPrice, closesAt.toISOString());
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: "Make your allocation decision now by calling submit_allocation." },

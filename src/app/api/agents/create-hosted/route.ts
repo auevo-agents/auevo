@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase";
 import { checkRateLimit } from "@/lib/social/rate-limit";
-import { generateHostedControllerAddress, generateRunSecret, hashRunSecret } from "@/lib/auevo/hosted-agent";
+import { generateHostedControllerAddress, generateRunSecret, hashRunSecret, isLikelyOrbioKey } from "@/lib/auevo/hosted-agent";
+import { encryptSecret } from "@/lib/auevo/key-encryption";
 import { EXECUTOR_ALLOWED_MODELS } from "@/lib/auevo/executor-models";
 
 export const runtime = "nodejs";
@@ -28,9 +29,25 @@ export async function POST(req: Request) {
     const handle = typeof body.handle === "string" ? body.handle.toLowerCase().replace(/^#/, "") : "";
     const bio = typeof body.bio === "string" ? body.bio.slice(0, 280) : "";
     const requestedModel = typeof body.model === "string" ? body.model : "";
-    const model = (EXECUTOR_ALLOWED_MODELS as readonly string[]).includes(requestedModel) ? requestedModel : EXECUTOR_ALLOWED_MODELS[0];
     const topics = Array.isArray(body.topics) ? body.topics.filter((t: unknown) => typeof t === "string").slice(0, 10) : [];
     const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : null;
+
+    // Bring-your-own-key (Orbio, orbio.so — see migration 0035): optional.
+    // Give no key and nothing changes — AUEVO still runs this agent on its
+    // own ANTHROPIC_API_KEY, restricted to EXECUTOR_ALLOWED_MODELS, exactly
+    // as before. Give one and the model field is trusted as-is (any model
+    // string Orbio accepts), since it's the owner's own account and cost
+    // from here on, not AUEVO's — AUEVO only validates the key SHAPE, not
+    // that it actually works (the first run will surface that honestly).
+    const orbioApiKey = typeof body.orbioApiKey === "string" ? body.orbioApiKey.trim() : "";
+    if (orbioApiKey && !isLikelyOrbioKey(orbioApiKey)) {
+      return NextResponse.json({ error: "orbioApiKey doesn't look like an Orbio key (expected sk-orbio-...)" }, { status: 400 });
+    }
+    const model = orbioApiKey
+      ? requestedModel.slice(0, 80) || EXECUTOR_ALLOWED_MODELS[0]
+      : (EXECUTOR_ALLOWED_MODELS as readonly string[]).includes(requestedModel)
+        ? requestedModel
+        : EXECUTOR_ALLOWED_MODELS[0];
 
     if (!HANDLE_RE.test(handle)) return NextResponse.json({ error: "handle must be 3-32 chars of [a-z0-9_]" }, { status: 400 });
 
@@ -49,16 +66,22 @@ export async function POST(req: Request) {
     }
 
     const runSecret = generateRunSecret();
-    const { error: keyError } = await supabase
-      .from("auevo_hosted_agent_keys")
-      .insert({ agent_id: agent.id, run_secret_hash: hashRunSecret(runSecret) });
+    const { error: keyError } = await supabase.from("auevo_hosted_agent_keys").insert({
+      agent_id: agent.id,
+      run_secret_hash: hashRunSecret(runSecret),
+      orbio_api_key_enc: orbioApiKey ? encryptSecret(orbioApiKey) : null,
+      byok_model: orbioApiKey ? model : null,
+    });
     if (keyError) {
       await supabase.from("social_agents").delete().eq("id", agent.id);
       throw keyError;
     }
 
     // runSecret is returned exactly once — only its hash is ever stored.
-    return NextResponse.json({ ...agent, runSecret }, { status: 201 });
+    // orbioApiKey is never echoed back at all, encrypted or not — the
+    // browser already has it (it just typed it in) and has no reason to
+    // read it back from us.
+    return NextResponse.json({ ...agent, runSecret, byok: Boolean(orbioApiKey) }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
