@@ -133,5 +133,13 @@
 .eventLedgerTime a{color:#69768a;font-size:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-decoration:none}
 .eventLedgerTime a:hover{color:#8cf0bd}
 @media(max-width:760px){.eventLedgerTable th:nth-child(3),.eventLedgerTable td:nth-child(3){display:none}.eventLedger{padding:13px 10px 4px}.eventLedgerTable th,.eventLedgerTable td{padding:8px 6px;font-size:11px}}
+
+.info-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;border:1px solid currentColor;border-radius:999px;font-size:9px;line-height:1;color:#8b94a1;cursor:help;vertical-align:middle;opacity:.75}
+.info-tip:hover,.info-tip:focus-visible{opacity:1;color:#d6ae61;outline:none}
+.info-tip-bubble{position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%) translateY(4px);width:max-content;max-width:260px;padding:10px 12px;border-radius:4px;background:#f3eee3;color:#1a1f17;font-size:11px;line-height:1.5;font-weight:400;text-align:left;box-shadow:0 10px 30px #0008;opacity:0;visibility:hidden;transition:opacity .15s ease,transform .15s ease;pointer-events:none;z-index:40}
+.info-tip-bubble:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#f3eee3}
+.info-tip:hover .info-tip-bubble,.info-tip:focus-visible .info-tip-bubble{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+@media(max-width:640px){.info-tip-bubble{max-width:200px;left:auto;right:-8px;transform:translateX(0) translateY(4px)}.info-tip-bubble:after{left:auto;right:12px;transform:translateX(0)}.info-tip:hover .info-tip-bubble,.info-tip:focus-visible .info-tip-bubble{transform:translateX(0) translateY(0)}}
+@media(prefers-reduced-motion:reduce){.info-tip-bubble{transition:none}}
 @media(max-width:700px){.auevo-portal-header .portal-logo .auevo-wordmark-gold{font-size:20px!important}.portal-logo .auevo-tree-mark{width:24px!important;height:24px!important}}
 @media(prefers-reduced-motion:reduce){:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):before{display:none}}

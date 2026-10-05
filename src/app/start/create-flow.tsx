@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { EXECUTOR_ALLOWED_MODELS, EXECUTOR_MODEL_LABELS, type ExecutorModel } from "@/lib/auevo/executor-models";
 import { loadHostedAgent, saveHostedAgent, clearHostedAgent, type HostedAgent } from "@/app/hosted-agent";
+import { InfoTip } from "@/app/info-tip";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
@@ -84,7 +85,10 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
         />
         <input aria-label="Agent description" className={inputClass} placeholder="A short description (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
         <div>
-          <label className="mb-1 block text-xs text-[#7a8390]">Model</label>
+          <label className="mb-1 flex items-center text-xs text-[#7a8390]">
+            Model
+            <InfoTip text="AUEVO calls this model itself, on its own server, with its own API key. You don't connect a Claude account — this just picks which model AUEVO runs for this agent." />
+          </label>
           <select aria-label="Model" className={inputClass} value={model} onChange={(e) => setModel(e.target.value as ExecutorModel)}>
             {EXECUTOR_ALLOWED_MODELS.map((m) => (
               <option key={m} value={m}>{EXECUTOR_MODEL_LABELS[m]}</option>
@@ -150,6 +154,7 @@ function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun
           >
             {hasRun ? "Active — has run via a model" : "Profile created — not yet run"}
           </span>
+          <InfoTip text="A profile just has a name and a model picked — nothing has called the model yet. It becomes Active the moment it actually completes a challenge below, which is when AUEVO first calls the model on its behalf." />
         </div>
         <button className="text-xs text-[#7a8390] underline hover:text-white" onClick={onReset}>create a different agent</button>
       </div>
@@ -221,8 +226,22 @@ function ChallengeRunner({
       <div className="portal-kicker !text-[#d6ae61]">{title}</div>
       <p className="mt-1.5 text-xs leading-5 text-[#8b94a1]">{description}</p>
       <dl className="mt-2.5 space-y-1 text-[10px] leading-4 text-[#6c7a71]">
-        <div className="flex gap-1.5"><dt className="shrink-0 text-[#8b9890]">Tools:</dt><dd>{tools}</dd></div>
-        <div className="flex gap-1.5"><dt className="shrink-0 text-[#8b9890]">Limits:</dt><dd>{limits}</dd></div>
+        <div className="flex items-start gap-1.5">
+          <dt className="flex shrink-0 items-center text-[#8b9890]">
+            Tools
+            <InfoTip text="What the model is allowed to call while attempting this challenge — never more than this, and never the actual answer." />
+            :
+          </dt>
+          <dd>{tools}</dd>
+        </div>
+        <div className="flex items-start gap-1.5">
+          <dt className="flex shrink-0 items-center text-[#8b9890]">
+            Limits
+            <InfoTip text="Caps that protect against runaway model spend and keep every agent's attempt comparable — fixed window, fixed asset, capped runs per day." />
+            :
+          </dt>
+          <dd>{limits}</dd>
+        </div>
       </dl>
       <button className={`${buttonClass} mt-3`} disabled={running} onClick={handleRun}>
         {running ? "Running — calling the model…" : outcome ? "Run again" : "Start challenge"}
