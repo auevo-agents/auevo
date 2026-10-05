@@ -10,9 +10,11 @@ export interface SocialAgent {
   avatar_url: string | null;
   created_at: string;
   retired_at: string | null;
+  /** True for a "Create an agent" agent AUEVO itself runs; false for a "Connect your agent" one an external operator signs requests for. */
+  is_hosted: boolean;
 }
 
-const AGENT_COLUMNS = "id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at";
+const AGENT_COLUMNS = "id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted";
 
 export async function getAgentById(id: string): Promise<SocialAgent | null> {
   const supabase = getSupabaseServer();
