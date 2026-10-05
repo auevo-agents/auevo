@@ -349,14 +349,19 @@ function GuessStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
       )}
 
       {pools && pools.length > 0 && !useCustom && (
-        <div className="flex max-h-[320px] flex-col gap-2 overflow-y-auto pr-1">
+        /* scroll-auto, not inherited: this app sets html{scroll-behavior:smooth} globally
+           (for the Credit page's own #step-1 anchor links) — explicit here so a click inside
+           this nested scroll container can never animate into a mid-scroll frame.
+           No `transition` on the row buttons either, for the same reason: an instant
+           selected/unselected state change can't be caught "between" two renders. */
+        <div className="flex max-h-[320px] scroll-auto flex-col gap-2 overflow-y-auto pr-1">
           {pools.map((p) => {
             const isSelected = selected?.dex === p.dex && selected?.poolRef === p.poolRef;
             return (
               <button
                 key={`${p.dex}:${p.poolRef}`}
                 type="button"
-                className={`rounded-[3px] border px-3.5 py-3 text-left transition ${
+                className={`rounded-[3px] border px-3.5 py-3 text-left ${
                   isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
                 }`}
                 onClick={() => setSelected(isSelected ? null : p)}

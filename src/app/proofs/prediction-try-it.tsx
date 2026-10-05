@@ -487,13 +487,18 @@ function EventBetStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: (
       {!markets && !marketsError && <p className="text-xs text-[#7a8390]">Loading live markets…</p>}
       {markets && markets.length === 0 && <p className="text-xs text-[#7a8390]">No open markets cached yet — check back shortly.</p>}
 
-      <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto pr-1">
+      {/* scroll-auto, no `transition`: same hardening as skill-try-it.tsx's pool list —
+          this app sets html{scroll-behavior:smooth} globally, and selecting a market here
+          also grows that row's own height (the outcome buttons below render only when
+          selected), so an animated scroll/color-fade mid-reflow is the likely cause of a
+          row visually overlapping its neighbor right after a click. */}
+      <div className="flex max-h-[420px] scroll-auto flex-col gap-2 overflow-y-auto pr-1">
         {markets?.map((m) => {
           const isSelected = m.id === selectedId;
           return (
             <div
               key={m.id}
-              className={`rounded-[3px] border px-3.5 py-3 transition ${
+              className={`rounded-[3px] border px-3.5 py-3 ${
                 isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
               }`}
             >
