@@ -23,7 +23,7 @@
 .portal-page :is(a,button,input,summary):focus-visible,.auevo-portal-header :is(a,button):focus-visible{outline:2px solid #d7ba72;outline-offset:4px}
 .portal-page .portal-chip{border-radius:5px;background:#b5963c0b;border-color:#b5963c33;color:#cdbd8b}
 .portal-page table{font-size:13px}.portal-page th{font-weight:400;color:#c1cdbf}.portal-page td{border-color:#709c7620}
-.portal-page .home-cinematic-hero{min-height:550px}.portal-page .home-cinematic-image{background-image:url('/images/auevo-crystal-hero.webp');background-size:cover;background-position:center;filter:saturate(.94) brightness(.86)}
+.portal-page .home-cinematic-hero{min-height:550px}.portal-page .home-cinematic-image{background-image:url('/images/auevo-crystal-hero.webp');background-size:auto 100%;background-position:right center;filter:saturate(.94) brightness(.86)}
 .portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110e 0%,#07110ef5 27%,#07110e9c 45%,#07110e00 72%)}
 .portal-page .home-cinematic-topmask{display:none}.portal-page .home-cinematic-bottom{background:linear-gradient(0deg,#07110e,transparent)}
 .universe-stats{position:relative;z-index:2;max-width:1400px;margin:-12px auto 0;border:1px solid #9d9e5433;background:#14261bef;border-radius:12px;box-shadow:0 14px 45px #0003;padding:24px 8px;gap:0}
@@ -43,3 +43,5 @@
 /* Secondary protocol and onboarding cards follow the same panel geometry. */
 .portal-page .portal-shell [class*="rounded-[3px]"][class*="border"],.portal-page .portal-shell [class*="rounded-[4px]"][class*="border"]{border-radius:10px}
 .portal-page .portal-shell :is(.text-\[\#a99cff\],.text-\[\#b1a3ff\],.text-\[\#c6b6ff\]){color:#d7ba72}
+
+.site.scanner-premium{background:radial-gradient(ellipse at 70% 0%,#17322366,transparent 48%),#07110e}.scanner-premium .scan-sidebar h1{font-family:Georgia,serif;font-weight:400}.scanner-premium .scan-sidebar h1 span{color:#d7ba72}
