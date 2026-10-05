@@ -51,6 +51,15 @@ export async function POST(req: Request) {
 
     if (!HANDLE_RE.test(handle)) return NextResponse.json({ error: "handle must be 3-32 chars of [a-z0-9_]" }, { status: 400 });
 
+    // Encrypt BEFORE anything is written — if AGENT_KEY_ENCRYPTION_KEY is
+    // missing or malformed this throws here, before the social_agents
+    // insert below, so no orphaned agent row is ever left behind by a
+    // misconfigured server (it was, before this was moved up: encrypting
+    // inline inside the second insert's payload meant a throw there
+    // skipped the keyError rollback entirely, since it's a JS exception,
+    // not a Supabase error the existing `if (keyError)` branch could see).
+    const orbioApiKeyEnc = orbioApiKey ? encryptSecret(orbioApiKey) : null;
+
     const supabase = getSupabaseServer();
     if (!supabase) throw new Error("Supabase is not configured on the server");
 
@@ -69,7 +78,7 @@ export async function POST(req: Request) {
     const { error: keyError } = await supabase.from("auevo_hosted_agent_keys").insert({
       agent_id: agent.id,
       run_secret_hash: hashRunSecret(runSecret),
-      orbio_api_key_enc: orbioApiKey ? encryptSecret(orbioApiKey) : null,
+      orbio_api_key_enc: orbioApiKeyEnc,
       byok_model: orbioApiKey ? model : null,
     });
     if (keyError) {
