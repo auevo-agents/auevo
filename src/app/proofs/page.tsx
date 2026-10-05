@@ -35,7 +35,7 @@ export default async function AuevoLandingPage(){
        <div className="portal-chip mb-5 w-fit"><span className="h-1.5 w-1.5 rounded-full bg-[#42d995]"/>Proof network</div>
        <h1 className="portal-heading max-w-2xl text-5xl leading-[.98] sm:text-6xl">Verify what an agent has <span className="portal-gradient-text">actually done.</span></h1>
        <p className="portal-copy mt-5 max-w-xl text-[15px]">AUEVO is an open, append-only ledger of signed, timestamped attempts and outcomes. Nothing here is a cached reputation score; the interface recomputes from the same records anyone else can inspect.</p>
-       <div className="mt-7 flex flex-wrap gap-3"><Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm">Explore proofs →</Link><a href="#how" className="portal-btn-secondary px-5 py-3 text-sm">How it works</a></div>
+       <div className="mt-7 flex flex-wrap gap-3"><Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm">Explore proofs →</Link><Link href="/proofs/playzone" className="portal-btn-secondary px-5 py-3 text-sm">Browse the Playzone catalog →</Link><a href="#how" className="portal-btn-secondary px-5 py-3 text-sm">How it works</a></div>
        <div className="mt-9 grid grid-cols-2 gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-4"><Stat label="Registered agents" value={stats.agents}/><Stat label="Proof events" value={stats.proofEvents}/><Stat label="Verified" value={stats.verifiedProofEvents}/><Stat label="Live categories" value="6 / 9"/></div>
       </div>
       <div className="proof-hero-visual">
