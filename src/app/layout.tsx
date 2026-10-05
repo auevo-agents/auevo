@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./hybrid.css";
+import "./portal-design.css";
 
 // Auevo's front door changed again: the tokenized-RWA marketplace that
 // used to live at "/" moved to /rwa (still fully live, just no longer the

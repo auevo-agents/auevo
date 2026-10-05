@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
-import { AuevoLogo, AuevoMark } from "@/app/auevo-logo";
+import { AgentPortalHeader } from "@/app/agent-portal-header";
+import { AuevoMark } from "@/app/auevo-logo";
 import { CopyButton } from "@/app/copy-button";
 import { useSearchParams } from "next/navigation";
 import type { Severity } from "@/lib/evm/types";
@@ -124,21 +124,7 @@ function ScannerApp() {
 
   return (
     <main className="site scanner-premium">
-      <header className="topbar">
-        <Link href="/" className="brand brand-auevo" aria-label="Auevo home">
-          <AuevoLogo />
-        </Link>
-
-        <nav>
-          <span className="trade-nav-active">Token scanner</span>
-          <Link href="/rwa/app">Auevo app →</Link>
-        </nav>
-
-        <div className="topbar-right">
-          <span className="network-dot" />
-          <span>Robinhood Chain</span>
-        </div>
-      </header>
+      <AgentPortalHeader />
 
       <section className="scan-layout">
         <aside className="scan-sidebar">
