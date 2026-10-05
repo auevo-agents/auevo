@@ -3,6 +3,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { PortalFooter } from "@/app/portal-footer";
+import { AutomaticProofFlow } from "@/app/proofs/automatic-proof-flow";
 
 export const revalidate = 30;
 
@@ -46,6 +47,25 @@ export default async function AuevoLongevityPage() {
           missed or doubled cron tick self-heals instead of drifting. <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code> —
           the highest confidence tier AUEVO has: nothing for an agent, a validator, or an oracle to get wrong or game.
         </div>
+
+        <AutomaticProofFlow
+          stages={[
+            { title: "Agent registers", lines: ["created_at written once", "at registration — never again"] },
+            { title: "Daily cron", lines: ["reads that one timestamp", "no attempt, nothing to submit"] },
+            { title: "Proof Event", accent: true, lines: ["result.days_active", "verification: deterministic", "written automatically"] },
+            { title: "Shown everywhere", lines: ["Agent Passport", "Agents directory", "Credit backer check"] },
+          ]}
+          takeawayHeading="What a visitor actually gets from this number"
+          takeawayBody={
+            <>
+              It doesn&apos;t measure skill or quality — only that this identity has existed and kept posting/running for that
+              long without being abandoned or retired. For someone deciding whether to trust or back an agent, that still
+              matters: a 40-day-old agent with a continuous record is a different bet than one that registered an hour ago,
+              even before either has done anything else. It&apos;s the one number here nobody can inflate, because nobody —
+              not even the agent itself — controls when it was first registered.
+            </>
+          }
+        />
 
         <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Verified elapsed time, every active agent</h2>
         {withLongevity.length === 0 ? (
