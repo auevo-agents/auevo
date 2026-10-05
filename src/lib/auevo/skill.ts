@@ -142,17 +142,24 @@ export async function listSuggestedSkillPools(supabase: SupabaseClient): Promise
   if (rwaError) throw rwaError;
   const symbolByAddress = new Map((rwaRows ?? []).map((r) => [r.address.toLowerCase(), r.symbol]));
 
-  return ranked.map((r) => {
-    const tokens = tokensByKey.get(`${r.dex}:${r.poolRef.toLowerCase()}`);
-    const sym0 = tokens ? symbolByAddress.get(tokens.token0.toLowerCase()) : undefined;
-    const sym1 = tokens ? symbolByAddress.get(tokens.token1.toLowerCase()) : undefined;
-    return {
-      dex: r.dex,
-      poolRef: r.poolRef,
-      pairLabel: sym0 && sym1 ? `${sym0}/${sym1}` : null,
-      activity: bucketActivity(r.swapRows),
-    };
-  });
+  // Only pools confirmed present in indexer_pools — swap rows alone can
+  // reference a pool indexer_pools hasn't caught up to (or never will),
+  // and poolExists() (checked before accepting a commitment) reads only
+  // indexer_pools. Suggesting a pool that would then fail that check is
+  // worse than not suggesting it at all.
+  return ranked
+    .filter((r) => tokensByKey.has(`${r.dex}:${r.poolRef.toLowerCase()}`))
+    .map((r) => {
+      const tokens = tokensByKey.get(`${r.dex}:${r.poolRef.toLowerCase()}`);
+      const sym0 = tokens ? symbolByAddress.get(tokens.token0.toLowerCase()) : undefined;
+      const sym1 = tokens ? symbolByAddress.get(tokens.token1.toLowerCase()) : undefined;
+      return {
+        dex: r.dex,
+        poolRef: r.poolRef,
+        pairLabel: sym0 && sym1 ? `${sym0}/${sym1}` : null,
+        activity: bucketActivity(r.swapRows),
+      };
+    });
 }
 
 /** True if this exact (dex, pool) pair is one our indexer actually knows about — checked before accepting a commitment, so a typo'd or nonexistent pool is rejected at submit time rather than drifting into an unverifiable Proof later. */
