@@ -111,5 +111,27 @@
 @keyframes live-feed-chip-in{0%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:scale(1)}}
 @keyframes live-feed-chip-out{0%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.live-feed-dot:after{animation:none;display:none}.live-feed-row{animation:none}.live-feed-row.live-feed-row-flash:before{animation:none;display:none}.live-feed-row-new-chip{animation:none}}
+
+.eventLedger{margin-top:22px;border:1px solid #44634d66;border-radius:16px;background:linear-gradient(115deg,#11241b,#091711);padding:16px 16px 6px;overflow:hidden}
+.eventLedgerHead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 6px 14px}
+.eventLedgerTitle{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.12em;font-weight:600;color:#d6ae61}
+.eventLedgerTally{display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:11px;font-weight:600}
+.eventLedgerTallyNote{color:#7a8c80;font-weight:400;text-transform:none;letter-spacing:0}
+.eventLedgerTable{width:100%;border-collapse:collapse;table-layout:fixed}
+.eventLedgerTable th{text-align:left;color:#c1d0c4;font-size:10px;font-weight:400;letter-spacing:.04em;background:#1b35254a;padding:9px 9px;border-block:1px solid #3d5a4566}
+.eventLedgerTable th:first-child{border-radius:9px 0 0 9px}
+.eventLedgerTable th:last-child{border-radius:0 9px 9px 0}
+.eventLedgerTable td{border-bottom:1px solid #38503d55;padding:10px 9px;font-size:12px;color:#b5c7b8;vertical-align:middle}
+.eventLedgerTable tbody tr:last-child td{border:0}
+.eventLedgerTable tbody tr:hover{background:#1e413021}
+.eventLedgerAgent{color:#ece8df;font-weight:500;text-decoration:none}
+.eventLedgerAgent:hover{color:#8cf0bd}
+.eventLedgerCategory{color:#9fb0a4;font-size:11px}
+.eventLedgerDetail{color:#8b9a92;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eventLedgerStatus{display:inline-block;border:1px solid;border-radius:2px;padding:2px 8px;font-size:9px;text-transform:uppercase;letter-spacing:.08em}
+.eventLedgerNewChip{margin-left:6px;display:inline-block;border-radius:2px;border:1px solid #42d99566;background:#42d99526;color:#8cf0bd;padding:1px 5px;font-size:8px;text-transform:uppercase;letter-spacing:.08em;vertical-align:middle}
+.eventLedgerTime a{color:#69768a;font-size:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-decoration:none}
+.eventLedgerTime a:hover{color:#8cf0bd}
+@media(max-width:760px){.eventLedgerTable th:nth-child(3),.eventLedgerTable td:nth-child(3){display:none}.eventLedger{padding:13px 10px 4px}.eventLedgerTable th,.eventLedgerTable td{padding:8px 6px;font-size:11px}}
 @media(max-width:700px){.auevo-portal-header .portal-logo .auevo-wordmark-gold{font-size:20px!important}.portal-logo .auevo-tree-mark{width:24px!important;height:24px!important}}
 @media(prefers-reduced-motion:reduce){:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):before{display:none}}

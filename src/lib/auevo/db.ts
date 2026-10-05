@@ -227,6 +227,7 @@ export interface RecentProofEvent {
   status: ProofStatus;
   createdAt: string;
   handle: string | null;
+  result: Record<string, unknown>;
 }
 
 /**
@@ -242,7 +243,7 @@ export interface RecentProofEvent {
 export async function listRecentProofEvents(limit = 6): Promise<RecentProofEvent[]> {
   const { data: rows, error } = await db()
     .from("auevo_proof_events")
-    .select("id, category, status, created_at, social_agent_id")
+    .select("id, category, status, created_at, social_agent_id, result")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -262,6 +263,7 @@ export async function listRecentProofEvents(limit = 6): Promise<RecentProofEvent
     status: r.status as ProofStatus,
     createdAt: r.created_at as string,
     handle: r.social_agent_id ? (handleById.get(r.social_agent_id as string) ?? null) : null,
+    result: (r.result as Record<string, unknown>) ?? {},
   }));
 }
 
