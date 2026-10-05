@@ -324,7 +324,7 @@ function ClaimStep({ agent, assets, onPosted }: { agent: RegisteredAgent; assets
             <button
               key={`${a.chainId}:${a.address}`}
               type="button"
-              className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition ${
+              className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition outline-none focus-visible:ring-2 focus-visible:ring-[#c9ad70]/50 focus-visible:ring-offset-0 ${
                 selected?.address === a.address ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
               }`}
               onClick={() => setSelected(a)}
@@ -522,7 +522,7 @@ function EventBetStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: (
                       <button
                         key={outcome}
                         type="button"
-                        className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition ${
+                        className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition outline-none focus-visible:ring-2 focus-visible:ring-[#4fc6a4]/50 focus-visible:ring-offset-0 ${
                           chosen ? "border-[#4fc6a4]/40 bg-[#4fc6a4]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
                         }`}
                         onClick={() => setSelectedOutcome(outcome)}
