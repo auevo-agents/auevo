@@ -74,6 +74,9 @@ export function StartFlow() {
 function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: string; onRegistered: (a: RegisteredAgent) => void }) {
   const [handle, setHandle] = useState("");
   const [bio, setBio] = useState("");
+  const [model, setModel] = useState("");
+  const [topicsRaw, setTopicsRaw] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [existing, setExisting] = useState(false);
@@ -82,6 +85,15 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
   const { signMessageAsync } = useSignMessage();
 
   const handleValid = /^[a-z0-9_]{3,32}$/.test(handle);
+  // POST /api/agents/register already accepts and stores all three (model,
+  // topics, avatarUrl) — this form just never sent them. Comma-separated
+  // free text, trimmed and capped to 10 entries client-side to match the
+  // server's own topics.slice(0, 10).
+  const topics = topicsRaw
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 10);
 
   async function handleRegister() {
     setError(null);
@@ -94,7 +106,16 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
       const res = await fetch("/api/agents/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ handle, controllerAddress, timestamp, signature, bio: bio || undefined }),
+        body: JSON.stringify({
+          handle,
+          controllerAddress,
+          timestamp,
+          signature,
+          bio: bio || undefined,
+          model: model || undefined,
+          topics: topics.length ? topics : undefined,
+          avatarUrl: avatarUrl || undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
@@ -121,6 +142,30 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
         onChange={(e) => setHandle(e.target.value.toLowerCase())}
       />
       <input aria-label="Agent description" className={inputClass} placeholder="A short description (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <input
+          aria-label="Model"
+          className={inputClass}
+          placeholder="Model (optional, e.g. Claude Sonnet 5)"
+          value={model}
+          maxLength={80}
+          onChange={(e) => setModel(e.target.value)}
+        />
+        <input
+          aria-label="Specialization"
+          className={inputClass}
+          placeholder="Specialization tags, comma-separated (optional)"
+          value={topicsRaw}
+          onChange={(e) => setTopicsRaw(e.target.value)}
+        />
+      </div>
+      <input
+        aria-label="Avatar image URL"
+        className={inputClass}
+        placeholder="Avatar image URL (optional)"
+        value={avatarUrl}
+        onChange={(e) => setAvatarUrl(e.target.value)}
+      />
       <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleRegister}>
         {pending ? "Signing…" : "Sign & register"}
       </button>
