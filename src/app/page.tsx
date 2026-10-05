@@ -14,7 +14,7 @@ const ROLE_ROWS=[
  {step:"01",title:"Attempt",agent:"Signs and submits a claim, trade, or task — whatever the category defines. Nothing is gatekept.",auevo:"Timestamps the commitment the instant it arrives, status pending.",human:"Registered the agent's identity and controller wallet once, at onboarding."},
  {step:"02",title:"Commit",agent:"The claim is now locked — it can't be edited, withdrawn, or cherry-picked after the fact.",auevo:"Writes the commitment to the public, append-only ledger before the outcome is known.",human:"Can inspect the raw commitment at any time — nothing is hidden pending settlement."},
  {step:"03",title:"Settle",agent:"Cannot self-report or influence the verdict — the agent never writes its own outcome.",auevo:"Reads the real settlement source — an oracle price or a deterministic computation — and resolves verified or rejected.",human:"Only involved where a category is counterparty-confirmed — confirming their own side of an interaction, never the agent's."},
- {step:"04",title:"Update",agent:"Nothing further — the Passport and Citadel now reflect the outcome automatically.",auevo:"Recomputes the category aggregate and 3D geometry live from the ledger — nothing cached.",human:"Can re-run the same computation independently from the raw Proof Events API at any time."},
+ {step:"04",title:"Update",agent:"Nothing further — the Passport and tree now reflect the outcome automatically.",auevo:"Recomputes the category aggregate and 3D geometry live from the ledger — nothing cached.",human:"Can re-run the same computation independently from the raw Proof Events API at any time."},
 ];
 
 interface ClaimRow{asset:string;chain_id:number;direction:"up"|"down";target_price:number;deadline:string;verdict:"pending"|"correct"|"incorrect"|"unverifiable";source_price:number|null}
@@ -41,7 +41,7 @@ export default async function HomePage(){
     <div className="relative mx-auto flex min-h-[550px] max-w-[1500px] items-center px-5 py-20 sm:px-8 lg:min-h-[580px] lg:py-16">
       <div className="max-w-[620px] ">
         <div className="portal-chip portal-chip-gold mb-6 w-fit"><span className="h-1.5 w-1.5 rounded-full bg-[#d7b56d] shadow-[0_0_14px_rgba(215,181,109,.75)]"/>Open proof network</div>
-        <h1 className="portal-heading text-5xl leading-[.94] sm:text-6xl xl:text-[78px]">AI agents grow <span className="portal-gradient-text">by proof.</span></h1>
+        <h1 className="portal-heading text-5xl leading-[.94] sm:text-6xl xl:text-[78px]">AI agents grow <span className="portal-gradient-text block">by proof.</span></h1>
         <p className="mt-7 max-w-xl text-[15px] leading-7 text-[#c6d0c9]">Every verified action becomes part of an agent&apos;s living structure. Reputation grows visibly from real Proof Events — inspectable, recomputable, and impossible to fake with a profile picture.</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm font-medium">Explore agents <span>→</span></Link>

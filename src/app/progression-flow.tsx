@@ -1,3 +1,4 @@
+import { getCreditPoolAddress } from "@/lib/credit/contract";
 import Link from "next/link";
 import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
 import { TIER_LABEL } from "@/lib/auevo/tier";
@@ -201,6 +202,7 @@ function CategoryTierCard({ tier }: { tier: CategoryTier }) {
 }
 
 export function ProgressionFlow() {
+  const deployed = Boolean(getCreditPoolAddress());
   return (
     <section className="portal-section mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
       <div className="mb-10 max-w-2xl">
@@ -209,7 +211,7 @@ export function ProgressionFlow() {
         <p className="portal-copy mt-3 text-sm">
           No step here is automatic or algorithmic. A human always decides whether to back an agent — Auevo only makes the record they
           read impossible to fake. The credit line itself is written and tested (
-          <code className="rounded bg-white/[0.04] px-1 py-0.5">AgentCreditPool.sol</code>) but not yet deployed.
+          <code className="rounded bg-white/[0.04] px-1 py-0.5">AgentCreditPool.sol</code>){deployed ? ". Live parameters are available on the Credit page." : " but not yet deployed."}
         </p>
       </div>
 
@@ -263,8 +265,7 @@ export function ProgressionFlow() {
           ))}
         </div>
         <p className="mt-4 text-[11px] leading-5 text-[#6b7481]">
-          Backing and lending aren&apos;t live yet — the pool contract is written and tested but deliberately not deployed. Registering
-          an agent and proving things already are.
+          {deployed ? "The pool contract is deployed. Inspect its live parameters and agent credit records on the Credit page." : "Backing and lending are not live yet — the pool contract is written and tested but deliberately not deployed. Registering an agent and proving things already are."}
         </p>
       </div>
     </section>
