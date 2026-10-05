@@ -9,6 +9,7 @@ import { ERC20_ABI } from "@/lib/erc20-abi";
 import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
 import { InfoTip } from "@/app/info-tip";
 import { WrongNetworkBanner } from "@/app/credit/wrong-network-banner";
+import { txErrorMessage } from "@/app/credit/tx-error";
 
 /**
  * Every action below sends a real transaction against a real pool the
@@ -179,7 +180,7 @@ export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecim
         {!assetAddress ? "Loading…" : approve.isPending || approveReceipt.isLoading ? "Approving…" : deposit.isPending || depositReceipt.isLoading ? "Depositing…" : "Approve & deposit"}
       </button>
       {depositReceipt.isSuccess && <p className="text-xs text-[var(--green)]">Deposited.</p>}
-      {(approve.error || deposit.error) && <p className="text-xs text-[var(--red)]">{(approve.error ?? deposit.error)?.message}</p>}
+      {(approve.error || deposit.error) && <p className="text-xs text-[var(--red)]">{txErrorMessage(approve.error ?? deposit.error)}</p>}
 
       <div className="mt-2 flex items-center gap-2">
         <span className="text-xs text-[var(--muted)]">{isRoot ? "You are enrolled as a backer." : "Not enrolled as a backer yet."}</span>
@@ -198,7 +199,7 @@ export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecim
           </button>
         )}
       </div>
-      {enroll.error && <p className="text-xs text-[var(--red)]">{enroll.error.message}</p>}
+      {enroll.error && <p className="text-xs text-[var(--red)]">{txErrorMessage(enroll.error)}</p>}
     </Panel>
   );
 }
@@ -267,7 +268,7 @@ function VouchPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: A
         {vouch.isPending || vouchReceipt.isLoading ? "Vouching…" : "Vouch"}
       </button>
       {vouchReceipt.isSuccess && <p className="text-xs text-[var(--green)]">Line opened.</p>}
-      {vouch.error && <p className="text-xs text-[var(--red)]">{vouch.error.message}</p>}
+      {vouch.error && <p className="text-xs text-[var(--red)]">{txErrorMessage(vouch.error)}</p>}
     </Panel>
   );
 }
@@ -314,7 +315,7 @@ function BorrowPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: 
         {borrow.isPending || borrowReceipt.isLoading ? "Borrowing…" : "Borrow to my wallet"}
       </button>
       {borrowReceipt.isSuccess && <p className="text-xs text-[var(--green)]">Borrowed.</p>}
-      {borrow.error && <p className="text-xs text-[var(--red)]">{borrow.error.message}</p>}
+      {borrow.error && <p className="text-xs text-[var(--red)]">{txErrorMessage(borrow.error)}</p>}
     </Panel>
   );
 }
@@ -378,7 +379,7 @@ function RepayPanel({ pool, assetDecimals }: { pool: Address; assetDecimals: num
       {repayReceipt.isSuccess && <p className="text-xs text-[var(--green)]">Repaid.</p>}
       {markDefaultReceipt.isSuccess && <p className="text-xs text-[var(--red)]">Marked defaulted.</p>}
       {(approve.error || repay.error || markDefault.error) && (
-        <p className="text-xs text-[var(--red)]">{(approve.error ?? repay.error ?? markDefault.error)?.message}</p>
+        <p className="text-xs text-[var(--red)]">{txErrorMessage(approve.error ?? repay.error ?? markDefault.error)}</p>
       )}
     </Panel>
   );

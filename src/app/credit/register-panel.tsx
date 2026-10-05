@@ -10,6 +10,7 @@ import { CREDIT_IDENTITY_WRITE_ABI } from "@/lib/credit/identity-abi";
 import { useWalletAgent } from "@/app/wallet-agent";
 import { InfoTip } from "@/app/info-tip";
 import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
+import { txErrorMessage } from "@/app/credit/tx-error";
 
 const inputClass = "rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
 const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
@@ -167,7 +168,7 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
           {identityErrored && (
             <p className="text-xs text-[var(--red)]">Couldn&apos;t read the pool&apos;s identity registry — check your wallet is on Robinhood Chain.</p>
           )}
-          {register.error && <p className="text-xs text-[var(--red)]">{register.error.message}</p>}
+          {register.error && <p className="text-xs text-[var(--red)]">{txErrorMessage(register.error)}</p>}
         </div>
       ) : (
         <div className="mt-3 flex flex-col gap-3">
