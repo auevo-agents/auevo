@@ -33,19 +33,28 @@ export async function GET() {
   }
 
   const poolAddresses = [...new Set((swaps ?? []).map((s) => s.pool_address as string))];
+  // indexer_pools.pool_address is stored EIP-55 checksummed (mixed
+  // case); indexer_swaps.pool_address (poolAddresses, above) is always
+  // lowercase. .in() is exact-match, so this silently matched nothing —
+  // every swap's pool lookup below missed, every input got filtered
+  // out, and this leaderboard was always empty. ilike (via .or()) is
+  // case-insensitive; the Map key is lowercased to match.
   const { data: poolRows, error: poolsError } = poolAddresses.length
-    ? await supabase.from("indexer_pools").select("pool_address, token0, token1").in("pool_address", poolAddresses)
+    ? await supabase
+        .from("indexer_pools")
+        .select("pool_address, token0, token1")
+        .or(poolAddresses.map((a) => `pool_address.ilike.${a}`).join(","))
     : { data: [] as { pool_address: string; token0: string; token1: string }[], error: null };
 
   if (poolsError) {
     return NextResponse.json({ error: `Could not read indexer_pools: ${poolsError.message}` }, { status: 500 });
   }
 
-  const poolsByAddress = new Map((poolRows ?? []).map((p) => [p.pool_address, p]));
+  const poolsByAddress = new Map((poolRows ?? []).map((p) => [p.pool_address.toLowerCase(), p]));
 
   const inputs = (swaps ?? [])
     .map((s) => {
-      const pool = poolsByAddress.get(s.pool_address as string);
+      const pool = poolsByAddress.get((s.pool_address as string).toLowerCase());
       return pool
         ? { recipient: s.recipient as string, amount0: s.amount0 as string, amount1: s.amount1 as string, token0: pool.token0, token1: pool.token1 }
         : null;

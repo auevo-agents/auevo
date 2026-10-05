@@ -113,12 +113,24 @@ export async function listSuggestedSkillPools(supabase: SupabaseClient): Promise
 
   const v3Refs = ranked.filter((r) => r.dex === "uniswap_v3").map((r) => r.poolRef);
   const v4Refs = ranked.filter((r) => r.dex === "uniswap_v4").map((r) => r.poolRef);
+  // indexer_pools.pool_address is stored EIP-55 checksummed (mixed case);
+  // indexer_swaps.pool_address (where v3Refs comes from) is always
+  // lowercase. .in() is exact-match, so querying it with v3Refs as-is
+  // silently returns nothing for virtually every pool — ilike (case-
+  // insensitive) is required. pool_id has no checksum convention, so v4
+  // isn't affected, but .or() is used for both for one consistent path.
   const [v3Pools, v4Pools] = await Promise.all([
     v3Refs.length
-      ? supabase.from("indexer_pools").select("pool_address, token0, token1").in("pool_address", v3Refs)
+      ? supabase
+          .from("indexer_pools")
+          .select("pool_address, token0, token1")
+          .or(v3Refs.map((ref) => `pool_address.ilike.${ref}`).join(","))
       : Promise.resolve({ data: [] as { pool_address: string; token0: string; token1: string }[], error: null }),
     v4Refs.length
-      ? supabase.from("indexer_pools").select("pool_id, token0, token1").in("pool_id", v4Refs)
+      ? supabase
+          .from("indexer_pools")
+          .select("pool_id, token0, token1")
+          .or(v4Refs.map((ref) => `pool_id.ilike.${ref}`).join(","))
       : Promise.resolve({ data: [] as { pool_id: string; token0: string; token1: string }[], error: null }),
   ]);
   if (v3Pools.error) throw v3Pools.error;
@@ -162,10 +174,20 @@ export async function listSuggestedSkillPools(supabase: SupabaseClient): Promise
     });
 }
 
-/** True if this exact (dex, pool) pair is one our indexer actually knows about — checked before accepting a commitment, so a typo'd or nonexistent pool is rejected at submit time rather than drifting into an unverifiable Proof later. */
+/**
+ * True if this exact (dex, pool) pair is one our indexer actually knows
+ * about — checked before accepting a commitment, so a typo'd or
+ * nonexistent pool is rejected at submit time rather than drifting into
+ * an unverifiable Proof later. Case-insensitive: indexer_pools.pool_address
+ * is stored EIP-55 checksummed (mixed case), while every caller of this
+ * function — this file's own suggestion list, an agent's raw POST body —
+ * sends addresses lowercase, the same casing indexer_swaps always uses.
+ * An exact `eq` here would reject a genuinely active, correctly-typed
+ * pool purely over casing.
+ */
 export async function poolExists(supabase: SupabaseClient, dex: "uniswap_v3" | "uniswap_v4", poolRef: string): Promise<boolean> {
   const column = dex === "uniswap_v3" ? "pool_address" : "pool_id";
-  const { data, error } = await supabase.from("indexer_pools").select(column).eq("dex", dex).eq(column, poolRef).limit(1).maybeSingle();
+  const { data, error } = await supabase.from("indexer_pools").select(column).eq("dex", dex).ilike(column, poolRef).limit(1).maybeSingle();
   if (error) throw error;
   return !!data;
 }

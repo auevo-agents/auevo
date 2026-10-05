@@ -67,9 +67,18 @@ export async function GET(
   const v3PoolAddresses = [...new Set((v3Swaps ?? []).map((s) => s.pool_address as string))];
   const v4PoolIds = [...new Set((v4Swaps ?? []).map((s) => s.pool_id as string))];
 
+  // indexer_pools.pool_address is stored EIP-55 checksummed (mixed
+  // case); indexer_swaps.pool_address (v3PoolAddresses, above) is always
+  // lowercase. .in() is exact-match, so this silently matched nothing —
+  // every v3 pool's token0/token1 lookup below missed, so every v3
+  // swap on this page showed no symbols. ilike (via .or()) is
+  // case-insensitive.
   const [{ data: v3PoolRows }, { data: v4PoolRows }] = await Promise.all([
     v3PoolAddresses.length
-      ? supabase.from("indexer_pools").select("pool_address, token0, token1").in("pool_address", v3PoolAddresses)
+      ? supabase
+          .from("indexer_pools")
+          .select("pool_address, token0, token1")
+          .or(v3PoolAddresses.map((a) => `pool_address.ilike.${a}`).join(","))
       : Promise.resolve({ data: [] as { pool_address: string; token0: string; token1: string }[] }),
     v4PoolIds.length
       ? supabase.from("indexer_pools").select("pool_id, token0, token1").in("pool_id", v4PoolIds)
@@ -106,7 +115,7 @@ export async function GET(
         }
         return null;
       };
-      pools[p.pool_address] = {
+      pools[p.pool_address.toLowerCase()] = {
         token0: p.token0,
         token1: p.token1,
         token0Symbol: symbolFor(p.token0),
