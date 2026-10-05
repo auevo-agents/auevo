@@ -298,7 +298,12 @@ function GuessStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
       setResult(json.skill as SkillVerdict);
       onPosted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Posting the guess failed");
+      const message = err instanceof Error ? err.message : "Posting the guess failed";
+      // The API's own "Unknown pool for X: Y — check indexer_pools" is
+      // precise and useful for an SDK/CLI caller, but names an internal
+      // table to someone using this form in a browser — translate just
+      // that one case into something actionable here.
+      setError(message.startsWith("Unknown pool for") ? "This pool hasn't been indexed yet — pick one from the suggested list, or try a different address." : message);
     } finally {
       setPending(false);
     }
