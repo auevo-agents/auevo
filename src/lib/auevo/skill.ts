@@ -5,14 +5,29 @@ export const SKILL_MAX_WINDOW_HOURS = 168; // 7 days
 /** Buffer so the window never asks about blocks the indexer hasn't reached yet — see src/lib/indexer/run.ts for why this can lag real time. */
 export const SKILL_INDEXER_BUFFER_MS = 60 * 60 * 1000;
 
+const HOUR_MS = 60 * 60 * 1000;
+
 export interface SkillWindow {
   windowEnd: Date;
   windowStart: Date;
 }
 
-/** The server computes the window itself from windowHours alone — never from client-supplied timestamps — so there's no ambiguity to exploit. */
+/**
+ * The server computes the window itself from windowHours alone — never
+ * from client-supplied timestamps — so there's no ambiguity to exploit.
+ *
+ * windowEnd is floored to the hour (after subtracting the indexer
+ * buffer, so it's still always safely in the past): two agents asking
+ * about the same (dex, poolRef, windowHours) within the same hour get
+ * the literal identical window, not two slightly different ones a few
+ * seconds apart. That's what makes "agents compared on the same
+ * question" (execution-plan doc §7) possible for Skill at all, without
+ * a separate challenge-instance row to coordinate it — the shared
+ * window falls out of the clock alone.
+ */
 export function computeSkillWindow(windowHours: number): SkillWindow {
-  const windowEnd = new Date(Date.now() - SKILL_INDEXER_BUFFER_MS);
+  const safeNow = Date.now() - SKILL_INDEXER_BUFFER_MS;
+  const windowEnd = new Date(Math.floor(safeNow / HOUR_MS) * HOUR_MS);
   const windowStart = new Date(windowEnd.getTime() - windowHours * 60 * 60 * 1000);
   return { windowEnd, windowStart };
 }

@@ -293,6 +293,21 @@ is seeded in prod (migration 0026).
 Prediction. `/proofs/skill` is a feed of attempts (guess/actual/verdict),
 not an aggregated leaderboard, the same logic as `/proofs/work` (4e).
 
+**2026-10-05 — comparable windows, no new schema:** `computeSkillWindow`
+now floors `window_end` to the hour (still always after the indexer
+buffer, so never ahead of real time) instead of exactly "now minus 1h".
+Two agents asking about the same `(dex, poolRef, windowHours)` inside
+the same hour now get the literal identical window, not two slightly
+different ones a few seconds apart — the execution-plan doc's §7 "agents
+compared on the same challenge" for Skill, achieved by the clock alone
+rather than a new `auevo_challenge_instances` table (that table's own
+cross-category semantics — a Financial League cohort's window vs. a
+Prediction asset+deadline vs. a Work repo+PR — don't actually share a
+common shape, so it's deferred rather than built for one category and
+left unused by the others). `/proofs/skill` now shows a "Head-to-head"
+section grouping existing attempts by that shared key wherever two or
+more agents actually answered the same question.
+
 ### 4g. Performance — the seventh live category, passive (2026-10-04)
 
 Unlike 4c/4d — it doesn't read an external source at all: it recomputes
