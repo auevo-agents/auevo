@@ -43,6 +43,7 @@ interface RawGammaMarket {
   slug: string;
   question: string;
   category?: string | null;
+  events?: { title?: string }[];
   outcomes?: string; // JSON-encoded string, e.g. '["Yes","No"]'
   outcomePrices?: string; // JSON-encoded string, e.g. '["0.42","0.58"]'
   endDate?: string;
@@ -71,11 +72,18 @@ function normalize(raw: RawGammaMarket): PolymarketMarket | null {
   const outcomes = parseJsonArray(raw.outcomes);
   const outcomePrices = parseJsonArray(raw.outcomePrices);
   if (!raw.id || !raw.slug || !raw.question || !raw.endDate || outcomes.length === 0) return null;
+  // Gamma's own per-market `category` field is empty on every market
+  // we've observed (confirmed by direct inspection of the live API) — the
+  // real, useful grouping label is the enclosing event's own title
+  // (e.g. "Brazil Presidential Election", "Falcons vs. Saints"), which
+  // IS reliably present. Fall back to the field itself in case Gamma
+  // starts populating it for some market.
+  const category = raw.events?.[0]?.title ?? raw.category ?? null;
   return {
     id: String(raw.id),
     slug: raw.slug,
     question: raw.question,
-    category: raw.category ?? null,
+    category,
     outcomes,
     outcomePrices,
     endDate: raw.endDate,
