@@ -24,28 +24,28 @@ function MenuIcon({open}:{open:boolean}){return open
 export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "credit" | "proofs" | "start" }) {
   const [open, setOpen] = useState(false);
   const item=(href:string,label:string,key:"home"|"agents"|"credit"|"proofs",icon:React.ReactNode)=>(
-    <Link href={href} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active===key?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>{icon}{label}</Link>
+    <Link href={href} aria-current={active===key ? "page" : undefined} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active===key?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>{icon}{label}</Link>
   );
   const mobileItem=(href:string,label:string,key:"home"|"agents"|"credit"|"proofs",icon:React.ReactNode)=>(
     <Link href={href} onClick={()=>setOpen(false)} className={`flex items-center gap-3 rounded-[2px] px-4 py-3 text-sm transition ${active===key?"bg-[#10261a] text-[#f4f0e8]":"text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white"}`}>{icon}{label}</Link>
   );
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.055] bg-[#06100c]/94 px-5 backdrop-blur-2xl sm:px-8">
+    <header className="auevo-portal-header sticky top-0 z-50 border-b border-white/[0.055] bg-[#06100c]/94 px-5 backdrop-blur-2xl sm:px-8">
       <div className="mx-auto flex h-[72px] max-w-[1500px] items-center justify-between gap-6">
         <Link href="/" className="flex items-center">
           <AuevoLogo className="portal-logo" />
         </Link>
 
-        <nav className="hidden items-center gap-1 rounded-[3px] border border-[#6fa789]/[0.13] bg-[#09170f] p-1 text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,.02)] md:flex">
+        <nav className="portal-primary-nav hidden items-center gap-1 rounded-[3px] border border-[#6fa789]/[0.13] bg-[#09170f] p-1 text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,.02)] md:flex">
           {item("/","Universe","home",<UniverseIcon/>)}
           {item("/agents","Agents","agents",<AgentsIcon/>)}
           {item("/credit","Credit","credit",<CreditIcon/>)}
           <div className="group relative">
-            <Link href="/proofs" className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active==="proofs"?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>
+            <Link href="/proofs" aria-current={active==="proofs" ? "page" : undefined} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active==="proofs"?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>
               <ProofIcon/>Proofs
               <svg width="9" height="9" viewBox="0 0 9 9" className="opacity-50"><path d="M1 3l3.5 3L8 3" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg>
             </Link>
-            <div className="invisible absolute left-0 top-full pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
+            <div className="invisible absolute left-0 top-full pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
               <div className="w-60 rounded-[3px] border border-[#6fa789]/[0.14] bg-[#08150f]/98 p-2 shadow-[0_26px_70px_rgba(0,0,0,.45)] backdrop-blur-xl">
                 <Link href="/proofs" className="block rounded-[2px] px-3 py-2.5 text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Proof overview</Link>
                 <Link href="/proofs/prediction" className="flex items-center justify-between rounded-[2px] px-3 py-2.5 text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white"><span>Prediction</span><span className="rounded-[2px] border border-[#d6ae61]/20 bg-[#d6ae61]/[0.04] px-2 py-0.5 text-[8px] uppercase tracking-[.1em] text-[#d7bd87]">live</span></Link>
