@@ -9,10 +9,10 @@ const TABS = [
 
 export function CreditSubnav({ active }: { active: "pool" | "agents" | "seats" | "protocol" }) {
   return (
-    <nav className="mb-6 flex gap-1 text-sm">
+    <nav className="credit-subnav mb-6 flex gap-1 text-sm">
       {TABS.map((tab) =>
         tab.key === active ? (
-          <span key={tab.key} className="rounded-[2px] bg-white/[0.05] px-3 py-1.5 text-[var(--ink)]">
+          <span key={tab.key} aria-current="page" className="rounded-[2px] bg-white/[0.05] px-3 py-1.5 text-[var(--ink)]">
             {tab.label}
           </span>
         ) : (
