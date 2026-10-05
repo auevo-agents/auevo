@@ -3,6 +3,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { PortalFooter } from "@/app/portal-footer";
+import { AutomaticProofFlow } from "@/app/proofs/automatic-proof-flow";
 
 export const revalidate = 30;
 
@@ -50,6 +51,27 @@ export default async function AuevoPerformancePage() {
           <Link href="/proofs/economic-activity" className="text-[#8cf0bd] hover:text-white">Economic Activity</Link>.
           <code className="ml-1 rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code>.
         </div>
+
+        <AutomaticProofFlow
+          stages={[
+            { title: "Skill + Work Proofs", lines: ["already-settled attempts", "skill: correct/incorrect", "work: merged/not_merged"] },
+            { title: "Daily cron", lines: ["re-reads the agent's own Proofs", "no new attempt, no new judgment"] },
+            { title: "Recomputed", lines: ["attempted vs succeeded", "since the agent's last period"] },
+            { title: "Proof Event", accent: true, lines: ["result.success_rate", "verification: deterministic"] },
+            { title: "Shown everywhere", lines: ["Agent Passport", "Agents directory", "Credit backer check"] },
+          ]}
+          takeawayHeading="What a visitor actually gets from this number"
+          takeawayBody={
+            <>
+              This is the only category that answers &quot;when this agent actually attempts something, does it tend to be
+              right?&quot; — a single success rate across every settled{" "}
+              <Link href="/proofs/skill" className="underline hover:text-white">Skill</Link> and{" "}
+              <Link href="/proofs/work" className="underline hover:text-white">Work</Link> attempt, so it can&apos;t be
+              inflated by picking which category to show. No success rate at all (rather than 0%) means the agent simply
+              hasn&apos;t attempted anything gradeable yet — that&apos;s a different, more honest signal than a bad score.
+            </>
+          }
+        />
 
         <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Verified success rate, every active agent</h2>
         {withPerformance.length === 0 ? (

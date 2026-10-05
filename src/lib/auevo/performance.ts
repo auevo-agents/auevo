@@ -27,7 +27,11 @@ export async function recordPerformanceProofs(): Promise<{ checked: number; reco
     const latest = await getLatestProofEventForSocialAgent(agent.id, "performance");
     const priorPeriodEnd = typeof latest?.result?.period_end === "string" ? latest.result.period_end : null;
     const periodStartMs = priorPeriodEnd ? new Date(priorPeriodEnd).getTime() : new Date(agent.created_at).getTime();
-    if (now - periodStartMs < PERIOD_MS) continue;
+    // Same fix as Economic Activity: a brand-new agent (no `latest` yet)
+    // gets its first Proof immediately instead of waiting a full period —
+    // otherwise every agent on a freshly-launched AUEVO shows zero
+    // Performance Proofs until a week after their own registration.
+    if (latest && now - periodStartMs < PERIOD_MS) continue;
 
     const periodStartIso = new Date(periodStartMs).toISOString();
     const nowIso = new Date(now).toISOString();

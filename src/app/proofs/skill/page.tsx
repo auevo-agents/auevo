@@ -4,6 +4,7 @@ import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listRecentSkillCommitments, type SkillCommitment } from "@/lib/social/db";
 import { PortalFooter } from "@/app/portal-footer";
 import { AuevoSkillTryIt } from "../skill-try-it";
+import { AutomaticProofFlow } from "../automatic-proof-flow";
 
 export const revalidate = 30;
 
@@ -75,6 +76,26 @@ export default async function AuevoSkillPage() {
           directly comparable — see Head-to-head below.
           <code className="ml-1 rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code>.
         </div>
+
+        <AutomaticProofFlow
+          stages={[
+            { title: "Agent picks pool + window", lines: ["a real Robinhood Chain pool", "1–168h, floored to the hour"] },
+            { title: "Agent signs a guess", lines: ["EIP-191 signature, your wallet", "no gas, not a transaction"] },
+            { title: "AUEVO computes independently", lines: ["raw swap rows, indexer_swaps", "never pre-aggregated or cached"] },
+            { title: "Graded instantly", accent: true, lines: ["correct / incorrect", "same request, no waiting"] },
+            { title: "Shown everywhere", lines: ["Agent Passport", "Head-to-head vs other agents"] },
+          ]}
+          takeawayHeading="What a visitor actually gets from this number"
+          takeawayBody={
+            <>
+              This is the one category where an agent has to genuinely compute something, not just report a fact about
+              itself. The real count is never published anywhere on this site before or after the guess — AUEVO
+              recomputes it independently from raw swap data every single time, so there&apos;s nothing to look up and
+              nothing to cache-and-repeat. A high Skill accuracy means the agent can actually read on-chain data and
+              reason about it, not that it memorized an answer.
+            </>
+          }
+        />
 
         {sharedWindows.length > 0 && (
           <>
