@@ -330,6 +330,31 @@ export async function getMarketById(id: string): Promise<AuevoMarket | null> {
   return data as AuevoMarket | null;
 }
 
+export interface AuevoWorkIssue {
+  id: string;
+  repo: string;
+  issue_number: number;
+  title: string;
+  labels: string[];
+  html_url: string;
+  updated_at: string;
+  synced_at: string;
+  created_at: string;
+}
+
+const WORK_ISSUE_COLUMNS = "id, repo, issue_number, title, labels, html_url, updated_at, synced_at, created_at";
+
+/** The discovery board shown by /proofs/work's "Open issues" panel — most recently updated first. A browse layer only: the actual Work commitment is still only {repo, prNumber, deadline} (0025_auevo_work_github_pr.sql). */
+export async function listOpenWorkIssues(limit = 30): Promise<AuevoWorkIssue[]> {
+  const { data, error } = await db()
+    .from("auevo_work_issues")
+    .select(WORK_ISSUE_COLUMNS)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as AuevoWorkIssue[];
+}
+
 export interface FinancialLeagueCohort {
   id: string;
   challenge_id: string | null;

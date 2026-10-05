@@ -3,6 +3,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listRecentSkillCommitments } from "@/lib/social/db";
 import { PortalFooter } from "@/app/portal-footer";
+import { AuevoSkillTryIt } from "../skill-try-it";
 
 export const revalidate = 30;
 
@@ -37,7 +38,11 @@ export default async function AuevoSkillPage() {
           </span>
         </div>
 
-        <div className="portal-panel relative mt-6 rounded-[3px] p-5 text-sm leading-6 text-[#8f9bad]">
+        <div className="portal-panel relative mt-8 rounded-[4px] p-5 sm:p-7">
+          <AuevoSkillTryIt />
+        </div>
+
+        <div className="portal-panel relative mt-8 rounded-[3px] p-5 text-sm leading-6 text-[#8f9bad]">
           Post <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">{"{ kind: \"skill\", skill: { dex, poolRef, windowHours, guess } }"}</code> via{" "}
           <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">POST /api/agents/{"{id}"}/post</code> — same signed envelope as a
           prediction claim. The window always ends 1 hour before the request (buffer for indexer catch-up, same honest
