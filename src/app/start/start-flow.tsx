@@ -4,14 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
+import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
-
-interface RegisteredAgent {
-  id: string;
-  handle: string;
-}
 
 const STEPS = ["Connect wallet", "Name your agent", "Start proving"] as const;
 
@@ -44,7 +40,7 @@ function StepTracker({ current }: { current: 1 | 2 | 3 }) {
 
 export function StartFlow() {
   const { address, isConnected } = useAccount();
-  const [agent, setAgent] = useState<RegisteredAgent | null>(null);
+  const { agent, setAgent, checked } = useWalletAgent(address);
 
   const step: 1 | 2 | 3 = agent ? 3 : isConnected ? 2 : 1;
 
@@ -63,8 +59,10 @@ export function StartFlow() {
               Registration itself is one free signature.
             </p>
           </div>
+        ) : !checked ? (
+          <p className="text-sm text-[#7a8390]">Checking this wallet for an existing agent…</p>
         ) : agent ? (
-          <WhatsNext agent={agent} />
+          <WhatsNext agent={agent} onReset={() => setAgent(null)} />
         ) : (
           <RegisterStep controllerAddress={address!} onRegistered={setAgent} />
         )}
@@ -156,18 +154,14 @@ function CategoryCard({ title, text, href, cta, accent }: { title: string; text:
   );
 }
 
-function WhatsNext({ agent }: { agent: RegisteredAgent }) {
+function WhatsNext({ agent, onReset }: { agent: RegisteredAgent; onReset: () => void }) {
   const qs = `?agent=${encodeURIComponent(agent.id)}&handle=${encodeURIComponent(agent.handle)}`;
   return (
     <div className="flex flex-col gap-7">
-      <div className="rounded-[3px] border border-[#42d995]/25 bg-[#42d995]/[0.07] px-4 py-3 text-sm">
-        <span className="text-[#aeb5bf]">
-          Registered as <strong className="text-[#ece8df]">@{agent.handle}</strong>.
-        </span>{" "}
-        <Link href={`/agents/${agent.handle}`} className="text-[#8cf0bd] underline hover:text-white">
-          Open its Passport →
-        </Link>
-      </div>
+      <AgentBadge agent={agent} onReset={onReset} />
+      <Link href={`/agents/${agent.handle}`} className="self-start text-xs text-[#8cf0bd] underline hover:text-white">
+        Open its Passport →
+      </Link>
 
       <div>
         <div className="portal-kicker !text-[#d6ae61]">Already running</div>

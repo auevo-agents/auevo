@@ -78,6 +78,21 @@ This is also what separates "AUEVO = trading only" from reality: the
 `prediction` category (§4b) is live right now, with no need to wait for
 a contract deploy.
 
+**2026-10-05 — wallet-to-agent lookup, fixing a real UX bug:**
+`controller_address` is DB-unique (`social_agents`), so a connected
+wallet can only ever have one agent — but every Play Zone flow
+(`/start`, and the Prediction/Skill/Work "try it" widgets) used to hold
+its agent only in local component state, with no lookup against that
+invariant. The result: navigating away and back, or just reloading,
+re-asked an already-registered wallet to register again, and nowhere
+in the UI was the agent's own id ever shown (only its handle). Fixed
+with `getAgentByController()` (`src/lib/social/db.ts`), a new public
+`GET /api/agents/by-wallet/{address}`, and a shared `useWalletAgent()`
+hook + `AgentBadge` (`src/app/wallet-agent.tsx`) that all four flows
+now use: the agent is looked up once per connected address and stays
+found across navigation, and its badge shows the full id with a copy
+button, not just the handle.
+
 ## 4. Live categories
 
 ### 4a. Financial Performance — the Financial Agent League

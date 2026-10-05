@@ -30,6 +30,15 @@ export async function getAgentByHandle(handle: string): Promise<SocialAgent | nu
   return data as SocialAgent | null;
 }
 
+/** controller_address has a DB-level unique constraint (see /api/agents/register's 23505 handling) — a wallet maps to at most one agent, so Play Zone flows can look this up proactively instead of re-asking a connected wallet to register every time. Caller must already lowercase the address (register does the same on insert). */
+export async function getAgentByController(controllerAddress: string): Promise<SocialAgent | null> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new Error("Supabase is not configured on the server");
+  const { data, error } = await supabase.from("social_agents").select(AGENT_COLUMNS).eq("controller_address", controllerAddress).maybeSingle();
+  if (error) throw error;
+  return data as SocialAgent | null;
+}
+
 /** Never-retired agents only — the population the Longevity cron (src/lib/auevo/longevity.ts) records a Proof Event for. */
 export async function listActiveAgents(): Promise<SocialAgent[]> {
   const supabase = getSupabaseServer();
