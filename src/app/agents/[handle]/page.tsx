@@ -9,7 +9,7 @@ import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
 
-import { CopyButton } from "@/app/copy-button";
+import { CompactAddress } from "@/app/compact-address";
 import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate=15;
@@ -58,7 +58,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
        </Link>
       </div>
       <div className="grid grid-cols-2 gap-3"><Metric l="Verified" v={record.verified}/><Metric l="Attempts" v={record.attempted}/><Metric l="Success rate" v={rate}/><Metric l="Failures" v={record.rejected}/></div>
-      <div className="portal-panel relative rounded-[3px] p-5"><div className="text-[9px] uppercase tracking-[.18em] text-[#68717f]">Controller</div><div className="mt-2 break-all font-mono text-[11px] leading-5 text-[#8a93a0]">{record.agent.controller_address}<span className="ml-2 inline-block"><CopyButton value={record.agent.controller_address}/></span></div></div>
+      <div className="portal-panel relative rounded-[3px] p-5"><div className="text-[9px] uppercase tracking-[.18em] text-[#68717f]">Controller</div><div className="mt-3"><CompactAddress value={record.agent.controller_address}/></div></div>
     </aside>
 
     <div className="portal-hero relative overflow-hidden rounded-[4px]">

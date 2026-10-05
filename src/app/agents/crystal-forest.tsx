@@ -36,7 +36,7 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = .95;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       const scene = new THREE.Scene();
       scene.background = new THREE.Color("#07110e");
@@ -46,7 +46,7 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
       orbit.target.set(0, single ? 2 : 1.2, single ? 0 : -1.3);
       orbit.enableDamping = true; orbit.dampingFactor = .065; orbit.enablePan = false;
       orbit.enableZoom = false;
-      orbit.autoRotate = !reducedMotion.matches; orbit.autoRotateSpeed = .12;
+      orbit.autoRotate = !reducedMotion.matches; orbit.autoRotateSpeed = single ? .65 : .32;
       orbit.minPolarAngle = .78; orbit.maxPolarAngle = 1.48; orbit.minDistance = 7; orbit.maxDistance = 44;
       const resetCamera = () => {
         const aspect = Math.max(.6, canvas.clientWidth / Math.max(1, canvas.clientHeight));
@@ -62,34 +62,39 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
       }, reset: resetCamera };
       const pmrem = new THREE.PMREMGenerator(renderer);
       const room = new RoomEnvironment();
+      for(const [x,color] of [[-3,0xffd994],[3,0x66e3ae]] as const){
+        const panelGeometry=new THREE.PlaneGeometry(.7,4);
+        const panelMaterial=new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide});
+        const panel=new THREE.Mesh(panelGeometry,panelMaterial);panel.position.set(x,2,-2);panel.rotation.y=x<0?.5:-.5;room.add(panel);
+      }
       const environment = pmrem.fromScene(room, .025);
-      scene.environment = environment.texture; scene.environmentIntensity = .75;
+      scene.environment = environment.texture; scene.environmentIntensity = 1.15;
       room.dispose(); pmrem.dispose();
-      scene.add(new THREE.HemisphereLight(0xa6d8ba, 0x173020, 2.0));
-      const sun = new THREE.DirectionalLight(0xffe4a0, 5.5);
+      scene.add(new THREE.HemisphereLight(0xa6d8ba, 0x06100b, .55));
+      const sun = new THREE.DirectionalLight(0xffe4a0, 2.4);
       sun.position.set(-4, 10, 6); sun.castShadow = true;
       sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
       sun.shadow.camera.left = -17; sun.shadow.camera.right = 17; sun.shadow.camera.top = 15; sun.shadow.camera.bottom = -15;
       sun.shadow.normalBias = .04; sun.shadow.bias = -.0001; sun.shadow.radius = 3; scene.add(sun);
-      const fill = new THREE.DirectionalLight(0x66dca4, 2.7); fill.position.set(6, 5, -6); scene.add(fill);
-      const rim = new THREE.DirectionalLight(0xffd16e, 3); rim.position.set(0, 4, -12); scene.add(rim);
+      const fill = new THREE.DirectionalLight(0x66dca4, .85); fill.position.set(6, 5, -6); scene.add(fill);
+      const rim = new THREE.DirectionalLight(0xffd16e, 2.1); rim.position.set(0, 4, -12); scene.add(rim);
       const geometries = new Set<InstanceType<typeof THREE.BufferGeometry>>();
       const materials = new Set<InstanceType<typeof THREE.Material>>();
       const textures = new Set<InstanceType<typeof THREE.Texture>>();
       const cube = new THREE.BoxGeometry(1, 1, 1); geometries.add(cube);
       const edgeGeometry = new THREE.EdgesGeometry(cube); geometries.add(edgeGeometry);
-      const gold = new THREE.MeshPhysicalMaterial({ color: "#b78c38", metalness: .78, roughness: .21, clearcoat: 1, clearcoatRoughness: .12, envMapIntensity: 1.6 });
+      const gold = new THREE.MeshPhysicalMaterial({ color: "#b78c38", metalness: .92, roughness: .16, clearcoat: 1, clearcoatRoughness: .12, envMapIntensity: 1.6 });
       materials.add(gold);
       const crystalMaterials = new Map<string, InstanceType<typeof THREE.MeshPhysicalMaterial>>();
       Object.entries(FOREST_COLORS).forEach(([name, color]) => {
         if (name === "trunk") return;
         const failed = name === "rejected" || name === "disputed";
-        const material = new THREE.MeshPhysicalMaterial({ color, metalness: .13, roughness: failed ? .52 : .12,
-          transmission: mobile ? .12 : .36, thickness: .35, ior: 1.48, clearcoat: 1, clearcoatRoughness: .08,
-          envMapIntensity: 1.7, emissive: color, emissiveIntensity: failed ? .04 : name === "pending" ? .07 : .11 });
+        const material = new THREE.MeshPhysicalMaterial({ color, metalness: .06, roughness: failed ? .42 : .075,
+          transmission: failed ? .12 : mobile ? .35 : .72, thickness: .8, ior: 1.52, attenuationColor: color, attenuationDistance: 1.8, clearcoat: 1, clearcoatRoughness: .08,
+          envMapIntensity: 2.2, emissive: color, emissiveIntensity: failed ? .015 : name === "pending" ? .025 : .035 });
         crystalMaterials.set(name, material); materials.add(material);
       });
-      const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xd9ce98, transparent: true, opacity: .68 }); materials.add(edgeMaterial);
+      const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xd9ce98, transparent: true, opacity: .22 }); materials.add(edgeMaterial);
       const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), vector = new THREE.Vector3(), scale = new THREE.Vector3();
       const pickTargets: InstanceType<typeof THREE.Object3D>[] = [];
       const treeScale = 1.4;
@@ -133,19 +138,19 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
         const pixels = context.createImageData(256, 256);
         for (let i = 0; i < pixels.data.length; i += 4) {
           const x = (i / 4) % 256, y = Math.floor(i / 1024), n = noise(x, y), patch = noise(Math.floor(x / 12), Math.floor(y / 12));
-          pixels.data[i] = 15 + n * 27 + (patch > .76 ? 12 : 0); pixels.data[i + 1] = 24 + n * 32; pixels.data[i + 2] = 17 + n * 15; pixels.data[i + 3] = 255;
+          pixels.data[i] = 5 + n * 12 + (patch > .76 ? 4 : 0); pixels.data[i + 1] = 11 + n * 16; pixels.data[i + 2] = 8 + n * 9; pixels.data[i + 3] = 255;
         }
         context.putImageData(pixels, 0, 0);
       }
       const terrainMap = new THREE.CanvasTexture(mapCanvas); terrainMap.wrapS = terrainMap.wrapT = THREE.RepeatWrapping;
       terrainMap.repeat.set(22, 19); terrainMap.colorSpace = THREE.SRGBColorSpace; textures.add(terrainMap);
-      const terrainMaterial = new THREE.MeshStandardMaterial({ map: terrainMap, bumpMap: terrainMap, bumpScale: .08, roughness: .89, metalness: .17 }); materials.add(terrainMaterial);
+      const terrainMaterial = new THREE.MeshStandardMaterial({ map: terrainMap, bumpMap: terrainMap, color: "#657b6b", bumpScale: .09, roughness: .7, metalness: .12 }); materials.add(terrainMaterial);
       const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial); terrain.receiveShadow = true; scene.add(terrain);
-      const stonesMaterial = new THREE.MeshStandardMaterial({ color: "#273a22", roughness: .8, metalness: .2 }); materials.add(stonesMaterial);
+      const stonesMaterial = new THREE.MeshStandardMaterial({ color: "#11251c", roughness: .8, metalness: .2 }); materials.add(stonesMaterial);
       const stones = new THREE.InstancedMesh(cube, stonesMaterial, mobile ? 420 : 900);
       for (let i = 0; i < stones.count; i++) {
         vector.set((noise(i, 1) - .5) * 42, -.035, (noise(i, 2) - .5) * 27);
-        scale.set(.16 + noise(i, 3) * .32, .04 + noise(i, 4) * .08, .13 + noise(i, 5) * .31);
+        scale.set(.07 + noise(i, 3) * .18, .02 + noise(i, 4) * .05, .07 + noise(i, 5) * .16);
         matrix.compose(vector, quaternion, scale); stones.setMatrixAt(i, matrix);
       }
       stones.receiveShadow = true; stones.castShadow = true; scene.add(stones);
@@ -191,7 +196,7 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
       const render = (now: number) => {
         frame = requestAnimationFrame(render); if (!visible || now - lastTime < (mobile ? 33 : 20)) return;
         const delta = Math.min(.1, (now - lastTime) / 1000); lastTime = now;
-        orbit.autoRotate = !reducedMotion.matches && hoveredIndex < 0 && !dragging; orbit.update(delta); composer.render();
+        orbit.autoRotate = !reducedMotion.matches && (single || hoveredIndex < 0) && !dragging; orbit.update(delta); composer.render();
       };
       composer.render(); setSceneState("ready"); frame = requestAnimationFrame(render);
       dispose = () => {

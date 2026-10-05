@@ -68,3 +68,6 @@
 .singleTree .viewport{height:520px;min-height:420px;border:0;border-radius:0}.singleTree .fallback{display:flex;align-items:center;justify-content:center}.singleTree .fallback a{width:330px;max-width:80%}.singleTree .fallback svg{width:100%;height:auto}.singleTree .sceneLabel{display:none}.singleTree .tooltip{display:none}@media(max-width:600px){.singleTree .viewport{height:430px}}
 
 .singleTree .fallback a:first-child{position:relative;left:auto;bottom:auto;transform:none;width:330px;max-width:80%}.singleTree{padding:0;border:0;border-radius:0;box-shadow:none}
+.fallback svg{animation:crystal-breathe 7s ease-in-out infinite}.fallback a:nth-child(2n) svg{animation-delay:-3s}.fallback a:nth-child(3n) svg{animation-delay:-5s}.singleTree .fallback svg{filter:drop-shadow(0 10px 14px #0009) drop-shadow(0 0 18px #d5bb7820)}
+@keyframes crystal-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.fallback svg{animation:none}}

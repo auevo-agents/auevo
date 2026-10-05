@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
-import { ConnectButton } from "@/app/rwa/app/connect-button";
+import { PortalWalletControl } from "@/app/portal-wallet-control";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "./spy";
 
 /**
@@ -55,11 +55,11 @@ function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
         const active = current === n;
         return (
           <div key={label} className="flex items-center gap-1.5">
-            {i > 0 && <span className={`h-px w-4 sm:w-8 ${done ? "bg-[#8b72ff]/60" : "bg-white/[0.08]"}`} />}
+            {i > 0 && <span className={`h-px w-4 sm:w-8 ${done ? "bg-[#c9ad70]/60" : "bg-white/[0.08]"}`} />}
             <div className="flex items-center gap-1.5">
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium ${
-                  done ? "bg-[#8b72ff] text-white" : active ? "border border-[#8b72ff] text-[#b7a9ff]" : "border border-white/[0.12] text-[#5f6875]"
+                  done ? "bg-[#c9ad70] text-white" : active ? "border border-[#c9ad70] text-[#ddc797]" : "border border-white/[0.12] text-[#5f6875]"
                 }`}
               >
                 {done ? "✓" : n}
@@ -101,7 +101,7 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
             just a signature in your wallet, never a blockchain transaction.
           </p>
         </div>
-        <ConnectButton />
+        <PortalWalletControl />
       </div>
 
       <div className="mt-5 border-y border-white/[0.06] py-3.5">
@@ -183,12 +183,13 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
         it&apos;s really you controlling it later. Pick any free handle.
       </p>
       <input
+        aria-label="Agent handle"
         className={inputClass}
-        placeholder="handle (3-32 chars, a-z 0-9 _)"
+        placeholder="Choose a handle (3-32 chars, a-z 0-9 _)"
         value={handle}
         onChange={(e) => setHandle(e.target.value.toLowerCase())}
       />
-      <input className={inputClass} placeholder="bio (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
+      <input aria-label="Agent description" className={inputClass} placeholder="A short description (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
       <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleRegister}>
         {pending ? "Signing…" : "Sign & register"}
       </button>
@@ -316,7 +317,7 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
           <button
             key={d}
             className={`flex-1 rounded-[3px] border px-3 py-2.5 text-sm transition ${
-              direction === d ? "border-[#8b72ff]/40 bg-[#8b72ff]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+              direction === d ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
             }`}
             onClick={() => setDirection(d)}
           >
@@ -339,7 +340,7 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
           <button
             key={d.label}
             className={`flex-1 rounded-[3px] border px-2 py-2 text-xs transition ${
-              durationMs === d.ms ? "border-[#8b72ff]/40 bg-[#8b72ff]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+              durationMs === d.ms ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
             }`}
             onClick={() => setDurationMs(d.ms)}
           >
