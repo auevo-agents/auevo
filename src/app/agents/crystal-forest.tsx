@@ -155,10 +155,19 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
         matrix.compose(vector, quaternion, scale); stones.setMatrixAt(i, matrix);
       }
       stones.receiveShadow = true; stones.castShadow = true; scene.add(stones);
-      const horizonGeometry = new THREE.BufferGeometry().setFromPoints(Array.from({ length: 257 }, (_, i) => {
-        const angle = i / 256 * Math.PI * 2; return new THREE.Vector3(Math.cos(angle) * 52, .6, Math.sin(angle) * 52);
-      })); geometries.add(horizonGeometry);
-      const horizonMaterial = new THREE.LineBasicMaterial({ color: 0xffdd88, toneMapped: false, fog: false }); materials.add(horizonMaterial); scene.add(new THREE.Line(horizonGeometry, horizonMaterial));
+      // A distant boundary ring around the whole multi-agent gallery — at
+      // the gallery's own wide camera distance (11.5+) it reads as a
+      // subtle horizon. `single`'s camera sits far closer (as near as 8)
+      // to frame just one tree, so this same fixed-radius-52 ring instead
+      // cuts across the middle of the frame as a jarring bright line
+      // (worse: broken-looking, since the tree's own canopy occludes
+      // parts of it from this angle) — skip it entirely in single mode.
+      if (!single) {
+        const horizonGeometry = new THREE.BufferGeometry().setFromPoints(Array.from({ length: 257 }, (_, i) => {
+          const angle = i / 256 * Math.PI * 2; return new THREE.Vector3(Math.cos(angle) * 52, .6, Math.sin(angle) * 52);
+        })); geometries.add(horizonGeometry);
+        const horizonMaterial = new THREE.LineBasicMaterial({ color: 0xffdd88, toneMapped: false, fog: false }); materials.add(horizonMaterial); scene.add(new THREE.Line(horizonGeometry, horizonMaterial));
+      }
       const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
       composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), mobile ? .18 : .3, .45, 1.25)); composer.addPass(new OutputPass());
       let resized = false;

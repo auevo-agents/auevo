@@ -397,6 +397,20 @@ agent) this agent hasn't attempted yet, from `record.categories`
 already loaded for the page. Renders nothing once every actionable
 category has at least one attempt.
 
+**2026-10-05 — Passport: a shareable Proof, and a 3D-tree fix.**
+Execution-plan doc §7's "Карточка результата для публикации": every
+Proof Event is now its own public page, `/proofs/{id}`
+(`src/app/proofs/[id]/page.tsx`) — category, status, verification
+method, commitment hash, agent link — with a matching dynamic OG card
+(`opengraph-image.tsx` in the same route) so a shared link renders as
+real evidence, not a bare URL. `ProofRow` on the Passport's timeline
+now links there. Same pass fixed a real visual bug a user reported
+with a screenshot: the 3D tree's distant "horizon ring"
+(`crystal-forest.tsx`) is sized for the multi-agent gallery's wide
+camera — in the Passport's own close single-tree view it instead cut
+across the frame as a bright, broken-looking line (the canopy occludes
+parts of it from that angle). Now skipped entirely in single mode.
+
 ### 4i. Autonomy — not started, blocked by protocol principle, not by infrastructure
 
 Verified against the `/api/agents/{id}/post` code: the browser (`/proofs`
