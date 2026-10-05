@@ -3,8 +3,48 @@ import { ERC20_ABI } from "@/lib/erc20-abi";
 import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS, STAKE_KIND } from "./abi";
 import { CREDIT_IDENTITY_WRITE_ABI } from "./identity-abi";
 
-/** The block CREDIT_IDENTITY_ADDRESS was deployed at (tx 0x85344514ef0267a06ef0e0d1528a68b7fde1623974fc223596ea084b5a2e868b, 2026-10-04) — a safe floor, never needed yet since every read here is a live view call, not an event scan. */
+/** The block CREDIT_IDENTITY_ADDRESS was deployed at (tx 0x85344514ef0267a06ef0e0d1528a68b7fde1623974fc223596ea084b5a2e868b, 2026-10-04) — a safe floor for the Registered-event scan below. */
 export const CREDIT_IDENTITY_DEPLOY_BLOCK = 80042935n;
+
+/**
+ * Finds an owner's own credit agent id by scanning Registered events on the
+ * identity registry — the one thing register-panel.tsx's in-memory state
+ * (set only from the receipt of a register() the visitor JUST sent) can't
+ * survive a page refresh without: this contract has no "ownerId" index or
+ * ERC-721 enumeration, so a direct read can't answer "does this address
+ * already have one." Cheap right now (a handful of registrations total);
+ * becomes an indexer job once that stops being true. Picks the highest
+ * (most recent) agentId if an owner somehow registered more than once.
+ */
+export async function findCreditAgentIdForOwner(owner: `0x${string}`): Promise<bigint | null> {
+  const pool = getCreditPoolAddress();
+  if (!pool) return null;
+
+  const client = getRobinhoodClient();
+  const identityAddress = await client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "identity" });
+
+  const logs = await client.getLogs({
+    address: identityAddress,
+    event: {
+      type: "event",
+      name: "Registered",
+      inputs: [
+        { name: "agentId", type: "uint256", indexed: true },
+        { name: "owner", type: "address", indexed: true },
+        { name: "agentURI", type: "string", indexed: false },
+      ],
+    },
+    args: { owner },
+    fromBlock: CREDIT_IDENTITY_DEPLOY_BLOCK,
+    toBlock: "latest",
+  });
+  if (logs.length === 0) return null;
+
+  return logs.reduce((max, log) => {
+    const id = log.args.agentId as bigint;
+    return id > max ? id : max;
+  }, 0n);
+}
 
 /**
  * Server-only reads against AgentCreditPool (contracts/src/AgentCreditPool.sol).

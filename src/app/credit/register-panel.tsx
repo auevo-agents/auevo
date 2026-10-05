@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { type Address, decodeEventLog } from "viem";
-import { useAccount, useReadContract, useSignMessage, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useBalance, useReadContract, useSignMessage, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import Link from "next/link";
 import { ConnectButton } from "@/app/rwa/app/connect-button";
 import { AGENT_CREDIT_POOL_ABI } from "@/lib/credit/abi";
 import { CREDIT_IDENTITY_WRITE_ABI } from "@/lib/credit/identity-abi";
@@ -24,7 +25,7 @@ const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] 
  * lookups work by handle (see /api/credit/link, src/lib/credit/link.ts).
  */
 export function RegisterForCreditPanel({ pool }: { pool: Address }) {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const { agent } = useWalletAgent(address);
 
   const { data: identityAddress, isLoading: identityLoading, isError: identityErrored } = useReadContract({
@@ -39,6 +40,35 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
 
   const [newAgentId, setNewAgentId] = useState<bigint | null>(null);
   const decodedTx = useRef<string | null>(null);
+
+  // A fresh registration is known from the just-sent tx's own receipt. A
+  // RELOAD has no such receipt — this contract has no "does this address
+  // already have an id" view, so without this lookup every reload forgot
+  // the id entirely and re-showed the register button, inviting a second,
+  // wasted registration.
+  const [existingLookup, setExistingLookup] = useState<"idle" | "checking" | "done">("idle");
+  useEffect(() => {
+    if (!address) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExistingLookup("idle");
+      return;
+    }
+    let cancelled = false;
+    setExistingLookup("checking");
+    fetch(`/api/credit/agent-id?address=${address}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelled) return;
+        if (json?.agentId) setNewAgentId(BigInt(json.agentId));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setExistingLookup("done");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
 
   useEffect(() => {
     if (!registerReceipt.data || !identityAddress || decodedTx.current === registerReceipt.data.transactionHash) return;
@@ -86,6 +116,9 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
     }
   }
 
+  const { data: gasBalance } = useBalance({ address, chainId: ROBINHOOD_CHAIN_ID, query: { enabled: Boolean(address) && chainId === ROBINHOOD_CHAIN_ID } });
+  const noGas = chainId === ROBINHOOD_CHAIN_ID && gasBalance !== undefined && gasBalance.value === 0n;
+
   return (
     <div className="rounded-[3px] border border-[var(--line)] bg-[var(--panel)] p-4">
       <h3 className="flex items-center font-medium">
@@ -101,9 +134,21 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
           <span className="text-sm text-[var(--muted)]">Connect a wallet to register.</span>
           <ConnectButton />
         </div>
+      ) : existingLookup !== "done" ? (
+        <p className="mt-3 text-sm text-[var(--muted)]">Checking whether this wallet already has a credit agent id…</p>
       ) : newAgentId === null ? (
         <div className="mt-3 flex flex-col gap-2">
           {agent && <p className="text-xs text-[var(--muted)]">Registering will tag this id with your AUEVO handle, @{agent.handle}.</p>}
+          {noGas && (
+            <p className="text-xs text-[var(--red)]">
+              This wallet has 0 {gasBalance?.symbol ?? "gas token"} on Robinhood Chain — the transaction will fail without it. Robinhood
+              Chain has its own gas balance, separate from any other chain your wallet holds funds on; bridge some over on{" "}
+              <Link href="/rwa/app/swap" className="underline hover:text-white">
+                the swap page
+              </Link>{" "}
+              first.
+            </p>
+          )}
           <button
             className={buttonClass}
             disabled={!identityAddress || register.isPending || registerReceipt.isLoading}
@@ -125,13 +170,16 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
           {register.error && <p className="text-xs text-[var(--red)]">{register.error.message}</p>}
         </div>
       ) : (
-        <div className="mt-3 flex flex-col gap-2">
-          <p className="text-sm text-[var(--green)]">
-            Registered — your credit agent id is <span className="font-mono text-[var(--ink)]">{newAgentId.toString()}</span>.{" "}
-            <a className="underline hover:text-white" href={`/credit/agent?id=${newAgentId.toString()}`}>
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="flex items-center gap-3 rounded-[3px] border border-[var(--green)]/30 bg-[var(--green)]/[0.06] px-3 py-2.5">
+            <div>
+              <div className="text-[10px] uppercase tracking-[.08em] text-[var(--muted)]">Your credit agent id</div>
+              <div className="font-mono text-2xl font-semibold text-[var(--ink)]">#{newAgentId.toString()}</div>
+            </div>
+            <a className="ml-auto text-sm text-[var(--green)] underline hover:text-white" href={`/credit/agent?id=${newAgentId.toString()}`}>
               Open it →
             </a>
-          </p>
+          </div>
           {agent && linkStatus !== "linked" && (
             <>
               <button className={inputClass + " text-left"} disabled={linkStatus === "linking"} onClick={handleLink}>
