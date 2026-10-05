@@ -462,3 +462,42 @@ export async function setEntryProofEvent(entryId: string, proofEventId: string):
   const { error } = await db().from("auevo_financial_league_entries").update({ proof_event_id: proofEventId }).eq("id", entryId);
   if (error) throw error;
 }
+
+export interface AgentRun {
+  id: string;
+  agentId: string;
+  category: string;
+  model: string;
+  status: "running" | "completed" | "failed";
+  transcript: unknown[];
+  createdAt: string;
+  completedAt: string | null;
+}
+
+const AGENT_RUN_COLUMNS = "id, agent_id, category, model, status, transcript, created_at, completed_at";
+
+/**
+ * The executor's own log (src/lib/auevo/executor.ts) for whichever run
+ * produced this Proof Event, if any — the evidence behind the "AUEVO-
+ * hosted run" Autonomy label (execution-plan doc §4i): a Proof Event with
+ * no matching row here was never run by AUEVO's own executor, so it's
+ * labeled "External signed submission" instead. One row can exist per
+ * Proof Event (submitSkillAttempt/submitClaimAttempt/
+ * submitVirtualPortfolioAttempt each write exactly one), so .maybeSingle()
+ * is correct, not just convenient.
+ */
+export async function getAgentRunByProofEventId(proofEventId: string): Promise<AgentRun | null> {
+  const { data, error } = await db().from("auevo_agent_runs").select(AGENT_RUN_COLUMNS).eq("proof_event_id", proofEventId).maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    id: data.id as string,
+    agentId: data.agent_id as string,
+    category: data.category as string,
+    model: data.model as string,
+    status: data.status as AgentRun["status"],
+    transcript: (data.transcript as unknown[]) ?? [],
+    createdAt: data.created_at as string,
+    completedAt: data.completed_at as string | null,
+  };
+}

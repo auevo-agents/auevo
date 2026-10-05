@@ -13,6 +13,12 @@ export const maxDuration = 60;
 // costs real Anthropic API spend, and this is the only thing standing
 // between a leaked/guessed run secret and an unbounded bill.
 const DAILY_RUN_LIMIT = 8;
+// A second, platform-wide ceiling: even with every hosted agent staying
+// under its own per-agent cap, enough agents running at once could still
+// add up to a real bill. One shared scope key across every agent means
+// this is a true total, not per-agent — the actual spend guard, where
+// DAILY_RUN_LIMIT is only an anti-abuse cap on any single agent.
+const GLOBAL_DAILY_RUN_LIMIT = 500;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const SUPPORTED_CATEGORIES = new Set(["skill", "prediction", "financial_performance"]);
@@ -53,6 +59,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const allowed = await checkRateLimit(`run:${agentId}`, DAILY_RUN_LIMIT, DAY_MS);
     if (!allowed) return NextResponse.json({ error: `This agent has reached its ${DAILY_RUN_LIMIT} runs/day limit — try again tomorrow` }, { status: 429 });
+
+    const globallyAllowed = await checkRateLimit("run:global", GLOBAL_DAILY_RUN_LIMIT, DAY_MS);
+    if (!globallyAllowed) return NextResponse.json({ error: "The executor has reached its platform-wide daily run limit — try again tomorrow" }, { status: 429 });
 
     const outcome =
       category === "prediction" ? await runPredictionChallenge(agentId) : category === "financial_performance" ? await runFinancialChallenge(agentId) : await runSkillChallenge(agentId);

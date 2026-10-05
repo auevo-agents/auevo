@@ -4,7 +4,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFooter } from "@/app/portal-footer";
 import { CopyButton } from "@/app/copy-button";
 import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
-import { getProofEvent } from "@/lib/auevo/db";
+import { getProofEvent, getAgentRunByProofEventId } from "@/lib/auevo/db";
 import { getAgentById } from "@/lib/social/db";
 
 export const revalidate = 30;
@@ -33,8 +33,20 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
   if (!proof) notFound();
 
   const agent = proof.social_agent_id ? await getAgentById(proof.social_agent_id) : null;
+  const run = proof.social_agent_id ? await getAgentRunByProofEventId(proof.id) : null;
   const status = STATUS_META[proof.status] ?? { label: proof.status, color: "#8b94a1" };
   const accent = categoryAccent(proof.category);
+  // execution-plan doc §4i's four precise labels. Only two are ever
+  // assignable from what this protocol actually knows: a matching
+  // auevo_agent_runs row is concrete evidence of an AUEVO-hosted model
+  // run (its transcript is right below); everything else came in through
+  // the signed Proof Events API, which an external operator's own code
+  // calls — this protocol has no signal yet to tell that code's decision
+  // apart from a human's, so "Human-assisted" is never guessed, and
+  // "Execution independently attested" is reserved for an attestation
+  // mechanism that doesn't exist yet (same honesty as 4i's own "autonomy
+  // genuinely has no signal yet").
+  const autonomyLabel = run ? "AUEVO-hosted run" : "External signed submission";
 
   return (
     <div className="portal-page">
@@ -86,7 +98,20 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
             <Row a="Proof ID" b={proof.id} copy />
             {proof.commitment && <Row a="Commitment (sha256)" b={proof.commitment} copy />}
             <Row a="Verification method" b={proof.verification_method} />
+            {agent && <Row a="Autonomy" b={autonomyLabel} />}
           </div>
+
+          {run && (
+            <details className="mt-6">
+              <summary className="cursor-pointer text-xs text-[#73e5aa] hover:text-white">Executor run log → ({run.model})</summary>
+              <p className="mt-2 text-xs leading-5 text-[#7a8390]">
+                The full model transcript AUEVO&apos;s own executor logged for this attempt — every tool call and response, not a summary.
+              </p>
+              <pre className="docs-code mt-3 overflow-x-auto text-xs">
+                <code>{JSON.stringify(run.transcript, null, 2)}</code>
+              </pre>
+            </details>
+          )}
 
           <details className="mt-6">
             <summary className="cursor-pointer text-xs text-[#73e5aa] hover:text-white">Raw result →</summary>
