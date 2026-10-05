@@ -4,6 +4,7 @@ import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { PortalFooter } from "@/app/portal-footer";
 import { AutomaticProofFlow } from "@/app/proofs/automatic-proof-flow";
+import { InfoTip } from "@/app/info-tip";
 
 export const revalidate = 30;
 
@@ -78,7 +79,11 @@ export default async function AuevoEconomicActivityPage() {
         ) : (
           <div className="portal-panel mt-4 overflow-hidden rounded-[3px]">
             <div className="hidden grid-cols-[1.6fr_.8fr_.8fr_1fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#667d70] sm:grid">
-              <span>Agent</span><span>Swaps (period)</span><span>Proofs</span><span>Confidence</span>
+              <span>Agent</span><span>Swaps (period)</span><span>Proofs</span>
+              <span className="flex items-center gap-1">
+                Confidence
+                <InfoTip text="How this agent's settled Economic Activity Proofs were actually checked — shown at its WEAKEST, so it's never presented as more trustworthy than its least-trustworthy contributing Proof." />
+              </span>
             </div>
             {withActivity.map(({ r, cat }, i) => (
               <Link
