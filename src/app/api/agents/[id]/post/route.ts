@@ -5,7 +5,7 @@ import { AuthError, parseSignedEnvelope, verifySignedRequest } from "@/lib/socia
 import { getAgentById, insertNonce } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
 import { getChallengeBySlug, createProofEvent, getMarketById } from "@/lib/auevo/db";
-import { SKILL_MIN_WINDOW_HOURS, SKILL_MAX_WINDOW_HOURS, computeSkillWindow, poolExists, countUniqueTraders } from "@/lib/auevo/skill";
+import { submitSkillAttempt, SkillSubmitError } from "@/lib/auevo/submit";
 
 export const runtime = "nodejs";
 
@@ -225,93 +225,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (kind === "skill") {
       const skill = payload.skill ?? {};
-      const dex = skill.dex === "uniswap_v3" || skill.dex === "uniswap_v4" ? skill.dex : null;
-      // Lowercased once, here, so every downstream use (poolExists' ilike,
-      // countUniqueTraders' exact match against indexer_swaps — which is
-      // always lowercase — the commitment hash, and the stored result)
-      // agrees: a v3 pool address typed with any casing (this form's own
-      // custom-pool field included) still matches real chain data instead
-      // of countUniqueTraders silently returning 0 for a correct guess.
-      const poolRef = typeof skill.poolRef === "string" ? skill.poolRef.trim().toLowerCase() : "";
-      const windowHours = Number(skill.windowHours);
-      const guess = Number(skill.guess);
-      if (
-        !dex ||
-        !poolRef ||
-        !Number.isInteger(windowHours) ||
-        windowHours < SKILL_MIN_WINDOW_HOURS ||
-        windowHours > SKILL_MAX_WINDOW_HOURS ||
-        !Number.isInteger(guess) ||
-        guess < 0
-      ) {
-        await supabase.from("agent_posts").delete().eq("id", post.id);
-        return NextResponse.json(
-          { error: `skill requires dex ('uniswap_v3'|'uniswap_v4'), poolRef, windowHours (${SKILL_MIN_WINDOW_HOURS}-${SKILL_MAX_WINDOW_HOURS}), and guess >= 0` },
-          { status: 400 }
-        );
-      }
-      if (!(await poolExists(supabase, dex, poolRef))) {
-        await supabase.from("agent_posts").delete().eq("id", post.id);
-        return NextResponse.json({ error: `Unknown pool for ${dex}: ${poolRef} — check indexer_pools` }, { status: 400 });
-      }
-
-      // Graded right here, not pending+cron like claim/work: the window
-      // this asks about always ends in the past (computeSkillWindow's
-      // buffer) and its true answer is never published anywhere on the
-      // site, so there's no outcome to wait for or peek at — the agent
-      // either computed it correctly from raw chain data or it didn't.
-      const window = computeSkillWindow(windowHours);
-      const actual = await countUniqueTraders(supabase, dex, poolRef, window);
-      const verdict = actual === guess ? "correct" : "incorrect";
-      const errorPct = actual === 0 ? (guess === 0 ? 0 : null) : ((guess - actual) / actual) * 100;
-
-      const { error: skillError } = await supabase.from("agent_skill_commitments").insert({
-        post_id: post.id,
-        dex,
-        pool_ref: poolRef,
-        window_start: window.windowStart.toISOString(),
-        window_end: window.windowEnd.toISOString(),
-        guess_unique_traders: guess,
-        actual_unique_traders: actual,
-        verdict,
-      });
-      if (skillError) {
-        await supabase.from("agent_posts").delete().eq("id", post.id);
-        throw skillError;
-      }
-
-      skillResult = { dex, poolRef, windowHours, guess, actual, verdict };
-
       try {
-        const challenge = await getChallengeBySlug("agent-skill-unique-traders");
-        if (challenge) {
-          const commitment = createHash("sha256")
-            .update(JSON.stringify({ dex, poolRef, windowStart: window.windowStart.toISOString(), windowEnd: window.windowEnd.toISOString(), guess }))
-            .digest("hex");
-          await createProofEvent({
-            socialAgentId: agentId,
-            taskId: post.id,
-            challengeId: challenge.id,
-            category: "skill",
-            rulesHash: challenge.rules_hash,
-            commitment,
-            verificationMethod: "deterministic",
-            status: verdict === "correct" ? "passed" : "failed",
-            endAt: new Date().toISOString(),
-            result: {
-              dex,
-              pool_ref: poolRef,
-              window_start: window.windowStart.toISOString(),
-              window_end: window.windowEnd.toISOString(),
-              guess,
-              actual,
-              verdict,
-              ...(errorPct !== null ? { error_pct: errorPct } : {}),
-            },
-          });
-        }
-      } catch (proofErr) {
-        console.error("Failed to create AUEVO Proof Event for skill commitment", post.id, proofErr);
+        // This post row (inserted above with kind="skill") is redundant
+        // with the one submitSkillAttempt makes — deleted here and
+        // recreated inside the shared helper so both callers (this route
+        // and the executor, which never has an outer post row to begin
+        // with) go through the exact same insert.
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        const { post: skillPost, skillResult: result } = await submitSkillAttempt({
+          supabase,
+          agentId,
+          topic,
+          body: text,
+          dex: skill.dex,
+          poolRef: skill.poolRef,
+          windowHours: skill.windowHours,
+          guess: skill.guess,
+        });
+        Object.assign(post, skillPost);
+        skillResult = result;
+      } catch (err) {
+        if (err instanceof SkillSubmitError) return NextResponse.json({ error: err.message }, { status: err.status });
+        throw err;
       }
     }
 
