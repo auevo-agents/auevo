@@ -291,6 +291,13 @@ export async function getChallenge(id: string): Promise<Challenge | null> {
   return data as Challenge | null;
 }
 
+/** Every seeded challenge, across every category — backs a real browsable catalog (Playzone) instead of each category only having its own hardcoded page. Open-ended challenges (closes_at null) and closed ones are both included; the caller decides what to do with a closed one. */
+export async function listChallenges(): Promise<Challenge[]> {
+  const { data, error } = await db().from("auevo_challenges").select(CHALLENGE_COLUMNS).order("category");
+  if (error) throw error;
+  return (data ?? []) as Challenge[];
+}
+
 export interface AuevoMarket {
   id: string;
   slug: string;
