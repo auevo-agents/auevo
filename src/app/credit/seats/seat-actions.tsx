@@ -6,6 +6,8 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { ConnectButton } from "@/app/rwa/app/connect-button";
 import { AGENT_CREDIT_POOL_ABI } from "@/lib/credit/abi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
+import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
+import { WrongNetworkBanner } from "@/app/credit/wrong-network-banner";
 
 const inputClass = "rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
 const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
@@ -49,6 +51,7 @@ export function SeatActions({
     functionName: "seatEligible",
     args: agentId !== null ? [agentId] : undefined,
     query: { enabled: agentId !== null },
+    chainId: ROBINHOOD_CHAIN_ID,
   });
 
   const { data: isRoot } = useReadContract({
@@ -57,6 +60,7 @@ export function SeatActions({
     functionName: "isRoot",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(address) },
+    chainId: ROBINHOOD_CHAIN_ID,
   });
 
   const parsedConsent = useMemo(() => {
@@ -88,6 +92,7 @@ export function SeatActions({
     functionName: "seatTokenRequiredFor",
     args: parsedAmount !== null ? [parsedAmount] : undefined,
     query: { enabled: parsedAmount !== null },
+    chainId: ROBINHOOD_CHAIN_ID,
   });
 
   const approve = useWriteContract();
@@ -109,10 +114,11 @@ export function SeatActions({
   function handleSubmit() {
     if (!canSubmit || agentId === null || !consent || !parsedAmount || seatTokenRequired === undefined) return;
     approve.writeContract(
-      { address: seatTokenAddress, abi: ERC20_ABI, functionName: "approve", args: [pool, seatTokenRequired] },
+      { chainId: ROBINHOOD_CHAIN_ID, address: seatTokenAddress, abi: ERC20_ABI, functionName: "approve", args: [pool, seatTokenRequired] },
       {
         onSuccess: () =>
           vouchSeat.writeContract({
+            chainId: ROBINHOOD_CHAIN_ID,
             address: pool,
             abi: AGENT_CREDIT_POOL_ABI,
             functionName: "vouchSeat",
@@ -139,6 +145,7 @@ export function SeatActions({
         </div>
       ) : (
         <div className="mt-3 flex flex-col gap-2">
+          <WrongNetworkBanner />
           <input
             className={inputClass}
             placeholder="agent id"

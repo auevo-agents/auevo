@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type Address, isAddress, parseUnits } from "viem";
+import { type Address, formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useReadContract, useSignTypedData, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ConnectButton } from "@/app/rwa/app/connect-button";
 import { AGENT_CREDIT_POOL_ABI, CONSENT_EIP712_TYPES } from "@/lib/credit/abi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
 import { InfoTip } from "@/app/info-tip";
+import { WrongNetworkBanner } from "@/app/credit/wrong-network-banner";
 
 /**
  * Every action below sends a real transaction against a real pool the
@@ -17,6 +18,16 @@ import { InfoTip } from "@/app/info-tip";
  * since these are four genuinely different roles (owner, sponsor,
  * lender, anyone-who-can-call-repay-or-markDefault) that most visitors
  * will only ever use one of.
+ *
+ * Every read and write below passes chainId: ROBINHOOD_CHAIN_ID
+ * explicitly. Without it, a read silently targets whatever chain the
+ * connected wallet happens to be on (getWagmiConfig() also serves
+ * mainnet/base/bsc/arbitrum/hyperEvm for /rwa/app) — almost always
+ * Ethereum mainnet by default, where none of these contracts exist, so
+ * every read here would return undefined forever and every button
+ * guarding on that read would look permanently, silently disabled.
+ * WrongNetworkBanner is the other half: it tells the visitor why, and a
+ * write still prompts their wallet to switch chains on its own.
  */
 export function CreditAgentActions({ agentId, pool, assetDecimals }: { agentId: bigint; pool: Address; assetDecimals: number }) {
   const { isConnected } = useAccount();
@@ -30,11 +41,12 @@ export function CreditAgentActions({ agentId, pool, assetDecimals }: { agentId: 
 
       {isConnected && (
         <>
+          <WrongNetworkBanner />
           <SignConsentPanel agentId={agentId} pool={pool} />
           <LenderPanel pool={pool} assetDecimals={assetDecimals} />
           <VouchPanel agentId={agentId} pool={pool} assetDecimals={assetDecimals} />
           <BorrowPanel agentId={agentId} pool={pool} assetDecimals={assetDecimals} />
-          <RepayPanel pool={pool} />
+          <RepayPanel pool={pool} assetDecimals={assetDecimals} />
         </>
       )}
     </div>
@@ -56,6 +68,11 @@ function Panel({ title, titleTip, hint, children }: { title: string; titleTip?: 
 
 const inputClass = "rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
 const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
+
+/** Formats a raw on-chain amount as a human USDG figure — never shows the raw integer to a visitor who has no reason to know the asset's decimals. */
+function usdg(amount: bigint, assetDecimals: number): string {
+  return `${formatUnits(amount, assetDecimals)} USDG`;
+}
 
 /** Step 1, owner side: sign an EIP-712 consent naming one sponsor, off-chain, for free. */
 function SignConsentPanel({ agentId, pool }: { agentId: bigint; pool: Address }) {
@@ -113,13 +130,14 @@ function SignConsentPanel({ agentId, pool }: { agentId: bigint; pool: Address })
 /** Lenders AND sponsors both deposit into the same share pool — see AgentCreditPool.sol. Exported so /credit's own landing page can offer it directly, not just this agent-specific page. */
 export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecimals: number }) {
   const { address } = useAccount();
-  const { data: assetAddress } = useReadContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "asset" });
+  const { data: assetAddress } = useReadContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "asset", chainId: ROBINHOOD_CHAIN_ID });
   const { data: isRoot, refetch: refetchIsRoot } = useReadContract({
     address: pool,
     abi: AGENT_CREDIT_POOL_ABI,
     functionName: "isRoot",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(address) },
+    chainId: ROBINHOOD_CHAIN_ID,
   });
 
   const [amount, setAmount] = useState("");
@@ -141,8 +159,8 @@ export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecim
   function handleDeposit() {
     if (!assetAddress || !parsed) return;
     approve.writeContract(
-      { address: assetAddress, abi: ERC20_ABI, functionName: "approve", args: [pool, parsed] },
-      { onSuccess: () => deposit.writeContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "deposit", args: [parsed] }) }
+      { chainId: ROBINHOOD_CHAIN_ID, address: assetAddress, abi: ERC20_ABI, functionName: "approve", args: [pool, parsed] },
+      { onSuccess: () => deposit.writeContract({ chainId: ROBINHOOD_CHAIN_ID, address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "deposit", args: [parsed] }) }
     );
   }
 
@@ -152,9 +170,13 @@ export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecim
       titleTip="Depositing alone makes you a passive lender, earning a share of every fee pool-wide. Backing one specific agent (vouching) is a separate, extra step below, and needs you to enroll as a 'root' first."
       hint="Deposited funds earn 60% of every fee as a lender, pro-rata by share. To back a specific agent too, enroll as a root (needs the pool's minRootStake already deposited) and use the vouch panel below."
     >
-      <input className={inputClass} placeholder="amount" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
-      <button className={buttonClass} disabled={!parsed || approve.isPending || approveReceipt.isLoading || deposit.isPending || depositReceipt.isLoading} onClick={handleDeposit}>
-        {approve.isPending || approveReceipt.isLoading ? "Approving…" : deposit.isPending || depositReceipt.isLoading ? "Depositing…" : "Approve & deposit"}
+      <input className={inputClass} placeholder="amount, in USDG" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+      <button
+        className={buttonClass}
+        disabled={!assetAddress || !parsed || approve.isPending || approveReceipt.isLoading || deposit.isPending || depositReceipt.isLoading}
+        onClick={handleDeposit}
+      >
+        {!assetAddress ? "Loading…" : approve.isPending || approveReceipt.isLoading ? "Approving…" : deposit.isPending || depositReceipt.isLoading ? "Depositing…" : "Approve & deposit"}
       </button>
       {depositReceipt.isSuccess && <p className="text-xs text-[var(--green)]">Deposited.</p>}
       {(approve.error || deposit.error) && <p className="text-xs text-[var(--red)]">{(approve.error ?? deposit.error)?.message}</p>}
@@ -166,7 +188,10 @@ export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecim
             className="rounded border border-[var(--line)] px-3 py-1 text-xs"
             disabled={enroll.isPending || enrollReceipt.isLoading}
             onClick={() =>
-              enroll.writeContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "enrollRoot" }, { onSuccess: () => refetchIsRoot() })
+              enroll.writeContract(
+                { chainId: ROBINHOOD_CHAIN_ID, address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "enrollRoot" },
+                { onSuccess: () => refetchIsRoot() }
+              )
             }
           >
             {enroll.isPending || enrollReceipt.isLoading ? "Enrolling…" : "Enroll as backer"}
@@ -223,7 +248,7 @@ function VouchPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: A
     >
       <textarea className={`${inputClass} font-mono text-xs`} rows={5} placeholder="paste the signed consent JSON here" value={pasted} onChange={(e) => setPasted(e.target.value)} />
       {parsedConsent && "error" in parsedConsent && <p className="text-xs text-[var(--red)]">{parsedConsent.error}</p>}
-      <input className={inputClass} placeholder="amount to vouch" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+      <input className={inputClass} placeholder="amount to vouch, in USDG" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
       <input className={inputClass} placeholder={`your premium in bps — 100 bps = 1% (0–${consent?.maxPremiumBps ?? "…"})`} value={premiumBps} onChange={(e) => setPremiumBps(e.target.value)} />
       <button
         className={buttonClass}
@@ -231,6 +256,7 @@ function VouchPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: A
         onClick={() => {
           if (!consent || !parsedAmount) return;
           vouch.writeContract({
+            chainId: ROBINHOOD_CHAIN_ID,
             address: pool,
             abi: AGENT_CREDIT_POOL_ABI,
             functionName: "vouch",
@@ -269,7 +295,7 @@ function BorrowPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: 
       titleTip="A real on-chain transaction: sends real funds to your wallet right now, drawn from the line a sponsor vouched for in step 2. This is debt — it has to be repaid, with a fee, or the loan can be marked defaulted after its grace period."
       hint="Draws straight from the line a sponsor vouched in step 2, into your own wallet. Fails if it would exceed what's still free."
     >
-      <input className={inputClass} placeholder="amount" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+      <input className={inputClass} placeholder="amount, in USDG" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
       <input className={inputClass} placeholder="term, days (1–30)" value={termDays} onChange={(e) => setTermDays(e.target.value)} inputMode="numeric" />
       <button
         className={buttonClass}
@@ -277,6 +303,7 @@ function BorrowPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: 
         onClick={() => {
           if (!parsedAmount || !address) return;
           borrow.writeContract({
+            chainId: ROBINHOOD_CHAIN_ID,
             address: pool,
             abi: AGENT_CREDIT_POOL_ABI,
             functionName: "borrow",
@@ -293,17 +320,18 @@ function BorrowPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: 
 }
 
 /** Repay (anyone) and markDefault (anyone, permissionless by design) by loan id. */
-function RepayPanel({ pool }: { pool: Address }) {
+function RepayPanel({ pool, assetDecimals }: { pool: Address; assetDecimals: number }) {
   const [loanId, setLoanId] = useState("");
   const parsedLoanId = loanId ? BigInt(loanId || "0") : null;
 
-  const { data: assetAddress } = useReadContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "asset" });
+  const { data: assetAddress } = useReadContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "asset", chainId: ROBINHOOD_CHAIN_ID });
   const { data: loan } = useReadContract({
     address: pool,
     abi: AGENT_CREDIT_POOL_ABI,
     functionName: "loanInfo",
     args: parsedLoanId !== null ? [parsedLoanId] : undefined,
     query: { enabled: parsedLoanId !== null },
+    chainId: ROBINHOOD_CHAIN_ID,
   });
   const totalDue = loan ? loan[1] + loan[2] : null; // principal + fee
 
@@ -321,7 +349,7 @@ function RepayPanel({ pool }: { pool: Address }) {
       hint="Repay is permissionless — anyone may repay on an agent's behalf. markDefault only succeeds once the loan is past its grace period."
     >
       <input className={inputClass} placeholder="loan id" value={loanId} onChange={(e) => setLoanId(e.target.value)} inputMode="numeric" />
-      {loan && loan[5] === 1 && totalDue !== null && <p className="text-xs text-[var(--muted)]">Owes {totalDue.toString()} (raw units) — principal + fee.</p>}
+      {loan && loan[5] === 1 && totalDue !== null && <p className="text-xs text-[var(--muted)]">Owes {usdg(totalDue, assetDecimals)} — principal + fee.</p>}
       <div className="flex gap-2">
         <button
           className={buttonClass}
@@ -329,8 +357,8 @@ function RepayPanel({ pool }: { pool: Address }) {
           onClick={() => {
             if (!assetAddress || parsedLoanId === null || totalDue === null) return;
             approve.writeContract(
-              { address: assetAddress, abi: ERC20_ABI, functionName: "approve", args: [pool, totalDue] },
-              { onSuccess: () => repay.writeContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "repay", args: [parsedLoanId] }) }
+              { chainId: ROBINHOOD_CHAIN_ID, address: assetAddress, abi: ERC20_ABI, functionName: "approve", args: [pool, totalDue] },
+              { onSuccess: () => repay.writeContract({ chainId: ROBINHOOD_CHAIN_ID, address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "repay", args: [parsedLoanId] }) }
             );
           }}
         >
@@ -341,7 +369,7 @@ function RepayPanel({ pool }: { pool: Address }) {
           disabled={!loan || loan[5] !== 1 || markDefault.isPending || markDefaultReceipt.isLoading}
           onClick={() => {
             if (parsedLoanId === null) return;
-            markDefault.writeContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "markDefault", args: [parsedLoanId] });
+            markDefault.writeContract({ chainId: ROBINHOOD_CHAIN_ID, address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "markDefault", args: [parsedLoanId] });
           }}
         >
           {markDefault.isPending || markDefaultReceipt.isLoading ? "Marking…" : "Mark default"}
