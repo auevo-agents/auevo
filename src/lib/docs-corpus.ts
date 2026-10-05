@@ -1,4 +1,4 @@
-import { DOC_SECTIONS, type DocBlock } from "@/app/docs/content";
+import { DOC_SECTIONS, type DocBlock } from "@/app/rwa/docs/content";
 
 function blockToText(block: DocBlock): string {
   switch (block.type) {

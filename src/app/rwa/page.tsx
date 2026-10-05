@@ -262,7 +262,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             </div>
             <p className="landing-status">
               Built on verifiable on-chain data.{" "}
-              <Link href="/docs">See how Auevo works</Link>
+              <Link href="/rwa/docs">See how Auevo works</Link>
             </p>
             <GeoBanner />
           </div>

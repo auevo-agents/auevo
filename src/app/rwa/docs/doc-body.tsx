@@ -37,13 +37,6 @@ export function DocBody({ blocks }: { blocks: DocBlock[] }) {
             </div>
           );
         }
-        if (block.type === "code") {
-          return (
-            <pre key={i} className="docs-code">
-              <code>{block.text}</code>
-            </pre>
-          );
-        }
         return (
           <div className="docs-table-wrap" key={i}>
             <table className="docs-table">

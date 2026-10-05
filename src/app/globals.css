@@ -12578,6 +12578,25 @@ a {
   line-height: 1.55;
 }
 
+.docs-code {
+  margin: 20px 0;
+  padding: 18px 20px;
+  overflow-x: auto;
+  border: 1px solid var(--docs-line);
+  border-radius: 12px;
+  background: rgba(10,13,13,.82);
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+
+.docs-code code {
+  display: block;
+  white-space: pre;
+  font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #a8d6ba;
+}
+
 .docs-pager {
   margin-top: 64px;
   padding-top: 28px;
@@ -17857,6 +17876,10 @@ body{
   position:relative;
   padding:24px 0 26px!important;
   margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
   border-bottom:1px solid rgba(112,177,141,.09);
 }
 .legal-green-page .legal-page section:last-child{

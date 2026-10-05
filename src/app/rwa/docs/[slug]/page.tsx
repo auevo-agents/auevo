@@ -10,10 +10,10 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const found = findDocPage(slug);
-  return { title: found ? `${found.page.title} — Auevo Docs` : "Auevo Docs" };
+  return { title: found ? `${found.page.title} — Auevo RWA Docs` : "Auevo RWA Docs" };
 }
 
-export default async function DocPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function RwaDocPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const found = findDocPage(slug);
   if (!found) notFound();
@@ -36,7 +36,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
 
       <div className="docs-pager">
         {prev ? (
-          <Link href={`/docs/${prev.page.slug}`} className="docs-pager-link docs-pager-prev">
+          <Link href={`/rwa/docs/${prev.page.slug}`} className="docs-pager-link docs-pager-prev">
             <span>Previous</span>
             <b>{prev.page.title}</b>
           </Link>
@@ -44,7 +44,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
           <span />
         )}
         {next && (
-          <Link href={`/docs/${next.page.slug}`} className="docs-pager-link docs-pager-next">
+          <Link href={`/rwa/docs/${next.page.slug}`} className="docs-pager-link docs-pager-next">
             <span>Next</span>
             <b>{next.page.title}</b>
           </Link>
@@ -57,8 +57,8 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
         {headings.map((heading) => (
           <a key={heading} href={`#${headingId(heading)}`}>{heading}</a>
         ))}
-        <Link href="/proofs/prediction" className="docs-toc-product">
-          Open the Play Zone
+        <Link href="/rwa/app" className="docs-toc-product">
+          Open in product
         </Link>
       </aside>
     </div>
