@@ -23,11 +23,11 @@
 .portal-page :is(a,button,input,summary):focus-visible,.auevo-portal-header :is(a,button):focus-visible{outline:2px solid #d7ba72;outline-offset:4px}
 .portal-page .portal-chip{border-radius:5px;background:#b5963c0b;border-color:#b5963c33;color:#cdbd8b}
 .portal-page table{font-size:13px}.portal-page th{font-weight:400;color:#c1cdbf}.portal-page td{border-color:#709c7620}
-.portal-page .home-cinematic-hero{min-height:550px}.portal-page .home-cinematic-image{background-size:auto 110%;background-position:right center;filter:saturate(.94) brightness(.82)}
+.portal-page .home-cinematic-hero{min-height:550px}.portal-page .home-cinematic-image{background-image:url('/images/auevo-crystal-hero.webp');background-size:cover;background-position:center;filter:saturate(.94) brightness(.86)}
 .portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110e 0%,#07110ef5 27%,#07110e9c 45%,#07110e00 72%)}
 .portal-page .home-cinematic-topmask{display:none}.portal-page .home-cinematic-bottom{background:linear-gradient(0deg,#07110e,transparent)}
 .universe-stats{position:relative;z-index:2;max-width:1400px;margin:-12px auto 0;border:1px solid #9d9e5433;background:#14261bef;border-radius:12px;box-shadow:0 14px 45px #0003;padding:24px 8px;gap:0}
-.universe-stats>div{text-align:center;border-right:1px solid #91ad7626}.universe-stats>div:last-child{border-right:0}
+.universe-stats>div{padding-left:0;border-left:0;text-align:center;border-right:1px solid #91ad7626}.universe-stats>div:last-child{border-right:0}
 .home-feed-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.home-feed-grid p{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .crystal-motif{width:100%;height:140px;filter:drop-shadow(0 5px 12px #238a5d22)}
 .passport-avatar{width:76px;height:76px;margin-top:20px;border:1px solid #b69e5266;border-radius:12px;background:#20352999}.passport-avatar svg{width:100%;height:100%}
