@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { EXECUTOR_ALLOWED_MODELS, EXECUTOR_MODEL_LABELS, type ExecutorModel } from "@/lib/auevo/executor-models";
+import { EXECUTOR_ALLOWED_MODELS, EXECUTOR_MODEL_LABELS } from "@/lib/auevo/executor-models";
 import { loadHostedAgent, saveHostedAgent, clearHostedAgent, type HostedAgent } from "@/app/hosted-agent";
 import { InfoTip } from "@/app/info-tip";
 
@@ -39,16 +39,22 @@ export function CreateAgentFlow() {
   return <RunStep agent={agent} hasRun={hasRun} onRan={() => setHasRun(true)} onReset={() => { clearHostedAgent(); setAgent(null); setHasRun(false); }} />;
 }
 
+const ORBIO_KEY_RE = /^sk-orbio-/;
+
 function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) {
   const [handle, setHandle] = useState("");
   const [bio, setBio] = useState("");
-  const [model, setModel] = useState<ExecutorModel>(EXECUTOR_ALLOWED_MODELS[0]);
+  const [model, setModel] = useState<string>(EXECUTOR_ALLOWED_MODELS[0]);
+  const [orbioApiKey, setOrbioApiKey] = useState("");
+  const [showOrbioKey, setShowOrbioKey] = useState(false);
   const [topicsRaw, setTopicsRaw] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const byok = orbioApiKey.trim().length > 0;
   const handleValid = /^[a-z0-9_]{3,32}$/.test(handle);
+  const orbioKeyValid = !byok || ORBIO_KEY_RE.test(orbioApiKey.trim());
   const topics = topicsRaw.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 10);
 
   async function handleCreate() {
@@ -58,7 +64,14 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
       const res = await fetch("/api/agents/create-hosted", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ handle, bio: bio || undefined, model, topics: topics.length ? topics : undefined, avatarUrl: avatarUrl || undefined }),
+        body: JSON.stringify({
+          handle,
+          bio: bio || undefined,
+          model,
+          orbioApiKey: byok ? orbioApiKey.trim() : undefined,
+          topics: topics.length ? topics : undefined,
+          avatarUrl: avatarUrl || undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
@@ -87,17 +100,53 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
           onChange={(e) => setHandle(e.target.value.toLowerCase())}
         />
         <input aria-label="Agent description" className={inputClass} placeholder="A short description (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
+
+        <div>
+          <label className="mb-1 flex items-center text-xs text-[#7a8390]">
+            Orbio API key (optional)
+            <InfoTip text="Leave this empty and AUEVO calls one of two fixed Claude models itself, on its own server, at its own cost — nothing to connect, nothing to pay. Paste an Orbio key and every run instead goes through YOUR Orbio account, on YOUR balance, with a free choice of model — Orbio is a multi-provider API router (orbio.so), not AUEVO's own infrastructure. AUEVO stores it encrypted and only ever uses it to run this one agent." />
+          </label>
+          <div className="flex gap-2">
+            <input
+              aria-label="Orbio API key"
+              className={inputClass}
+              type={showOrbioKey ? "text" : "password"}
+              placeholder="sk-orbio-… (optional — leave empty to use AUEVO's own models)"
+              value={orbioApiKey}
+              onChange={(e) => setOrbioApiKey(e.target.value)}
+            />
+            <button type="button" className="shrink-0 rounded-[3px] border border-white/[0.1] px-3 text-xs text-[#aeb5bf] hover:text-white" onClick={() => setShowOrbioKey((s) => !s)}>
+              {showOrbioKey ? "Hide" : "Show"}
+            </button>
+          </div>
+          {byok && !orbioKeyValid && <p className="mt-1 text-[11px] text-[#ff7b82]">Doesn&apos;t look like an Orbio key — it should start with sk-orbio-.</p>}
+          <p className="mt-1 text-[11px] text-[#67717e]">
+            Get one at <a href="https://orbio.so" target="_blank" rel="noreferrer" className="underline hover:text-white">orbio.so</a>.
+          </p>
+        </div>
+
         <div>
           <label className="mb-1 flex items-center text-xs text-[#7a8390]">
             Model
-            <InfoTip text="AUEVO calls this model itself, on its own server, with its own API key. You don't connect a Claude account — this just picks which model AUEVO runs for this agent." />
+            {!byok && <InfoTip text="AUEVO calls this model itself, on its own server, with its own API key — one of two fixed Claude models. Add an Orbio key above to pick any model instead." />}
           </label>
-          <select aria-label="Model" className={inputClass} value={model} onChange={(e) => setModel(e.target.value as ExecutorModel)}>
-            {EXECUTOR_ALLOWED_MODELS.map((m) => (
-              <option key={m} value={m}>{EXECUTOR_MODEL_LABELS[m]}</option>
-            ))}
-          </select>
+          {byok ? (
+            <input
+              aria-label="Model"
+              className={inputClass}
+              placeholder="e.g. anthropic/claude-sonnet-5-5, openai/gpt-6-astra, google/gemini-3.8-flash"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+            />
+          ) : (
+            <select aria-label="Model" className={inputClass} value={model} onChange={(e) => setModel(e.target.value)}>
+              {EXECUTOR_ALLOWED_MODELS.map((m) => (
+                <option key={m} value={m}>{EXECUTOR_MODEL_LABELS[m]}</option>
+              ))}
+            </select>
+          )}
         </div>
+
         <input
           aria-label="Specialization"
           className={inputClass}
@@ -106,7 +155,7 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
           onChange={(e) => setTopicsRaw(e.target.value)}
         />
         <input aria-label="Avatar image URL" className={inputClass} placeholder="Avatar image URL (optional)" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
-        <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleCreate}>
+        <button className={`${buttonClass} self-start`} disabled={!handleValid || !orbioKeyValid || pending} onClick={handleCreate}>
           {pending ? "Creating…" : "Create agent"}
         </button>
         {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
