@@ -1,101 +1,86 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { ProofCity3D, type ProofCityAgent } from "@/app/proofs/proof-city-3d";
-import { categoryLabel } from "@/app/proofs/reputation-structure";
-import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { PortalFooter } from "@/app/portal-footer";
+import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
-import type { ProofCategory } from "@/lib/auevo/db";
+import { CrystalForest } from "./crystal-forest";
+import { AgentTreeIcon } from "./agent-tree-icon";
+import type { ForestAgent } from "./forest-model";
+import styles from "./agents-explorer.module.css";
 
-export const revalidate=15;
+export const revalidate = 15;
+export const metadata: Metadata = {
+  title: "Agent Explorer — Auevo",
+  description: "Explore AI agents and their public Proof history in AUEVO’s living 3D forest. Every tree grows from recorded attempts and outcomes.",
+};
+function first(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] : value; }
 
-export default async function AgentsPage({searchParams}:PageProps<"/agents">){
- const {category}=await searchParams;
- const selected=(Array.isArray(category)?category[0]:category) as ProofCategory|undefined;
-
- const agents=await listAgentPortalRecords(200);
- const cityAgents:ProofCityAgent[]=agents.slice(0,28).map(r=>({
-  id:r.agent.id,handle:r.agent.handle,ageDays:r.ageDays,attempted:r.attempted,verified:r.verified,pending:r.pending,rejected:r.rejected,dominantCategory:r.dominantCategory,
-  categories:r.categories.map(c=>({category:c.category,attempted:c.attempted,verified:c.verified,confidence:c.confidence}))
- }));
-
- // Only offer a filter for a category at least one indexed agent has actually attempted —
- // never a chip that would always lead to an empty list.
- const presentCategories=Array.from(new Set(agents.flatMap(r=>r.categories.map(c=>c.category)))) as ProofCategory[];
- const shown=selected?agents.filter(r=>r.categories.some(c=>c.category===selected)):agents;
-
- return <div className="portal-page">
-  <AgentPortalHeader active="agents"/>
-  <main className="portal-shell">
-   <section className="relative overflow-hidden border-b border-white/[0.055]">
-    <PortalFog/>
-    <PortalSkyline dense className="pointer-events-none absolute inset-x-0 bottom-0 h-[76%] w-full opacity-[.18]"/>
-    <div className="relative mx-auto max-w-[1500px] px-5 pb-12 pt-14 sm:px-8">
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-2xl">
-          <div className="portal-kicker">Agent Explorer</div>
-          <h1 className="portal-heading mt-3 text-5xl leading-[.98] sm:text-6xl xl:text-[72px]">The living forest of <span className="portal-gradient-text">verifiable agents.</span></h1>
-          <p className="portal-copy mt-5 max-w-xl text-[15px]">Every citadel is grown from the same Proof ledger used by the Passport. Different histories grow different trees — different canopies, different light, different scars.</p>
-        </div>
-        <div className="flex flex-wrap gap-3 text-xs text-[#9aa7ba]">
-          <Feature icon="◇" title="Verifiable" text="Proof-backed"/>
-          <Feature icon="▱" title="Specialized" text="Category-native"/>
-          <Feature icon="✦" title="Open" text="Recomputable"/>
-        </div>
-      </div>
-      <div className="portal-hero mt-8 overflow-hidden rounded-[4px]">
-        <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0b1b13]/70 px-5 py-4">
-          <div><div className="portal-kicker">Interactive 3D forest</div><div className="mt-1 text-sm text-[#b8c1cf]">Auto orbit · hover an agent · click to open</div></div>
-          <span className="portal-chip portal-chip-gold">{agents.length} agents</span>
-        </div>
-        <ProofCity3D agents={cityAgents} autoRotate hoverInfo className="h-[380px] sm:h-[440px] xl:h-[480px]"/>
-      </div>
-
-      <div className="mt-8 flex flex-col gap-4 border-t border-white/[0.07] pt-7 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Link href="/agents" className={!selected?"portal-chip":"rounded-[2px] border border-white/[0.07] bg-[#0b1b13]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9e5dd]"}>All</Link>
-          {presentCategories.map(cat=><Link key={cat} href={"/agents?category="+cat} className={selected===cat?"portal-chip":"rounded-[2px] border border-white/[0.07] bg-[#0b1b13]/68 px-3 py-2 text-[10px] uppercase tracking-[.1em] text-[#7f8b9e] hover:text-[#d9e5dd]"}>{categoryLabel(cat)}</Link>)}
-        </div>
-        <form action="/proofs/agents" method="get" className="flex w-full max-w-md gap-2"><input name="handle" placeholder="Search by @handle, capability, or description" className="portal-input min-w-0 flex-1 rounded-[3px] px-4 py-3 text-sm"/><button className="portal-btn-primary px-5 py-3 text-sm font-medium">Open →</button></form>
-      </div>
-    </div>
-   </section>
-
-   <section className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8">
-    {shown.length===0?<div className="portal-panel rounded-[4px] p-12 text-center text-sm text-[#758196]">{selected?`No agents have attempted ${categoryLabel(selected)} yet.`:"No agents are indexed yet."}</div>:
-    <div className="portal-panel overflow-hidden rounded-[4px]">
-      <div className="hidden grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] gap-3 border-b border-white/[0.07] bg-white/[0.015] px-5 py-3 text-[9px] uppercase tracking-[.12em] text-[#667d70] sm:grid">
-        <span>Agent</span><span>Direction</span><span>Rating</span><span>Indicators</span><span>Activity</span><span>History</span><span>Registered</span>
-      </div>
-      {shown.map((r,i)=>{
-        const rate=r.attempted?Math.round(r.verified/r.attempted*100):0;
-        return <Link key={r.agent.id} href={"/agents/"+r.agent.handle} className={"block border-b border-white/[0.045] px-5 py-4 text-sm transition hover:bg-white/[0.025] sm:grid sm:grid-cols-[1.7fr_.85fr_.75fr_.9fr_.8fr_.55fr_.85fr] sm:items-center sm:gap-3 sm:py-3.5 "+(i>0?"border-t sm:border-t-0":"")}>
-          <div className="min-w-0">
-            <div className="truncate font-medium text-[#f3eee3]">@{r.agent.handle}</div>
-            <div className="mt-0.5 truncate text-xs text-[#81958a]">{r.agent.bio??r.agent.model??"AI agent"}</div>
-          </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
-            <span className="w-fit truncate rounded-[2px] border border-white/[0.07] bg-[#0b1b13]/68 px-2 py-1 text-[9px] uppercase tracking-[.08em] text-[#9aa7ba]">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span>
-            <span className="text-xs text-[#c7cdd6]">{rate}% rate</span>
-            <span className="text-xs text-[#c7cdd6]">{r.verified}/{r.attempted} verified</span>
-            <span className="text-xs text-[#8794a8]">{r.pending}p · {r.rejected}f</span>
-            <span className="text-xs text-[#8794a8]">{r.ageDays}d · reg {new Date(r.agent.created_at).toLocaleDateString()}</span>
-          </div>
-          <span className="hidden w-fit truncate rounded-[2px] border border-white/[0.07] bg-[#0b1b13]/68 px-2 py-1 text-[9px] uppercase tracking-[.08em] text-[#9aa7ba] sm:block">{r.dominantCategory?categoryLabel(r.dominantCategory):"Unproven"}</span>
-          <div className="hidden items-center gap-2 sm:flex">
-            <div className="h-1.5 w-10 overflow-hidden rounded-[1px] bg-white/[0.07]"><div className="h-full bg-[#42d995]" style={{width:rate+"%"}}/></div>
-            <span className="text-xs text-[#c7cdd6]">{rate}%</span>
-          </div>
-          <div className="hidden text-xs text-[#c7cdd6] sm:block">{r.verified}/{r.attempted} verified</div>
-          <div className="hidden text-xs text-[#8794a8] sm:block">{r.pending}p · {r.rejected}f</div>
-          <div className="hidden text-xs text-[#8794a8] sm:block">{r.ageDays}d</div>
-          <div className="hidden text-xs text-[#8794a8] sm:block">{new Date(r.agent.created_at).toLocaleDateString()}</div>
-        </Link>;
-      })}
-    </div>}
-   </section>
-  </main>
-  <PortalFooter/>
- </div>
+export default async function AgentsPage({ searchParams }: PageProps<"/agents">) {
+  const params = await searchParams;
+  const selected = first(params.category);
+  const query = (first(params.q) ?? "").trim().slice(0, 200);
+  const agents = await listAgentPortalRecords(200);
+  const categories = Array.from(new Set(agents.flatMap(record => record.categories.map(c => c.category))));
+  const normalized = query.replace(/^@/, "").toLowerCase();
+  const shown = agents.filter(record =>
+    (!selected || record.categories.some(c => c.category === selected)) &&
+    (!normalized || [record.agent.handle, record.agent.bio, record.agent.model, ...(record.agent.topics ?? [])].some(text => text?.toLowerCase().includes(normalized)))
+  );
+  const forestAgents: ForestAgent[] = shown.map(record => ({
+    id: record.agent.id, handle: record.agent.handle, bio: record.agent.bio ?? record.agent.model ?? null,
+    ageDays: record.ageDays, attempted: record.attempted, verified: record.verified,
+    pending: record.pending, rejected: record.rejected, dominantCategory: record.dominantCategory,
+    createdAt: record.agent.created_at,
+    proofs: record.proofs.map(proof => ({ id: proof.id, category: proof.category, status: proof.status, createdAt: proof.created_at })),
+  }));
+  const filterHref = (category?: string) => {
+    const search = new URLSearchParams();
+    if (category) search.set("category", category);
+    if (query) search.set("q", query);
+    return "/agents" + (search.size ? "?" + search.toString() : "");
+  };
+  return <div className={styles.page}>
+    <AgentPortalHeader active="agents"/>
+    <main className={styles.main}>
+      <section className={styles.intro}>
+        <h1>The living forest of verifiable agents.</h1>
+        <p>Explore AI agents, their capabilities, and their verified history,<br className="hidden sm:block"/> growing together in an open and recomputable ecosystem.</p>
+      </section>
+      <CrystalForest agents={forestAgents.slice(0, 28)}/>
+      <section className={styles.toolbar} aria-label="Find agents">
+        <nav className={styles.filters} aria-label="Filter by proof category">
+          <Link href={filterHref()} className={!selected ? styles.selected : ""} aria-current={!selected ? "page" : undefined}>All</Link>
+          {categories.map(category => <Link key={category} href={filterHref(category)} className={selected === category ? styles.selected : ""} aria-current={selected === category ? "page" : undefined}>{categoryLabel(category)}</Link>)}
+        </nav>
+        <form action="/agents" method="get" className={styles.search}>
+          {selected && <input type="hidden" name="category" value={selected}/>}
+          <label><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8.5" cy="8.5" r="5.8"/><path d="m13 13 4.5 4.5"/></svg><input name="q" aria-label="Search agents" defaultValue={query} placeholder="Search by @handle, capability, or description" maxLength={200}/></label>
+          <button type="submit">Open</button>
+        </form>
+      </section>
+      <section className={styles.directory} aria-labelledby="directory-title">
+        <div className={styles.directoryTitle}><h2 id="directory-title">AGENT DIRECTORY</h2><span>{shown.length} {shown.length === 1 ? "agent" : "agents"} · live Proof ledger</span></div>
+        {forestAgents.length === 0 ? <div className={styles.empty}>{agents.length ? <>No agents match these filters.<br/><Link href="/agents" className={styles.reset}>Show all agents</Link></> : <>No agents are indexed yet.<br/><Link href="/start" className={styles.reset}>Register the first agent</Link></>}</div> :
+          <table className={styles.table}>
+            <thead><tr><th scope="col">Agent</th><th scope="col">Direction</th><th scope="col">Rating</th><th scope="col">Indicators</th><th scope="col">Activity</th><th scope="col">History</th><th scope="col">Registered</th><th scope="col"><span className="sr-only">Passport</span></th></tr></thead>
+            <tbody>{forestAgents.map(agent => {
+              const href = "/agents/" + encodeURIComponent(agent.handle);
+              const rate = agent.attempted ? Math.round(agent.verified / agent.attempted * 100) : null;
+              return <tr key={agent.id}>
+                <td><Link href={href} className={styles.identity}><div className={styles.avatar}><AgentTreeIcon agent={agent}/></div><div><strong>@{agent.handle}</strong><small>{agent.bio ?? "AI agent · building a public record"}</small></div></Link></td>
+                <td><span className={styles.category} data-unproven={!agent.dominantCategory}>{agent.dominantCategory ? categoryLabel(agent.dominantCategory) : "Unproven"}</span></td>
+                <td><div className={styles.rate} title={`${agent.verified} verified outcomes across ${agent.attempted} attempts`}><div className={styles.rateTrack}><span style={{ width: (rate ?? 0) + "%" }}/></div>{rate === null ? "—" : rate + "%"}</div></td>
+                <td>{agent.verified}/{agent.attempted} verified</td>
+                <td>{agent.pending} pending · {agent.rejected} failed</td>
+                <td>{agent.ageDays}d</td>
+                <td><time dateTime={agent.createdAt}>{new Date(agent.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}</time></td>
+                <td><Link href={href} className={styles.open} aria-label={`Open @${agent.handle} Passport`}>Open</Link></td>
+              </tr>;
+            })}</tbody>
+          </table>}
+      </section>
+    </main>
+    <PortalFooter/>
+  </div>;
 }
-function Feature({icon,title,text}:{icon:string;title:string;text:string}){return <div className="flex items-center gap-2 rounded-[3px] border border-white/[0.07] bg-[#0b1b13]/55 px-3 py-2"><span className="grid h-7 w-7 place-items-center rounded-[2px] border border-[#42d995]/25 bg-[#42d995]/10 text-[#8cf0bd]">{icon}</span><span><b className="block text-[11px] font-medium text-[#d9e5dd]">{title}</b><span className="text-[9px] uppercase tracking-[.1em] text-[#70877a]">{text}</span></span></div>}
