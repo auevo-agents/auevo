@@ -1,6 +1,10 @@
 import { getRobinhoodClient } from "@/lib/evm/client";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS, STAKE_KIND } from "./abi";
+import { CREDIT_IDENTITY_WRITE_ABI } from "./identity-abi";
+
+/** The block CREDIT_IDENTITY_ADDRESS was deployed at (tx 0x85344514ef0267a06ef0e0d1528a68b7fde1623974fc223596ea084b5a2e868b, 2026-10-04) — a safe floor, never needed yet since every read here is a live view call, not an event scan. */
+export const CREDIT_IDENTITY_DEPLOY_BLOCK = 80042935n;
 
 /**
  * Server-only reads against AgentCreditPool (contracts/src/AgentCreditPool.sol).
@@ -231,6 +235,62 @@ export async function readSeatConfig(): Promise<SeatConfig> {
   } catch {
     return { deployed: true, supported: false };
   }
+}
+
+export type PoolLedger = {
+  agentsRegistered: number;
+  loansWritten: number;
+  loansRepaid: number;
+  loansDefaulted: number;
+  loansOpen: number;
+  totalBadDebt: bigint;
+};
+
+/**
+ * The live, chain-read stats a backer actually wants to see before
+ * trusting the pool — "has this ever been used, and did it work" — the
+ * thing the priors.trade-inspired landing page's own ledger section
+ * shows and this app's /credit page didn't have at all. nextLoanId is
+ * tiny right now (a brand-new pool), so a direct loop over every loan is
+ * cheap; this is the first thing to turn into an indexed count once real
+ * volume makes it not be.
+ */
+export async function readPoolLedger(): Promise<PoolLedger | null> {
+  const pool = getCreditPoolAddress();
+  if (!pool) return null;
+
+  const client = getRobinhoodClient();
+  const [nextLoanId, totalBadDebt, identityAddress] = await Promise.all([
+    client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "nextLoanId" }),
+    client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "totalBadDebt" }),
+    client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "identity" }),
+  ]);
+
+  const agentsRegistered = await client
+    .readContract({ address: identityAddress, abi: CREDIT_IDENTITY_WRITE_ABI, functionName: "nextAgentId" })
+    .catch(() => 0n);
+
+  let loansRepaid = 0;
+  let loansDefaulted = 0;
+  let loansOpen = 0;
+  const loanIds = Array.from({ length: Number(nextLoanId) }, (_, i) => BigInt(i));
+  const statuses = await Promise.all(
+    loanIds.map((id) => client.readContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "loanInfo", args: [id] }))
+  );
+  for (const [, , , , , status] of statuses) {
+    if (status === 2) loansRepaid++;
+    else if (status === 3) loansDefaulted++;
+    else if (status === 1) loansOpen++;
+  }
+
+  return {
+    agentsRegistered: Number(agentsRegistered),
+    loansWritten: Number(nextLoanId),
+    loansRepaid,
+    loansDefaulted,
+    loansOpen,
+    totalBadDebt,
+  };
 }
 
 /** Null when the pool isn't deployed — the asset's own decimals(), read live. */

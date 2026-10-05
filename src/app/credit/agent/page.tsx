@@ -1,6 +1,7 @@
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
+import { getCreditAgentIdForHandle } from "@/lib/credit/link";
 import { PortalFooter } from "@/app/portal-footer";
 import { CreditAgentActions } from "./credit-agent-actions";
 import { ProofRecordPanel } from "./proof-record";
@@ -20,6 +21,14 @@ export default async function CreditAgentPage({ searchParams }: PageProps<"/cred
   const idStr = Array.isArray(id) ? id[0] : id;
   const handleStr = Array.isArray(handle) ? handle[0] : handle;
 
+  // A handle alone used to dead-end here — the credit identity registry
+  // has no concept of a handle, so this resolves the link set up via
+  // "Register for credit" (src/lib/credit/link.ts) automatically, rather
+  // than making every visitor who searched by handle separately dig up
+  // and paste in a raw numeric id they have no way to find.
+  const linkedId = handleStr && !idStr ? await getCreditAgentIdForHandle(handleStr) : null;
+  const effectiveIdStr = idStr ?? linkedId?.toString();
+
   return (
     <div className="portal-page">
       <AgentPortalHeader active="credit" />
@@ -33,26 +42,36 @@ export default async function CreditAgentPage({ searchParams }: PageProps<"/cred
           </div>
         )}
 
+        {handleStr && !idStr && linkedId === null && (
+          <p className="mb-6 text-sm text-[var(--muted)]">
+            @{handleStr} hasn&apos;t linked a credit agent id yet — it needs to{" "}
+            <a href="/credit" className="underline hover:text-[var(--ink)]">
+              register for credit
+            </a>{" "}
+            first, or you can paste its id directly below if you already have it.
+          </p>
+        )}
+
         <form action="/credit/agent" method="get" className="mb-6 flex flex-wrap items-end gap-2">
           {handleStr && <input type="hidden" name="handle" value={handleStr} />}
           <label className="flex-1">
             <span className="mb-1 block text-xs text-[var(--muted)]">On-chain agent id</span>
             <input
               name="id"
-              defaultValue={idStr}
+              defaultValue={effectiveIdStr}
               placeholder="agent id (uint256)"
               className="w-full portal-input rounded-[3px] px-3 py-2 text-sm"
             />
           </label>
           <button className="portal-btn-secondary rounded-[3px] px-4 py-2 text-sm" type="submit">
-            {idStr ? "Update" : "Check credit record"}
+            {effectiveIdStr ? "Update" : "Check credit record"}
           </button>
         </form>
 
-        {!idStr ? (
+        {!effectiveIdStr ? (
           !handleStr && <p className="text-[var(--muted)]">No agent id or handle given.</p>
         ) : (
-          <AgentLookup idStr={idStr} />
+          <AgentLookup idStr={effectiveIdStr} />
         )}
       </section>
       <PortalFooter />

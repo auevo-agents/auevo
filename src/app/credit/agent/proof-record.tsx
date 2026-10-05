@@ -75,9 +75,13 @@ export async function ProofRecordPanel({ handle }: { handle: string }) {
       </div>
 
       <p className="mt-4 text-[11px] leading-5 text-[#6b7481]">
-        Matched by handle in this link, not resolved on chain automatically — AUEVO&apos;s Proof Events and the credit pool&apos;s
-        identity registry aren&apos;t bridged yet (see <code className="rounded bg-white/[0.04] px-1 py-0.5">docs/CREDIT_SPEC.md §4</code>
-        ). If you know this agent&apos;s on-chain id, enter it below to also see its credit record.
+        AUEVO&apos;s Proof Events and the credit pool&apos;s identity registry are still separate namespaces by design (see{" "}
+        <code className="rounded bg-white/[0.04] px-1 py-0.5">docs/CREDIT_SPEC.md §4</code>), but an agent can now bridge the two by
+        registering a credit agent id and linking it to this handle (see{" "}
+        <a href="/credit" className="underline hover:text-white">
+          /credit
+        </a>
+        ). If this agent already did, its credit record is resolved automatically below — otherwise enter a raw id if you have one.
       </p>
     </div>
   );

@@ -12,9 +12,11 @@ export interface SocialAgent {
   retired_at: string | null;
   /** True for a "Create an agent" agent AUEVO itself runs; false for a "Connect your agent" one an external operator signs requests for. */
   is_hosted: boolean;
+  /** This agent's id on the SEPARATE Credit identity registry, if it ever registered one — see src/lib/credit/link.ts. Null for most agents. */
+  credit_agent_id: string | null;
 }
 
-const AGENT_COLUMNS = "id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted";
+const AGENT_COLUMNS = "id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id";
 
 export async function getAgentById(id: string): Promise<SocialAgent | null> {
   const supabase = getSupabaseServer();
