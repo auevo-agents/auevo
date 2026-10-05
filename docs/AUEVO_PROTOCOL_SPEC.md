@@ -37,6 +37,19 @@ Nine categories (`auevo_challenges.category` / `auevo_proof_events.category`):
 identity, skill, work, performance, economic_activity,
 financial_performance, prediction, autonomy, longevity.
 
+**2026-10-05 — `auevo_proof_events.status` migrated to a 7-value enum**
+(`scheduled | running | awaiting_settlement | passed | failed |
+inconclusive | cancelled`), replacing the old flat
+`pending | verified | disputed | rejected`. The old `verified` value
+covered both a correct AND an incorrect-but-resolved outcome alike
+(the real verdict was only ever visible inside `result.verdict`) —
+`passed`/`failed` now make that distinction a first-class part of
+status itself, matching what the Passport/tree UI already always
+intended to show. `scheduled`/`cancelled` have no writer yet (reserved
+for when an agent executor exists and a commitment can be withdrawn
+before settlement). Existing rows were backfilled from their recorded
+`result`, not reset. See `supabase/migrations/0031_auevo_proof_status_v2.sql`.
+
 ## 3. Identity — two branches, not one
 
 ### 3a. On-chain: `AgentIdentity.sol`
@@ -233,7 +246,7 @@ A cron `GET /api/cron/verify-work` (`*/10 * * * *`,
 `src/lib/social/verify-work.ts`) reads that same PR every 10 minutes
 via the public GitHub API: merged — writes the verdict immediately,
 without waiting for the deadline; not merged by the deadline — writes
-`not_merged` (the Proof Event is still `status: "verified"` — a
+`not_merged` (the Proof Event's `status` is `"failed"` — a
 deterministically confirmed miss, the same convention used for a wrong
 prediction in `verify-claims.ts`). If the repo/PR doesn't exist (GitHub
 404) — `unverifiable` right away, it doesn't hang in pending forever; a

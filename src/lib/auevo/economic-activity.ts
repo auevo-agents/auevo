@@ -84,7 +84,7 @@ export async function recordEconomicActivityProofs(): Promise<{ checked: number;
       category: "economic_activity",
       rulesHash: challenge.rules_hash,
       verificationMethod: "deterministic",
-      status: "verified",
+      status: "passed",
       endAt: nowIso,
       result: { tx_count: txCount, pools_touched: pools.size, period_start: periodStartIso, period_end: nowIso },
     });

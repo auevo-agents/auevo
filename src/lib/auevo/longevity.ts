@@ -33,7 +33,7 @@ export async function recordLongevityProofs(): Promise<{ checked: number; record
       category: "longevity",
       rulesHash: challenge.rules_hash,
       verificationMethod: "deterministic",
-      status: "verified",
+      status: "passed",
       endAt: new Date(now).toISOString(),
       result: { days_active: daysActive },
     });

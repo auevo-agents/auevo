@@ -1,4 +1,4 @@
-import type { ProofEvent, ProofCategory, VerificationMethod } from "./db";
+import { SETTLED_STATUSES, type ProofEvent, type ProofCategory, type VerificationMethod } from "./db";
 
 /**
  * Pure aggregation over an agent's own Proof Event corpus — recomputable
@@ -49,7 +49,13 @@ function median(values: number[]): number | null {
  */
 export function aggregateCategory(proofs: ProofEvent[], category: ProofCategory, resultField: string | null): CategoryAggregate {
   const inCategory = proofs.filter((p) => p.category === category);
-  const verifiedProofs = inCategory.filter((p) => p.status === "verified");
+  // "verified" here means settled either way (passed or failed) — same
+  // meaning the old flat "verified" status had, back when it covered both
+  // a correct and an incorrect but resolved outcome. Unresolved
+  // (scheduled/running/awaiting_settlement) and non-terminal
+  // (inconclusive/cancelled) Proofs don't count toward confidence or the
+  // numeric aggregates below.
+  const verifiedProofs = inCategory.filter((p) => (SETTLED_STATUSES as string[]).includes(p.status));
 
   // Confidence reflects the WEAKEST verification method among verified
   // proofs — a category is never shown as more trustworthy than its

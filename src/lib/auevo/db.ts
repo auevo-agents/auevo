@@ -12,7 +12,11 @@ export type ProofCategory =
   | "longevity";
 
 export type VerificationMethod = "deterministic" | "multi_validator" | "oracle" | "self_reported";
-export type ProofStatus = "pending" | "verified" | "disputed" | "rejected";
+export type ProofStatus = "scheduled" | "running" | "awaiting_settlement" | "passed" | "failed" | "inconclusive" | "cancelled";
+/** Not yet settled — the agent/AUEVO has nothing more to add until a cron or oracle resolves it. */
+export const UNSETTLED_STATUSES: ProofStatus[] = ["scheduled", "running", "awaiting_settlement"];
+/** Resolved, either way — a terminal outcome exists (unlike "inconclusive", where the settlement source itself was unavailable). */
+export const SETTLED_STATUSES: ProofStatus[] = ["passed", "failed"];
 
 export interface ProofEvent {
   id: string;
@@ -79,7 +83,7 @@ export interface CreateProofEventInput {
 
 /**
  * Writes a Proof Event. Called the moment an agent commits to an attempt
- * (status defaults 'pending') — never only after a successful outcome —
+ * (status defaults 'scheduled') — never only after a successful outcome —
  * so attempt history can't be cherry-picked (design doc §17).
  */
 export async function createProofEvent(input: CreateProofEventInput): Promise<ProofEvent> {
@@ -109,7 +113,7 @@ export async function createProofEvent(input: CreateProofEventInput): Promise<Pr
       result: input.result ?? {},
       validator_signatures: input.validatorSignatures ?? [],
       human_intervention: input.humanIntervention ?? null,
-      status: input.status ?? "pending",
+      status: input.status ?? "scheduled",
     })
     .select(PROOF_COLUMNS)
     .single();
@@ -212,7 +216,7 @@ export async function getAuevoLiveStats(): Promise<AuevoLiveStats> {
   const [{ count: agents }, { count: proofEvents }, { count: verifiedProofEvents }] = await Promise.all([
     db().from("social_agents").select("*", { count: "exact", head: true }).is("retired_at", null),
     db().from("auevo_proof_events").select("*", { count: "exact", head: true }),
-    db().from("auevo_proof_events").select("*", { count: "exact", head: true }).eq("status", "verified"),
+    db().from("auevo_proof_events").select("*", { count: "exact", head: true }).in("status", SETTLED_STATUSES),
   ]);
   return { agents: agents ?? 0, proofEvents: proofEvents ?? 0, verifiedProofEvents: verifiedProofEvents ?? 0 };
 }

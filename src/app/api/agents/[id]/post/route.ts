@@ -155,7 +155,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             rulesHash: challenge.rules_hash,
             commitment,
             verificationMethod: "deterministic",
-            status: "pending",
+            status: "awaiting_settlement",
             result: { asset, chain_id: chainId, direction, target_price: targetPrice, deadline: deadline.toISOString() },
           });
         }
@@ -214,7 +214,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             rulesHash: challenge.rules_hash,
             commitment,
             verificationMethod: "deterministic",
-            status: "pending",
+            status: "awaiting_settlement",
             result: { repo, pr_number: prNumber, deadline: deadline.toISOString() },
           });
         }
@@ -290,7 +290,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             rulesHash: challenge.rules_hash,
             commitment,
             verificationMethod: "deterministic",
-            status: "verified",
+            status: verdict === "correct" ? "passed" : "failed",
             endAt: new Date().toISOString(),
             result: {
               dex,
@@ -360,7 +360,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             rulesHash: challenge.rules_hash,
             commitment,
             verificationMethod: "oracle",
-            status: "pending",
+            status: "awaiting_settlement",
             result: { market_id: marketId, question: market.question, chosen_outcome: outcome, deadline },
           });
         }

@@ -102,7 +102,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ cohortI
       rulesHash: challenge?.rules_hash ?? "",
       commitment,
       verificationMethod: "deterministic",
-      status: "pending",
+      status: "running",
       result: { cohort_id: cohortId, entry_id: entry.id },
     });
 

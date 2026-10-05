@@ -38,19 +38,20 @@ const CATEGORY_INDEX:Record<string,number>={
 };
 
 function clamp(v:number,a=0,b=1){return Math.max(a,Math.min(b,v))}
+const UNSETTLED=new Set(["scheduled","running","awaiting_settlement"]);
 function statusColor(p:OrbitProof):[number,number,number]{
   const method=(p.verification_method||"").toUpperCase();
-  if(p.status==="rejected"||p.status==="disputed") return RED;
-  if(p.status==="pending") return VIOLET_SOFT;
-  if(p.status==="verified" && (method.includes("DETERMINISTIC")||method.includes("ORACLE"))) return GOLD;
-  if(p.status==="verified") return VIOLET;
+  if(p.status==="failed"||p.status==="inconclusive"||p.status==="cancelled") return RED;
+  if(UNSETTLED.has(p.status)) return VIOLET_SOFT;
+  if(p.status==="passed" && (method.includes("DETERMINISTIC")||method.includes("ORACLE"))) return GOLD;
+  if(p.status==="passed") return VIOLET;
   return SLATE;
 }
 function statusEmissive(p:OrbitProof){
-  if(p.status==="rejected"||p.status==="disputed") return .42;
-  if(p.status==="pending") return .26;
-  if(p.status==="verified" && ((p.verification_method||"").toUpperCase().includes("DETERMINISTIC")||(p.verification_method||"").toUpperCase().includes("ORACLE"))) return .72;
-  if(p.status==="verified") return .58;
+  if(p.status==="failed"||p.status==="inconclusive"||p.status==="cancelled") return .42;
+  if(UNSETTLED.has(p.status)) return .26;
+  if(p.status==="passed" && ((p.verification_method||"").toUpperCase().includes("DETERMINISTIC")||(p.verification_method||"").toUpperCase().includes("ORACLE"))) return .72;
+  if(p.status==="passed") return .58;
   return .03;
 }
 
@@ -121,9 +122,9 @@ function bloomForAgent(agent:OrbitBloomAgent,ox:number,oz:number,scale=1,detail=
       const x=ox+Math.cos(lane)*(radial*scale)+Math.cos(lane+Math.PI/2)*(sideways*scale);
       const z=oz+Math.sin(lane)*(radial*scale)+Math.sin(lane+Math.PI/2)*(sideways*scale);
       const y=(.38+tier*.20+(j%3)*.035)*scale;
-      const size=(p.status==="verified" ? .17 : .15)*scale;
+      const size=(p.status==="passed" ? .17 : .15)*scale;
       boxes.push({x,y,z,sx:size,sy:size,sz:size,color:statusColor(p),emissive:statusEmissive(p),ry:-lane});
-      if(p.status==="verified"){
+      if(p.status==="passed"){
         boxes.push({x,y:y-.105*scale,z,sx:size*.58,sy:.028*scale,sz:size*.58,color:statusColor(p),emissive:.18,ry:-lane});
       }
     });
@@ -309,7 +310,7 @@ export function OrbitBloom3D({agents,single=false,autoRotate=true,hoverInfo=fals
       <div className="text-[9px] uppercase tracking-[.18em] text-[#73e5aa]">Reputation Bloom</div>
       <div className="mt-2 truncate text-sm font-medium text-[#f3eee6]">@{hovered.handle}</div>
       <div className="mt-4 grid grid-cols-4 gap-1.5 text-center">
-        <Metric v={hovered.verified} l="verified" c="#42d995"/><Metric v={hovered.proofs.filter(p=>p.status==="verified"&&((p.verification_method||"").toUpperCase().includes("DETERMINISTIC")||(p.verification_method||"").toUpperCase().includes("ORACLE"))).length} l="elite" c="#d6ae61"/><Metric v={hovered.pending} l="pending" c="#8fe8ba"/><Metric v={hovered.rejected} l="failed" c="#ef4444"/>
+        <Metric v={hovered.verified} l="verified" c="#42d995"/><Metric v={hovered.proofs.filter(p=>p.status==="passed"&&((p.verification_method||"").toUpperCase().includes("DETERMINISTIC")||(p.verification_method||"").toUpperCase().includes("ORACLE"))).length} l="elite" c="#d6ae61"/><Metric v={hovered.pending} l="pending" c="#8fe8ba"/><Metric v={hovered.rejected} l="failed" c="#ef4444"/>
       </div>
       <div className="mt-3 text-[9px] uppercase tracking-[.12em] text-[#d6ae61]">Click to open passport →</div>
     </div>}

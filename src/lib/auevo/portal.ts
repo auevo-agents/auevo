@@ -1,6 +1,6 @@
 import { getSupabaseServer } from "@/lib/supabase";
 import { aggregateCategory, CATEGORY_RESULT_FIELD, type CategoryAggregate } from "@/lib/auevo/score";
-import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
+import { UNSETTLED_STATUSES, type ProofCategory, type ProofEvent } from "@/lib/auevo/db";
 import type { SocialAgent } from "@/lib/social/db";
 
 export const PORTAL_CATEGORIES: ProofCategory[] = [
@@ -36,9 +36,14 @@ function buildRecord(agent: SocialAgent, proofs: ProofEvent[]): AgentPortalRecor
     .map((category) => aggregateCategory(proofs, category, CATEGORY_RESULT_FIELD[category] ?? null))
     .filter((c) => c.attempted > 0);
   const attempted = proofs.length;
-  const verified = proofs.filter((p) => p.status === "verified").length;
-  const pending = proofs.filter((p) => p.status === "pending").length;
-  const rejected = proofs.filter((p) => p.status === "rejected" || p.status === "disputed").length;
+  // These three buckets predate the 7-value ProofStatus enum and keep
+  // their old names/shape (consumed across the Passport and the 3D
+  // tree), but now map onto it precisely instead of folding a failed
+  // outcome into "verified" the way the old flat status did — see
+  // execution-plan doc §5.
+  const verified = proofs.filter((p) => p.status === "passed").length;
+  const pending = proofs.filter((p) => UNSETTLED_STATUSES.includes(p.status)).length;
+  const rejected = proofs.filter((p) => p.status === "failed" || p.status === "inconclusive" || p.status === "cancelled").length;
   const dominant = [...categories].sort((a, b) => b.attempted - a.attempted)[0];
 
   return {

@@ -1,10 +1,13 @@
 import type { ProofEvent } from "@/lib/auevo/db";
 
 const STATUS_COLOR: Record<string,string> = {
-  verified:"#d6ae61",
-  pending:"#8b72ff",
-  rejected:"#ff646e",
-  disputed:"#f08b5d",
+  passed:"#d6ae61",
+  scheduled:"#8b72ff",
+  running:"#8b72ff",
+  awaiting_settlement:"#8b72ff",
+  failed:"#ff646e",
+  cancelled:"#ff646e",
+  inconclusive:"#f08b5d",
 };
 
 export function ProofDNA({proofs,className=""}:{proofs:ProofEvent[];className?:string}) {
@@ -26,8 +29,8 @@ export function ProofDNA({proofs,className=""}:{proofs:ProofEvent[];className?:s
         const c=STATUS_COLOR[p.status]??"#6d7583";
         return <g key={p.id}>
           <line x1={x1} y1={y} x2={x2} y2={y} stroke="#303746" strokeWidth=".8" opacity=".7"/>
-          <rect x={x1-4} y={y-4} width="8" height="8" rx="1.5" fill={c} opacity={p.status==="verified"?.95:.7}/>
-          <rect x={x2-3.5} y={y-3.5} width="7" height="7" rx="1.5" fill={p.status==="verified"?"#6f5dc7":"#2b303b"} stroke={c} strokeWidth=".7"/>
+          <rect x={x1-4} y={y-4} width="8" height="8" rx="1.5" fill={c} opacity={p.status==="passed"?.95:.7}/>
+          <rect x={x2-3.5} y={y-3.5} width="7" height="7" rx="1.5" fill={p.status==="passed"?"#6f5dc7":"#2b303b"} stroke={c} strokeWidth=".7"/>
         </g>;
       })}
       <path d="M214 28 C386 82 214 142 386 205 C214 267 386 334 214 452" fill="none" stroke="#7e6be7" strokeOpacity=".28" strokeWidth="1.2"/>
