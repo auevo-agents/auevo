@@ -39,7 +39,14 @@ export async function recordEconomicActivityProofs(): Promise<{ checked: number;
     const latest = await getLatestProofEventForSocialAgent(agent.id, "economic_activity");
     const priorPeriodEnd = typeof latest?.result?.period_end === "string" ? latest.result.period_end : null;
     const periodStartMs = priorPeriodEnd ? new Date(priorPeriodEnd).getTime() : new Date(agent.created_at).getTime();
-    if (now - periodStartMs < PERIOD_MS) continue;
+    // A brand-new agent (no `latest` yet) gets its first Proof immediately,
+    // covering whatever partial window exists since registration — same as
+    // Longevity's immediate day-zero Proof. Only a SECOND proof needs a
+    // full period to have elapsed since the last one; without this, a
+    // freshly-launched AUEVO (every agent under a week old) would show
+    // zero Economic Activity Proofs for anyone until a week after their
+    // own registration, which is exactly what happened before this fix.
+    if (latest && now - periodStartMs < PERIOD_MS) continue;
 
     let address: string;
     try {

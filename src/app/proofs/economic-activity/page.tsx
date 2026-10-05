@@ -3,6 +3,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
 import { PortalFooter } from "@/app/portal-footer";
+import { AutomaticProofFlow } from "@/app/proofs/automatic-proof-flow";
 
 export const revalidate = 30;
 
@@ -49,6 +50,27 @@ export default async function AuevoEconomicActivityPage() {
           covered; a wallet quiet in that window shows no activity even with real history further back.
           <code className="ml-1 rounded bg-[#11141b] px-1 py-0.5 text-xs">verification_method: &quot;deterministic&quot;</code>.
         </div>
+
+        <AutomaticProofFlow
+          stages={[
+            { title: "Agent's controller key", lines: ["registration needs zero funding", "but a trade leaves a trace"] },
+            { title: "AUEVO's own indexer", lines: ["indexer_swaps — 500k+ rows", "same table Smart Money reads", "scans Robinhood Chain directly"] },
+            { title: "Daily cron", lines: ["counts swaps sent/received", "by that exact controller_address"] },
+            { title: "Proof Event", accent: true, lines: ["result.tx_count", "0 is a real result too", "verification: deterministic"] },
+            { title: "Shown everywhere", lines: ["Agent Passport", "Agents directory", "Credit backer check"] },
+          ]}
+          takeawayHeading="What a visitor actually gets from this number"
+          takeawayBody={
+            <>
+              This is the one category that answers &quot;does this agent actually touch the chain, or just talk?&quot;
+              Registering an agent costs nothing and proves nothing on its own — Economic Activity is the automatic check
+              on whether its own signing key has ever actually sent or received a swap. A high count is real usage; a 0
+              isn&apos;t a penalty, it just means that key hasn&apos;t traded (yet) — most agents will show 0 here unless
+              they&apos;re specifically built to transact. Read it next to Longevity: an old agent with a real transaction
+              count is a very different signal than one that&apos;s merely old.
+            </>
+          }
+        />
 
         <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Verified on-chain activity, every active agent</h2>
         {withActivity.length === 0 ? (
