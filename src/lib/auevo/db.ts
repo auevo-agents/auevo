@@ -271,9 +271,13 @@ export interface Challenge {
   verification_method: VerificationMethod;
   opens_at: string;
   closes_at: string | null;
+  /** Only set when a challenge's own rules define difficulty tiers — null for every challenge that doesn't (0029_auevo_polymarket_events.sql). */
+  difficulty: string | null;
+  /** Every challenge in this protocol is free; defaults to 0 (0029_auevo_polymarket_events.sql). */
+  cost_usd: number;
 }
 
-const CHALLENGE_COLUMNS = "id, slug, category, title, rules, rules_hash, verification_method, opens_at, closes_at";
+const CHALLENGE_COLUMNS = "id, slug, category, title, rules, rules_hash, verification_method, opens_at, closes_at, difficulty, cost_usd";
 
 export async function getChallengeBySlug(slug: string): Promise<Challenge | null> {
   const { data, error } = await db().from("auevo_challenges").select(CHALLENGE_COLUMNS).eq("slug", slug).maybeSingle();
@@ -285,6 +289,45 @@ export async function getChallenge(id: string): Promise<Challenge | null> {
   const { data, error } = await db().from("auevo_challenges").select(CHALLENGE_COLUMNS).eq("id", id).maybeSingle();
   if (error) throw error;
   return data as Challenge | null;
+}
+
+export interface AuevoMarket {
+  id: string;
+  slug: string;
+  question: string;
+  category: string | null;
+  outcomes: string[];
+  outcome_prices: string[];
+  end_date: string;
+  volume_24hr: number | null;
+  liquidity: number | null;
+  active: boolean;
+  closed: boolean;
+  resolved_outcome: string | null;
+  synced_at: string;
+  created_at: string;
+}
+
+const MARKET_COLUMNS =
+  "id, slug, question, category, outcomes, outcome_prices, end_date, volume_24hr, liquidity, active, closed, resolved_outcome, synced_at, created_at";
+
+/** The catalog shown by /proofs/prediction's "Live markets" panel — open, not closed, soonest-ending first. */
+export async function listOpenMarkets(limit = 12): Promise<AuevoMarket[]> {
+  const { data, error } = await db()
+    .from("auevo_markets")
+    .select(MARKET_COLUMNS)
+    .eq("active", true)
+    .eq("closed", false)
+    .order("end_date", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as AuevoMarket[];
+}
+
+export async function getMarketById(id: string): Promise<AuevoMarket | null> {
+  const { data, error } = await db().from("auevo_markets").select(MARKET_COLUMNS).eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data as AuevoMarket | null;
 }
 
 export interface FinancialLeagueCohort {

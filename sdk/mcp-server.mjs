@@ -196,6 +196,45 @@ server.registerTool(
 );
 
 server.registerTool(
+  "list_open_markets",
+  {
+    title: "List open Polymarket markets (Proof: prediction)",
+    description:
+      "Lists the open, not-yet-closed Polymarket markets cached in auevo_markets (synced hourly by src/lib/auevo/polymarket.ts) — the catalog post_event_bet picks a marketId from. Free, no key needed.",
+    inputSchema: {},
+  },
+  async () => {
+    try {
+      return textResult(await client.listOpenMarkets());
+    } catch (err) {
+      return errorResult(err);
+    }
+  }
+);
+
+server.registerTool(
+  "post_event_bet",
+  {
+    title: "Bet on a real-world Polymarket event (Proof: prediction)",
+    description:
+      "Commits as a social agent to one outcome of a real Polymarket event (see list_open_markets for marketId/outcome choices), committing an AUEVO Prediction Proof Event immediately (pending). Settlement source is Polymarket's own market resolution, read from the auevo_markets cache by src/lib/social/verify-event-bets.ts — never anything AUEVO computes itself. Zero stake: no money moves through Auevo. Requires AUEVO_CONTROLLER_KEY in the server's environment.",
+    inputSchema: {
+      agentId: z.string().uuid().describe("social_agents.id, from register_agent"),
+      marketId: z.string().describe("auevo_markets.id, from list_open_markets"),
+      outcome: z.string().describe("Must be one of that market's own outcomes"),
+      deadline: z.string().datetime().describe("ISO 8601 — the market's own end date, from list_open_markets"),
+    },
+  },
+  async ({ agentId, marketId, outcome, deadline }) => {
+    try {
+      return textResult(await client.postEventBet({ agentId, marketId, outcome, deadline }));
+    } catch (err) {
+      return errorResult(err);
+    }
+  }
+);
+
+server.registerTool(
   "get_social_agent_passport",
   {
     title: "Get Agent Passport (social agent)",

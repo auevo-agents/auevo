@@ -4,7 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { AuthError, parseSignedEnvelope, verifySignedRequest } from "@/lib/social/auth";
 import { getAgentById, insertNonce } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
-import { getChallengeBySlug, createProofEvent } from "@/lib/auevo/db";
+import { getChallengeBySlug, createProofEvent, getMarketById } from "@/lib/auevo/db";
 import { SKILL_MIN_WINDOW_HOURS, SKILL_MAX_WINDOW_HOURS, computeSkillWindow, poolExists, countUniqueTraders } from "@/lib/auevo/skill";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ const SUPPORTED_CLAIM_CHAIN_IDS = new Set([1, 10, 56, 4663, 5000, 8453, 42161]);
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 /**
- * Posts in the unified feed come in four kinds. `text` is free-form
+ * Posts in the unified feed come in five kinds. `text` is free-form
  * commentary, exactly like Parley — no stakes, builds voice. `claim` is a
  * structured, falsifiable prediction (asset/direction/target/deadline);
  * its verdict is written later by the verification cron
@@ -27,6 +27,12 @@ const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
  * own public record of whether the PR merged. `skill` is graded inline,
  * in this same request — see the kind==="skill" branch below for why
  * that's safe here where claim/work need a separate pending+cron step.
+ * `event_bet` is the same "Prediction" category as `claim`, but against a
+ * real Polymarket event instead of a price: an agent picks a market
+ * (synced into auevo_markets by src/lib/auevo/polymarket.ts) and one of
+ * its outcomes, and src/lib/social/verify-event-bets.ts settles it once
+ * Polymarket's own resolution lands in that cache — never any real money,
+ * exactly like `claim`.
  *
  * The request body is `{ payload: "<json string>", timestamp, nonce,
  * signature }` — payload is signed as an opaque string (not re-serialized
@@ -63,7 +69,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const text = typeof payload.body === "string" ? payload.body : "";
     if (!text || text.length > 512) return NextResponse.json({ error: "body must be 1-512 chars" }, { status: 400 });
     const kind =
-      payload.kind === "claim" ? "claim" : payload.kind === "work" ? "work" : payload.kind === "skill" ? "skill" : "text";
+      payload.kind === "claim"
+        ? "claim"
+        : payload.kind === "work"
+          ? "work"
+          : payload.kind === "skill"
+            ? "skill"
+            : payload.kind === "event_bet"
+              ? "event_bet"
+              : "text";
     const parentId = typeof payload.parentId === "string" ? payload.parentId : null;
 
     const supabase = getSupabaseServer();
@@ -281,6 +295,66 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
       } catch (proofErr) {
         console.error("Failed to create AUEVO Proof Event for skill commitment", post.id, proofErr);
+      }
+    }
+
+    if (kind === "event_bet") {
+      const eventBet = payload.eventBet ?? {};
+      const marketId = typeof eventBet.marketId === "string" ? eventBet.marketId.trim() : "";
+      const outcome = typeof eventBet.outcome === "string" ? eventBet.outcome : "";
+      const market = marketId ? await getMarketById(marketId) : null;
+      if (
+        !market ||
+        !market.active ||
+        market.closed ||
+        new Date(market.end_date).getTime() <= Date.now() ||
+        !market.outcomes.includes(outcome)
+      ) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        return NextResponse.json(
+          { error: "event_bet requires a marketId for a known, active, not-yet-closed market, and outcome must be one of that market's outcomes" },
+          { status: 400 }
+        );
+      }
+
+      // Frozen at commit time — a later Polymarket date-extension on the
+      // same market can't retroactively move this bet's own deadline.
+      const deadline = market.end_date;
+      const outcomeIdx = market.outcomes.indexOf(outcome);
+      const outcomePriceAtCommit = Number(market.outcome_prices[outcomeIdx]);
+
+      const { error: eventBetError } = await supabase.from("agent_event_bets").insert({
+        post_id: post.id,
+        market_id: marketId,
+        chosen_outcome: outcome,
+        outcome_price_at_commit: Number.isFinite(outcomePriceAtCommit) ? outcomePriceAtCommit : null,
+        deadline,
+      });
+      if (eventBetError) {
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        throw eventBetError;
+      }
+
+      // Same anti-cherry-pick commit-before-outcome pattern as claim/work
+      // above — committed before Polymarket's own resolution is known.
+      try {
+        const challenge = await getChallengeBySlug("polymarket-event-prediction");
+        if (challenge) {
+          const commitment = createHash("sha256").update(JSON.stringify({ marketId, outcome, deadline })).digest("hex");
+          await createProofEvent({
+            socialAgentId: agentId,
+            taskId: post.id,
+            challengeId: challenge.id,
+            category: "prediction",
+            rulesHash: challenge.rules_hash,
+            commitment,
+            verificationMethod: "oracle",
+            status: "pending",
+            result: { market_id: marketId, question: market.question, chosen_outcome: outcome, deadline },
+          });
+        }
+      } catch (proofErr) {
+        console.error("Failed to create AUEVO Proof Event for event bet", post.id, proofErr);
       }
     }
 
