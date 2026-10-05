@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
 import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
-import { SPY_ADDRESS, SPY_CHAIN_ID } from "./spy";
+import type { PredictionAsset } from "@/lib/auevo/prediction-assets";
 
 /**
  * The live, clickable version of "try the Prediction pipeline" — same
@@ -81,7 +81,7 @@ function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
   );
 }
 
-export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) {
+export function AuevoPredictionTryIt({ assets }: { assets: PredictionAsset[] }) {
   const { address, isConnected } = useAccount();
   const { agent, setAgent, checked } = useWalletAgent(address);
   const [posted, setPosted] = useState(false);
@@ -137,7 +137,7 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
             ))}
           </div>
           {mode === "price" ? (
-            <ClaimStep agent={agent} spyPrice={spyPrice} onPosted={() => setPosted(true)} />
+            <ClaimStep agent={agent} assets={assets} onPosted={() => setPosted(true)} />
           ) : (
             <EventBetStep agent={agent} onPosted={() => setPosted(true)} />
           )}
@@ -236,7 +236,8 @@ function ExistingAgentLink({ onUse }: { onUse: (a: RegisteredAgent) => void }) {
   );
 }
 
-function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyPrice: number | null; onPosted: () => void }) {
+function ClaimStep({ agent, assets, onPosted }: { agent: RegisteredAgent; assets: PredictionAsset[]; onPosted: () => void }) {
+  const [selected, setSelected] = useState<PredictionAsset | null>(assets[0] ?? null);
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [targetPrice, setTargetPrice] = useState("");
   const [durationMs, setDurationMs] = useState(DURATIONS[1].ms);
@@ -246,18 +247,19 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
   const { signMessageAsync } = useSignMessage();
 
   const parsedPrice = Number(targetPrice);
-  const canSubmit = Number.isFinite(parsedPrice) && parsedPrice > 0;
+  const canSubmit = Boolean(selected) && Number.isFinite(parsedPrice) && parsedPrice > 0;
 
   async function handlePost() {
+    if (!selected) return;
     setError(null);
     setPending(true);
     try {
       const deadline = new Date(Date.now() + durationMs).toISOString();
       const payload = {
         topic: "test",
-        body: `Prediction: SPY will be ${direction === "up" ? "at or above" : "at or below"} ${parsedPrice} by ${deadline}.`,
+        body: `Prediction: ${selected.ticker} will be ${direction === "up" ? "at or above" : "at or below"} ${parsedPrice} by ${deadline}.`,
         kind: "claim",
-        claim: { asset: SPY_ADDRESS.toLowerCase(), chainId: SPY_CHAIN_ID, direction, targetPrice: parsedPrice, deadline },
+        claim: { asset: selected.address.toLowerCase(), chainId: selected.chainId, direction, targetPrice: parsedPrice, deadline },
       };
       const rawBody = JSON.stringify(payload);
       const path = `/api/agents/${agent.id}/post`;
@@ -289,8 +291,8 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
         <div className="rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
           <p>
             Your bet is now on the record, permanently — marked <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>.
-            Nobody can check the answer early, including you: AUEVO reads SPY&apos;s real price automatically at{" "}
-            <strong className="text-[#ece8df]">{new Date(posted.deadline).toLocaleString()}</strong> and marks it right or wrong within
+            Nobody can check the answer early, including you: AUEVO reads {selected?.ticker ?? "the asset"}&apos;s real price automatically
+            at <strong className="text-[#ece8df]">{new Date(posted.deadline).toLocaleString()}</strong> and marks it right or wrong within
             5 minutes after that.
           </p>
           <a href={`/agents/${agent.handle}`} className="mt-2 inline-block text-[#a99cff] underline hover:text-white">
@@ -303,27 +305,47 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
 
   function fillGuaranteedExample() {
     setDirection("down");
-    setTargetPrice(spyPrice ? String(Math.ceil(spyPrice * 2)) : "999999");
+    setTargetPrice(selected ? String(Math.ceil(selected.priceUsd * 2)) : "999999");
     setDurationMs(DURATIONS[0].ms);
   }
 
   return (
     <div className="flex flex-col gap-2.5">
-      <StepLabel title="Make a bet: where will SPY be?" />
+      <StepLabel title="Pick a real asset" />
       <p className="text-xs leading-5 text-[#7a8390]">
-        SPY tracks the S&amp;P 500 (the 500 biggest US companies), as a token on Robinhood Chain. You&apos;re betting on
-        its real price — the same way a human trader would.
+        Every one of these is an already-tokenized real asset on Robinhood Chain, priced live from the same feed
+        AUEVO settles against — a stock, ETF, or commodity, not a toy.
       </p>
+      {assets.length === 0 ? (
+        <p className="text-xs text-[#ff7b82]">No priced assets available right now — try again shortly.</p>
+      ) : (
+        <div className="flex max-h-[180px] flex-wrap gap-1.5 overflow-y-auto pr-1">
+          {assets.map((a) => (
+            <button
+              key={`${a.chainId}:${a.address}`}
+              type="button"
+              className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition ${
+                selected?.address === a.address ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+              }`}
+              onClick={() => setSelected(a)}
+            >
+              {a.ticker}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <StepLabel title={selected ? `Make a bet: where will ${selected.ticker} be?` : "Make a bet"} />
 
       <div className="flex items-center justify-between rounded-[3px] border border-white/[0.07] bg-[#0d1016] px-4 py-2.5">
-        <span className="text-sm text-[#7a8390]">SPY right now</span>
-        <span className="font-medium text-[#ece8df]">{spyPrice !== null ? `$${spyPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "price unavailable"}</span>
+        <span className="text-sm text-[#7a8390]">{selected ? `${selected.ticker} right now` : "pick an asset above"}</span>
+        <span className="font-medium text-[#ece8df]">{selected ? `$${selected.priceUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}</span>
       </div>
 
       <p className="text-xs leading-5 text-[#7a8390]">
         Pick a direction and a price. Example:{" "}
-        {spyPrice !== null
-          ? `"at or above $${Math.round(spyPrice * 0.99)}" is an easy bet right now; "at or above $${Math.round(spyPrice * 1.5)}" is a hard one.`
+        {selected
+          ? `"at or above $${Math.round(selected.priceUsd * 0.99)}" is an easy bet right now; "at or above $${Math.round(selected.priceUsd * 1.5)}" is a hard one.`
           : `"at or above <lower than today's price>" is an easy bet; far above today's price is a hard one.`}
       </p>
       <div className="flex gap-2">
@@ -485,7 +507,11 @@ function EventBetStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {m.outcomes.map((outcome, i) => {
                     const price = Number(m.outcome_prices[i]);
-                    const pct = Number.isFinite(price) ? `${Math.round(price * 100)}%` : "—";
+                    // One decimal place always, not Math.round() to a whole
+                    // number — a market at 99.7%/0.3% (still genuinely live,
+                    // just lopsided) would otherwise round to a flat
+                    // "100%"/"0%" and read as already-resolved.
+                    const pct = Number.isFinite(price) ? `${(price * 100).toFixed(1)}%` : "—";
                     const chosen = selectedOutcome === outcome;
                     return (
                       <button

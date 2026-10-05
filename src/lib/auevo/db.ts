@@ -324,17 +324,39 @@ export interface AuevoMarket {
 const MARKET_COLUMNS =
   "id, slug, question, category, outcomes, outcome_prices, end_date, volume_24hr, liquidity, active, closed, resolved_outcome, synced_at, created_at";
 
-/** The catalog shown by /proofs/prediction's "Live markets" panel — open, not closed, soonest-ending first. */
-export async function listOpenMarkets(limit = 12): Promise<AuevoMarket[]> {
+/**
+ * The catalog shown by /proofs/prediction's "Live markets" panel — open,
+ * not closed, soonest-ending first, but capped at MAX_PER_EVENT per
+ * underlying event (category, see src/lib/auevo/polymarket.ts's own
+ * comment on why that's the event title, not Gamma's empty `category`
+ * field) so a single volatile topic — e.g. six different BTC strike-price
+ * thresholds all ending the same hour — can't crowd out every other slot.
+ * Reads a larger pool than `limit` from the DB specifically to have
+ * enough variety left to diversify from.
+ */
+const MAX_PER_EVENT = 2;
+
+export async function listOpenMarkets(limit = 24): Promise<AuevoMarket[]> {
   const { data, error } = await db()
     .from("auevo_markets")
     .select(MARKET_COLUMNS)
     .eq("active", true)
     .eq("closed", false)
     .order("end_date", { ascending: true })
-    .limit(limit);
+    .limit(Math.max(limit * 4, 80));
   if (error) throw error;
-  return (data ?? []) as AuevoMarket[];
+
+  const perEventCount = new Map<string, number>();
+  const diversified: AuevoMarket[] = [];
+  for (const m of (data ?? []) as AuevoMarket[]) {
+    const key = m.category ?? m.id; // no event title — nothing to group with, so it's its own group
+    const count = perEventCount.get(key) ?? 0;
+    if (count >= MAX_PER_EVENT) continue;
+    perEventCount.set(key, count + 1);
+    diversified.push(m);
+    if (diversified.length >= limit) break;
+  }
+  return diversified;
 }
 
 export async function getMarketById(id: string): Promise<AuevoMarket | null> {
