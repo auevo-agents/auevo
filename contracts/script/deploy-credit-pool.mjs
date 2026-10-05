@@ -27,23 +27,23 @@
 //   CREDIT_IDENTITY_ADDRESS An existing ERC-8004 (or ERC-721-ownerOf-
 //                           compatible) identity registry. This contract
 //                           never mints or owns identities itself — it
-//                           only reads who currently owns one. Priors'
-//                           own identity registry on this chain is
-//                           0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 —
+//                           only reads who currently owns one. A public
+//                           identity registry already live on this chain
+//                           is at 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 —
 //                           reusing it means any agent already registered
 //                           there can use this pool with no new identity,
 //                           but it also means trusting THAT registry's
 //                           own owner (a single EOA today, not a
-//                           multisig — see docs/priors-audit notes before
-//                           deciding). Deploying a separate registry of
-//                           your own is the alternative if you don't want
-//                           that dependency; this script does not do
-//                           that for you either.
+//                           multisig — see that registry's own audit
+//                           history before deciding). Deploying a separate
+//                           registry of your own is the alternative if you
+//                           don't want that dependency; this script does
+//                           not do that for you either.
 //   CREDIT_RESERVE_ADDRESS  Where the 15% protocol fee share is paid out,
 //                           immediately, on every repay(). Not this
 //                           contract — it never accrues funds here.
 //
-// Optional, with Priors' own published numbers as defaults:
+// Optional, with these defaults:
 //   CREDIT_MIN_LOAN_USD=5 CREDIT_MAX_LOAN_USD=500 CREDIT_FEE_BPS=100
 //   CREDIT_MIN_ROOT_STAKE_USD=10
 //

@@ -7,9 +7,9 @@ import { CreditSubnav } from "./credit-subnav";
 export const revalidate = 60;
 
 /**
- * Public landing page for AgentCreditPool — Priors-style unsecured-from-
- * the-agent credit, fully backed by a third party, never by Auevo itself
- * (see contracts/src/AgentCreditPool.sol's own doc comment for the full
+ * Public landing page for AgentCreditPool — unsecured-from-the-agent
+ * credit, fully backed by a third party, never by Auevo itself (see
+ * contracts/src/AgentCreditPool.sol's own doc comment for the full
  * security model). Honest about deployment status rather than pointing
  * at a placeholder address, same convention as /rwa/app/bots: the
  * contract is written and tested but NEXT_PUBLIC_CREDIT_POOL_ADDRESS
@@ -35,11 +35,7 @@ export default async function CreditLandingPage() {
           written on chain, where anyone can check it.
         </p>
         <p className="mt-4 text-sm text-[var(--muted)]">
-          Modeled on{" "}
-          <a className="underline hover:text-[var(--ink)]" href="https://priors.trade" target="_blank" rel="noopener noreferrer">
-            Priors
-          </a>
-          &apos;s public v2 design, independently reimplemented for Auevo —{" "}
+          Modeled on an existing public unsecured-agent-lending design, independently implemented for Auevo —{" "}
           <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/src/AgentCreditPool.sol</code> in the repo.
         </p>
       </section>

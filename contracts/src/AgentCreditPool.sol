@@ -10,9 +10,9 @@ import {IAgentIdentity} from "./interfaces/IAgentIdentity.sol";
 
 /// @title AgentCreditPool — EXPERIMENTAL, UNAUDITED
 /// @notice Unsecured-from-the-agent, fully-backed-by-third-parties credit
-///         pool for AI agents, modeled on Priors' public v2 design
-///         (github.com/priors-agents/priors) and independently
-///         reimplemented here for Auevo on Robinhood Chain. Reuses
+///         pool for AI agents, modeled on an existing public
+///         unsecured-agent-lending design and independently
+///         implemented here for Auevo on Robinhood Chain. Reuses
 ///         whatever `IAgentIdentity` the deployer points at (an existing
 ///         ERC-8004 identity registry — an open standard, not owned by
 ///         this contract) instead of minting its own identities.
@@ -72,8 +72,8 @@ import {IAgentIdentity} from "./interfaces/IAgentIdentity.sol";
 ///      identity's current `owner` or its `operatorWallet`, if the
 ///      configured identity registry exposes one (read defensively via a
 ///      best-effort staticcall — see `_operatorWalletOf` — so this pool
-///      still works unmodified against a registry, like Priors' own, that
-///      has no such concept at all). `repay()` stays permissionless, same
+///      still works unmodified against a registry that has no such
+///      concept at all). `repay()` stays permissionless, same
 ///      as before, since crediting an agent's record never requires
 ///      proving who paid.
 ///
@@ -97,7 +97,7 @@ import {IAgentIdentity} from "./interfaces/IAgentIdentity.sol";
 ///      remainder becomes visible `totalBadDebt` instead of being pulled
 ///      from everyone else's shares.
 ///
-///      Scope deliberately narrower than Priors v2 in one remaining way:
+///      Scope deliberately narrower than a comparable existing design in one remaining way:
 ///      one open loan per agent at a time (simplifies default accounting
 ///      — nothing here tracks "this sponsor's OTHER loans on this same
 ///      agent" because there are none open concurrently). Multiple
@@ -125,8 +125,8 @@ import {IAgentIdentity} from "./interfaces/IAgentIdentity.sol";
 ///      share price drop on a seat-backed default — a correctness bug a
 ///      naive "just burn the token" design was caught making during this
 ///      contract's own design review (see contracts/README.md). On
-///      default of a loan a seat actually backed, `SEAT_BURN_BPS` (50%,
-///      matching Priors' own number) of that seat's locked `seatToken` is
+///      default of a loan a seat actually backed, `SEAT_BURN_BPS` (50%)
+///      of that seat's locked `seatToken` is
 ///      sent to a canonical burn address and the rest returned to the
 ///      seat-holder; a seat that never backed the defaulted loan (vouched
 ///      after it was drawn, or for a different still-open loan) gets its
@@ -157,7 +157,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     IAgentIdentity public immutable identity;
     uint256 public immutable minLoan;
     uint256 public immutable maxLoan;
-    /// @dev Base fee in bps per 30-day term, e.g. 100 = 1%/30d (Priors' own number).
+    /// @dev Base fee in bps per 30-day term, e.g. 100 = 1%/30d.
     uint16 public immutable feeBps;
     uint256 public immutable minRootStake;
     /// @dev Where the protocol's 15% fee share goes. Not this contract itself —
@@ -177,7 +177,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     uint256 public constant SPONSOR_FEE_BPS = 2_500; // 25%
     // Reserve's cut is the remainder (1_500 / 15%), computed as fee - lender - sponsor
     // so rounding dust favours the reserve rather than disappearing or double-counting.
-    uint16 public constant MAX_PREMIUM_BPS = 200; // 2%/30d ceiling, mirrors Priors
+    uint16 public constant MAX_PREMIUM_BPS = 200; // 2%/30d ceiling
     uint64 public constant GRACE_PERIOD = 3 days;
     uint64 public constant MIN_TERM_DAYS = 1;
     uint64 public constant MAX_TERM_DAYS = 30;
@@ -188,11 +188,11 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
     ///      does not exist in a single-sponsor design).
     uint256 public constant MAX_SPONSORS_PER_AGENT = 20;
     /// @dev Only an agent with at least this many repaid loans can be
-    ///      backed by a seat — matches Priors' own "growth vault" gate.
+    ///      backed by a seat.
     uint32 public constant SEAT_MIN_REPAID_LOANS = 10;
     /// @dev Fraction of a seat's locked seatToken burned on a default of
-    ///      the loan it backed — matches Priors' own number. The other
-    ///      half returns to the seat-holder (same loan), same as any
+    ///      the loan it backed. The other half returns to the
+    ///      seat-holder (same loan), same as any
     ///      stake not involved in the defaulted loan returning in full.
     uint16 public constant SEAT_BURN_BPS = 5_000;
     /// @dev Canonical no-owner burn sink — used instead of a token
@@ -710,7 +710,7 @@ contract AgentCreditPool is ReentrancyGuard, EIP712 {
         emit Repaid(loanId, loan.agentId, totalLenderCut, totalSponsorCut, totalReserveCut);
     }
 
-    /// @notice Permissionless by design — matches Priors: anyone may call this
+    /// @notice Permissionless by design: anyone may call this
     ///         once the grace period has passed, same as an off-chain keeper would.
     function markDefault(uint256 loanId) external nonReentrant {
         Loan storage loan = loanRecords[loanId];

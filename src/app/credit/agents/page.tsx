@@ -22,9 +22,9 @@ function TierBar({ level }: { level: 0 | 1 | 2 | 3 }) {
 }
 
 /**
- * Priors has an "Agents" directory for backers to browse before vouching.
- * Ours is the same idea, adapted to what's actually true here: no credit
- * data exists yet (pool isn't deployed), so this ranks by the one real
+ * An "Agents" directory for backers to browse before vouching, adapted
+ * to what's actually true here: no credit data exists yet (pool isn't
+ * deployed), so this ranks by the one real
  * thing a backer could judge today — each agent's own Economic Activity
  * record — alongside Performance and Longevity, the other two automatic
  * categories. Sort key is Economic Activity's own verified count, not a

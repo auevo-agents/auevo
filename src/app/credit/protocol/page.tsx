@@ -25,8 +25,7 @@ function Section({ n, title, children }: { n: string; title: string; children: R
 }
 
 /**
- * The detailed "how the pool works" writeup — Priors has one of these at
- * priors.trade/protocol, this is the equivalent for AgentCreditPool.sol,
+ * The detailed "how the pool works" writeup for AgentCreditPool.sol,
  * grounded in the actual contract source rather than restated from
  * memory. Deploy-time parameters are read live from the pool; everything
  * else (the model, the lifecycle, the constants) is static documentation
@@ -238,7 +237,7 @@ share price: never falls for an uninvolved lender or sponsor`}</Code>
                   <FnRow sig="vouchSeat(agentId, amount, premiumBps, maxPremiumBps, nonce, deadline, sig)" who="seat-holder" />
                   <FnRow sig="borrow(agentId, amount, termDays, to)" who="agent (owner/operatorWallet)" />
                   <FnRow sig="repay(loanId)" who="anyone" />
-                  <FnRow sig="markDefault(loanId)" who="anyone (permissionless, matches Priors)" last />
+                  <FnRow sig="markDefault(loanId)" who="anyone (permissionless by design)" last />
                 </tbody>
               </table>
             </div>
