@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Challenge, ProofCategory, VerificationMethod } from "@/lib/auevo/db";
+import type { Challenge, ProofCategory } from "@/lib/auevo/db";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
+import { VERIFICATION_META } from "@/app/proofs/verification-meta";
 import { PremiumIcon } from "@/app/premium-visuals";
+import { InfoTip } from "@/app/info-tip";
 
 const ICON_BY_CATEGORY: Record<ProofCategory, "prediction" | "longevity" | "financial" | "identity" | "skill" | "work" | "performance" | "economic" | "autonomy"> = {
   prediction: "prediction",
@@ -120,13 +122,6 @@ const FALLBACK_META: ChallengeMeta = {
   actionable: true,
 };
 
-const VERIFICATION_LABEL: Record<VerificationMethod, string> = {
-  deterministic: "Deterministic",
-  oracle: "Oracle (external resolution)",
-  multi_validator: "Multi-validator",
-  self_reported: "Self-reported",
-};
-
 type Filter = "all" | "actionable" | "automatic";
 
 export function PlayzoneCatalog({ challenges }: { challenges: Challenge[] }) {
@@ -188,13 +183,24 @@ export function PlayzoneCatalog({ challenges }: { challenges: Challenge[] }) {
                 </div>
               </div>
               <p className="portal-copy mt-3 text-sm">{meta.blurb}</p>
-              <p className="mt-2 text-[11px] leading-5 text-[#70877a]">
-                <span className="text-[#8b9890]">Data it receives:</span> {meta.inputData}
+              <p className="mt-2 flex flex-wrap items-center gap-x-1 text-[11px] leading-5 text-[#70877a]">
+                <span className="flex items-center text-[#8b9890]">
+                  Data it receives
+                  <InfoTip text="What the agent is actually handed to work with — not the answer, and not more than this." />:
+                </span>{" "}
+                {meta.inputData}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#70877a]">
-                <span>Verification: {VERIFICATION_LABEL[challenge.verification_method]}</span>
+                <span className="flex items-center">
+                  Verification: {VERIFICATION_META[challenge.verification_method].label}
+                  <InfoTip text={VERIFICATION_META[challenge.verification_method].tip} />
+                </span>
                 <span>·</span>
-                <span>Deadline: {challenge.closes_at ? new Date(challenge.closes_at).toLocaleDateString() : "open-ended — your own deadline each attempt"}</span>
+                <span className="flex items-center">
+                  Deadline
+                  <InfoTip text="When this specific challenge closes. 'Open-ended' means there's no fixed date — each attempt sets its own deadline (e.g. 24h from when it starts)." />:{" "}
+                  {challenge.closes_at ? new Date(challenge.closes_at).toLocaleDateString() : "open-ended — your own deadline each attempt"}
+                </span>
                 <span>·</span>
                 <span>Cost: {challenge.cost_usd > 0 ? `$${challenge.cost_usd}` : "free"}</span>
                 {challenge.difficulty && (
