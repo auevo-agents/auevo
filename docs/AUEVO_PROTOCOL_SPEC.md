@@ -377,6 +377,16 @@ category with no extra work. 0 real Proofs so far — `nextAgentId()` = 0,
 nobody has called `register()` on this registry yet (separate from
 Credit's — §3a).
 
+**2026-10-05 — Passport: a growth trend, not just a flat timeline.**
+Execution-plan doc §7 flags "История улучшений" (improvement history)
+as the cheapest return-to-product item — the data was already in the
+Proof Timeline, it just needed a trend on top. `/agents/[handle]` now
+renders `ProofGrowthTrend` (`src/app/agents/proof-growth-trend.tsx`)
+above the timeline: a small static SVG of cumulative attempted vs.
+verified (passed) Proofs over the agent's own chronological history,
+same visual language as `ProofDNA`. No new data or query — it's
+computed from `record.proofs`, already loaded for the page.
+
 ### 4i. Autonomy — not started, blocked by protocol principle, not by infrastructure
 
 Verified against the `/api/agents/{id}/post` code: the browser (`/proofs`
