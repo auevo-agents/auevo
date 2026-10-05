@@ -4,6 +4,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { CrystalForest } from "../crystal-forest";
 import { AgentTreeIcon } from "../agent-tree-icon";
 import { FOREST_COLORS, type ForestAgent } from "../forest-model";
+import { ProofGrowthTrend } from "../proof-growth-trend";
 import { categoryLabel, CATEGORY_ORDER } from "@/app/proofs/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
@@ -96,6 +97,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
       <div><div className="portal-kicker">Proof Timeline</div><h2 className="portal-heading mt-2 text-2xl">A readable history.</h2><p className="portal-copy mt-2 max-w-2xl text-sm">Every attempt stays visible. Verified outcomes strengthen the structure; failed or disputed outcomes remain as permanent history.</p></div>
       <div className="flex gap-2 text-[9px] uppercase tracking-[.1em]"><span className="portal-chip !px-2 !py-1">verified</span><span className="rounded-[2px] border border-[#ef4444]/25 bg-[#ef4444]/[0.06] px-2 py-1 text-[#ff7b82]">failed</span></div>
     </div>
+    <ProofGrowthTrend proofs={record.proofs} className="mt-6" />
     <div className="mt-6 grid gap-3 md:grid-cols-2">{record.proofs.length?record.proofs.slice(0,18).map(p=><ProofRow key={p.id} p={p}/>):<div className="rounded-[3px] border border-dashed border-white/[0.06] p-5 text-sm text-[#717a87]">No Proof Events yet.</div>}</div>
    </section>
 
