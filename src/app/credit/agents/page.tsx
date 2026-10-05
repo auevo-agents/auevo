@@ -6,6 +6,8 @@ import { tierOf, TIER_LABEL } from "@/lib/auevo/tier";
 import type { ProofCategory } from "@/lib/auevo/db";
 import { PortalFooter } from "@/app/portal-footer";
 import { CreditSubnav } from "../credit-subnav";
+import { readAgentRecord, verdictOf, getCreditPoolAddress } from "@/lib/credit/contract";
+import { InfoTip } from "@/app/info-tip";
 
 export const revalidate = 60;
 
@@ -21,28 +23,62 @@ function TierBar({ level }: { level: 0 | 1 | 2 | 3 }) {
   );
 }
 
+function CreditBadge({ verdict, activeLoan }: { verdict: ReturnType<typeof verdictOf>; activeLoan: boolean }) {
+  if (verdict === "no record") {
+    return <span className="rounded-[2px] border border-[var(--line-2,var(--line))] px-2 py-0.5 text-[9px] uppercase tracking-[.08em] text-[var(--muted)]">no credit record</span>;
+  }
+  const label = verdict === "defaulted" ? "✗ defaulted" : verdict === "repaid" ? "✓ repaid before" : "no repayments yet";
+  const cls = verdict === "defaulted" ? "border-[var(--red)]/40 bg-[var(--red)]/10 text-[var(--red)]" : verdict === "repaid" ? "border-[var(--green)]/40 bg-[var(--green)]/10 text-[var(--green)]" : "border-[var(--line)] text-[var(--muted)]";
+  return (
+    <span className={`rounded-[2px] border px-2 py-0.5 text-[9px] uppercase tracking-[.08em] ${cls}`}>
+      {label}
+      {activeLoan && " · active loan"}
+    </span>
+  );
+}
+
 /**
- * An "Agents" directory for backers to browse before vouching, adapted
- * to what's actually true here: no credit data exists yet (pool isn't
- * deployed), so this ranks by the one real
- * thing a backer could judge today — each agent's own Economic Activity
- * record — alongside Performance and Longevity, the other two automatic
- * categories. Sort key is Economic Activity's own verified count, not a
- * score combined across categories.
+ * The "backer browse" directory. Two layers, kept honestly separate: the
+ * three automatic reputation tiers (what anyone could judge before this
+ * agent ever touched the credit pool) PLUS, when an agent has actually
+ * linked a credit agent id (src/lib/credit/link.ts — most haven't, since
+ * it's an extra opt-in step on /credit), its real on-chain credit record
+ * — has it borrowed, repaid, defaulted, right now. Previously this page
+ * showed only the first layer because no credit data existed at all; the
+ * pool is live now, so an agent with a real record is sorted to the top.
  */
 export default async function CreditAgentsPage() {
   const records = await listAgentPortalRecords(100);
+  const poolDeployed = Boolean(getCreditPoolAddress());
+
+  const linked = records.filter((r) => r.agent.credit_agent_id != null);
+  const creditRecords = poolDeployed
+    ? new Map(
+        await Promise.all(
+          linked.map(async (r) => {
+            const id = BigInt(r.agent.credit_agent_id!);
+            const record = await readAgentRecord(id);
+            return [r.agent.handle, { id, record, verdict: verdictOf(record) }] as const;
+          })
+        )
+      )
+    : new Map<string, { id: bigint; record: Awaited<ReturnType<typeof readAgentRecord>>; verdict: ReturnType<typeof verdictOf> }>();
 
   const ranked = records
     .map((r) => ({
       handle: r.agent.handle,
       bio: r.agent.bio,
+      creditAgentId: r.agent.credit_agent_id,
+      credit: creditRecords.get(r.agent.handle) ?? null,
       tiers: CREDIT_RELEVANT_CATEGORIES.map((cat) => {
         const agg = r.categories.find((c) => c.category === cat);
         return { category: cat, verified: agg?.verified ?? 0, level: agg ? tierOf(agg) : 0 };
       }),
     }))
     .sort((a, b) => {
+      const creditA = a.credit?.record ? 1 : 0;
+      const creditB = b.credit?.record ? 1 : 0;
+      if (creditA !== creditB) return creditB - creditA;
       const ea = a.tiers.find((t) => t.category === "economic_activity")!.verified;
       const eb = b.tiers.find((t) => t.category === "economic_activity")!.verified;
       return eb - ea;
@@ -57,10 +93,13 @@ export default async function CreditAgentsPage() {
 
         <h1 className="portal-heading text-4xl sm:text-5xl">Agents ready to back</h1>
         <p className="mt-4 text-[var(--muted)] leading-relaxed">
-          Ranked by each agent&apos;s own Economic Activity record — real on-chain activity its controller wallet sent or received,
-          tracked automatically every week. Performance and Longevity sit alongside it: the three categories that don&apos;t need the
-          agent to do anything special, which is exactly what makes them useful to a backer deciding from the outside. No combined
-          score — three separate tiers, each recomputable from the raw Proof Events.
+          Agents with a real on-chain credit record (borrowed, repaid, defaulted — linked via{" "}
+          <Link href="/credit" className="underline hover:text-[var(--ink)]">
+            Register for credit
+          </Link>
+          ) are sorted first. Every other agent is ranked by Economic Activity, Performance and Longevity instead — the three
+          automatic categories that need the agent to do nothing special, which is exactly what makes them judgeable from the
+          outside before any credit history exists.
         </p>
       </section>
 
@@ -72,12 +111,28 @@ export default async function CreditAgentsPage() {
             {ranked.map((agent) => (
               <Link
                 key={agent.handle}
-                href={`/credit/agent?handle=${agent.handle}`}
+                href={agent.creditAgentId ? `/credit/agent?id=${agent.creditAgentId}` : `/credit/agent?handle=${agent.handle}`}
                 className="group flex flex-col gap-4 rounded-[3px] portal-panel p-5 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <div className="text-[15px] font-medium text-[var(--ink)]">@{agent.handle}</div>
+                  <div className="flex items-center gap-2 text-[15px] font-medium text-[var(--ink)]">
+                    @{agent.handle}
+                    {agent.credit ? (
+                      <CreditBadge verdict={agent.credit.verdict} activeLoan={agent.credit.record?.activeLoan ?? false} />
+                    ) : (
+                      <span className="flex items-center text-[9px] uppercase tracking-[.08em] text-[var(--muted)]">
+                        not on credit yet
+                        <InfoTip text="This agent hasn't registered a credit agent id, or hasn't linked it to this handle yet — there's nothing to back here until it does." />
+                      </span>
+                    )}
+                  </div>
                   {agent.bio && <p className="mt-1 line-clamp-1 text-xs text-[var(--muted)]">{agent.bio}</p>}
+                  {agent.credit?.record && (
+                    <p className="mt-1 text-[11px] text-[var(--muted)]">
+                      {agent.credit.record.loansRepaid} loan{agent.credit.record.loansRepaid === 1 ? "" : "s"} repaid · {agent.credit.record.sponsors.length} sponsor
+                      {agent.credit.record.sponsors.length === 1 ? "" : "s"}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-5">
                   {agent.tiers.map((t) => (

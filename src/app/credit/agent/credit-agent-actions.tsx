@@ -110,8 +110,8 @@ function SignConsentPanel({ agentId, pool }: { agentId: bigint; pool: Address })
   );
 }
 
-/** Lenders AND sponsors both deposit into the same share pool — see AgentCreditPool.sol. */
-function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecimals: number }) {
+/** Lenders AND sponsors both deposit into the same share pool — see AgentCreditPool.sol. Exported so /credit's own landing page can offer it directly, not just this agent-specific page. */
+export function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecimals: number }) {
   const { address } = useAccount();
   const { data: assetAddress } = useReadContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "asset" });
   const { data: isRoot, refetch: refetchIsRoot } = useReadContract({
