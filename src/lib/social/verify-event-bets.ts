@@ -21,7 +21,7 @@ interface ResolvedMarket {
  * than exported across an unrelated module boundary) — best-effort, a
  * failure here must never break event-bet settlement itself.
  */
-async function mirrorVerdictToProofEvent(postId: string, status: "verified" | "disputed", resultPatch: Record<string, unknown>): Promise<void> {
+async function mirrorVerdictToProofEvent(postId: string, status: "passed" | "failed", resultPatch: Record<string, unknown>): Promise<void> {
   try {
     const proof = await getProofEventByTaskId(postId);
     if (!proof) return;
@@ -85,7 +85,7 @@ export async function verifyDueEventBets(): Promise<{ checked: number; correct: 
       .from("agent_event_bets")
       .update({ verdict: met ? "correct" : "incorrect", resolved_outcome: market.resolved_outcome, verified_at: new Date().toISOString() })
       .eq("post_id", bet.post_id);
-    await mirrorVerdictToProofEvent(bet.post_id, met ? "verified" : "disputed", {
+    await mirrorVerdictToProofEvent(bet.post_id, met ? "passed" : "failed", {
       verdict: met ? "correct" : "incorrect",
       resolvedOutcome: market.resolved_outcome,
     });

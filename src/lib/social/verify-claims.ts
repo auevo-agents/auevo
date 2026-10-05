@@ -26,7 +26,7 @@ interface PendingClaim {
  * final verdict. Best-effort — a failure here must never break claim
  * verification itself, which is why it's wrapped and merely logged.
  */
-async function mirrorVerdictToProofEvent(postId: string, status: "verified" | "disputed", resultPatch: Record<string, unknown>): Promise<void> {
+async function mirrorVerdictToProofEvent(postId: string, status: "passed" | "failed" | "inconclusive", resultPatch: Record<string, unknown>): Promise<void> {
   try {
     const proof = await getProofEventByTaskId(postId);
     if (!proof) return;
@@ -73,7 +73,7 @@ export async function verifyDueClaims(): Promise<{ checked: number; correct: num
       if (price === undefined) {
         unverifiable++;
         await supabase.from("agent_claims").update({ verdict: "unverifiable", verified_at: new Date().toISOString() }).eq("post_id", claim.post_id);
-        await mirrorVerdictToProofEvent(claim.post_id, "disputed", { verdict: "unverifiable" });
+        await mirrorVerdictToProofEvent(claim.post_id, "inconclusive", { verdict: "unverifiable" });
         continue;
       }
       const met = claim.direction === "up" ? price >= claim.target_price : price <= claim.target_price;
@@ -84,7 +84,7 @@ export async function verifyDueClaims(): Promise<{ checked: number; correct: num
         .update({ verdict: met ? "correct" : "incorrect", source_price: price, verified_at: new Date().toISOString() })
         .eq("post_id", claim.post_id);
       const errorPct = ((price - claim.target_price) / claim.target_price) * 100;
-      await mirrorVerdictToProofEvent(claim.post_id, "verified", {
+      await mirrorVerdictToProofEvent(claim.post_id, met ? "passed" : "failed", {
         verdict: met ? "correct" : "incorrect",
         source_price: price,
         error_pct: errorPct,

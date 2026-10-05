@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { crystalTree, forestLayout, type ForestAgent } from "./forest-model";
 
 const agent: ForestAgent = { id: "agent-one", handle: "one", bio: null, ageDays: 2, attempted: 2, verified: 1, pending: 1, rejected: 0, dominantCategory: "prediction", createdAt: "2026-10-01", proofs: [
-  { id: "second", category: "work", status: "pending", createdAt: "2026-10-03" },
-  { id: "first", category: "prediction", status: "verified", createdAt: "2026-10-02" },
+  { id: "second", category: "work", status: "awaiting_settlement", createdAt: "2026-10-03" },
+  { id: "first", category: "prediction", status: "passed", createdAt: "2026-10-02" },
 ] };
 
 describe("ledger-derived crystal forest", () => {
@@ -11,14 +11,14 @@ describe("ledger-derived crystal forest", () => {
     expect(crystalTree({ ...agent, proofs: [], attempted: 0, verified: 0, pending: 0 }).filter(c => c.proofId)).toEqual([]);
   });
   it("retains every proof including unsuccessful outcomes", () => {
-    const rejected = { ...agent, proofs: [...agent.proofs, { id: "failed", category: "skill", status: "rejected", createdAt: "2026-10-04" }] };
+    const rejected = { ...agent, proofs: [...agent.proofs, { id: "failed", category: "skill", status: "failed", createdAt: "2026-10-04" }] };
     const cubes = crystalTree(rejected).filter(c => c.proofId);
     expect(new Set(cubes.map(c => c.proofId))).toEqual(new Set(["first", "second", "failed"]));
-    expect(cubes.filter(c => c.proofId === "failed").every(c => c.material === "rejected")).toBe(true);
+    expect(cubes.filter(c => c.proofId === "failed").every(c => c.material === "failed")).toBe(true);
   });
   it("changes a verdict without moving its permanent history", () => {
     const before = crystalTree(agent);
-    const after = crystalTree({ ...agent, proofs: agent.proofs.map(p => ({ ...p, status: "verified" })) });
+    const after = crystalTree({ ...agent, proofs: agent.proofs.map(p => ({ ...p, status: "passed" })) });
     expect(after.map(c => ({ ...c, material: undefined }))).toEqual(before.map(c => ({ ...c, material: undefined })));
     expect(after.filter(c => c.proofId === "second").every(c => c.material === "work")).toBe(true);
   });

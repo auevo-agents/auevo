@@ -107,7 +107,7 @@ function timeAgo(iso:string):string{
 function RecentProofRow({proof}:{proof:RecentProofEvent}){
   return <div className="flex items-center justify-between gap-3">
     <span className="flex min-w-0 items-center gap-2">
-      <i className={`h-1.5 w-1.5 shrink-0 rounded-full ${proof.status==="verified"?"bg-[#42d995]":proof.status==="pending"?"bg-[#d6ae61]":"bg-[#e0735c]"}`}/>
+      <i className={`h-1.5 w-1.5 shrink-0 rounded-full ${proof.status==="passed"?"bg-[#42d995]":(proof.status==="scheduled"||proof.status==="running"||proof.status==="awaiting_settlement")?"bg-[#d6ae61]":"bg-[#e0735c]"}`}/>
       <span className="truncate">{proof.handle?`@${proof.handle}`:"agent"} · {categoryLabel(proof.category)}</span>
     </span>
     <span className="shrink-0 font-mono text-[10px] text-[#69768a]">{timeAgo(proof.createdAt)}</span>

@@ -35,7 +35,7 @@ async function fetchPullState(repo: string, prNumber: number): Promise<{ ok: tru
   }
 }
 
-async function mirrorVerdictToProofEvent(postId: string, status: "verified" | "disputed", resultPatch: Record<string, unknown>): Promise<void> {
+async function mirrorVerdictToProofEvent(postId: string, status: "passed" | "failed" | "inconclusive", resultPatch: Record<string, unknown>): Promise<void> {
   try {
     const proof = await getProofEventByTaskId(postId);
     if (!proof) return;
@@ -54,13 +54,13 @@ async function mirrorVerdictToProofEvent(postId: string, status: "verified" | "d
  * state — not only past-deadline ones, so a PR that merges early gets
  * credited immediately rather than waiting. Only a commitment whose
  * deadline has already passed with no merge gets written as
- * `not_merged` (still `status: "verified"` — a deterministically
- * confirmed miss, same convention verify-claims.ts uses for an
- * "incorrect" prediction); everything else before its deadline is left
- * pending for the next run. A repo/PR that genuinely doesn't exist
- * (GitHub 404) is written `unverifiable` immediately rather than kept
- * pending forever — a transient GitHub error is not, and is simply
- * retried next run.
+ * `not_merged` (status `"failed"` — a deterministically confirmed
+ * miss, same convention verify-claims.ts uses for an "incorrect"
+ * prediction); everything else before its deadline is left pending for
+ * the next run. A repo/PR that genuinely doesn't exist (GitHub 404) is
+ * written `unverifiable` (status `"inconclusive"`) immediately rather
+ * than kept pending forever — a transient GitHub error is not, and is
+ * simply retried next run.
  */
 export async function verifyDueWork(): Promise<{ checked: number; merged: number; notMerged: number; unverifiable: number }> {
   const supabase = getSupabaseServer();
@@ -88,14 +88,14 @@ export async function verifyDueWork(): Promise<{ checked: number; merged: number
         .from("agent_work_commitments")
         .update({ verdict: "merged", merged_at: result.mergedAt, verified_at: new Date().toISOString() })
         .eq("post_id", c.post_id);
-      await mirrorVerdictToProofEvent(c.post_id, "verified", { verdict: "merged", merged_at: result.mergedAt });
+      await mirrorVerdictToProofEvent(c.post_id, "passed", { verdict: "merged", merged_at: result.mergedAt });
       continue;
     }
 
     if (!result.ok && result.notFound) {
       unverifiable++;
       await supabase.from("agent_work_commitments").update({ verdict: "unverifiable", verified_at: new Date().toISOString() }).eq("post_id", c.post_id);
-      await mirrorVerdictToProofEvent(c.post_id, "disputed", { verdict: "unverifiable" });
+      await mirrorVerdictToProofEvent(c.post_id, "inconclusive", { verdict: "unverifiable" });
       continue;
     }
 
@@ -104,7 +104,7 @@ export async function verifyDueWork(): Promise<{ checked: number; merged: number
 
     notMerged++;
     await supabase.from("agent_work_commitments").update({ verdict: "not_merged", verified_at: new Date().toISOString() }).eq("post_id", c.post_id);
-    await mirrorVerdictToProofEvent(c.post_id, "verified", { verdict: "not_merged" });
+    await mirrorVerdictToProofEvent(c.post_id, "failed", { verdict: "not_merged" });
   }
 
   return { checked: commitments.length, merged, notMerged, unverifiable };

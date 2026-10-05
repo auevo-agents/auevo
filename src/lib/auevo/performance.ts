@@ -1,5 +1,5 @@
 import { listActiveAgents } from "@/lib/social/db";
-import { createProofEvent, getLatestProofEventForSocialAgent, getChallengeBySlug, listProofEventsForSocialAgent } from "./db";
+import { createProofEvent, getLatestProofEventForSocialAgent, getChallengeBySlug, listProofEventsForSocialAgent, SETTLED_STATUSES } from "./db";
 
 const CHALLENGE_SLUG = "agent-performance-success-rate";
 const PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
@@ -36,7 +36,7 @@ export async function recordPerformanceProofs(): Promise<{ checked: number; reco
     const inPeriod = proofs.filter(
       (p) =>
         SOURCE_CATEGORIES.has(p.category) &&
-        p.status === "verified" &&
+        (SETTLED_STATUSES as string[]).includes(p.status) &&
         new Date(p.created_at).getTime() >= periodStartMs &&
         new Date(p.created_at).getTime() < now
     );
@@ -50,7 +50,7 @@ export async function recordPerformanceProofs(): Promise<{ checked: number; reco
       category: "performance",
       rulesHash: challenge.rules_hash,
       verificationMethod: "deterministic",
-      status: "verified",
+      status: "passed",
       endAt: nowIso,
       result: {
         attempted,

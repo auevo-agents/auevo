@@ -34,7 +34,16 @@ export const FOREST_COLORS: Record<string, string> = {
   prediction: "#38d49a", longevity: "#e7d59c", work: "#16a979",
   skill: "#87e4ab", performance: "#46b985", economic_activity: "#179c74",
   financial_performance: "#e7b854", identity: "#b8d2c1", autonomy: "#72b998",
-  pending: "#c0a267", rejected: "#a45748", disputed: "#a45748", trunk: "#caa14d",
+  // Unsettled (not yet a win or a loss): same tan as the old single
+  // "pending" used to be.
+  scheduled: "#c0a267", running: "#c0a267", awaiting_settlement: "#c0a267",
+  // A genuine resolved loss, or withdrawn: same red the old "rejected"/
+  // "disputed" used to be.
+  failed: "#a45748", cancelled: "#a45748",
+  // Distinct from failed — the settlement source was unavailable, not a
+  // loss attributable to the agent.
+  inconclusive: "#8a8a8a",
+  trunk: "#caa14d",
 };
 
 function hash(value: string) {
@@ -44,7 +53,7 @@ function hash(value: string) {
 }
 
 export function proofMaterial(proof: ForestProof) {
-  return proof.status === "verified" ? proof.category : proof.status;
+  return proof.status === "passed" ? proof.category : proof.status;
 }
 
 /** Ledger order determines growth; changing a verdict changes its material,

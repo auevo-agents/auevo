@@ -157,7 +157,7 @@ export async function recordIdentityProofs(): Promise<{ checked: number; recorde
       category: "identity",
       rulesHash: challenge.rules_hash,
       verificationMethod: "deterministic",
-      status: "verified",
+      status: "passed",
       endAt: new Date(now).toISOString(),
       result: {
         transfer_count: transfers.length,

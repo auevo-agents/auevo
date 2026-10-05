@@ -88,10 +88,11 @@ export function CrystalForest({ agents, single = false }: { agents: ForestAgent[
       const crystalMaterials = new Map<string, InstanceType<typeof THREE.MeshPhysicalMaterial>>();
       Object.entries(FOREST_COLORS).forEach(([name, color]) => {
         if (name === "trunk") return;
-        const failed = name === "rejected" || name === "disputed";
+        const failed = name === "failed" || name === "cancelled" || name === "inconclusive";
+        const unsettled = name === "scheduled" || name === "running" || name === "awaiting_settlement";
         const material = new THREE.MeshPhysicalMaterial({ color, metalness: .06, roughness: failed ? .42 : .075,
           transmission: failed ? .12 : mobile ? .35 : .72, thickness: .8, ior: 1.52, attenuationColor: color, attenuationDistance: 1.8, clearcoat: 1, clearcoatRoughness: .08,
-          envMapIntensity: 2.2, emissive: color, emissiveIntensity: failed ? .015 : name === "pending" ? .025 : .035 });
+          envMapIntensity: 2.2, emissive: color, emissiveIntensity: failed ? .015 : unsettled ? .025 : .035 });
         crystalMaterials.set(name, material); materials.add(material);
       });
       const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xd9ce98, transparent: true, opacity: .22 }); materials.add(edgeMaterial);

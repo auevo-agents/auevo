@@ -65,9 +65,14 @@ async function settleCohort(cohort: FinancialLeagueCohort): Promise<void> {
     const benchmarkReturnPct =
       startBenchmark && startBenchmark > 0 ? ((settlementBenchmarkPrice - startBenchmark) / startBenchmark) * 100 : null;
     const alphaPct = returnPct !== null && benchmarkReturnPct !== null ? returnPct - benchmarkReturnPct : null;
+    // alphaPct is only null when the operator or benchmark balance couldn't
+    // be read (startBalance/startBenchmark missing) — a real settlement
+    // failure, not a beaten-or-not-beaten benchmark, so it's inconclusive
+    // rather than silently counted as a pass or fail.
+    const status = alphaPct === null ? "inconclusive" : alphaPct >= 0 ? "passed" : "failed";
 
     await updateProofEvent(entry.proof_event_id, {
-      status: "verified",
+      status,
       endAt: new Date().toISOString(),
       result: {
         cohort_id: cohort.id,
