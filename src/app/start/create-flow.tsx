@@ -108,32 +108,22 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
   );
 }
 
+const CHALLENGES: { category: "skill" | "prediction"; title: string; description: string }[] = [
+  {
+    category: "skill",
+    title: "Skill",
+    description:
+      "AUEVO picks an active on-chain pool and a fixed 24h window, gives your agent a tool to read the raw swaps, and asks it to count the distinct wallets that traded — graded against AUEVO's own independent count, not the agent's own answer.",
+  },
+  {
+    category: "prediction",
+    title: "Prediction",
+    description:
+      "A single up/down call on SPY over a fixed 24h horizon, against the live price right now — no trivial price target to game. Settles automatically once the deadline passes, against the real price then.",
+  },
+];
+
 function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun: boolean; onRan: () => void; onReset: () => void }) {
-  const [running, setRunning] = useState(false);
-  const [outcome, setOutcome] = useState<RunOutcome | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleRun() {
-    setError(null);
-    setRunning(true);
-    setOutcome(null);
-    try {
-      const res = await fetch(`/api/agents/${agent.id}/run`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ runSecret: agent.runSecret, category: "skill" }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-      setOutcome(json);
-      onRan();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Run failed");
-    } finally {
-      setRunning(false);
-    }
-  }
-
   return (
     <div className="portal-panel rounded-[4px] p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -154,42 +144,85 @@ function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun
 
       {!hasRun && (
         <p className="mt-4 text-xs leading-5 text-[#7a8390]">
-          This is a profile, not yet a working agent — nothing has called a model for it. Run its first Playzone
-          challenge below to change that.
+          This is a profile, not yet a working agent — nothing has called a model for it. Run one of the challenges
+          below to change that.
         </p>
       )}
 
-      <div className="mt-5">
-        <div className="portal-kicker !text-[#d6ae61]">First challenge: Skill</div>
-        <p className="mt-1.5 text-xs leading-5 text-[#8b94a1]">
-          AUEVO picks an active on-chain pool and a fixed 24h window, gives your agent a tool to read the raw swaps, and
-          asks it to count the distinct wallets that traded — graded against AUEVO&apos;s own independent count, not the
-          agent&apos;s own answer.
-        </p>
-        <button className={`${buttonClass} mt-3`} disabled={running} onClick={handleRun}>
-          {running ? "Running — calling the model…" : hasRun ? "Run again" : "Start challenge"}
-        </button>
-        {error && <p className="mt-2 text-xs text-[#ff7b82]">{error}</p>}
-        {outcome && (
-          <div
-            className={`mt-3 rounded-[3px] border px-4 py-3 text-sm ${
-              outcome.status === "completed" ? "border-[#42d995]/30 bg-[#42d995]/[0.06] text-[#d6ebe0]" : "border-[#ff7b82]/30 bg-[#ff7b82]/[0.06] text-[#f3d6d8]"
-            }`}
-          >
-            {outcome.summary}
-            {outcome.proofEventId && (
-              <>
-                {" "}
-                <Link href={`/proofs/${outcome.proofEventId}`} className="underline hover:text-white">View the Proof Event →</Link>
-              </>
-            )}
-          </div>
-        )}
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        {CHALLENGES.map((c) => (
+          <ChallengeRunner key={c.category} agent={agent} category={c.category} title={c.title} description={c.description} onRan={onRan} />
+        ))}
       </div>
 
       <Link href={`/agents/${agent.handle}`} className="mt-5 inline-block text-xs text-[#8cf0bd] underline hover:text-white">
         Open its Passport →
       </Link>
+    </div>
+  );
+}
+
+function ChallengeRunner({
+  agent,
+  category,
+  title,
+  description,
+  onRan,
+}: {
+  agent: HostedAgent;
+  category: "skill" | "prediction";
+  title: string;
+  description: string;
+  onRan: () => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [outcome, setOutcome] = useState<RunOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleRun() {
+    setError(null);
+    setRunning(true);
+    setOutcome(null);
+    try {
+      const res = await fetch(`/api/agents/${agent.id}/run`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ runSecret: agent.runSecret, category }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setOutcome(json);
+      onRan();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Run failed");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-4">
+      <div className="portal-kicker !text-[#d6ae61]">{title}</div>
+      <p className="mt-1.5 text-xs leading-5 text-[#8b94a1]">{description}</p>
+      <button className={`${buttonClass} mt-3`} disabled={running} onClick={handleRun}>
+        {running ? "Running — calling the model…" : outcome ? "Run again" : "Start challenge"}
+      </button>
+      {error && <p className="mt-2 text-xs text-[#ff7b82]">{error}</p>}
+      {outcome && (
+        <div
+          className={`mt-3 rounded-[3px] border px-3 py-2.5 text-sm ${
+            outcome.status === "completed" ? "border-[#42d995]/30 bg-[#42d995]/[0.06] text-[#d6ebe0]" : "border-[#ff7b82]/30 bg-[#ff7b82]/[0.06] text-[#f3d6d8]"
+          }`}
+        >
+          {outcome.summary}
+          {outcome.proofEventId && (
+            <>
+              {" "}
+              <Link href={`/proofs/${outcome.proofEventId}`} className="underline hover:text-white">View the Proof Event →</Link>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

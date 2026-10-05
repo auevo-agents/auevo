@@ -3,7 +3,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { getAgentById } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
 import { hashRunSecret } from "@/lib/auevo/hosted-agent";
-import { runSkillChallenge, ExecutorError } from "@/lib/auevo/executor";
+import { runSkillChallenge, runPredictionChallenge, ExecutorError } from "@/lib/auevo/executor";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,7 +15,7 @@ export const maxDuration = 60;
 const DAILY_RUN_LIMIT = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const SUPPORTED_CATEGORIES = new Set(["skill"]);
+const SUPPORTED_CATEGORIES = new Set(["skill", "prediction"]);
 
 /**
  * Triggers one executor run for a hosted ("Create an agent") agent. Not
@@ -54,7 +54,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const allowed = await checkRateLimit(`run:${agentId}`, DAILY_RUN_LIMIT, DAY_MS);
     if (!allowed) return NextResponse.json({ error: `This agent has reached its ${DAILY_RUN_LIMIT} runs/day limit — try again tomorrow` }, { status: 429 });
 
-    const outcome = await runSkillChallenge(agentId);
+    const outcome = category === "prediction" ? await runPredictionChallenge(agentId) : await runSkillChallenge(agentId);
     return NextResponse.json(outcome, { status: outcome.status === "completed" ? 201 : 502 });
   } catch (err) {
     if (err instanceof ExecutorError) return NextResponse.json({ error: err.message }, { status: 400 });

@@ -144,3 +144,116 @@ export async function submitSkillAttempt(input: SubmitSkillAttemptInput): Promis
 
   return { post, skillResult: { dex, poolRef, windowHours, guess, actual, verdict }, proofEventId };
 }
+
+export class ClaimSubmitError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// Chains src/lib/rwa/gecko-price.ts's fetchTokenPricesUsd can actually price.
+export const SUPPORTED_CLAIM_CHAIN_IDS = new Set([1, 10, 56, 4663, 5000, 8453, 42161]);
+
+export interface SubmitClaimAttemptInput {
+  supabase: SupabaseClient;
+  agentId: string;
+  topic: string;
+  body: string;
+  asset: unknown;
+  chainId: unknown;
+  direction: unknown;
+  targetPrice: unknown;
+  deadline: unknown;
+}
+
+export interface ClaimAttemptOutcome {
+  asset: string;
+  chainId: number;
+  direction: "up" | "down";
+  targetPrice: number;
+  deadline: string;
+}
+
+export interface SubmitClaimAttemptResult {
+  post: { id: string; agent_id: string; topic: string; body: string; parent_id: string | null; kind: string; created_at: string };
+  claim: ClaimAttemptOutcome;
+  proofEventId: string | null;
+}
+
+/**
+ * The Prediction category's "claim" submission path — a falsifiable,
+ * timestamped price call, settled later by a real price at the deadline
+ * (src/app/api/cron/verify-claims/route.ts), never by the agent itself.
+ * Shared by post/route.ts's `kind: "claim"` branch and the executor
+ * (executor.ts's runPredictionChallenge), same reasoning as
+ * submitSkillAttempt above: one grading path, not two that could drift.
+ */
+export async function submitClaimAttempt(input: SubmitClaimAttemptInput): Promise<SubmitClaimAttemptResult> {
+  const { supabase, agentId, topic, body } = input;
+  const asset = typeof input.asset === "string" ? input.asset.trim() : "";
+  const chainId = SUPPORTED_CLAIM_CHAIN_IDS.has(Number(input.chainId)) ? Number(input.chainId) : 4663;
+  const direction = input.direction === "up" || input.direction === "down" ? input.direction : null;
+  const targetPrice = Number(input.targetPrice);
+  const deadline = typeof input.deadline === "string" ? new Date(input.deadline) : null;
+  if (
+    !/^0x[a-fA-F0-9]{40}$/.test(asset) ||
+    !direction ||
+    !Number.isFinite(targetPrice) ||
+    targetPrice <= 0 ||
+    !deadline ||
+    Number.isNaN(deadline.getTime()) ||
+    deadline.getTime() <= Date.now()
+  ) {
+    throw new ClaimSubmitError("claim requires a token address as asset, direction ('up'|'down'), targetPrice > 0, and a future deadline");
+  }
+
+  const { data: post, error: postError } = await supabase
+    .from("agent_posts")
+    .insert({ agent_id: agentId, topic, body, parent_id: null, kind: "claim" })
+    .select("id, agent_id, topic, body, parent_id, kind, created_at")
+    .single();
+  if (postError) throw postError;
+
+  const { error: claimError } = await supabase.from("agent_claims").insert({
+    post_id: post.id,
+    asset: asset.toLowerCase(),
+    chain_id: chainId,
+    direction,
+    target_price: targetPrice,
+    deadline: deadline.toISOString(),
+  });
+  if (claimError) {
+    await supabase.from("agent_posts").delete().eq("id", post.id);
+    throw claimError;
+  }
+
+  // Committed now, pending — never only after the verdict lands, so the
+  // attempt can't be cherry-picked out of history later (design doc §17).
+  let proofEventId: string | null = null;
+  try {
+    const challenge = await getChallengeBySlug("price-claim-prediction");
+    if (challenge) {
+      const commitment = createHash("sha256")
+        .update(JSON.stringify({ asset, chainId, direction, targetPrice, deadline: deadline.toISOString() }))
+        .digest("hex");
+      const proofEvent = await createProofEvent({
+        socialAgentId: agentId,
+        taskId: post.id,
+        challengeId: challenge.id,
+        category: "prediction",
+        rulesHash: challenge.rules_hash,
+        commitment,
+        verificationMethod: "deterministic",
+        status: "awaiting_settlement",
+        result: { asset, chain_id: chainId, direction, target_price: targetPrice, deadline: deadline.toISOString() },
+      });
+      proofEventId = proofEvent.id;
+    }
+  } catch (proofErr) {
+    console.error("Failed to create AUEVO Proof Event for claim", post.id, proofErr);
+  }
+
+  return { post, claim: { asset: asset.toLowerCase(), chainId, direction, targetPrice, deadline: deadline.toISOString() }, proofEventId };
+}
