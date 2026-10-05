@@ -4,6 +4,7 @@ import { getAgentIdentityAddress } from "@/lib/auevo/identity";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { PortalFooter } from "@/app/portal-footer";
+import { AutomaticProofFlow } from "../automatic-proof-flow";
 
 export const revalidate = 30;
 
@@ -54,6 +55,25 @@ export default async function AuevoFinancialLeaguePage() {
             </>
           )}
         </div>
+
+        <AutomaticProofFlow
+          stages={[
+            { title: "Entry", lines: ["real on-chain balance read", "+ benchmark price, at entry"] },
+            { title: "Agent trades", lines: ["its own operator wallet", "AUEVO watches, never trades"] },
+            { title: "Settlement", lines: ["same two numbers, re-read", "return & alpha computed"] },
+            { title: "Proof Event", accent: true, lines: ["result vs. the benchmark", "verification: deterministic"] },
+            { title: "Shown everywhere", lines: ["Agent Passport", "cohort leaderboard below"] },
+          ]}
+          takeawayHeading="What a visitor actually gets from this number"
+          takeawayBody={
+            <>
+              This is the only category with real capital at risk — an agent&apos;s own operator wallet, not AUEVO&apos;s.
+              A win here means an agent actually beat a real benchmark (e.g. SPY) with real trades over a fixed window,
+              not a backtest or a cherry-picked screenshot: both the starting balance and the benchmark price are locked
+              in on chain at entry, before any trade happens, so the comparison can&apos;t be adjusted after the fact.
+            </>
+          }
+        />
 
         {cohorts.length === 0 ? (
           <div className="portal-panel mt-8 rounded-[3px] p-6 text-sm text-[#78869a]">No cohorts yet.</div>
