@@ -7,6 +7,7 @@ import { ConnectButton } from "@/app/rwa/app/connect-button";
 import { AGENT_CREDIT_POOL_ABI, CONSENT_EIP712_TYPES } from "@/lib/credit/abi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
+import { InfoTip } from "@/app/info-tip";
 
 /**
  * Every action below sends a real transaction against a real pool the
@@ -40,10 +41,13 @@ export function CreditAgentActions({ agentId, pool, assetDecimals }: { agentId: 
   );
 }
 
-function Panel({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+function Panel({ title, titleTip, hint, children }: { title: string; titleTip?: string; hint: string; children: React.ReactNode }) {
   return (
     <div className="rounded-[3px] border border-[var(--line)] bg-[var(--panel)] p-4">
-      <h3 className="font-medium">{title}</h3>
+      <h3 className="flex items-center font-medium">
+        {title}
+        {titleTip && <InfoTip text={titleTip} />}
+      </h3>
       <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>
       <div className="mt-3 flex flex-col gap-2">{children}</div>
     </div>
@@ -87,10 +91,11 @@ function SignConsentPanel({ agentId, pool }: { agentId: bigint; pool: Address })
   return (
     <Panel
       title="1 — Sign a consent (agent owner)"
+      titleTip="A 'consent' is a signed permission slip, not a transaction — it just names one sponsor allowed to back this agent and the most they could ever charge. No funds move at this step."
       hint="Only the identity's current owner signing this actually works — the pool re-checks that live, on chain, at vouch() time. Costs no gas: this never sends a transaction."
     >
       <input className={inputClass} placeholder="sponsor address (who you're letting back this agent)" value={sponsor} onChange={(e) => setSponsor(e.target.value)} />
-      <input className={inputClass} placeholder="max premium you'll ever accept, in bps (0–200)" value={maxPremiumBps} onChange={(e) => setMaxPremiumBps(e.target.value)} />
+      <input className={inputClass} placeholder="max premium you'll ever accept, in bps — 100 bps = 1% (0–200)" value={maxPremiumBps} onChange={(e) => setMaxPremiumBps(e.target.value)} />
       <button className={buttonClass} disabled={!validSponsor || isPending} onClick={handleSign}>
         {isPending ? "Signing…" : "Sign consent"}
       </button>
@@ -142,7 +147,11 @@ function LenderPanel({ pool, assetDecimals }: { pool: Address; assetDecimals: nu
   }
 
   return (
-    <Panel title="Lend or back agents (deposit)" hint="Deposited funds earn 60% of every fee as a lender, pro-rata by share. To back a specific agent too, enroll as a root (needs the pool's minRootStake already deposited) and use the vouch panel below.">
+    <Panel
+      title="Lend or back agents (deposit)"
+      titleTip="Depositing alone makes you a passive lender, earning a share of every fee pool-wide. Backing one specific agent (vouching) is a separate, extra step below, and needs you to enroll as a 'root' first."
+      hint="Deposited funds earn 60% of every fee as a lender, pro-rata by share. To back a specific agent too, enroll as a root (needs the pool's minRootStake already deposited) and use the vouch panel below."
+    >
       <input className={inputClass} placeholder="amount" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
       <button className={buttonClass} disabled={!parsed || approve.isPending || approveReceipt.isLoading || deposit.isPending || depositReceipt.isLoading} onClick={handleDeposit}>
         {approve.isPending || approveReceipt.isLoading ? "Approving…" : deposit.isPending || depositReceipt.isLoading ? "Depositing…" : "Approve & deposit"}
@@ -207,11 +216,15 @@ function VouchPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: A
   const canSubmit = consent && parsedAmount && premium <= consent.maxPremiumBps;
 
   return (
-    <Panel title="2 — Vouch for this agent (backer)" hint="Paste the owner's signed consent from step 1, pick how much to vouch and your actual premium (must not exceed what they signed for).">
+    <Panel
+      title="2 — Vouch for this agent (backer)"
+      titleTip="This is the real commitment: it puts your own deposited funds behind this one agent specifically, so it can actually borrow against your stake. It's a real on-chain transaction, unlike step 1's free signature."
+      hint="Paste the owner's signed consent from step 1, pick how much to vouch and your actual premium (must not exceed what they signed for)."
+    >
       <textarea className={`${inputClass} font-mono text-xs`} rows={5} placeholder="paste the signed consent JSON here" value={pasted} onChange={(e) => setPasted(e.target.value)} />
       {parsedConsent && "error" in parsedConsent && <p className="text-xs text-[var(--red)]">{parsedConsent.error}</p>}
       <input className={inputClass} placeholder="amount to vouch" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
-      <input className={inputClass} placeholder={`your premium in bps (0–${consent?.maxPremiumBps ?? "…"})`} value={premiumBps} onChange={(e) => setPremiumBps(e.target.value)} />
+      <input className={inputClass} placeholder={`your premium in bps — 100 bps = 1% (0–${consent?.maxPremiumBps ?? "…"})`} value={premiumBps} onChange={(e) => setPremiumBps(e.target.value)} />
       <button
         className={buttonClass}
         disabled={!canSubmit || vouch.isPending || vouchReceipt.isLoading}
@@ -251,7 +264,11 @@ function BorrowPanel({ agentId, pool, assetDecimals }: { agentId: bigint; pool: 
   const borrowReceipt = useWaitForTransactionReceipt({ hash: borrow.data });
 
   return (
-    <Panel title="3 — Borrow (agent owner)" hint="Draws straight from the line a sponsor vouched in step 2, into your own wallet. Fails if it would exceed what's still free.">
+    <Panel
+      title="3 — Borrow (agent owner)"
+      titleTip="A real on-chain transaction: sends real funds to your wallet right now, drawn from the line a sponsor vouched for in step 2. This is debt — it has to be repaid, with a fee, or the loan can be marked defaulted after its grace period."
+      hint="Draws straight from the line a sponsor vouched in step 2, into your own wallet. Fails if it would exceed what's still free."
+    >
       <input className={inputClass} placeholder="amount" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
       <input className={inputClass} placeholder="term, days (1–30)" value={termDays} onChange={(e) => setTermDays(e.target.value)} inputMode="numeric" />
       <button
@@ -298,7 +315,11 @@ function RepayPanel({ pool }: { pool: Address }) {
   const markDefaultReceipt = useWaitForTransactionReceipt({ hash: markDefault.data });
 
   return (
-    <Panel title="Repay, or mark a defaulted loan (anyone)" hint="Repay is permissionless — anyone may repay on an agent's behalf. markDefault only succeeds once the loan is past its grace period.">
+    <Panel
+      title="Repay, or mark a defaulted loan (anyone)"
+      titleTip="Repaying closes the loan and pays its fee — anyone may do this on the borrower's behalf, not just the agent owner. 'Mark defaulted' only works once the loan is overdue past its grace period, and lets the backer's stake (not the lenders') absorb the loss."
+      hint="Repay is permissionless — anyone may repay on an agent's behalf. markDefault only succeeds once the loan is past its grace period."
+    >
       <input className={inputClass} placeholder="loan id" value={loanId} onChange={(e) => setLoanId(e.target.value)} inputMode="numeric" />
       {loan && loan[5] === 1 && totalDue !== null && <p className="text-xs text-[var(--muted)]">Owes {totalDue.toString()} (raw units) — principal + fee.</p>}
       <div className="flex gap-2">
