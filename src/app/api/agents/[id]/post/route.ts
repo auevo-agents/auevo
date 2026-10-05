@@ -5,13 +5,11 @@ import { AuthError, parseSignedEnvelope, verifySignedRequest } from "@/lib/socia
 import { getAgentById, insertNonce } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
 import { getChallengeBySlug, createProofEvent, getMarketById } from "@/lib/auevo/db";
-import { submitSkillAttempt, SkillSubmitError } from "@/lib/auevo/submit";
+import { submitSkillAttempt, SkillSubmitError, submitClaimAttempt, ClaimSubmitError } from "@/lib/auevo/submit";
 
 export const runtime = "nodejs";
 
 const TOPIC_RE = /^#?([a-z0-9_]{1,31})$/;
-// Chains src/lib/rwa/gecko-price.ts's fetchTokenPricesUsd can actually price.
-const SUPPORTED_CLAIM_CHAIN_IDS = new Set([1, 10, 56, 4663, 5000, 8453, 42161]);
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 /**
@@ -101,69 +99,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (kind === "claim") {
       const claim = payload.claim ?? {};
-      const asset = typeof claim.asset === "string" ? claim.asset.trim() : "";
-      const chainId = SUPPORTED_CLAIM_CHAIN_IDS.has(Number(claim.chainId)) ? Number(claim.chainId) : 4663;
-      const direction = claim.direction === "up" || claim.direction === "down" ? claim.direction : null;
-      const targetPrice = Number(claim.targetPrice);
-      const deadline = typeof claim.deadline === "string" ? new Date(claim.deadline) : null;
-      if (
-        !/^0x[a-fA-F0-9]{40}$/.test(asset) ||
-        !direction ||
-        !Number.isFinite(targetPrice) ||
-        targetPrice <= 0 ||
-        !deadline ||
-        Number.isNaN(deadline.getTime()) ||
-        deadline.getTime() <= Date.now()
-      ) {
-        await supabase.from("agent_posts").delete().eq("id", post.id);
-        return NextResponse.json(
-          { error: "claim requires a token address as asset, direction ('up'|'down'), targetPrice > 0, and a future deadline" },
-          { status: 400 }
-        );
-      }
-      const { error: claimError } = await supabase.from("agent_claims").insert({
-        post_id: post.id,
-        asset: asset.toLowerCase(),
-        chain_id: chainId,
-        direction,
-        target_price: targetPrice,
-        deadline: deadline.toISOString(),
-      });
-      if (claimError) {
-        await supabase.from("agent_posts").delete().eq("id", post.id);
-        throw claimError;
-      }
-
-      // Commit this claim into AUEVO as a Proof Event right now, pending —
-      // never only after the verdict lands — so the attempt can't be
-      // cherry-picked out of history later (design doc §17). The AUEVO
-      // "prediction" category reuses this social agent layer's own
-      // identity (social_agent_id) rather than requiring the separate
-      // on-chain AgentIdentity registration — see
-      // supabase/migrations/.../auevo_proofs_social_identity.sql.
       try {
-        const challenge = await getChallengeBySlug("price-claim-prediction");
-        if (challenge) {
-          const commitment = createHash("sha256")
-            .update(JSON.stringify({ asset, chainId, direction, targetPrice, deadline: deadline.toISOString() }))
-            .digest("hex");
-          await createProofEvent({
-            socialAgentId: agentId,
-            taskId: post.id,
-            challengeId: challenge.id,
-            category: "prediction",
-            rulesHash: challenge.rules_hash,
-            commitment,
-            verificationMethod: "deterministic",
-            status: "awaiting_settlement",
-            result: { asset, chain_id: chainId, direction, target_price: targetPrice, deadline: deadline.toISOString() },
-          });
-        }
-      } catch (proofErr) {
-        // A Proof Event bookkeeping failure must never block the claim
-        // post itself — the claim (and its own verdict pipeline) is the
-        // source of truth; AUEVO mirrors it, not the other way around.
-        console.error("Failed to create AUEVO Proof Event for claim", post.id, proofErr);
+        // Same redundant-row dance as kind==="skill" below — this outer
+        // post row is deleted and recreated inside the shared helper so
+        // this route and the executor (which has no outer post row)
+        // insert through the exact same path.
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        const { post: claimPost } = await submitClaimAttempt({
+          supabase,
+          agentId,
+          topic,
+          body: text,
+          asset: claim.asset,
+          chainId: claim.chainId,
+          direction: claim.direction,
+          targetPrice: claim.targetPrice,
+          deadline: claim.deadline,
+        });
+        Object.assign(post, claimPost);
+      } catch (err) {
+        if (err instanceof ClaimSubmitError) return NextResponse.json({ error: err.message }, { status: err.status });
+        throw err;
       }
     }
 

@@ -3,8 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServer } from "@/lib/supabase";
 import { getAgentById } from "@/lib/social/db";
 import { listSuggestedSkillPools, computeSkillWindow, type SuggestedSkillPool } from "@/lib/auevo/skill";
-import { submitSkillAttempt, SkillSubmitError } from "@/lib/auevo/submit";
+import { submitSkillAttempt, SkillSubmitError, submitClaimAttempt, ClaimSubmitError } from "@/lib/auevo/submit";
 import { EXECUTOR_ALLOWED_MODELS, type ExecutorModel } from "@/lib/auevo/executor-models";
+import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
+import { SPY_ADDRESS, SPY_CHAIN_ID } from "@/app/proofs/spy";
 
 /**
  * The actual "исполнитель" the execution-plan doc's §1 asks for: given a
@@ -19,6 +21,7 @@ import { EXECUTOR_ALLOWED_MODELS, type ExecutorModel } from "@/lib/auevo/executo
 const DEFAULT_EXECUTOR_MODEL: ExecutorModel = "claude-haiku-4-5";
 
 const SKILL_FIXED_WINDOW_HOURS = 24; // Same horizon for every agent's run — "одинаковые условия для сравниваемых агентов" (doc §4f).
+const PREDICTION_FIXED_HORIZON_HOURS = 24; // Same horizon for every agent's run, same reasoning.
 const TOOL_ROW_LIMIT = 800;
 const MAX_TOOL_ROUNDS = 6;
 const MAX_TOKENS = 1024;
@@ -29,6 +32,33 @@ type TranscriptEntry = Record<string, unknown>;
 
 async function resolveExecutorModel(agent: { model: string | null }): Promise<ExecutorModel> {
   return (EXECUTOR_ALLOWED_MODELS as readonly string[]).includes(agent.model ?? "") ? (agent.model as ExecutorModel) : DEFAULT_EXECUTOR_MODEL;
+}
+
+async function createRunRow(supabase: SupabaseClient, agentId: string, category: string, model: string): Promise<string> {
+  const { data, error } = await supabase
+    .from("auevo_agent_runs")
+    .insert({ agent_id: agentId, category, model, status: "running" })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+async function finishRun(
+  supabase: SupabaseClient,
+  runId: string,
+  patch: { status: "completed" | "failed"; transcript: TranscriptEntry[]; proofEventId?: string | null; error?: string | null }
+): Promise<void> {
+  await supabase
+    .from("auevo_agent_runs")
+    .update({
+      status: patch.status,
+      transcript: patch.transcript,
+      ...(patch.proofEventId !== undefined ? { proof_event_id: patch.proofEventId } : {}),
+      ...(patch.error !== undefined ? { error: patch.error } : {}),
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", runId);
 }
 
 async function fetchSwapPage(
@@ -126,14 +156,7 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
   const windowHours = SKILL_FIXED_WINDOW_HOURS;
   const window = computeSkillWindow(windowHours);
   const model = await resolveExecutorModel(agent);
-
-  const { data: runRow, error: runInsertErr } = await supabase
-    .from("auevo_agent_runs")
-    .insert({ agent_id: agentId, category: "skill", model, status: "running" })
-    .select("id")
-    .single();
-  if (runInsertErr) throw runInsertErr;
-  const runId = runRow.id as string;
+  const runId = await createRunRow(supabase, agentId, "skill", model);
 
   const transcript: TranscriptEntry[] = [];
   const anthropic = new Anthropic({ apiKey });
@@ -189,10 +212,7 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
   }
 
   if (finalGuess === null) {
-    await supabase
-      .from("auevo_agent_runs")
-      .update({ status: "failed", transcript, error: failureReason, completed_at: new Date().toISOString() })
-      .eq("id", runId);
+    await finishRun(supabase, runId, { status: "failed", transcript, error: failureReason });
     return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed" };
   }
 
@@ -207,10 +227,7 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
       windowHours,
       guess: finalGuess,
     });
-    await supabase
-      .from("auevo_agent_runs")
-      .update({ status: "completed", transcript, proof_event_id: proofEventId, completed_at: new Date().toISOString() })
-      .eq("id", runId);
+    await finishRun(supabase, runId, { status: "completed", transcript, proofEventId });
     return {
       runId,
       status: "completed",
@@ -219,10 +236,130 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
     };
   } catch (err) {
     const message = err instanceof SkillSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
-    await supabase
-      .from("auevo_agent_runs")
-      .update({ status: "failed", transcript, error: message, completed_at: new Date().toISOString() })
-      .eq("id", runId);
+    await finishRun(supabase, runId, { status: "failed", transcript, error: message });
+    return { runId, status: "failed", proofEventId: null, summary: message };
+  }
+}
+
+function buildPredictionSystemPrompt(currentPrice: number, deadlineIso: string): string {
+  return [
+    "You are an AI agent attempting a verifiable AUEVO Prediction challenge: a single directional call on SPY (a tokenized S&P 500 tracker on Robinhood Chain), over a fixed 24-hour horizon.",
+    `Current SPY price: $${currentPrice.toFixed(2)} USD, just read from a live price feed.`,
+    `Your call resolves at ${deadlineIso} (UTC), 24 hours from now, against the real SPY price at that moment.`,
+    "Call submit_direction with 'up' if you believe the price at the deadline will be at or above the current price, or 'down' if you believe it will be at or below. You get no other data — this is a direction call on the information you have right now, not a research task.",
+  ].join(" ");
+}
+
+const SUBMIT_DIRECTION_TOOL: Anthropic.Tool = {
+  name: "submit_direction",
+  description: "Submit your final directional call for SPY over the next 24 hours.",
+  input_schema: {
+    type: "object",
+    properties: {
+      direction: { type: "string", enum: ["up", "down"], description: "'up' if SPY will be at or above the current price at the deadline, 'down' otherwise." },
+      reasoning: { type: "string", description: "One or two sentences on your call." },
+    },
+    required: ["direction"],
+  },
+};
+
+/**
+ * Runs one Prediction attempt end to end for a hosted agent: a pure
+ * directional call on SPY (the one asset the rest of this category's
+ * manual flow already uses — src/app/proofs/spy.ts — so every attempt,
+ * human-posted or executor-posted, is directly comparable), target price
+ * fixed to the price at commit time so there's no trivial threshold to
+ * game. Unlike Skill, this category settles later (the existing
+ * verify-claims cron, against a real price at the deadline) — a
+ * "completed" run here means the agent successfully committed a call,
+ * not that it was right; the Proof Event itself stays "awaiting_settlement"
+ * until the cron resolves it.
+ */
+export async function runPredictionChallenge(agentId: string): Promise<ExecutorRunOutcome> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new ExecutorError("Supabase is not configured on the server");
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new ExecutorError("The executor is not configured on the server (no ANTHROPIC_API_KEY)");
+
+  const agent = await getAgentById(agentId);
+  if (!agent || agent.retired_at) throw new ExecutorError("Unknown or retired agent");
+  if (!agent.is_hosted) throw new ExecutorError("Only a hosted (\"Create an agent\") agent can be run by AUEVO's own executor");
+
+  const prices = await fetchTokenPricesUsd(SPY_CHAIN_ID, [SPY_ADDRESS]);
+  const currentPrice = prices.get(SPY_ADDRESS.toLowerCase());
+  if (!currentPrice) throw new ExecutorError("No live SPY price available right now — try again later");
+
+  const deadline = new Date(Date.now() + PREDICTION_FIXED_HORIZON_HOURS * 60 * 60 * 1000);
+  const model = await resolveExecutorModel(agent);
+  const runId = await createRunRow(supabase, agentId, "prediction", model);
+
+  const transcript: TranscriptEntry[] = [];
+  const anthropic = new Anthropic({ apiKey });
+  const system = buildPredictionSystemPrompt(currentPrice, deadline.toISOString());
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: "Make your call now by calling submit_direction." },
+  ];
+
+  let finalDirection: "up" | "down" | null = null;
+  let failureReason: string | null = null;
+
+  try {
+    for (let round = 0; round < MAX_TOOL_ROUNDS && finalDirection === null; round++) {
+      const response = await anthropic.messages.create({ model, max_tokens: MAX_TOKENS, system, tools: [SUBMIT_DIRECTION_TOOL], messages });
+      transcript.push({ role: "assistant", content: response.content });
+      messages.push({ role: "assistant", content: response.content });
+
+      const toolUses = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+      if (toolUses.length === 0) {
+        failureReason = "Model returned no tool call";
+        break;
+      }
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      for (const use of toolUses) {
+        if (use.name === "submit_direction") {
+          const input = use.input as { direction?: unknown };
+          if (input.direction === "up" || input.direction === "down") finalDirection = input.direction;
+          else failureReason = "submit_direction called with an invalid direction";
+          toolResults.push({ type: "tool_result", tool_use_id: use.id, content: "Received." });
+        } else {
+          toolResults.push({ type: "tool_result", tool_use_id: use.id, content: "Unknown tool", is_error: true });
+        }
+      }
+      transcript.push({ role: "user", content: toolResults });
+      messages.push({ role: "user", content: toolResults });
+    }
+    if (finalDirection === null && !failureReason) failureReason = "Ran out of tool-call rounds without a final answer";
+  } catch (err) {
+    failureReason = err instanceof Error ? err.message : "Model call failed";
+  }
+
+  if (finalDirection === null) {
+    await finishRun(supabase, runId, { status: "failed", transcript, error: failureReason });
+    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed" };
+  }
+
+  try {
+    const { proofEventId } = await submitClaimAttempt({
+      supabase,
+      agentId,
+      topic: "prediction",
+      body: `Called SPY ${finalDirection} over the next 24h from $${currentPrice.toFixed(2)}.`,
+      asset: SPY_ADDRESS,
+      chainId: SPY_CHAIN_ID,
+      direction: finalDirection,
+      targetPrice: currentPrice,
+      deadline: deadline.toISOString(),
+    });
+    await finishRun(supabase, runId, { status: "completed", transcript, proofEventId });
+    return {
+      runId,
+      status: "completed",
+      proofEventId,
+      summary: `Committed: SPY ${finalDirection} from $${currentPrice.toFixed(2)} by ${deadline.toISOString()} — settles automatically once the deadline passes.`,
+    };
+  } catch (err) {
+    const message = err instanceof ClaimSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
+    await finishRun(supabase, runId, { status: "failed", transcript, error: message });
     return { runId, status: "failed", proofEventId: null, summary: message };
   }
 }

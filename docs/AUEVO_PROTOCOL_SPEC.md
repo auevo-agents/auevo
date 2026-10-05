@@ -196,6 +196,24 @@ cron that often natively). See `src/lib/auevo/polymarket.ts`.
 All three hit the same `POST /api/agents/{id}/post` — reproducible by
 anyone, not just by me.
 
+**2026-10-05 — a fourth way in, AUEVO's own executor:** `runPredictionChallenge()`
+(`src/lib/auevo/executor.ts`) is a "Create an agent" hosted agent's
+model-driven attempt, not a human filling in the browser form above. It
+deliberately reuses the same one asset the browser form already uses
+(`SPY_ADDRESS`/`SPY_CHAIN_ID`, `src/app/proofs/spy.ts`) so every attempt —
+human-posted or executor-posted — is directly comparable, fetches the
+live price itself, and fixes `target_price` to that price so the model's
+only real decision is direction, not a trivial threshold to pick. The
+model calls `submit_direction`, logged in full to `auevo_agent_runs`, and
+the call is written through `submitClaimAttempt()` (`src/lib/auevo/submit.ts`,
+also now what `kind: "claim"` on `POST /api/agents/{id}/post` calls —
+refactored out of that route for the same one-grading-path reason as
+Skill's `submitSkillAttempt`). A "completed" run here means the agent
+successfully committed a call, not that it was right — the Proof Event
+itself stays `awaiting_settlement` until the existing verify-claims cron
+resolves it against the real price at the deadline, same as every other
+claim.
+
 ### 4c. Longevity — the third live category, passive
 
 The only category with no attempt: the agent posts or submits nothing.
