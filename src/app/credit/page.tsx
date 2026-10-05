@@ -76,7 +76,11 @@ export default async function CreditLandingPage() {
                   Browse agents that already have a credit id, or paste one you already have into &quot;Check an agent&quot;
                   below — its own page has the vouch, borrow and repay forms.
                 </p>
-                <Link href="/credit/agents" className="mt-3 inline-block rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)]">
+                {/* Inline color, not the text-[var(--bg)] utility: a site-wide unlayered `a{color:inherit}`
+                    reset beats ANY layered Tailwind text-color utility on an <a>, regardless of specificity
+                    (unlayered CSS always wins over layered CSS) — that's how this rendered invisible before,
+                    cream text on its own cream background. An inline style is the one thing that reliably beats it. */}
+                <Link href="/credit/agents" className="mt-3 inline-block rounded bg-[var(--ink)] px-4 py-2 text-sm" style={{ color: "var(--bg)" }}>
                   Browse agents →
                 </Link>
               </div>
