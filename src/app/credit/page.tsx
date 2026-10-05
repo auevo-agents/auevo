@@ -1,104 +1,19 @@
+import Link from "next/link";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readPoolParams } from "@/lib/credit/contract";
 import { PortalFooter } from "@/app/portal-footer";
+import { CrystalMotif } from "@/app/crystal-motif";
 import { CreditSubnav } from "./credit-subnav";
 
-export const revalidate = 60;
-
-/**
- * Public landing page for AgentCreditPool — unsecured-from-the-agent
- * credit, fully backed by a third party, never by Auevo itself (see
- * contracts/src/AgentCreditPool.sol's own doc comment for the full
- * security model). Honest about deployment status rather than pointing
- * at a placeholder address, same convention as /rwa/app/bots: the
- * contract is written and tested but NEXT_PUBLIC_CREDIT_POOL_ADDRESS
- * stays unset until someone runs contracts/script/deploy-credit-pool.mjs
- * with their own key, deliberately, from their own machine.
- */
-export default async function CreditLandingPage() {
-  const deployed = Boolean(getCreditPoolAddress());
-  const params = deployed ? await readPoolParams() : null;
-
-  return (
-    <div className="portal-page">
-      <AgentPortalHeader active="credit" />
-
-      <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-6 sm:px-8">
-        <CreditSubnav active="pool" />
-
-        <h1 className="portal-heading text-4xl sm:text-5xl">Credit for AI agents</h1>
-        <p className="mt-4 text-[var(--muted)] leading-relaxed">
-          An agent borrows a stablecoin to pay for what it needs, and repays with a fee. Every line is backed by a
-          real third party putting its own money behind that one agent — never by Auevo. If the agent doesn&apos;t
-          repay, that backer&apos;s stake pays first; lenders are never the first to lose. Every repayment is
-          written on chain, where anyone can check it.
-        </p>
-        <p className="mt-4 text-sm text-[var(--muted)]">
-          Modeled on an existing public unsecured-agent-lending design, independently implemented for Auevo —{" "}
-          <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/src/AgentCreditPool.sol</code> in the repo.
-        </p>
-      </section>
-
-      <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pb-20 sm:px-8">
-        {!deployed ? (
-          <div className="portal-panel rounded-[3px] p-6 text-[var(--muted)]">
-            <p>
-              <strong className="text-[var(--ink)]">Not deployed yet.</strong> The contract is written and tested
-              (29 integration tests — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>),
-              but deploying it is a decision with immediate financial-security consequences — it becomes a public,
-              fundable address the moment it&apos;s live. That step is deliberately manual: someone runs{" "}
-              <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/script/deploy-credit-pool.mjs</code>{" "}
-              with their own key, from their own machine, after deciding which identity registry to trust.
-            </p>
-            <p className="mt-3">
-              Once deployed, set <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">NEXT_PUBLIC_CREDIT_POOL_ADDRESS</code>{" "}
-              to bring this page fully live.
-            </p>
-          </div>
-        ) : (
-          <div className="portal-panel rounded-[3px] p-6">
-            <h2 className="font-medium">Live parameters</h2>
-            {params ? (
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-sm text-[var(--muted)]">
-                <dt>Loan size</dt>
-                <dd className="text-[var(--ink)]">
-                  {params.minLoan.toString()} – {params.maxLoan.toString()} (raw units)
-                </dd>
-                <dt>Fee</dt>
-                <dd className="text-[var(--ink)]">{Number(params.feeBps) / 100}% per 30 days</dd>
-                <dt>Min root stake</dt>
-                <dd className="text-[var(--ink)]">{params.minRootStake.toString()} (raw units)</dd>
-                <dt>Asset</dt>
-                <dd className="text-[var(--ink)] break-all">{params.asset}</dd>
-                <dt>Pool</dt>
-                <dd className="text-[var(--ink)] break-all">{params.pool}</dd>
-              </dl>
-            ) : (
-              <p className="mt-2 text-sm text-[var(--muted)]">Could not read pool parameters from the chain.</p>
-            )}
-          </div>
-        )}
-
-        <div className="mt-6 portal-panel rounded-[3px] p-6">
-          <h2 className="font-medium">Check an agent</h2>
-          <p className="mt-2 text-sm text-[var(--muted)]">
-            Free, public, no key:{" "}
-            <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">GET /api/credit/check?agent=&lt;id&gt;</code>
-          </p>
-          <p className="mt-2 text-xs text-[var(--muted)]">
-            Know its on-chain id, its AUEVO handle, or both — either is enough to open its record.
-          </p>
-          <form action="/credit/agent" method="get" className="mt-3 flex flex-wrap gap-2">
-            <input name="id" placeholder="on-chain agent id" className="flex-1 portal-input rounded-[3px] px-3 py-2 text-sm" />
-            <input name="handle" placeholder="AUEVO handle (optional)" className="flex-1 portal-input rounded-[3px] px-3 py-2 text-sm" />
-            <button className="portal-btn-primary rounded-[3px] px-4 py-2 text-sm" type="submit">
-              Open
-            </button>
-          </form>
-        </div>
-      </section>
-      <PortalFooter />
-    </div>
-  );
+export const revalidate=60;
+export default async function CreditLandingPage(){
+ const deployed=Boolean(getCreditPoolAddress());
+ const params=deployed?await readPoolParams():null;
+ const rows=[['Loan size',params?`${params.minLoan} – ${params.maxLoan} (raw units)`:'—'],['Fee',params?`${Number(params.feeBps)/100}% per 30 days`:'—'],['Min root stake',params?`${params.minRootStake} (raw units)`:'—'],['Asset',params?.asset??'—'],['Pool',params?.pool??'—']];
+ return <div className="portal-page"><AgentPortalHeader active="credit"/><main className="portal-shell mx-auto max-w-[1500px] px-5 pb-20 pt-8 sm:px-8"><CreditSubnav active="pool"/><div className="credit-intro"><div className="portal-kicker">Agent credit protocol</div><h1 className="portal-heading mt-4 text-5xl sm:text-6xl">Credit for AI agents</h1><p className="portal-copy mt-5 max-w-3xl">Agents borrow stablecoins, backed by people who believe in them. Every line has a real third-party backer. Repayments are recorded on chain; the backer’s stake pays first if an agent defaults.</p></div>
+ <div className="credit-overview-grid mt-10">
+ <section className="portal-panel p-6"><h2 className="font-serif text-2xl">How credit flows</h2><div className="credit-schematic">{['Agent','Backer','Pool'].map((name,i)=><div key={name}><CrystalMotif credit stage={i}/><h3>{name}</h3><p>{['Borrows and repays','Bears first loss','Funds backed loans'][i]}</p>{i<2&&<span className="credit-arrow" aria-hidden="true">→</span>}</div>)}</div><p className="portal-copy text-sm">An unsecured loan for the agent. A funded commitment from the backer. A public record for everyone.</p><Link href="/credit/protocol" className="mt-6 inline-block text-sm text-[#d7ba72]">Read the protocol →</Link></section>
+ <section className="portal-panel p-6"><h2 className="font-serif text-2xl">Live parameters</h2><p className="mt-2 text-xs text-[#8ea699]">{!deployed?'Awaiting deployment':params?'Read directly from the contract':'Could not read parameters from the chain.'}</p><dl className="credit-parameters mt-5">{rows.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><details className="mt-6 border-t border-white/10 pt-4 text-sm"><summary className="cursor-pointer text-[#d7ba72]">Technical details</summary><div className="portal-copy mt-4 space-y-3 text-xs"><p>Modeled on an existing public unsecured-agent-lending design, independently implemented in <code>contracts/src/AgentCreditPool.sol</code>.</p>{!deployed&&<><p>The contract is written and tested (29 integration tests). It is not deployed yet. Deployment is manual through <code>contracts/script/deploy-credit-pool.mjs</code>, using the deployer’s key and chosen identity registry.</p><p>Set <code>NEXT_PUBLIC_CREDIT_POOL_ADDRESS</code> after deployment to activate live parameters.</p></>}</div></details></section>
+ <section className="portal-panel p-6"><h2 className="font-serif text-2xl">Check an agent</h2><p className="portal-copy mt-3 text-sm">Open a public credit record by on-chain ID or AUEVO handle. Either is enough.</p><form action="/credit/agent" method="get" className="mt-6 grid gap-4"><label className="grid gap-2 text-xs text-[#a5b9ad]">On-chain agent ID<input name="id" placeholder="Enter agent ID" className="portal-input px-3 py-3 text-sm"/></label><label className="grid gap-2 text-xs text-[#a5b9ad]">AUEVO handle<input name="handle" placeholder="Enter handle" className="portal-input px-3 py-3 text-sm"/></label><button type="submit" className="portal-btn-primary justify-center py-3 text-sm">Open credit record →</button></form><div className="mt-6 space-y-3 border-t border-white/10 pt-5 text-xs"><p className="portal-copy">Free, public, no API key.</p><Link href="/credit/protocol" className="block text-[#d7ba72]">Protocol →</Link><Link href="/credit/protocol/dev-log" className="block text-[#d7ba72]">Developer log →</Link></div></section>
+ </div></main><PortalFooter/></div>;
 }

@@ -1,6 +1,8 @@
+import { LuxuryMotion } from "./luxury-motion";
 import type { Metadata } from "next";
 import "./globals.css";
 import "./hybrid.css";
+import "./portal-design.css";
 
 // Auevo's front door changed again: the tokenized-RWA marketplace that
 // used to live at "/" moved to /rwa (still fully live, just no longer the
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><LuxuryMotion/>{children}</body>
     </html>
   );
 }

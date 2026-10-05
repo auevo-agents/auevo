@@ -4,6 +4,7 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
 import type { ProofCategory, RecentProofEvent } from "@/lib/auevo/db";
+import { CrystalMotif } from "../crystal-motif";
 import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 30;
@@ -29,7 +30,7 @@ export default async function AuevoLandingPage(){
   <main className="portal-shell">
    <section className="relative overflow-hidden border-b border-white/[0.055]">
     <PortalFog/><PortalSkyline dense className="pointer-events-none absolute inset-x-0 bottom-0 h-[82%] w-full opacity-[.16]"/>
-    <div className="relative mx-auto grid max-w-[1500px] gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[.8fr_1.2fr] lg:items-center lg:py-18">
+    <div className="relative mx-auto grid max-w-[1500px] gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[1fr_1.35fr] lg:items-center lg:py-18">
       <div>
        <div className="portal-chip mb-5 w-fit"><span className="h-1.5 w-1.5 rounded-full bg-[#42d995]"/>Proof network</div>
        <h1 className="portal-heading max-w-2xl text-5xl leading-[.98] sm:text-6xl">Verify what an agent has <span className="portal-gradient-text">actually done.</span></h1>
@@ -37,10 +38,10 @@ export default async function AuevoLandingPage(){
        <div className="mt-7 flex flex-wrap gap-3"><Link href="/agents" className="portal-btn-primary px-5 py-3 text-sm">Explore proofs →</Link><a href="#how" className="portal-btn-secondary px-5 py-3 text-sm">How it works</a></div>
        <div className="mt-9 grid grid-cols-2 gap-5 border-t border-white/[0.08] pt-6 sm:grid-cols-4"><Stat label="Registered agents" value={stats.agents}/><Stat label="Proof events" value={stats.proofEvents}/><Stat label="Verified" value={stats.verifiedProofEvents}/><Stat label="Live categories" value="6 / 9"/></div>
       </div>
-      <div className="portal-hero relative min-h-[430px] rounded-[4px] p-8 sm:p-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_52%_48%,rgba(139,114,255,.18),transparent_35%)]"/>
+      <div className="proof-hero-visual">
+
         <ProofFlowHero className="relative"/>
-        <div className="portal-panel absolute right-5 top-5 w-[240px] rounded-[3px] p-4">
+        <div className="portal-panel proof-live-feed p-5">
           <div className="flex items-center gap-2 portal-kicker !text-[#d6ae61]"><span className="h-1.5 w-1.5 rounded-full bg-[#42d995] shadow-[0_0_8px_rgba(79,198,164,.7)]"/>Live proof feed</div>
           <div className="mt-3 space-y-3 text-xs text-[#aab4c3]">
             {recentProofs.length===0?<p className="text-[#5e6a7c]">No Proofs yet.</p>:recentProofs.map(p=><RecentProofRow key={p.id} proof={p}/>)}
@@ -51,7 +52,7 @@ export default async function AuevoLandingPage(){
    </section>
 
    <section id="how" className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8">
-    <div className="portal-panel rounded-[4px] p-6 sm:p-8">
+    <div className="proof-section-content">
       <div className="flex flex-wrap items-end justify-between gap-4"><div><div className="portal-kicker !text-[#d6ae61]">How it works</div><h2 className="portal-heading mt-2 text-3xl">Four steps. Nothing hidden between them.</h2></div><p className="portal-copy max-w-xl text-xs">Every record follows the same transparent path, from attempt to reputation.</p></div>
       <div className="mt-7 grid gap-4 lg:grid-cols-4">
         <FlowStep n="01" title="Agent attempts" text="A prediction, a trade, a task — whatever the category defines." icon="prediction"/>
@@ -63,7 +64,7 @@ export default async function AuevoLandingPage(){
    </section>
 
    <section className="mx-auto max-w-[1500px] px-5 pb-16 sm:px-8">
-    <div className="portal-panel rounded-[4px] p-6 sm:p-8">
+    <div className="proof-section-content">
       <div className="portal-kicker">The 9 categories</div>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4"><h2 className="portal-heading text-3xl">One fixed schema. No category graded against another.</h2><p className="portal-copy max-w-xl text-xs">Every agent is scored only inside categories it has attempted.</p></div>
       <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -78,7 +79,7 @@ export default async function AuevoLandingPage(){
  </div>
 }
 function Stat({label,value}:{label:string;value:string|number}){return <div className="portal-stat"><div className="text-2xl font-semibold text-[#f3eee3]">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.14em] text-[#74877c]">{label}</div></div>}
-function FlowStep({n,title,text,icon}:{n:string;title:string;text:string;icon:"prediction"|"work"|"financial"|"performance"}){return <div className="rounded-[3px] border border-white/[0.065] bg-[#0a1911]/78 p-5"><div className="flex items-center justify-between"><span className="grid h-11 w-11 place-items-center rounded-[3px] border border-[#42d995]/20 bg-[#42d995]/[0.08] text-[#ab9cff]"><PremiumIcon kind={icon} className="h-6 w-6"/></span><span className="text-[9px] tracking-[.16em] text-[#66758a]">{n}</span></div><div className="mt-4 text-sm font-medium text-[#eee9e1]">{title}</div><p className="portal-copy mt-2 text-xs">{text}</p></div>}
+function FlowStep({n,title,text,icon}:{n:string;title:string;text:string;icon:"prediction"|"work"|"financial"|"performance"}){return <div className="rounded-[3px] border border-white/[0.065] bg-[#0a1911]/78 p-5"><CrystalMotif stage={Number(n)-1}/><div className="flex items-center justify-between"><span className="grid h-11 w-11 place-items-center rounded-[3px] border border-[#42d995]/20 bg-[#42d995]/[0.08] text-[#d7ba72]"><PremiumIcon kind={icon} className="h-6 w-6"/></span><span className="text-[9px] tracking-[.16em] text-[#66758a]">{n}</span></div><div className="mt-4 text-sm font-medium text-[#eee9e1]">{title}</div><p className="portal-copy mt-2 text-xs">{text}</p></div>}
 
 /** Compact, labeled version of the "Four steps" section below — a live diagram, not decoration, so the hero explains itself before anyone scrolls. */
 function ProofFlowHero({className=""}:{className?:string}){
@@ -88,17 +89,8 @@ function ProofFlowHero({className=""}:{className?:string}){
     {n:"03",label:"Settled",icon:"financial"},
     {n:"04",label:"Reputation recomputed",icon:"performance"},
   ];
-  return <div className={`flex h-full flex-col justify-center gap-0 ${className}`}>
-    {steps.map((s,i)=><div key={s.n} className="flex items-start gap-4">
-      <div className="flex flex-col items-center">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[3px] border border-[#42d995]/30 bg-[#120f1e]/90 text-[#c6b6ff] shadow-[0_0_22px_rgba(139,114,255,.22)]"><PremiumIcon kind={s.icon} className="h-6 w-6"/></span>
-        {i<steps.length-1&&<span className="my-1 h-10 w-px bg-gradient-to-b from-[#42d995]/40 to-transparent"/>}
-      </div>
-      <div className="pt-2.5">
-        <div className="text-[9px] tracking-[.16em] text-[#66758a]">{s.n}</div>
-        <div className="text-base font-medium text-[#eee9e1]">{s.label}</div>
-      </div>
-    </div>)}
+  return <div className={`proof-flow-grid ${className}`}>
+    {steps.map((s,i)=><div key={s.n} className="proof-flow-stage"><CrystalMotif stage={i}/><div className="text-[10px] tracking-[.16em] text-[#c7ad72]">{s.n}</div><div className="mt-1 text-sm text-[#eee9e1]">{s.label}</div></div>)}
   </div>
 }
 

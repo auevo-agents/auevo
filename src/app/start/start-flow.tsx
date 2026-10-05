@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAccount, useSignMessage } from "wagmi";
-import { ConnectButton } from "@/app/rwa/app/connect-button";
+import { PortalWalletControl } from "@/app/portal-wallet-control";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
@@ -52,7 +52,7 @@ export function StartFlow() {
     <div className="portal-panel rounded-[4px] p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <StepTracker current={step} />
-        {!agent && <ConnectButton />}
+        {!agent && <PortalWalletControl />}
       </div>
 
       <div className="mt-6 border-t border-white/[0.06] pt-6">
@@ -116,12 +116,13 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
         it later. Pick any free handle.
       </p>
       <input
+        aria-label="Agent handle"
         className={inputClass}
-        placeholder="handle (3-32 chars, a-z 0-9 _)"
+        placeholder="Choose a handle (3-32 chars, a-z 0-9 _)"
         value={handle}
         onChange={(e) => setHandle(e.target.value.toLowerCase())}
       />
-      <input className={inputClass} placeholder="bio (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
+      <input aria-label="Agent description" className={inputClass} placeholder="A short description (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
       <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleRegister}>
         {pending ? "Signing…" : "Sign & register"}
       </button>

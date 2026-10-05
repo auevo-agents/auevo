@@ -1808,3 +1808,13 @@ select.fieldInput {
   .personaArt { aspect-ratio: 1 / 1.12; }
   .blankChatBtn { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -12px 30px var(--wallet-panel), inset 0 1px 0 rgba(255,255,255,.09); }
 }
+
+/* Forest palette used by the public portal; saved theme choices still win. */
+.walletRoot[data-theme="green-dark"] {
+ --wallet-bg:#07110e;--wallet-panel:#11251b;--wallet-border:#7d996533;
+ --wallet-accent:#d2b673;--wallet-accent-dim:#d2b67355;--wallet-accent-soft:#d2b67312;
+ --wallet-text:#f3eee3;--wallet-muted:#91a69a;--wallet-input-bg:#0a1c13;
+ --wallet-bg-image:radial-gradient(ellipse at 70% 0%,#17322366,transparent 48%),#07110e;
+}
+.walletRoot[data-theme="green-dark"] :is(.loginGate,.panel,.chatList){border-radius:12px}
+.walletRoot[data-theme="green-dark"] :is(.loginGate h1,.panel h2){font-family:Georgia,'Times New Roman',serif;font-weight:400}

@@ -1,7 +1,6 @@
-import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { AuevoLogo } from "@/app/auevo-logo";
+import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { CopyableAddress } from "@/app/copyable-address";
 import { fetchDexscreenerToken } from "@/lib/dexscreener";
 import { formatPrice, formatUsdCompact } from "@/lib/format";
@@ -63,21 +62,7 @@ export default async function TokenPage() {
 
   return (
     <main className="site token-page">
-      <header className="topbar">
-        <Link href="/" className="brand brand-auevo" aria-label="Auevo home">
-          <AuevoLogo />
-        </Link>
-
-        <nav>
-          <span className="trade-nav-active">$AUEVO</span>
-          <Link href="/rwa/app">Open workspace</Link>
-        </nav>
-
-        <div className="topbar-right">
-          <span className="network-dot" />
-          <span>Robinhood Chain</span>
-        </div>
-      </header>
+      <AgentPortalHeader />
 
       <section className="token-hero">
         <Image src="/images/auevo-tree-logo.webp" width={150} height={150} alt="AUEVO tree logo" className="token-hero-mark" />

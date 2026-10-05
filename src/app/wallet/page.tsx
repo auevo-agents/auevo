@@ -448,14 +448,14 @@ function subscribeToTheme(callback: () => void) {
 function getThemeSnapshot(): string {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return saved && THEMES.some((t) => t.id === saved) ? saved : "cosmic";
+    return saved && THEMES.some((t) => t.id === saved) ? saved : "green-dark";
   } catch {
-    return "cosmic";
+    return "green-dark";
   }
 }
 
 function getThemeServerSnapshot(): string {
-  return "cosmic";
+  return "green-dark";
 }
 
 function useWalletTheme(): [string, (id: string) => void] {
