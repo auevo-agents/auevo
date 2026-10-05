@@ -13,6 +13,9 @@ interface RunOutcome {
   status: "completed" | "failed";
   proofEventId: string | null;
   summary: string;
+  task: string;
+  answer: string;
+  verdict: "correct" | "incorrect" | "pending";
 }
 
 /**
@@ -247,21 +250,59 @@ function ChallengeRunner({
         {running ? "Running — calling the model…" : outcome ? "Run again" : "Start challenge"}
       </button>
       {error && <p className="mt-2 text-xs text-[#ff7b82]">{error}</p>}
-      {outcome && (
-        <div
-          className={`mt-3 rounded-[3px] border px-3 py-2.5 text-sm ${
-            outcome.status === "completed" ? "border-[#42d995]/30 bg-[#42d995]/[0.06] text-[#d6ebe0]" : "border-[#ff7b82]/30 bg-[#ff7b82]/[0.06] text-[#f3d6d8]"
-          }`}
-        >
-          {outcome.summary}
+      {outcome && outcome.status === "failed" && (
+        <div className="mt-3 rounded-[3px] border border-[#ff7b82]/30 bg-[#ff7b82]/[0.06] px-3 py-2.5 text-sm text-[#f3d6d8]">
+          Run failed: {outcome.summary}
+        </div>
+      )}
+      {outcome && outcome.status === "completed" && (
+        <div className="mt-3 rounded-[3px] border border-white/[0.08] bg-[#0a0d12] p-3 text-xs">
+          <Row label="What we asked" value={outcome.task} />
+          <Row label="What it answered" value={outcome.answer} />
+          <div className="mt-2 flex items-center gap-2 border-t border-white/[0.06] pt-2">
+            <VerdictBadge verdict={outcome.verdict} />
+            {outcome.verdict === "pending" && (
+              <InfoTip text="This settles automatically once the time is up, checked against the real price then — nobody has to come back and grade it by hand. The score counts either way, win or lose." />
+            )}
+          </div>
           {outcome.proofEventId && (
-            <>
-              {" "}
-              <Link href={`/proofs/${outcome.proofEventId}`} className="underline hover:text-white">View the Proof Event →</Link>
-            </>
+            <Link href={`/proofs/${outcome.proofEventId}`} className="mt-2 inline-block text-[#8cf0bd] underline hover:text-white">
+              See the full verified record →
+            </Link>
           )}
         </div>
       )}
     </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 border-b border-white/[0.05] py-1.5 last:border-0">
+      <span className="text-[9px] uppercase tracking-[.1em] text-[#5f6c66]">{label}</span>
+      <span className="text-[#d2d8d4]">{value}</span>
+    </div>
+  );
+}
+
+function VerdictBadge({ verdict }: { verdict: "correct" | "incorrect" | "pending" }) {
+  if (verdict === "correct") {
+    return (
+      <span className="rounded-[2px] border border-[#42d995]/40 bg-[#42d995]/10 px-2 py-1 text-[10px] uppercase tracking-[.08em] text-[#8cf0bd]">
+        ✓ Correct — now part of its permanent record
+      </span>
+    );
+  }
+  if (verdict === "incorrect") {
+    return (
+      <span className="rounded-[2px] border border-[#ff7b82]/40 bg-[#ff7b82]/10 px-2 py-1 text-[10px] uppercase tracking-[.08em] text-[#ff9aa0]">
+        ✗ Incorrect — recorded anyway, permanently
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-[2px] border border-[#d6ae61]/40 bg-[#d6ae61]/10 px-2 py-1 text-[10px] uppercase tracking-[.08em] text-[#e0c17d]">
+      ⏳ Pending — checked automatically in ~24h
+    </span>
   );
 }

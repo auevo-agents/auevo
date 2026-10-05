@@ -130,7 +130,14 @@ export interface ExecutorRunOutcome {
   runId: string;
   status: "completed" | "failed";
   proofEventId: string | null;
+  /** Kept for the executor run log / API consumers that just want one line — the UI itself renders task/answer/verdict separately, in plain language. */
   summary: string;
+  /** Plain-language restatement of what the agent was actually asked — not jargon, so a non-technical visitor understands the challenge without reading the description card again. */
+  task: string;
+  /** Plain-language restatement of what the agent decided. */
+  answer: string;
+  /** "correct"/"incorrect" when known immediately (Skill); "pending" when it only settles later (Prediction, Financial). */
+  verdict: "correct" | "incorrect" | "pending";
 }
 
 /**
@@ -212,9 +219,11 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
     failureReason = err instanceof Error ? err.message : "Model call failed";
   }
 
+  const taskDescription = `Count how many different wallets traded ${candidate.pairLabel ?? "this pool"} in the last ${windowHours} hours — the real figure is never published, so the agent has to actually work it out from the raw on-chain data.`;
+
   if (finalGuess === null) {
     await finishRun(supabase, runId, { status: "failed", transcript, error: failureReason });
-    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed" };
+    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed", task: taskDescription, answer: "", verdict: "pending" };
   }
 
   try {
@@ -234,11 +243,14 @@ export async function runSkillChallenge(agentId: string): Promise<ExecutorRunOut
       status: "completed",
       proofEventId,
       summary: `Guessed ${skillResult.guess}, actual was ${skillResult.actual} — ${skillResult.verdict}.`,
+      task: taskDescription,
+      answer: `${skillResult.guess} wallet${skillResult.guess === 1 ? "" : "s"} (the real answer was ${skillResult.actual})`,
+      verdict: skillResult.verdict === "correct" ? "correct" : "incorrect",
     };
   } catch (err) {
     const message = err instanceof SkillSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
     await finishRun(supabase, runId, { status: "failed", transcript, error: message });
-    return { runId, status: "failed", proofEventId: null, summary: message };
+    return { runId, status: "failed", proofEventId: null, summary: message, task: taskDescription, answer: "", verdict: "pending" };
   }
 }
 
@@ -334,9 +346,11 @@ export async function runPredictionChallenge(agentId: string): Promise<ExecutorR
     failureReason = err instanceof Error ? err.message : "Model call failed";
   }
 
+  const taskDescription = `Call whether SPY (an S&P 500 tracker) will be worth more or less than today's price ($${currentPrice.toFixed(2)}) 24 hours from now.`;
+
   if (finalDirection === null) {
     await finishRun(supabase, runId, { status: "failed", transcript, error: failureReason });
-    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed" };
+    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed", task: taskDescription, answer: "", verdict: "pending" };
   }
 
   try {
@@ -357,11 +371,14 @@ export async function runPredictionChallenge(agentId: string): Promise<ExecutorR
       status: "completed",
       proofEventId,
       summary: `Committed: SPY ${finalDirection} from $${currentPrice.toFixed(2)} by ${deadline.toISOString()} — settles automatically once the deadline passes.`,
+      task: taskDescription,
+      answer: `${finalDirection === "up" ? "Will go up" : "Will go down"} (called from $${currentPrice.toFixed(2)})`,
+      verdict: "pending",
     };
   } catch (err) {
     const message = err instanceof ClaimSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
     await finishRun(supabase, runId, { status: "failed", transcript, error: message });
-    return { runId, status: "failed", proofEventId: null, summary: message };
+    return { runId, status: "failed", proofEventId: null, summary: message, task: taskDescription, answer: "", verdict: "pending" };
   }
 }
 
@@ -455,9 +472,11 @@ export async function runFinancialChallenge(agentId: string): Promise<ExecutorRu
     failureReason = err instanceof Error ? err.message : "Model call failed";
   }
 
+  const taskDescription = `Decide how much of a pretend $${VIRTUAL_PORTFOLIO_STARTING_BALANCE_USD.toLocaleString()} (no real money) to put into SPY vs keep as cash, one time — graded 24h later against just holding 100% the whole time.`;
+
   if (finalAllocation === null) {
     await finishRun(supabase, runId, { status: "failed", transcript, error: failureReason });
-    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed" };
+    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed", task: taskDescription, answer: "", verdict: "pending" };
   }
 
   try {
@@ -474,10 +493,13 @@ export async function runFinancialChallenge(agentId: string): Promise<ExecutorRu
       status: "completed",
       proofEventId,
       summary: `Committed (simulation): ${attempt.allocationPct}% allocated to SPY at $${currentPrice.toFixed(2)} — settles automatically in ${VIRTUAL_PORTFOLIO_HORIZON_HOURS}h.`,
+      task: taskDescription,
+      answer: `${attempt.allocationPct}% into SPY, ${100 - attempt.allocationPct}% kept as cash`,
+      verdict: "pending",
     };
   } catch (err) {
     const message = err instanceof VirtualPortfolioSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
     await finishRun(supabase, runId, { status: "failed", transcript, error: message });
-    return { runId, status: "failed", proofEventId: null, summary: message };
+    return { runId, status: "failed", proofEventId: null, summary: message, task: taskDescription, answer: "", verdict: "pending" };
   }
 }
