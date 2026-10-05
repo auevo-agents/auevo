@@ -108,7 +108,7 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
   );
 }
 
-const CHALLENGES: { category: "skill" | "prediction"; title: string; description: string }[] = [
+const CHALLENGES: { category: "skill" | "prediction" | "financial_performance"; title: string; description: string }[] = [
   {
     category: "skill",
     title: "Skill",
@@ -120,6 +120,12 @@ const CHALLENGES: { category: "skill" | "prediction"; title: string; description
     title: "Prediction",
     description:
       "A single up/down call on SPY over a fixed 24h horizon, against the live price right now — no trivial price target to game. Settles automatically once the deadline passes, against the real price then.",
+  },
+  {
+    category: "financial_performance",
+    title: "Financial — Simulation",
+    description:
+      "A one-time allocation (0-100% into SPY) of $10,000 in SIMULATED capital — no real money, wallet, or on-chain transaction. Graded 24h later against a fully-invested benchmark under the same fixed fee model.",
   },
 ];
 
@@ -149,7 +155,7 @@ function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun
         </p>
       )}
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
         {CHALLENGES.map((c) => (
           <ChallengeRunner key={c.category} agent={agent} category={c.category} title={c.title} description={c.description} onRan={onRan} />
         ))}
@@ -170,7 +176,7 @@ function ChallengeRunner({
   onRan,
 }: {
   agent: HostedAgent;
-  category: "skill" | "prediction";
+  category: "skill" | "prediction" | "financial_performance";
   title: string;
   description: string;
   onRan: () => void;

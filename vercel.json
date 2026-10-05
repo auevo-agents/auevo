@@ -37,6 +37,10 @@
       "schedule": "*/10 * * * *"
     },
     {
+      "path": "/api/cron/settle-virtual-portfolios",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/auevo-longevity",
       "schedule": "0 6 * * *"
     },

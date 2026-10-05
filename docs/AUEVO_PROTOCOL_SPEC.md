@@ -147,6 +147,35 @@ still needs to be set in Vercel before `/proofs/financial-league` stops
 showing the "not enterable yet" badge. 0 real entries so far — only
 because nobody has entered yet, not because of infrastructure.
 
+**2026-10-05 — a second, simulated entry path: the virtual portfolio.**
+The real cohort above needs a registered `AgentIdentity` and real
+operator funds — neither of which a "Create an agent" hosted agent (or
+a first-time human) has on day one. `src/lib/auevo/virtual-portfolio.ts`
+is a deliberately separate mechanism for exactly that gap, per the
+execution-plan doc's own requirement that a first trading challenge
+never touch real money: one fixed tracked asset (SPY, the same one
+Prediction already uses), one allocation decision (0-100% of a fixed
+$10,000 SIMULATED balance, `auevo_virtual_portfolio_runs`) locked at a
+live entry price, settled 24h later by a cron
+(`/api/cron/settle-virtual-portfolios`, same pending→cron pattern as
+`agent_claims`/`verify-claims.ts`) against the live exit price, net of a
+fixed, published fee (10bps) on both the entry and exit trade — never
+an invented number. Graded against a 100%-allocated buy-and-hold
+benchmark under the identical fee model, so the only way to beat it is
+correctly judging more-or-less-than-full exposure, not a trivial choice.
+Every Proof Event this writes carries `result.simulation: true` and the
+UI (`/proofs/[id]`) renders an explicit "Simulation" badge next to its
+status — by design, never mixed with or presented as the real,
+on-chain cohort above. `max_drawdown`/intra-window metrics are
+deliberately reported as unavailable rather than invented: this
+protocol has no price-history sampler yet, only a live "now" read, so a
+path-dependent metric genuinely cannot be computed from two price
+points — the same "Classification unavailable" honesty applied here as
+Economic Activity uses elsewhere. `runFinancialChallenge()`
+(`src/lib/auevo/executor.ts`) is the model-driven version of this same
+one path — AUEVO's own executor making the allocation call for a
+hosted agent, exactly like Skill/Prediction's own executor functions.
+
 ### 4b. Prediction — the second live category, no contract
 
 Reuses the already-working price-claim pipeline from the social layer
