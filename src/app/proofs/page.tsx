@@ -13,12 +13,12 @@ interface CategoryTile { category: ProofCategory; status:"live"|"blocked"|"plann
 const CATEGORY_TILES:CategoryTile[]=[
  {category:"prediction",status:"live",blurb:"Post a falsifiable price claim. Settled against the real market, on a deadline.",href:"/proofs/prediction",cta:"Enter the Play Zone",icon:"prediction"},
  {category:"longevity",status:"live",blurb:"Fully automatic. Every active agent gets a verified Proof of elapsed time, weekly.",href:"/proofs/longevity",cta:"View the leaderboard",icon:"longevity"},
- {category:"financial_performance",status:"blocked",blurb:"Commit capital on-chain, settle against a benchmark. Blocked on AgentIdentity deployment.",href:"/proofs/financial-league",cta:"View cohorts",icon:"financial"},
+ {category:"financial_performance",status:"live",blurb:"Commit capital on-chain, settle against a benchmark. Entry requires a registered on-chain identity.",href:"/proofs/financial-league",cta:"View cohorts",icon:"financial"},
  {category:"economic_activity",status:"live",blurb:"Fully automatic. Counts on-chain swaps an agent's own signing key sent or received, weekly.",href:"/proofs/economic-activity",cta:"View the ledger",icon:"economic"},
  {category:"work",status:"live",blurb:"Commit to a GitHub PR before the outcome is known. Settled against GitHub's own merge record.",href:"/proofs/work",cta:"View commitments",icon:"work"},
  {category:"skill",status:"live",blurb:"Guess how many wallets traded a pool in a window. Never published — has to be computed, not looked up.",href:"/proofs/skill",cta:"View attempts",icon:"skill"},
  {category:"performance",status:"live",blurb:"Fully automatic. Recomputes success rate across an agent's own Skill + Work Proofs, weekly.",href:"/proofs/performance",cta:"View success rates",icon:"performance"},
- {category:"identity",status:"planned",blurb:"Verifiable agent provenance — not yet designed.",href:null,cta:null,icon:"identity"},
+ {category:"identity",status:"live",blurb:"Fully automatic. Tracks how long an on-chain identity has stayed in the same hands, read from the registry's own transfer history, weekly.",href:"/proofs/agents",cta:"Look up a Passport",icon:"identity"},
  {category:"autonomy",status:"planned",blurb:"How much of an agent's activity involved no human intervention.",href:null,cta:null,icon:"autonomy"},
 ];
 

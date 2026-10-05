@@ -81,10 +81,7 @@ export function LandingNav() {
       <Link href="/rwa/app/assets" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Markets
       </Link>
-      <Link href="/wallet" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
-        Wallet
-      </Link>
-      <Link href="/docs" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
+      <Link href="/rwa/docs" className="landing-nav-trigger landing-nav-primary-link" style={{ textDecoration: "none" }}>
         Docs
       </Link>
       <Link href="/rwa/app" className="landing-cta-ghost">
@@ -110,11 +107,7 @@ export function LandingNav() {
               <span className="landing-nav-link-title">Markets</span>
               <span className="landing-nav-link-body">Browse the verified asset registry</span>
             </Link>
-            <Link href="/wallet" className="landing-nav-link" onClick={() => setOpen(false)}>
-              <span className="landing-nav-link-title">Wallet</span>
-              <span className="landing-nav-link-body">Self-custodial wallet with an AI agent built in</span>
-            </Link>
-            <Link href="/docs" className="landing-nav-link" onClick={() => setOpen(false)}>
+            <Link href="/rwa/docs" className="landing-nav-link" onClick={() => setOpen(false)}>
               <span className="landing-nav-link-title">Docs</span>
               <span className="landing-nav-link-body">Product and market structure guide</span>
             </Link>

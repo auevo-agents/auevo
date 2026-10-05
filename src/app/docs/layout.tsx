@@ -18,7 +18,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
           </div>
           <div className="hidden items-center gap-3 text-[10px] uppercase tracking-[.1em] text-[#6e8277] sm:flex">
             <span className="rounded-[2px] border border-[#d7b56d]/18 bg-[#d7b56d]/[0.04] px-3 py-1.5 text-[#d7bd87]">v1.0 live</span>
-            <span>Proof protocol · SDK · APIs</span>
+            <span>Proof Protocol · SDK · APIs</span>
           </div>
         </div>
         <div className="docs-body">

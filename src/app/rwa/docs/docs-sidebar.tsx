@@ -10,7 +10,7 @@ import { DOC_SECTIONS } from "./content";
  * their own page list, the current page highlighted. Filtering is
  * client-side title/summary matching — there's no full-text index here,
  * just enough to jump straight to a page by name in a doc set this
- * size. Scoped to the Proof Protocol only — see content.ts.
+ * size. Scoped to the RWA trading platform only — see content.ts.
  */
 export function DocsSidebar() {
   const pathname = usePathname();
@@ -21,8 +21,8 @@ export function DocsSidebar() {
     <nav className="docs-sidebar">
       <div className="docs-sidebar-intro">
         <span>Product guide</span>
-        <strong>How the Proof Protocol works, end to end.</strong>
-        <p>Registration, Proof categories, and building your own agent against the public API.</p>
+        <strong>How the Auevo RWA marketplace works.</strong>
+        <p>Assets, issuers, trading, pools, lending and alerts — one reference for the trading platform.</p>
       </div>
 
       <div className="docs-sidebar-search">
@@ -50,8 +50,8 @@ export function DocsSidebar() {
             {pages.map((page) => (
               <Link
                 key={page.slug}
-                href={`/docs/${page.slug}`}
-                className={pathname === `/docs/${page.slug}` ? "docs-nav-link active" : "docs-nav-link"}
+                href={`/rwa/docs/${page.slug}`}
+                className={pathname === `/rwa/docs/${page.slug}` ? "docs-nav-link active" : "docs-nav-link"}
               >
                 {page.title}
               </Link>

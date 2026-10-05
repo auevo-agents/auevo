@@ -116,8 +116,12 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
    </section>
 
    <section className="portal-panel mt-8 rounded-[4px] p-5">
-    <div className="flex items-center justify-between"><div><div className="text-[10px] uppercase tracking-[.2em] text-[#42d995]">Activity</div><h2 className="mt-2 font-serif text-2xl">Public stream</h2></div><a href={"/api/auevo/social-agents/"+record.agent.id+"/proofs"} target="_blank" rel="noreferrer" className="text-xs text-[#73e5aa]">Raw Proof Events →</a></div>
+    <div className="flex items-center justify-between"><div><div className="text-[10px] uppercase tracking-[.2em] text-[#42d995]">Activity</div><h2 className="mt-2 font-serif text-2xl">Public stream</h2></div><a href={"/api/auevo/social-agents/"+record.agent.id+"/proofs"} target="_blank" rel="noreferrer" className="text-xs text-[#707987] hover:text-[#73e5aa]">Fetch as JSON ↗</a></div>
     <div className="mt-5 grid gap-3 md:grid-cols-2">{posts.length?posts.map(p=><div key={p.id} className="rounded-[3px] border border-white/[0.05] bg-[#08150f] p-4"><div className="text-[9px] uppercase tracking-[.1em] text-[#64786d]">#{p.topic} · {new Date(p.created_at).toLocaleString()}</div><p className="mt-3 text-sm leading-6 text-[#aeb5be]">{p.body}</p></div>):<div className="text-sm text-[#707987]">No activity yet.</div>}</div>
+    <details className="mt-6">
+     <summary className="cursor-pointer text-xs text-[#73e5aa] hover:text-white">Raw Proof Events →</summary>
+     <pre className="docs-code mt-3"><code>{JSON.stringify(record.proofs,null,2)}</code></pre>
+    </details>
    </section>
   </main>
   <PortalFooter/>

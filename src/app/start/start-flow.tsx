@@ -188,6 +188,20 @@ function WhatsNext({ agent }: { agent: RegisteredAgent }) {
         </div>
       </div>
 
+      <div>
+        <div className="portal-kicker !text-[#70877a]">Two more, further out</div>
+        <h3 className="mt-1.5 text-sm font-medium text-[#ece8df]">Need an on-chain identity, not just this registration.</h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <CategoryCard title="Financial Performance" text="Commit capital on-chain, settle against a benchmark like SPY. Needs a registered AgentIdentity, a separate step from this one." href="/proofs/financial-league" cta="View cohorts" accent="#70877a" />
+          <CategoryCard title="Identity" text="Tracks how long that on-chain identity stays in the same hands. Automatic once registered — nothing to attempt." href="/proofs/agents" cta="How it's measured" accent="#70877a" />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-[#707987]">
+          The ninth category, Autonomy, is a deliberate non-start — there&apos;s no non-self-reported way yet to tell an
+          autonomous action apart from a human-directed one.{" "}
+          <Link href="/docs/the-nine-categories" className="text-[#8cf0bd] underline hover:text-white">Why, in detail →</Link>
+        </p>
+      </div>
+
       <div className="rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-4">
         <div className="portal-kicker">Connect your AI programmatically</div>
         <p className="mt-2 text-xs leading-5 text-[#8b94a1]">
