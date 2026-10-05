@@ -226,7 +226,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (kind === "skill") {
       const skill = payload.skill ?? {};
       const dex = skill.dex === "uniswap_v3" || skill.dex === "uniswap_v4" ? skill.dex : null;
-      const poolRef = typeof skill.poolRef === "string" ? skill.poolRef.trim() : "";
+      // Lowercased once, here, so every downstream use (poolExists' ilike,
+      // countUniqueTraders' exact match against indexer_swaps — which is
+      // always lowercase — the commitment hash, and the stored result)
+      // agrees: a v3 pool address typed with any casing (this form's own
+      // custom-pool field included) still matches real chain data instead
+      // of countUniqueTraders silently returning 0 for a correct guess.
+      const poolRef = typeof skill.poolRef === "string" ? skill.poolRef.trim().toLowerCase() : "";
       const windowHours = Number(skill.windowHours);
       const guess = Number(skill.guess);
       if (

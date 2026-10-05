@@ -45,11 +45,15 @@ export async function GET(
   // indexer/scan-v4.ts — for a v4 row this is the enclosing tx's `from`,
   // since the Swap event itself has no recipient field), so `sender.eq`
   // is skipped here — it would only ever match the router, never a wallet.
+  // `recipient` here is a raw RPC tx.from, which viem never checksums
+  // (unlike a v3 row's sender/recipient, ABI-decoded Swap event args
+  // viem does checksum) — ilike, not eq, or this silently matches
+  // nothing against our own checksummed `address`.
   const { data: v4Swaps, error: v4Error } = await supabase
     .from("indexer_swaps")
     .select("pool_id, sender, recipient, amount0, amount1, tick, block_number, block_timestamp, tx_hash")
     .eq("dex", "uniswap_v4")
-    .eq("recipient", address)
+    .ilike("recipient", address)
     .order("block_number", { ascending: false })
     .limit(ACTIVITY_LIMIT);
   if (v4Error) {

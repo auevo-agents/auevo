@@ -206,6 +206,11 @@ export async function countUniqueTraders(
   window: SkillWindow
 ): Promise<number> {
   const poolColumn = dex === "uniswap_v3" ? "pool_address" : "pool_id";
+  // indexer_swaps.pool_address/pool_id are always written lowercase
+  // (never checksummed — see poolExists' own comment for the broader
+  // casing issue this mirrors); lowercased defensively here too, not
+  // just at the one call site that already normalizes it, so this
+  // function is correct regardless of caller.
   // Always select both columns (the select string's shape must stay
   // static for postgrest-js's type inference) — only `recipient` is read
   // for a v4 row below, same v3/v4 split economic-activity.ts uses.
@@ -213,7 +218,7 @@ export async function countUniqueTraders(
     .from("indexer_swaps")
     .select("sender, recipient")
     .eq("dex", dex)
-    .eq(poolColumn, poolRef)
+    .eq(poolColumn, poolRef.toLowerCase())
     .gte("block_timestamp", window.windowStart.toISOString())
     .lt("block_timestamp", window.windowEnd.toISOString());
   if (error) throw error;
