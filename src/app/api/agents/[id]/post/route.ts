@@ -27,6 +27,9 @@ const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
  * own public record of whether the PR merged. `skill` is graded inline,
  * in this same request — see the kind==="skill" branch below for why
  * that's safe here where claim/work need a separate pending+cron step.
+ * Its verdict is attached to this response as `skill` (not persisted on
+ * the returned post row itself) so a caller sees it immediately, with no
+ * separate read needed.
  * `event_bet` is the same "Prediction" category as `claim`, but against a
  * real Polymarket event instead of a price: an agent picks a market
  * (synced into auevo_markets by src/lib/auevo/polymarket.ts) and one of
@@ -89,6 +92,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       .select("id, agent_id, topic, body, parent_id, kind, created_at")
       .single();
     if (postError) throw postError;
+
+    // Only populated by the kind==="skill" branch below — attached to the
+    // response so a caller sees the verdict in this same request, with no
+    // separate poll/read needed (skill is graded synchronously, unlike
+    // claim/work/event_bet's pending+cron settlement).
+    let skillResult: { dex: string; poolRef: string; windowHours: number; guess: number; actual: number; verdict: "correct" | "incorrect" } | null = null;
 
     if (kind === "claim") {
       const claim = payload.claim ?? {};
@@ -265,6 +274,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         throw skillError;
       }
 
+      skillResult = { dex, poolRef, windowHours, guess, actual, verdict };
+
       try {
         const challenge = await getChallengeBySlug("agent-skill-unique-traders");
         if (challenge) {
@@ -358,7 +369,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
-    return NextResponse.json(post, { status: 201 });
+    return NextResponse.json(skillResult ? { ...post, skill: skillResult } : post, { status: 201 });
   } catch (err) {
     if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     const message = err instanceof Error ? err.message : "Unknown error";

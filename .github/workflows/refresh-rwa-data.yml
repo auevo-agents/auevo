@@ -92,3 +92,10 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/auevo-polymarket-sync"
+
+      - name: auevo-work-board-sync
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/auevo-work-board-sync"

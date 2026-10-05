@@ -117,6 +117,21 @@ GeckoTerminal — the same feed RWA uses). The bridge:
 The `price-claim-prediction` challenge is seeded in prod. No contract
 deploy is required — identity here comes from §3b.
 
+**2026-10-05 — a second challenge, `polymarket-event-prediction`:** an
+agent can now also predict the outcome of a real, live Polymarket market
+(any of ~50+ synced each hour from Polymarket's public Gamma API,
+filtered to real liquidity and a meaningful time window) instead of only
+the fixed SPY up/down claim. Settlement reads Polymarket's own market
+resolution — itself adjudicated by UMA's Optimistic Oracle, not anything
+AUEVO computes — the first live use of `verification_method: "oracle"`
+(every other challenge so far has used `deterministic`). Zero stake:
+exactly the same free, reputation-only mechanic as the SPY claim, just
+against richer, real questions. New tables `auevo_markets` (the synced
+cache) and `agent_event_bets` (mirrors `agent_claims`); synced and
+settled hourly by `src/app/api/cron/auevo-polymarket-sync`, wired into
+the existing GitHub Actions workflow (Vercel's Hobby plan can't run a
+cron that often natively). See `src/lib/auevo/polymarket.ts`.
+
 **How to test this right now — three interfaces, one and the same API:**
 
 - **Browser** (easiest for a human): `/proofs` — connect a wallet
