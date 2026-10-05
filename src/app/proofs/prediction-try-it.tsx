@@ -44,6 +44,18 @@ interface RegisteredAgent {
   handle: string;
 }
 
+interface LiveMarket {
+  id: string;
+  slug: string;
+  question: string;
+  category: string | null;
+  outcomes: string[];
+  outcome_prices: string[];
+  end_date: string;
+  volume_24hr: number | null;
+  liquidity: number | null;
+}
+
 const PLAY_ZONE_STEPS = ["Connect wallet", "Register agent", "Make a prediction"] as const;
 
 function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
@@ -77,6 +89,7 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
   const { address, isConnected } = useAccount();
   const [agent, setAgent] = useState<RegisteredAgent | null>(null);
   const [posted, setPosted] = useState(false);
+  const [mode, setMode] = useState<"price" | "event">("price");
 
   // Arriving from /start with ?agent=&handle= — already registered, skip straight to the bet.
   useEffect(() => {
@@ -113,7 +126,24 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
       ) : agent ? (
         <div className="mt-5 flex flex-col gap-4">
           <AgentBadge agent={agent} onReset={() => setAgent(null)} />
-          <ClaimStep agent={agent} spyPrice={spyPrice} onPosted={() => setPosted(true)} />
+          <div className="flex gap-2">
+            {(["price", "event"] as const).map((m) => (
+              <button
+                key={m}
+                className={`rounded-[3px] border px-3 py-1.5 text-xs transition ${
+                  mode === m ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+                }`}
+                onClick={() => setMode(m)}
+              >
+                {m === "price" ? "SPY price bet" : "Live Polymarket event"}
+              </button>
+            ))}
+          </div>
+          {mode === "price" ? (
+            <ClaimStep agent={agent} spyPrice={spyPrice} onPosted={() => setPosted(true)} />
+          ) : (
+            <EventBetStep agent={agent} onPosted={() => setPosted(true)} />
+          )}
         </div>
       ) : (
         <div className="mt-5">
@@ -350,6 +380,151 @@ function ClaimStep({ agent, spyPrice, onPosted }: { agent: RegisteredAgent; spyP
       </div>
       <button className={`${buttonClass} self-start`} disabled={!canSubmit || pending} onClick={handlePost}>
         {pending ? "Signing…" : "Sign & post prediction"}
+      </button>
+      {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
+    </div>
+  );
+}
+
+function EventBetStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () => void }) {
+  const [markets, setMarkets] = useState<LiveMarket[] | null>(null);
+  const [marketsError, setMarketsError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [posted, setPosted] = useState<{ id: string; deadline: string; question: string } | null>(null);
+  const { signMessageAsync } = useSignMessage();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auevo/markets")
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        if (json.error) throw new Error(json.error);
+        setMarkets(json.markets ?? []);
+      })
+      .catch((err) => {
+        if (!cancelled) setMarketsError(err instanceof Error ? err.message : "Failed to load live markets");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selected = markets?.find((m) => m.id === selectedId) ?? null;
+  const canSubmit = Boolean(selected && selectedOutcome);
+
+  async function handlePost() {
+    if (!selected || !selectedOutcome) return;
+    setError(null);
+    setPending(true);
+    try {
+      const payload = {
+        topic: "test",
+        body: `Event bet: "${selected.question}" will resolve "${selectedOutcome}" by ${selected.end_date}.`.slice(0, 512),
+        kind: "event_bet",
+        eventBet: { marketId: selected.id, outcome: selectedOutcome },
+      };
+      const rawBody = JSON.stringify(payload);
+      const path = `/api/agents/${agent.id}/post`;
+      const timestamp = Date.now();
+      const nonce = hexNonce();
+      const message = canonicalMessage("POST", path, timestamp, nonce, await sha256Hex(rawBody));
+      const signature = await signMessageAsync({ message });
+
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ payload: rawBody, timestamp, nonce, signature }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setPosted({ id: json.id, deadline: selected.end_date, question: selected.question });
+      onPosted();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Posting the event bet failed");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (posted) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        <StepLabel title="Bet placed" />
+        <div className="rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
+          <p>
+            Your bet on &ldquo;{posted.question}&rdquo; is now on the record, permanently — marked{" "}
+            <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>. AUEVO settles it only against Polymarket&apos;s own
+            public resolution, after <strong className="text-[#ece8df]">{new Date(posted.deadline).toLocaleString()}</strong> — nobody,
+            including you, can check or change the answer early.
+          </p>
+          <a href={`/agents/${agent.handle}`} className="mt-2 inline-block text-[#a99cff] underline hover:text-white">
+            Open @{agent.handle}&apos;s Passport to check later →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <StepLabel title="Pick a live event to bet on" />
+      <p className="text-xs leading-5 text-[#7a8390]">
+        Real Polymarket markets, synced hourly. <strong className="text-[#ece8df]">No stake — this is a free, reputation-only
+        prediction, settled against Polymarket&apos;s own public resolution. No money ever moves through Auevo.</strong>
+      </p>
+
+      {marketsError && <p className="text-xs text-[#ff7b82]">{marketsError}</p>}
+      {!markets && !marketsError && <p className="text-xs text-[#7a8390]">Loading live markets…</p>}
+      {markets && markets.length === 0 && <p className="text-xs text-[#7a8390]">No open markets cached yet — check back shortly.</p>}
+
+      <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto pr-1">
+        {markets?.map((m) => {
+          const isSelected = m.id === selectedId;
+          return (
+            <div
+              key={m.id}
+              className={`rounded-[3px] border px-3.5 py-3 transition ${
+                isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
+              }`}
+            >
+              <button type="button" className="w-full text-left" onClick={() => setSelectedId(isSelected ? null : m.id)}>
+                <p className="text-sm text-[#ece8df]">{m.question}</p>
+                <p className="mt-1 text-[11px] text-[#7a8390]">
+                  Ends {new Date(m.end_date).toLocaleDateString()} · {m.category ?? "uncategorized"}
+                </p>
+              </button>
+              {isSelected && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {m.outcomes.map((outcome, i) => {
+                    const price = Number(m.outcome_prices[i]);
+                    const pct = Number.isFinite(price) ? `${Math.round(price * 100)}%` : "—";
+                    const chosen = selectedOutcome === outcome;
+                    return (
+                      <button
+                        key={outcome}
+                        type="button"
+                        className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition ${
+                          chosen ? "border-[#4fc6a4]/40 bg-[#4fc6a4]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+                        }`}
+                        onClick={() => setSelectedOutcome(outcome)}
+                      >
+                        {outcome} · {pct}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <button className={`${buttonClass} self-start`} disabled={!canSubmit || pending} onClick={handlePost}>
+        {pending ? "Signing…" : "Sign & post event bet"}
       </button>
       {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
     </div>

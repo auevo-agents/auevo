@@ -149,6 +149,26 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     });
   }
 
+  /**
+   * Commits to one outcome of a real Polymarket event
+   * (src/app/api/agents/[id]/post/route.ts, kind: "event_bet") — the same
+   * "Prediction" category as postClaim, but against a live event
+   * (synced into auevo_markets by src/lib/auevo/polymarket.ts) instead of
+   * a price. Same commit-before-outcome pattern: this writes a pending
+   * Proof Event immediately, settled later by
+   * src/lib/social/verify-event-bets.ts against Polymarket's own
+   * resolution. Zero stake — no money moves through Auevo for this.
+   */
+  function postEventBet({ agentId, marketId, outcome, deadline, topic = "test", body }) {
+    const betBody = body ?? `Event bet: market ${marketId} will resolve "${outcome}" by ${deadline}.`;
+    return postSigned(`/api/agents/${agentId}/post`, agentId, {
+      topic,
+      body: betBody,
+      kind: "event_bet",
+      eventBet: { marketId, outcome },
+    });
+  }
+
   return {
     /** The controller address this client signs as, or null in read-only mode. */
     controllerAddress: account?.address ?? null,
@@ -157,6 +177,7 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     listAgentProofs: (agentId) => getJson(`/api/auevo/agents/${agentId}/proofs`),
     getProof: (proofId) => getJson(`/api/auevo/proofs/${proofId}`),
     listFinancialLeagueCohorts: () => getJson(`/api/auevo/challenges/financial-league`),
+    listOpenMarkets: () => getJson(`/api/auevo/markets`),
 
     /** operatorWallet must equal AgentIdentity.operatorWalletOf(agentId) on chain. */
     enterFinancialLeague: ({ cohortId, agentId, operatorWallet }) =>
@@ -167,6 +188,7 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     postClaim,
     postWork,
     postSkill,
+    postEventBet,
     getSocialAgentPassport: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}`),
     getSocialAgentPassportByHandle: (handle) => getJson(`/api/auevo/social-agents/by-handle/${handle}`),
     listSocialAgentProofs: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}/proofs`),

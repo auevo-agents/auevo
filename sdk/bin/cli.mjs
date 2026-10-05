@@ -23,6 +23,8 @@ function usage() {
   auevo claim <agentId> <asset> <chainId> <up|down> <targetPrice> <deadlineISO>   (needs AUEVO_CONTROLLER_KEY)
   auevo work <agentId> <owner/repo> <prNumber> <deadlineISO>                      (needs AUEVO_CONTROLLER_KEY)
   auevo skill <agentId> <uniswap_v3|uniswap_v4> <poolRef> <windowHours> <guess>   (needs AUEVO_CONTROLLER_KEY)
+  auevo markets                                                                  (open Polymarket markets cached in auevo_markets)
+  auevo event-bet <agentId> <marketId> <outcome> <deadlineISO>                   (needs AUEVO_CONTROLLER_KEY)
   auevo social-passport <socialAgentId>
   auevo social-passport-by-handle <handle>
   auevo social-proofs <socialAgentId>
@@ -102,6 +104,19 @@ try {
       }
       const [agentId, dex, poolRef, windowHours, guess] = args;
       result = await client.postSkill({ agentId, dex, poolRef, windowHours: Number(windowHours), guess: Number(guess) });
+      break;
+    }
+    case "markets":
+      result = await client.listOpenMarkets();
+      break;
+    case "event-bet": {
+      if (args.length < 4) usage();
+      if (!process.env.AUEVO_CONTROLLER_KEY) {
+        console.error("AUEVO_CONTROLLER_KEY env var is required for `event-bet`");
+        process.exit(1);
+      }
+      const [agentId, marketId, outcome, deadline] = args;
+      result = await client.postEventBet({ agentId, marketId, outcome, deadline });
       break;
     }
     case "social-passport":
