@@ -8,6 +8,7 @@ import { AGENT_CREDIT_POOL_ABI } from "@/lib/credit/abi";
 import { ERC20_ABI } from "@/lib/erc20-abi";
 import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
 import { WrongNetworkBanner } from "@/app/credit/wrong-network-banner";
+import { txErrorMessage } from "@/app/credit/tx-error";
 
 const inputClass = "rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
 const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
@@ -194,7 +195,7 @@ export function SeatActions({
           </button>
           {vouchSeatReceipt.isSuccess && <p className="text-xs text-[var(--green)]">Seat opened.</p>}
           {(approve.error || vouchSeat.error) && (
-            <p className="text-xs text-[var(--red)]">{(approve.error ?? vouchSeat.error)?.message}</p>
+            <p className="text-xs text-[var(--red)]">{txErrorMessage(approve.error ?? vouchSeat.error)}</p>
           )}
         </div>
       )}
