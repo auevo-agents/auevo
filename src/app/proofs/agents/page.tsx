@@ -6,6 +6,7 @@ import { listProofEventsForAgent } from "@/lib/auevo/db";
 import { aggregateCategory, CATEGORY_RESULT_FIELD, type CategoryAggregate } from "@/lib/auevo/score";
 import type { ProofCategory } from "@/lib/auevo/db";
 import { PortalFooter } from "@/app/portal-footer";
+import { InfoTip } from "@/app/info-tip";
 
 export const revalidate = 15;
 
@@ -84,7 +85,10 @@ function CategoryList({ categories }: { categories: CategoryAggregate[] }) {
           <span className="font-medium text-[#efe9de]">{CATEGORY_LABEL[c.category as ProofCategory] ?? c.category}</span>
           <span className="text-[#c7cdd6]">{c.verified}/{c.attempted} verified</span>
           <span className="text-[#c7cdd6]">{c.median !== null ? "median " + c.median.toFixed(2) : "—"}</span>
-          <span className="text-[10px] uppercase tracking-[.08em] text-[#7a8390] sm:justify-self-end">{c.confidence.replaceAll("_", " ").toLowerCase()}</span>
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-[.08em] text-[#7a8390] sm:justify-self-end">
+            {c.confidence.replaceAll("_", " ").toLowerCase()}
+            <InfoTip text="How this category's settled attempts were actually checked — shown at its WEAKEST, so a category is never presented as more trustworthy than its least-trustworthy contributing proof. 'Insufficient' means nothing has settled yet." />
+          </span>
         </div>
       ))}
     </div>
