@@ -315,7 +315,7 @@ console.log("\n5) a defaulted loan burns only the backing sponsor's shares, neve
   // 7 days (term) + 3 days (grace) + 1 second margin.
   await increaseTime(7 * 24 * 3600 + 3 * 24 * 3600 + 1);
 
-  await write(strangerClient, pool, Pool.abi, "markDefault", [1n]); // permissionless, matches Priors
+  await write(strangerClient, pool, Pool.abi, "markDefault", [1n]); // permissionless by design
 
   const loanAfter = await read(pool, Pool.abi, "loanInfo", [1n]);
   check("loan status is Defaulted", loanAfter[5] === 3);

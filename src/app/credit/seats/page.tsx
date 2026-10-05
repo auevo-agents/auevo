@@ -12,8 +12,7 @@ export const revalidate = 60;
  * it exists) ON TOP OF the normal real-USDG sponsor capacity vouch()
  * already requires, never instead of it. Why that ordering matters, and
  * why a naive "just burn the token" design doesn't actually protect
- * lenders, is explained inline below — it's also the whole reason this
- * isn't simply a copy of Priors' own seat mechanic (see
+ * lenders, is explained inline below (see
  * contracts/src/AgentCreditPool.sol's own doc comment for the full case).
  */
 export default async function CreditSeatsPage() {

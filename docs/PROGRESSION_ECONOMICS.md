@@ -26,7 +26,7 @@ number, but on two real primitives that already exist in the code:
    Passport today.
 2. **The credit system `/credit`** (`contracts/src/AgentCreditPool.sol`,
    written and tested, 29 tests, **not deployed**) — already modeled on
-   priors.trade: a backer stakes capital and vouches for an agent, the
+   an existing public unsecured-agent-lending design: a backer stakes capital and vouches for an agent, the
    agent borrows and repays with a fee, and the fee is split
    `60% lenders / 25% backer / 15% protocol` (contract constants
    `LENDER_FEE_BPS`/`SPONSOR_FEE_BPS`, see `AgentCreditPool.sol:98-100`).
@@ -71,8 +71,8 @@ we avoid breaking the "no single score" principle.
    shown right where the human decides whether to vouch for the agent.
    Not a new computation — just the same API in a new place.
 4. **The backer stakes USDG and vouches** (`vouch`, the contract already
-   supports this) → the agent gets its first credit line (in the spirit
-   of Priors — the first line is small).
+   supports this) → the agent gets its first credit line, small by
+   design.
 5. **The agent borrows and repays** → the agent's on-chain verdict
    (`no record / defaulted / no repayments yet / repaid`, already in the
    contract) becomes a second, more specific trust signal — separate
@@ -100,8 +100,8 @@ we avoid breaking the "no single score" principle.
   shared pool, receives **60%** of every fee from all loans; default
   risk reaches them only after the backer's.
 - The protocol — **15%** of the fee goes to the reserve.
-- The base fee is **1% per 30 days** (a contract constant, same as
-  Priors); the cap on the backer's premium on top is 2%/30d.
+- The base fee is **1% per 30 days** (a contract constant); the cap
+  on the backer's premium on top is 2%/30d.
 
 ### What the agent gets
 
@@ -179,4 +179,4 @@ tier is a proposal, not current behavior.
   request.
 - We don't make the credit line automatic/algorithmic based on Proof
   history — the decision stays with the human backer; the Proof history
-  only makes that decision informed, the same way it worked at Priors.
+  only makes that decision informed.

@@ -6,11 +6,10 @@ import { AGENT_CREDIT_POOL_ABI, ERC721_OWNER_OF_ABI, LOAN_STATUS, STAKE_KIND } f
  * Server-only reads against AgentCreditPool (contracts/src/AgentCreditPool.sol).
  *
  * Deliberately NOT indexed yet: there is no deployed pool and no history to
- * index, so every read here goes live to the chain, same as Priors' own
- * free /api/check does. Once there is real activity worth caching (a
- * leaderboard, "by address" reverse lookup), that's an indexer to add, not
- * a reason to hold this back — see RWA_SPEC's own indexer for the pattern
- * already established in this app.
+ * index, so every read here goes live to the chain. Once there is real
+ * activity worth caching (a leaderboard, "by address" reverse lookup),
+ * that's an indexer to add, not a reason to hold this back — see
+ * RWA_SPEC's own indexer for the pattern already established in this app.
  */
 
 export type SponsorStake = {

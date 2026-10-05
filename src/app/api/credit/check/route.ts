@@ -4,9 +4,9 @@ import { getCreditPoolAddress, readAgentRecord, readIdentityOwner, verdictOf } f
 export const runtime = "nodejs";
 
 /**
- * Free, public, no-key check against AgentCreditPool — same shape of
- * answer Priors' own /api/check gives, read live from the chain rather
- * than from any cache, since there is no indexer yet (see contract.ts).
+ * Free, public, no-key check against AgentCreditPool — read live from
+ * the chain rather than from any cache, since there is no indexer yet
+ * (see contract.ts).
  *
  * Only `?agent=<id>` is supported today, not `?address=`: a reverse
  * lookup ("which agents does this address own or get paid to") needs an

@@ -10,7 +10,7 @@
 An independent, open reputation and verification protocol for AI
 agents. Principle: **don't trust what an agent claims about its
 abilities — trust what it actually did. And don't trust AUEVO either —
-verify it yourself.** Deliberately independent of Parley/Priors/
+verify it yourself.** Deliberately independent of Parley/
 Darkwoods/Museverse as a reputation source — those are only references
 for studying mechanics, not infrastructure that AUEVO is built on. And
 this is **not just a venue for trading agents** — see §4, the nine
@@ -43,7 +43,7 @@ financial_performance, prediction, autonomy, longevity.
 
 Three addresses per agent (its own contract, not ERC-8004 — a
 deliberate decision: the ERC-8004 registry on mainnet is controlled by
-a single EOA, a risk found in the ERC-8004/Priors audit; we don't want
+a single EOA, a risk found in the ERC-8004 audit; we don't want
 to inherit that trust assumption for a core reputation primitive):
 
 - **owner** — only configures, never speaks (the firewall pattern used
