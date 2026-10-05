@@ -62,11 +62,14 @@ export async function recordEconomicActivityProofs(): Promise<{ checked: number;
       // v4 attribution is always via `recipient` (the enclosing tx's `from`
       // — see indexer/scan-v4.ts), same reasoning the wallet-activity route
       // already documents: `sender.eq` would only ever match the router.
+      // `recipient` is a raw RPC tx.from, never checksummed by viem — ilike,
+      // not eq, or this silently matches nothing against our checksummed
+      // `address` (same casing issue as indexer_pools.pool_address).
       supabase
         .from("indexer_swaps")
         .select("pool_id")
         .eq("dex", "uniswap_v4")
-        .eq("recipient", address)
+        .ilike("recipient", address)
         .gte("block_timestamp", periodStartIso)
         .lt("block_timestamp", nowIso),
     ]);
