@@ -349,11 +349,14 @@ function GuessStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
       )}
 
       {pools && pools.length > 0 && !useCustom && (
-        /* scroll-auto, not inherited: this app sets html{scroll-behavior:smooth} globally
-           (for the Credit page's own #step-1 anchor links) — explicit here so a click inside
-           this nested scroll container can never animate into a mid-scroll frame.
-           No `transition` on the row buttons either, for the same reason: an instant
-           selected/unselected state change can't be caught "between" two renders. */
+        /* Root cause of the row visually "overlapping" its neighbor on click: clicking
+           a <button> focuses it, and the browser's default focus outline does not
+           follow border-radius — on a rounded, tightly-gap-2-packed row it draws a
+           straight-edged ring that pokes past the rounded corner into the next row.
+           outline-none + a focus-visible ring (an inset box-shadow, which DOES follow
+           border-radius) below fixes that. The scroll-auto/no-transition hardening
+           stays too, for the unrelated mid-scroll-animation risk from this app's
+           global html{scroll-behavior:smooth}. */
         <div className="flex max-h-[320px] scroll-auto flex-col gap-2 overflow-y-auto pr-1">
           {pools.map((p) => {
             const isSelected = selected?.dex === p.dex && selected?.poolRef === p.poolRef;
@@ -361,7 +364,7 @@ function GuessStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
               <button
                 key={`${p.dex}:${p.poolRef}`}
                 type="button"
-                className={`rounded-[3px] border px-3.5 py-3 text-left ${
+                className={`rounded-[3px] border px-3.5 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#c9ad70]/50 focus-visible:ring-offset-0 ${
                   isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
                 }`}
                 onClick={() => setSelected(isSelected ? null : p)}
