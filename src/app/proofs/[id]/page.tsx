@@ -6,6 +6,8 @@ import { CopyButton } from "@/app/copy-button";
 import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
 import { getProofEvent, getAgentRunByProofEventId } from "@/lib/auevo/db";
 import { getAgentById } from "@/lib/social/db";
+import { InfoTip } from "@/app/info-tip";
+import { VERIFICATION_META } from "@/app/proofs/verification-meta";
 
 export const revalidate = 30;
 
@@ -85,7 +87,7 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
           <p className="portal-copy mt-3 text-sm leading-6">
             Committed {new Date(proof.created_at).toLocaleString()}
             {proof.end_at ? <> · settled {new Date(proof.end_at).toLocaleString()}</> : null} — verified{" "}
-            {proof.verification_method.replaceAll("_", " ")}, never self-reported.
+            {(VERIFICATION_META[proof.verification_method]?.label ?? proof.verification_method).toLowerCase()}, never self-reported.
           </p>
 
           {agent && (
@@ -95,10 +97,27 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
           )}
 
           <div className="mt-6 grid gap-2.5 border-t border-white/[0.06] pt-5 text-xs">
-            <Row a="Proof ID" b={proof.id} copy />
-            {proof.commitment && <Row a="Commitment (sha256)" b={proof.commitment} copy />}
-            <Row a="Verification method" b={proof.verification_method} />
-            {agent && <Row a="Autonomy" b={autonomyLabel} />}
+            <Row a="Proof ID" b={proof.id} copy tip="A unique id for this one attempt. Share this page's link as evidence, or look it up again later." />
+            {proof.commitment && (
+              <Row
+                a="Commitment (sha256)"
+                b={proof.commitment}
+                copy
+                tip="A cryptographic fingerprint of exactly what was committed, written down before the outcome was known. Recomputing this hash from the same inputs reproduces it exactly — proof nothing was changed after the fact."
+              />
+            )}
+            <Row
+              a="Verification method"
+              b={(VERIFICATION_META[proof.verification_method] ?? { label: proof.verification_method }).label}
+              tip={VERIFICATION_META[proof.verification_method]?.tip}
+            />
+            {agent && (
+              <Row
+                a="Autonomy"
+                b={autonomyLabel}
+                tip="Whether AUEVO's own executor called the model for this attempt (AUEVO-hosted run), or it arrived as an externally-signed submission (we can't tell from that alone whether a human or the operator's own AI made the decision)."
+              />
+            )}
           </div>
 
           {run && (
@@ -130,10 +149,13 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
   );
 }
 
-function Row({ a, b, copy }: { a: string; b: string; copy?: boolean }) {
+function Row({ a, b, copy, tip }: { a: string; b: string; copy?: boolean; tip?: string }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-white/[0.04] py-2 last:border-0">
-      <span className="text-[#7a8390]">{a}</span>
+      <span className="flex items-center text-[#7a8390]">
+        {a}
+        {tip && <InfoTip text={tip} />}
+      </span>
       <span className="flex items-center gap-1.5 font-mono text-[#b1b7bf]">
         <span className="max-w-[280px] truncate sm:max-w-none">{b}</span>
         {copy && <CopyButton value={b} />}
