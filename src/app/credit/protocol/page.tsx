@@ -1,7 +1,8 @@
+import { formatUnits } from "viem";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { CreditSubnav } from "../credit-subnav";
 import { ProtocolSubnav } from "./protocol-subnav";
-import { getCreditPoolAddress, readPoolParams, readSeatConfig } from "@/lib/credit/contract";
+import { getCreditPoolAddress, readPoolParams, readSeatConfig, readAssetDecimals } from "@/lib/credit/contract";
 import { PortalFooter } from "@/app/portal-footer";
 
 export const revalidate = 60;
@@ -36,6 +37,8 @@ export default async function CreditProtocolPage() {
   const pool = getCreditPoolAddress();
   const params = pool ? await readPoolParams() : null;
   const seatConfig = await readSeatConfig();
+  const assetDecimals = pool ? await readAssetDecimals() : null;
+  const usdg = (v: bigint) => (assetDecimals !== null ? `${formatUnits(v, assetDecimals)} USDG` : `${v} (raw units)`);
 
   return (
     <div className="portal-page">
@@ -180,9 +183,9 @@ share price: never falls for an uninvolved lender or sponsor`}</Code>
             <div className="mt-3 overflow-x-auto rounded-[3px] border border-[var(--line)]">
               <table className="w-full text-sm">
                 <tbody>
-                  <ParamRow name="minLoan / maxLoan" value={`${params.minLoan.toString()} – ${params.maxLoan.toString()} (raw units)`} meaning="smallest / largest loan" />
+                  <ParamRow name="minLoan / maxLoan" value={`${usdg(params.minLoan)} – ${usdg(params.maxLoan)}`} meaning="smallest / largest loan" />
                   <ParamRow name="feeBps" value={`${Number(params.feeBps) / 100}% per 30 days`} meaning="base fee, pro-rata by term" />
-                  <ParamRow name="minRootStake" value={`${params.minRootStake.toString()} (raw units)`} meaning="to enroll as a root (sponsor or lender)" />
+                  <ParamRow name="minRootStake" value={usdg(params.minRootStake)} meaning="to enroll as a root (sponsor or lender)" />
                   <ParamRow name="asset" value={params.asset} meaning="the stablecoin agents borrow and repay in" mono />
                   <ParamRow name="pool" value={params.pool} meaning="this contract's own address" mono />
                   {seatConfig.deployed && seatConfig.supported && (

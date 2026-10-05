@@ -1,8 +1,10 @@
+import { formatUnits } from "viem";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { getCreditPoolAddress, readSeatConfig, readAssetDecimals } from "@/lib/credit/contract";
 import { PortalFooter } from "@/app/portal-footer";
 import { CreditSubnav } from "../credit-subnav";
 import { SeatActions } from "./seat-actions";
+import { InfoTip } from "@/app/info-tip";
 
 export const revalidate = 60;
 
@@ -20,6 +22,17 @@ export default async function CreditSeatsPage() {
   const seatConfig = await readSeatConfig();
   const assetDecimals = await readAssetDecimals();
 
+  // seatTokenRequiredFor(amount) = amount * ratioNumerator / ratioDenominator
+  // (contracts/src/AgentCreditPool.sol) — both sides are raw integers in
+  // their own token's decimals, so the ratio alone ("X/Y") means nothing to
+  // a reader without doing that conversion themselves. Computed once here,
+  // for exactly 1 USDG, instead of showing the raw constants as if they
+  // were a human rate.
+  const perUsdgSeatTokens =
+    assetDecimals !== null && seatConfig.deployed && seatConfig.supported && seatConfig.enabled
+      ? formatUnits((10n ** BigInt(assetDecimals) * seatConfig.ratioNumerator) / seatConfig.ratioDenominator, seatConfig.seatTokenDecimals ?? 18)
+      : null;
+
   return (
     <div className="portal-page">
       <AgentPortalHeader active="credit" />
@@ -35,6 +48,14 @@ export default async function CreditSeatsPage() {
           other backer, and risks 50% of the seat token it locked (on top of its usual pool-share risk) if the
           specific loan that seat backed defaults.
         </p>
+        <div className="mt-5 flex flex-wrap gap-4 text-xs text-[var(--muted)]">
+          <span>Needs, in order:</span>
+          <span className="text-[var(--ink)]">1. Be enrolled as a root (USDG deposit)</span>
+          <span>→</span>
+          <span className="text-[var(--ink)]">2. Hold the seat token</span>
+          <span>→</span>
+          <span className="text-[var(--ink)]">3. The agent&apos;s signed consent, from its own page</span>
+        </div>
       </section>
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pb-10 sm:px-8">
@@ -103,10 +124,12 @@ export default async function CreditSeatsPage() {
             <dl className="mt-3 grid grid-cols-2 gap-2 text-sm text-[var(--muted)]">
               <dt>Seat token</dt>
               <dd className="text-[var(--ink)] break-all">{seatConfig.seatToken}</dd>
-              <dt>Rate</dt>
+              <dt className="flex items-center">
+                Rate
+                <InfoTip text="Fixed at deploy time, never a live market price — the pool has no price oracle for the seat token. seatTokenRequiredFor(amount) on chain is the exact source of truth; this is that same math done for exactly 1 USDG." />
+              </dt>
               <dd className="text-[var(--ink)]">
-                {seatConfig.ratioNumerator.toString()} / {seatConfig.ratioDenominator.toString()} seat-token units per
-                USDG unit vouched (fixed at deploy time, not a live price)
+                {perUsdgSeatTokens !== null ? `${perUsdgSeatTokens} seat tokens locked per 1 USDG vouched` : `${seatConfig.ratioNumerator.toString()} / ${seatConfig.ratioDenominator.toString()} (raw ratio)`}
               </dd>
               <dt>Min repaid loans to be eligible</dt>
               <dd className="text-[var(--ink)]">{seatConfig.minRepaidLoans}</dd>
