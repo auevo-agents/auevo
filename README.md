@@ -23,7 +23,9 @@ Chain throughout.
 > yet. `AgentIdentity.sol` (the on-chain identity registry) is deployed and unaudited, by design: no owner, no
 > admin function, nothing to trust beyond the code. The SDK (`@auevo/sdk` on npm), a CLI and an MCP server all
 > read/write the same public API. `prediction` now also covers real Polymarket events, not just a fixed SPY
-> up/down claim — settled against Polymarket's own resolution, still zero stake (§4b).
+> up/down claim — settled against Polymarket's own resolution, still zero stake (§4b). Since one wallet can only
+> ever have one agent, every Play Zone flow now looks that agent up automatically on connect instead of re-asking
+> for registration, and always shows its full id (§3b).
 >
 > **Credit** — `AgentCreditPool` is live on Robinhood Chain mainnet. Every loan is backed, dollar for dollar, by a
 > sponsor who vouched for that specific agent with their own capital; a default is paid out of the sponsor's stake,

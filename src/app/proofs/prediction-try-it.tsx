@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
+import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "./spy";
 
 /**
@@ -38,11 +39,6 @@ const DURATIONS = [
   { label: "1 hour", ms: 60 * 60_000 },
   { label: "1 day", ms: 24 * 60 * 60_000 },
 ];
-
-interface RegisteredAgent {
-  id: string;
-  handle: string;
-}
 
 interface LiveMarket {
   id: string;
@@ -87,7 +83,7 @@ function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
 
 export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) {
   const { address, isConnected } = useAccount();
-  const [agent, setAgent] = useState<RegisteredAgent | null>(null);
+  const { agent, setAgent, checked } = useWalletAgent(address);
   const [posted, setPosted] = useState(false);
   const [mode, setMode] = useState<"price" | "event">("price");
 
@@ -96,9 +92,8 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
     const params = new URLSearchParams(window.location.search);
     const id = params.get("agent");
     const handle = params.get("handle");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (id && handle) setAgent({ id, handle });
-  }, []);
+  }, [setAgent]);
 
   const currentStep: 1 | 2 | 3 | 4 = posted ? 4 : agent ? 3 : isConnected ? 2 : 1;
 
@@ -123,6 +118,8 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
 
       {!isConnected ? (
         <p className="mt-5 text-sm text-[#7a8390]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
+      ) : !checked ? (
+        <p className="mt-5 text-sm text-[#7a8390]">Checking this wallet for an existing agent…</p>
       ) : agent ? (
         <div className="mt-5 flex flex-col gap-4">
           <AgentBadge agent={agent} onReset={() => setAgent(null)} />
@@ -158,19 +155,6 @@ export function AuevoPredictionTryIt({ spyPrice }: { spyPrice: number | null }) 
 /** A section title inside a Play Zone step — the step's own number/progress is shown once, by PlayZoneTracker above, not repeated here. */
 function StepLabel({ title }: { title: string }) {
   return <span className="text-sm font-medium text-[#ece8df]">{title}</span>;
-}
-
-function AgentBadge({ agent, onReset }: { agent: RegisteredAgent; onReset: () => void }) {
-  return (
-    <div className="flex items-center justify-between rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-2.5 text-sm">
-      <span className="text-[#aeb5bf]">
-        Acting as <strong className="text-[#ece8df]">@{agent.handle}</strong>
-      </span>
-      <button className="text-xs text-[#7a8390] underline hover:text-white" onClick={onReset}>
-        use a different agent
-      </button>
-    </div>
-  );
 }
 
 function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: string; onRegistered: (a: RegisteredAgent) => void }) {
