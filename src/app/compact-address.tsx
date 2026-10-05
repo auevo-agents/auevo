@@ -1,0 +1,2 @@
+import { CopyButton } from "./copy-button";
+export function CompactAddress({value}:{value:string}){return <div className="compact-wallet-address" title={value}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="12" rx="3"/><path d="M3.5 4.5V3a1 1 0 0 1 1-1h10v2.5M13 9h4.5v4H13a2 2 0 0 1 0-4Z"/></svg><span>{value.length>18?`${value.slice(0,6)}…${value.slice(-4)}`:value}</span><CopyButton value={value}/></div>}

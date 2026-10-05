@@ -40,7 +40,7 @@ export default async function AgentsPage({ searchParams }: PageProps<"/agents">)
     if (query) search.set("q", query);
     return "/agents" + (search.size ? "?" + search.toString() : "");
   };
-  return <div className={styles.page}>
+  return <div className={`${styles.page} auevo-design`}>
     <AgentPortalHeader active="agents"/>
     <main className={styles.main}>
       <section className={styles.intro}>

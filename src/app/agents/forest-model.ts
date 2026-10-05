@@ -76,11 +76,14 @@ export function crystalTree(agent: ForestAgent): Crystal[] {
     // One Proof Event owns a stepped crown, tessellated into glass facets.
     // There are no anonymous canopy clusters and no synthetic successful events.
     const facets: number[][] = [];
-    for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) {
-      facets.push([x * .34, 0, z * .34, (x + z + i) % 2 ? .90 : 1]);
-      if (Math.abs(x) + Math.abs(z) <= 1) facets.push([x * .34, .33, z * .34, .88]);
+    // Every facet of this branched crystal crown retains the real event ID.
+    for(let tier=0;tier<4;tier++){
+      const width=tier===3?1:tier===0?2:3;
+      for(let x=-width;x<=width;x++)for(let z=-width;z<=width;z++){
+        if(Math.abs(x)+Math.abs(z)>width+1 || (Math.abs(x)+Math.abs(z)>1 && (x*3+z+tier)%3===0))continue;
+        facets.push([x*.23+Math.sin(tier+i)*.07,tier*.23,z*.23,(Math.abs(x)+Math.abs(z)>width)?.57:.67]);
+      }
     }
-    facets.push([0, .61, 0, .78], [.55, -.1, .12, .72], [-.55, -.05, -.12, .72]);
     for (const [dx, dy, dz, factor] of facets) {
       cubes.push({ x: centerX + dx, y: height + dy, z: centerZ + dz, size: size * factor, material, proofId: proof.id });
     }
