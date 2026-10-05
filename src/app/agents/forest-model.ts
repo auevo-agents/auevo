@@ -31,8 +31,8 @@ export type Crystal = {
 };
 
 export const FOREST_COLORS: Record<string, string> = {
-  prediction: "#38d49a", longevity: "#e7d59c", work: "#16a979",
-  skill: "#87e4ab", performance: "#46b985", economic_activity: "#179c74",
+  prediction: "#079b62", longevity: "#d2bd80", work: "#087a50",
+  skill: "#4ab67a", performance: "#20915e", economic_activity: "#07764e",
   financial_performance: "#e7b854", identity: "#b8d2c1", autonomy: "#72b998",
   pending: "#c0a267", rejected: "#a45748", disputed: "#a45748", trunk: "#caa14d",
 };
@@ -52,7 +52,7 @@ export function proofMaterial(proof: ForestProof) {
 export function crystalTree(agent: ForestAgent): Crystal[] {
   const proofs = [...agent.proofs].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   const growth = Math.log2(1 + proofs.length);
-  const trunkHeight = .62 + Math.min(1.3, growth * .31);
+  const trunkHeight = .85 + Math.min(1.45, growth * .38);
   const cubes: Crystal[] = [];
   const segments = Math.ceil(trunkHeight / .22);
   for (let i = 0; i < segments; i++) {
@@ -68,19 +68,25 @@ export function crystalTree(agent: ForestAgent): Crystal[] {
     const angle = seed + i * 2.399963;
     const ring = Math.floor(i / 7);
     const radius = proofs.length === 1 ? .08 : .30 + Math.min(.65, ring * .1);
-    const height = trunkHeight + .28 + (i % 7) * .095 + ring * .09;
+    const height = trunkHeight + .02 + (i % 7) * .12 + ring * .14;
     const centerX = Math.cos(angle) * radius;
     const centerZ = Math.sin(angle) * radius;
     const material = proofMaterial(proof);
-    const size = .36;
+    const size = .29;
     // One Proof Event owns a stepped crown, tessellated into glass facets.
     // There are no anonymous canopy clusters and no synthetic successful events.
     const facets: number[][] = [];
-    for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) {
-      facets.push([x * .34, 0, z * .34, (x + z + i) % 2 ? .90 : 1]);
-      if (Math.abs(x) + Math.abs(z) <= 1) facets.push([x * .34, .33, z * .34, .88]);
+    for (let layer = 0; layer < 4; layer++) {
+      const reach = layer < 2 ? 2 : layer === 2 ? 1 : 0;
+      for (let x = -reach; x <= reach; x++) for (let z = -reach; z <= reach; z++) {
+        // Tapered, irregular branches; small air gaps reveal the glass edges.
+        if (Math.abs(x) + Math.abs(z) > reach + 1) continue;
+        if (layer === 0 && Math.abs(x) + Math.abs(z) < 2) continue;
+        const variation = hash(proof.id + ":" + layer + ":" + x + ":" + z);
+        if (layer < 2 && variation % 7 === 0 && (x || z)) continue;
+        facets.push([x * .31, layer * .30 + (variation % 3) * .025, z * .31, .83 + (variation % 4) * .045]);
+      }
     }
-    facets.push([0, .61, 0, .78], [.55, -.1, .12, .72], [-.55, -.05, -.12, .72]);
     for (const [dx, dy, dz, factor] of facets) {
       cubes.push({ x: centerX + dx, y: height + dy, z: centerZ + dz, size: size * factor, material, proofId: proof.id });
     }
@@ -96,7 +102,7 @@ export function crystalTree(agent: ForestAgent): Crystal[] {
 export function forestLayout(agents: ForestAgent[]) {
   // Showcase the strongest public records in front, with young growth behind.
   // Fixed slots make the starting view match the wide composition of the mockup.
-  const slots = [[0, .6], [-3.25, .2], [3.25, .15], [-6.25, -.8], [6.25, -.9], [-4.7, -3.1], [4.7, -3.2], [0, -3.8]];
+  const slots = [[0, 1.0], [-4.0, .4], [3.8, .15], [-7.8, -.5], [7.7, -.7], [-5.8, -3.4], [5.6, -3.5], [.4, -4.6]];
   return agents.slice(0, 28).map((agent, i) => {
     const position = slots[i] ?? [((i - 8) % 7 - 3) * 2.65, -6.6 - Math.floor((i - 8) / 7) * 2.8];
     return { agent, x: position[0], z: position[1], crystals: crystalTree(agent) };
