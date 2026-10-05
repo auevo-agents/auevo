@@ -108,24 +108,30 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
   );
 }
 
-const CHALLENGES: { category: "skill" | "prediction" | "financial_performance"; title: string; description: string }[] = [
+const CHALLENGES: { category: "skill" | "prediction" | "financial_performance"; title: string; description: string; tools: string; limits: string }[] = [
   {
     category: "skill",
     title: "Skill",
     description:
       "AUEVO picks an active on-chain pool and a fixed 24h window, gives your agent a tool to read the raw swaps, and asks it to count the distinct wallets that traded — graded against AUEVO's own independent count, not the agent's own answer.",
+    tools: "list_pool_swaps (read-only, raw trader addresses only)",
+    limits: "8 runs/agent/day · fixed 24h window · pool chosen by AUEVO",
   },
   {
     category: "prediction",
     title: "Prediction",
     description:
       "A single up/down call on SPY over a fixed 24h horizon, against the live price right now — no trivial price target to game. Settles automatically once the deadline passes, against the real price then.",
+    tools: "none — the live price is given directly, no tool call needed",
+    limits: "8 runs/agent/day · fixed 24h horizon · SPY only",
   },
   {
     category: "financial_performance",
     title: "Financial — Simulation",
     description:
       "A one-time allocation (0-100% into SPY) of $10,000 in SIMULATED capital — no real money, wallet, or on-chain transaction. Graded 24h later against a fully-invested benchmark under the same fixed fee model.",
+    tools: "none — the live price is given directly, no tool call needed",
+    limits: "8 runs/agent/day · $10,000 simulated · SPY only · 0.10% fee each way",
   },
 ];
 
@@ -157,7 +163,7 @@ function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun
 
       <div className="mt-5 grid gap-4 sm:grid-cols-3">
         {CHALLENGES.map((c) => (
-          <ChallengeRunner key={c.category} agent={agent} category={c.category} title={c.title} description={c.description} onRan={onRan} />
+          <ChallengeRunner key={c.category} agent={agent} category={c.category} title={c.title} description={c.description} tools={c.tools} limits={c.limits} onRan={onRan} />
         ))}
       </div>
 
@@ -173,12 +179,16 @@ function ChallengeRunner({
   category,
   title,
   description,
+  tools,
+  limits,
   onRan,
 }: {
   agent: HostedAgent;
   category: "skill" | "prediction" | "financial_performance";
   title: string;
   description: string;
+  tools: string;
+  limits: string;
   onRan: () => void;
 }) {
   const [running, setRunning] = useState(false);
@@ -210,6 +220,10 @@ function ChallengeRunner({
     <div className="rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-4">
       <div className="portal-kicker !text-[#d6ae61]">{title}</div>
       <p className="mt-1.5 text-xs leading-5 text-[#8b94a1]">{description}</p>
+      <dl className="mt-2.5 space-y-1 text-[10px] leading-4 text-[#6c7a71]">
+        <div className="flex gap-1.5"><dt className="shrink-0 text-[#8b9890]">Tools:</dt><dd>{tools}</dd></div>
+        <div className="flex gap-1.5"><dt className="shrink-0 text-[#8b9890]">Limits:</dt><dd>{limits}</dd></div>
+      </dl>
       <button className={`${buttonClass} mt-3`} disabled={running} onClick={handleRun}>
         {running ? "Running — calling the model…" : outcome ? "Run again" : "Start challenge"}
       </button>

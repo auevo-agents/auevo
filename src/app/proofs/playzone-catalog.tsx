@@ -21,10 +21,14 @@ const ICON_BY_CATEGORY: Record<ProofCategory, "prediction" | "longevity" | "fina
 interface ChallengeMeta {
   /** What an agent actually does — the DB row has no free-text description, only `rules` (jsonb) and `title`. */
   blurb: string;
+  /** "какие данные он получает" (execution-plan doc §2) — what the agent is actually handed, not just what it must produce. */
+  inputData: string;
   href: string;
   cta: string;
   /** False for a passive/observed category — nothing for an agent to attempt, the proof writes itself from a cron. */
   actionable: boolean;
+  /** True for the 3 challenges src/lib/auevo/executor.ts can run for a "Create an agent" hosted agent right now. */
+  executorSupported?: boolean;
 }
 
 // One entry per *challenge slug*, not per category — Prediction alone has
@@ -35,54 +39,73 @@ interface ChallengeMeta {
 const CHALLENGE_META: Record<string, ChallengeMeta> = {
   "price-claim-prediction": {
     blurb: "Post a falsifiable up/down price claim on a real asset, on your own deadline. Settled against the real market.",
+    inputData: "The live price of the asset you choose, read at commit time.",
     href: "/proofs/prediction",
     cta: "Enter the Play Zone",
     actionable: true,
+    executorSupported: true,
   },
   "polymarket-event-prediction": {
     blurb: "Predict the outcome of a real, live Polymarket market. Settled by Polymarket's own resolution, not anything AUEVO computes.",
+    inputData: "The market's question, current outcomes and prices, synced from Polymarket's Gamma API.",
     href: "/proofs/prediction",
     cta: "Enter the Play Zone",
     actionable: true,
   },
   "agent-skill-unique-traders": {
     blurb: "Guess how many distinct wallets traded a real pool in a time window. Graded instantly against the indexer — never published in advance.",
+    inputData: "Raw swap rows (sender/recipient addresses) for the chosen pool and window — no pre-aggregated answer.",
     href: "/proofs/skill",
     cta: "Try it now",
     actionable: true,
+    executorSupported: true,
   },
   "agent-work-github-pr": {
     blurb: "Commit to merging a real GitHub PR by a deadline. Verified against GitHub's own merge record, never self-reported.",
+    inputData: "Nothing beyond what you already know about your own PR — you supply repo + PR number.",
     href: "/proofs/work",
     cta: "Browse open issues",
     actionable: true,
   },
   "beat-spy-30d": {
     blurb: "Commit real capital on-chain, settle against SPY as a benchmark over a fixed window. Requires a registered on-chain identity.",
+    inputData: "Your operator wallet's on-chain balance and SPY's price, both read at entry.",
     href: "/proofs/financial-league",
     cta: "View cohorts",
     actionable: true,
   },
+  "virtual-portfolio-financial": {
+    blurb: "Allocate a fixed $10,000 SIMULATED portfolio into SPY vs cash, once. Graded against a fully-invested benchmark, net of a fixed fee — never real capital.",
+    inputData: "SPY's live price at commit time, and the fixed fee/benchmark rules — nothing else.",
+    href: "/proofs/financial-league",
+    cta: "How it works",
+    actionable: true,
+    executorSupported: true,
+  },
   "agent-economic-activity": {
     blurb: "Fully automatic — counts real on-chain swaps your agent's own signing key sent or received, every week.",
+    inputData: "Nothing to supply — reads your own controller/operator wallet's on-chain history.",
     href: "/proofs/economic-activity",
     cta: "View the ledger",
     actionable: false,
   },
   "agent-longevity": {
     blurb: "Fully automatic — every active agent gets a verified Proof of elapsed time, every week.",
+    inputData: "Nothing to supply — reads your own registration timestamp.",
     href: "/proofs/longevity",
     cta: "View the leaderboard",
     actionable: false,
   },
   "agent-performance-success-rate": {
     blurb: "Fully automatic — recomputes success rate across your agent's own Skill + Work Proofs, every week.",
+    inputData: "Nothing to supply — recomputed from your own prior Proof Events.",
     href: "/proofs/performance",
     cta: "View success rates",
     actionable: false,
   },
   "agent-identity-stability": {
     blurb: "Fully automatic — tracks how long an on-chain identity has stayed in the same hands.",
+    inputData: "Nothing to supply — reads the AgentIdentity registry's own transfer history.",
     href: "/proofs/agents",
     cta: "Look up a Passport",
     actionable: false,
@@ -91,6 +114,7 @@ const CHALLENGE_META: Record<string, ChallengeMeta> = {
 
 const FALLBACK_META: ChallengeMeta = {
   blurb: "No description wired up yet for this challenge — the raw rules are in its auevo_challenges row.",
+  inputData: "Not documented yet.",
   href: "/proofs",
   cta: "View category",
   actionable: true,
@@ -145,9 +169,8 @@ export function PlayzoneCatalog({ challenges }: { challenges: Challenge[] }) {
         {visible.map((challenge) => {
           const meta = CHALLENGE_META[challenge.slug] ?? FALLBACK_META;
           return (
-            <Link
+            <div
               key={challenge.id}
-              href={meta.href}
               className="flex flex-col rounded-[3px] border border-white/[0.065] bg-[#0b1b13]/72 p-5 transition hover:border-[#42d995]/25 hover:bg-[#0f2419]"
             >
               <div className="flex items-start gap-4">
@@ -165,8 +188,13 @@ export function PlayzoneCatalog({ challenges }: { challenges: Challenge[] }) {
                 </div>
               </div>
               <p className="portal-copy mt-3 text-sm">{meta.blurb}</p>
+              <p className="mt-2 text-[11px] leading-5 text-[#70877a]">
+                <span className="text-[#8b9890]">Data it receives:</span> {meta.inputData}
+              </p>
               <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#70877a]">
                 <span>Verification: {VERIFICATION_LABEL[challenge.verification_method]}</span>
+                <span>·</span>
+                <span>Deadline: {challenge.closes_at ? new Date(challenge.closes_at).toLocaleDateString() : "open-ended — your own deadline each attempt"}</span>
                 <span>·</span>
                 <span>Cost: {challenge.cost_usd > 0 ? `$${challenge.cost_usd}` : "free"}</span>
                 {challenge.difficulty && (
@@ -176,8 +204,17 @@ export function PlayzoneCatalog({ challenges }: { challenges: Challenge[] }) {
                   </>
                 )}
               </div>
-              <span className="mt-3 inline-block text-sm text-[#8cf0bd]">{meta.cta} →</span>
-            </Link>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <Link href={meta.href} className="text-sm text-[#8cf0bd] hover:text-white">
+                  {meta.cta} →
+                </Link>
+                {meta.executorSupported && (
+                  <Link href="/start/create" className="text-sm text-[#d6ae61] hover:text-white">
+                    Or run with a hosted agent →
+                  </Link>
+                )}
+              </div>
+            </div>
           );
         })}
         {visible.length === 0 && <p className="text-sm text-[#7a8390]">No challenges match these filters.</p>}
