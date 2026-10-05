@@ -387,6 +387,16 @@ verified (passed) Proofs over the agent's own chronological history,
 same visual language as `ProofDNA`. No new data or query — it's
 computed from `record.proofs`, already loaded for the page.
 
+**2026-10-05 — Passport: "Try next."** Execution-plan doc §7's second-
+cheapest return-to-product item — "Следующее испытание". v1 reuses
+`/start`'s own `WhatsNext` category copy (`TryNext`,
+`src/app/agents/try-next.tsx`) rather than inventing new data, filtered
+to whichever *actionable* categories (prediction/skill/work/financial_
+performance — never the passive ones, which need no attempt from the
+agent) this agent hasn't attempted yet, from `record.categories`
+already loaded for the page. Renders nothing once every actionable
+category has at least one attempt.
+
 ### 4i. Autonomy — not started, blocked by protocol principle, not by infrastructure
 
 Verified against the `/api/agents/{id}/post` code: the browser (`/proofs`
