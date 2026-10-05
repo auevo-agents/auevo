@@ -5,6 +5,7 @@ import { CrystalForest } from "../crystal-forest";
 import { AgentTreeIcon } from "../agent-tree-icon";
 import { FOREST_COLORS, type ForestAgent } from "../forest-model";
 import { ProofGrowthTrend } from "../proof-growth-trend";
+import { TryNext } from "../try-next";
 import { categoryLabel, CATEGORY_ORDER } from "@/app/proofs/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
 import { getSupabaseServer } from "@/lib/supabase";
@@ -80,6 +81,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
        <div className="flex items-center justify-between"><h2 className="text-sm font-medium">Reputation Vector</h2><span className="text-[9px] uppercase tracking-[.1em] text-[#64786d]">recomputed</span></div>
        <div className="mt-5 space-y-4">{record.categories.length?record.categories.map(c=>{const ratio=c.attempted?c.verified/c.attempted:0;const accent=FOREST_COLORS[c.category];return <div key={c.category}><div className="flex items-center gap-2 text-xs"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:accent}}/><span className="flex-1 text-[#aebdb4]">{categoryLabel(c.category as ProofCategory)}</span><span className="font-mono text-[#76897e]">{c.verified}/{c.attempted}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-[1px] bg-white/[0.05]"><div className="h-full" style={{width:Math.round(ratio*100)+"%",background:accent}}/></div><div className="mt-1.5 text-[8px] uppercase tracking-[.1em] text-[#62756b]">{c.confidence.replaceAll("_"," ")}</div></div>}):<p className="text-sm text-[#76897e]">No proofs yet.</p>}</div>
       </div>
+      <TryNext attempted={record.categories.map(c=>c.category as ProofCategory)}/>
       <div className="portal-panel rounded-[4px] p-5">
        <div className="text-[10px] uppercase tracking-[.18em] text-[#d6ae61]">Visual encoding</div>
        <div className="mt-4 space-y-2 text-xs text-[#7e8794]"><Row a="Each crystal cluster" b="1 Proof Event"/><Row a="Emerald" b="Prediction"/><Row a="Pale gold" b="Longevity"/><Row a="Muted gold" b="Pending"/><Row a="Terracotta" b="Failed / disputed"/><Row a="Gold trunk" b="Identity foundation"/></div>
