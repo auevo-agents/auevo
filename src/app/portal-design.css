@@ -100,5 +100,16 @@
 :is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):hover:not(:disabled):before{opacity:1;animation:emerald-sheen .7s ease-out forwards}
 :is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):active:not(:disabled){transform:translateY(1px) scale(.985);filter:brightness(.92);box-shadow:inset 0 3px 9px #0008,inset 0 -1px 0 #b5dab514,0 1px 4px #0003!important}
 @keyframes emerald-sheen{from{transform:translateX(-80%)}to{transform:translateX(80%)}}
+.live-feed-dot{position:relative}.live-feed-dot:after{content:"";position:absolute;inset:-4px;border-radius:999px;border:1px solid currentColor;opacity:.55;animation:live-feed-ping 2.2s cubic-bezier(0,0,.2,1) infinite}
+@keyframes live-feed-ping{0%{transform:scale(.6);opacity:.55}75%,100%{transform:scale(1.9);opacity:0}}
+.live-feed-row{animation:live-feed-row-in .5s cubic-bezier(.16,1,.3,1) both}
+.live-feed-row.live-feed-row-flash{position:relative}
+.live-feed-row.live-feed-row-flash:before{content:"";position:absolute;inset:-4px -8px;border-radius:4px;background:linear-gradient(90deg,#42d99524,transparent 70%);animation:live-feed-flash 2.4s ease-out forwards}
+.live-feed-row-new-chip{animation:live-feed-chip-in .35s ease-out both,live-feed-chip-out .4s ease-in 1.8s forwards}
+@keyframes live-feed-row-in{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes live-feed-flash{0%{opacity:1}100%{opacity:0}}
+@keyframes live-feed-chip-in{0%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:scale(1)}}
+@keyframes live-feed-chip-out{0%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.live-feed-dot:after{animation:none;display:none}.live-feed-row{animation:none}.live-feed-row.live-feed-row-flash:before{animation:none;display:none}.live-feed-row-new-chip{animation:none}}
 @media(max-width:700px){.auevo-portal-header .portal-logo .auevo-wordmark-gold{font-size:20px!important}.portal-logo .auevo-tree-mark{width:24px!important;height:24px!important}}
 @media(prefers-reduced-motion:reduce){:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):before{display:none}}

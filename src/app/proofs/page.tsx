@@ -3,9 +3,10 @@ import { getAuevoLiveStats, listRecentProofEvents } from "@/lib/auevo/db";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { PortalFog, PortalSkyline, PremiumIcon } from "@/app/premium-visuals";
-import type { ProofCategory, RecentProofEvent } from "@/lib/auevo/db";
+import type { ProofCategory } from "@/lib/auevo/db";
 import { CrystalMotif } from "../crystal-motif";
 import { PortalFooter } from "@/app/portal-footer";
+import { LiveProofFeed } from "./live-proof-feed";
 
 export const revalidate = 30;
 
@@ -42,9 +43,9 @@ export default async function AuevoLandingPage(){
 
         <ProofFlowHero className="relative"/>
         <div className="portal-panel proof-live-feed p-5">
-          <div className="flex items-center gap-2 portal-kicker !text-[#d6ae61]"><span className="h-1.5 w-1.5 rounded-full bg-[#42d995] shadow-[0_0_8px_rgba(79,198,164,.7)]"/>Live proof feed</div>
+          <div className="flex items-center gap-2 portal-kicker !text-[#d6ae61]"><span className="live-feed-dot h-1.5 w-1.5 rounded-full bg-[#42d995] text-[#42d995] shadow-[0_0_8px_rgba(79,198,164,.7)]"/>Live proof feed</div>
           <div className="mt-3 space-y-3 text-xs text-[#aab4c3]">
-            {recentProofs.length===0?<p className="text-[#5e6a7c]">No Proofs yet.</p>:recentProofs.map(p=><RecentProofRow key={p.id} proof={p}/>)}
+            <LiveProofFeed initialProofs={recentProofs}/>
           </div>
         </div>
       </div>
@@ -94,22 +95,3 @@ function ProofFlowHero({className=""}:{className?:string}){
   </div>
 }
 
-function timeAgo(iso:string):string{
-  const seconds=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/1000));
-  if(seconds<60)return `${seconds}s ago`;
-  const minutes=Math.floor(seconds/60);
-  if(minutes<60)return `${minutes}m ago`;
-  const hours=Math.floor(minutes/60);
-  if(hours<24)return `${hours}h ago`;
-  return `${Math.floor(hours/24)}d ago`;
-}
-
-function RecentProofRow({proof}:{proof:RecentProofEvent}){
-  return <div className="flex items-center justify-between gap-3">
-    <span className="flex min-w-0 items-center gap-2">
-      <i className={`h-1.5 w-1.5 shrink-0 rounded-full ${proof.status==="passed"?"bg-[#42d995]":(proof.status==="scheduled"||proof.status==="running"||proof.status==="awaiting_settlement")?"bg-[#d6ae61]":"bg-[#e0735c]"}`}/>
-      <span className="truncate">{proof.handle?`@${proof.handle}`:"agent"} · {categoryLabel(proof.category)}</span>
-    </span>
-    <span className="shrink-0 font-mono text-[10px] text-[#69768a]">{timeAgo(proof.createdAt)}</span>
-  </div>
-}
