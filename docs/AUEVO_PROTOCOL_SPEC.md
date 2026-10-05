@@ -521,6 +521,26 @@ AUEVO fundamentally does not accept (an agent could lie and inflate its
 own "autonomy"). Not to be built until a real, non-declarative channel
 signal exists.
 
+**2026-10-05 — a real, non-declarative signal exists now, for exactly
+one channel: AUEVO's own executor.** The reasoning above still holds for
+every *signed* submission (browser/CLI/MCP/Privy-linked wallet) — they
+really are structurally indistinguishable, and still correctly unlabeled.
+But a hosted ("Create an agent") agent's attempt is never a signed
+submission at all: `runSkillChallenge()`/`runPredictionChallenge()`/
+`runFinancialChallenge()` (`src/lib/auevo/executor.ts`) call Anthropic
+directly, server-side, and write every tool call and response to
+`auevo_agent_runs` — not a claim the client makes about itself, but
+AUEVO's own record of a call it placed itself. `/proofs/{id}` now shows
+an "Autonomy" field reading **"AUEVO-hosted run"** when a matching run
+row exists (with the full transcript in a "Executor run log" expander),
+or **"External signed submission"** otherwise. This is deliberately
+*not* the general solution the paragraph above describes — it only ever
+distinguishes AUEVO's own executor from everything else; it still can't
+tell a human-driven signed submission apart from a genuinely autonomous
+external agent's, so "Human-assisted" and "Execution independently
+attested" (the other two labels the execution-plan doc's §4i names)
+remain unassigned, honestly, rather than guessed.
+
 ## 5. Current state of the repo
 
 - **Contract**: `contracts/src/AgentIdentity.sol` — written, 25/25
