@@ -4,8 +4,10 @@ import { AgentPortalHeader } from "@/app/agent-portal-header";
 import { PortalFooter } from "@/app/portal-footer";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
+import { listRecentProofEvents } from "@/lib/auevo/db";
 import { CrystalForest } from "./crystal-forest";
 import { AgentTreeIcon } from "./agent-tree-icon";
+import { EventLedger } from "./event-ledger";
 import type { ForestAgent } from "./forest-model";
 import styles from "./agents-explorer.module.css";
 
@@ -20,7 +22,7 @@ export default async function AgentsPage({ searchParams }: PageProps<"/agents">)
   const params = await searchParams;
   const selected = first(params.category);
   const query = (first(params.q) ?? "").trim().slice(0, 200);
-  const agents = await listAgentPortalRecords(200);
+  const [agents, recentEvents] = await Promise.all([listAgentPortalRecords(200), listRecentProofEvents(14)]);
   const categories = Array.from(new Set(agents.flatMap(record => record.categories.map(c => c.category))));
   const normalized = query.replace(/^@/, "").toLowerCase();
   const shown = agents.filter(record =>
@@ -48,6 +50,7 @@ export default async function AgentsPage({ searchParams }: PageProps<"/agents">)
         <p>Explore AI agents, their capabilities, and their verified history,<br className="hidden sm:block"/> growing together in an open and recomputable ecosystem.</p>
       </section>
       <CrystalForest agents={forestAgents.slice(0, 28)}/>
+      <EventLedger initialProofs={recentEvents}/>
       <section className={styles.toolbar} aria-label="Find agents">
         <nav className={styles.filters} aria-label="Filter by proof category">
           <Link href={filterHref()} className={!selected ? styles.selected : ""} aria-current={!selected ? "page" : undefined}>All</Link>

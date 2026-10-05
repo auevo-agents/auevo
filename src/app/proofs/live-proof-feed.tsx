@@ -2,21 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { categoryLabel } from "@/app/proofs/reputation-structure";
+import { timeAgo } from "@/app/proofs/time-ago";
 import type { RecentProofEvent } from "@/lib/auevo/db";
 
 const POLL_MS = 9000;
 const MAX_ROWS = 5;
 const FLASH_MS = 2200;
-
-function timeAgo(iso: string): string {
-  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 /**
  * The hero's "Live proof feed" panel, made genuinely live: the server
