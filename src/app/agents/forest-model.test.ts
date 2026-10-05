@@ -19,7 +19,7 @@ describe("ledger-derived crystal forest", () => {
   it("changes a verdict without moving its permanent history", () => {
     const before = crystalTree(agent);
     const after = crystalTree({ ...agent, proofs: agent.proofs.map(p => ({ ...p, status: "verified" })) });
-    expect(after.map(({ material: _material, ...c }) => c)).toEqual(before.map(({ material: _material, ...c }) => c));
+    expect(after.map(c => ({ ...c, material: undefined }))).toEqual(before.map(c => ({ ...c, material: undefined })));
     expect(after.filter(c => c.proofId === "second").every(c => c.material === "work")).toBe(true);
   });
   it("recomputes the same geometry regardless of API row order", () => {

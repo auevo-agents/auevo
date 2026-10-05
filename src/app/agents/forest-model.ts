@@ -72,10 +72,16 @@ export function crystalTree(agent: ForestAgent): Crystal[] {
     const centerX = Math.cos(angle) * radius;
     const centerZ = Math.sin(angle) * radius;
     const material = proofMaterial(proof);
-    const size = .33;
-    // A crystal cluster is one Proof Event, tessellated into five visible facets.
+    const size = .36;
+    // One Proof Event owns a stepped crown, tessellated into glass facets.
     // There are no anonymous canopy clusters and no synthetic successful events.
-    for (const [dx, dy, dz, factor] of [[0, 0, 0, 1], [.26, .04, 0, .78], [-.24, .10, 0, .72], [0, .22, .23, .76], [0, -.08, -.24, .82]]) {
+    const facets: number[][] = [];
+    for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) {
+      facets.push([x * .34, 0, z * .34, (x + z + i) % 2 ? .90 : 1]);
+      if (Math.abs(x) + Math.abs(z) <= 1) facets.push([x * .34, .33, z * .34, .88]);
+    }
+    facets.push([0, .61, 0, .78], [.55, -.1, .12, .72], [-.55, -.05, -.12, .72]);
+    for (const [dx, dy, dz, factor] of facets) {
       cubes.push({ x: centerX + dx, y: height + dy, z: centerZ + dz, size: size * factor, material, proofId: proof.id });
     }
     // Gold branch segments connecting growth to the trunk.

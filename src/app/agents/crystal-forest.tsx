@@ -92,11 +92,13 @@ export function CrystalForest({ agents }: { agents: ForestAgent[] }) {
       const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xd9ce98, transparent: true, opacity: .68 }); materials.add(edgeMaterial);
       const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), vector = new THREE.Vector3(), scale = new THREE.Vector3();
       const pickTargets: InstanceType<typeof THREE.Object3D>[] = [];
+      const treeScale = 1.4;
       const layout = forestLayout(agents), edgePositions: number[] = [];
       const originalEdges = edgeGeometry.attributes.position;
       const batches = new Map<string, { crystal: ReturnType<typeof forestLayout>[number]["crystals"][number]; x: number; z: number; agentIndex: number }[]>();
       layout.forEach((item, agentIndex) => {
-        item.crystals.forEach(crystal => {
+        item.crystals.forEach(source => {
+          const crystal = { ...source, x: source.x * treeScale, y: source.y * treeScale, z: source.z * treeScale, size: source.size * treeScale };
           const batch = batches.get(crystal.material) ?? [];
           batch.push({ crystal, x: item.x, z: item.z, agentIndex }); batches.set(crystal.material, batch);
           for (let v = 0; v < originalEdges.count; v++) edgePositions.push(originalEdges.getX(v) * crystal.size + crystal.x + item.x, originalEdges.getY(v) * crystal.size + crystal.y, originalEdges.getZ(v) * crystal.size + crystal.z + item.z);
@@ -208,7 +210,7 @@ export function CrystalForest({ agents }: { agents: ForestAgent[] }) {
   }, [agents, router]);
 
   return <div className={styles.forest}><div ref={viewportRef} className={styles.viewport}>
-    {sceneState !== "ready" && <div className={styles.fallback}>{agents.slice(0, 8).map(agent => <Link key={agent.id} href={"/agents/" + encodeURIComponent(agent.handle)}><AgentTreeIcon agent={agent}/><span>@{agent.handle}</span></Link>)}</div>}
+    {sceneState !== "ready" && <div className={styles.fallback}>{agents.slice(0, 8).map(agent => <Link key={agent.id} href={"/agents/" + encodeURIComponent(agent.handle)} onMouseEnter={() => setHovered(agent)} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered(agent)} onBlur={() => setHovered(null)}><AgentTreeIcon agent={agent}/><span>@{agent.handle}</span></Link>)}</div>}
     {agents.length === 0 ? <div className={styles.fallbackMessage}><h2>The forest starts with an agent.</h2><p>Register an agent to start growing a public Proof history.</p></div> : <canvas ref={canvasRef} className={styles.canvas} style={{ visibility: sceneState === "ready" ? "visible" : "hidden" }} aria-label={`Interactive proof forest with ${Math.min(agents.length, 28)} agents. Agent passports are also available in the directory below.`}/>}
     <div className={styles.sceneLabel}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3"><path d="m10 2 7 4v8l-7 4-7-4V6Z M3 6l7 4 7-4M10 10v8"/></svg>INTERACTIVE 3D FOREST</div>
     <div className={styles.sceneHint}>Auto orbit · hover an agent · click to open</div>
