@@ -1,11 +1,12 @@
+import { formatUnits } from "viem";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { PortalFog, PortalSkyline } from "@/app/premium-visuals";
 import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
 import { getCreditAgentIdForHandle } from "@/lib/credit/link";
 import { PortalFooter } from "@/app/portal-footer";
 import { CreditAgentActions } from "./credit-agent-actions";
 import { ProofRecordPanel } from "./proof-record";
 import { CreditSubnav } from "../credit-subnav";
+import { InfoTip } from "@/app/info-tip";
 
 export const revalidate = 15;
 
@@ -113,9 +114,12 @@ async function AgentLookup({ idStr }: { idStr: string }) {
         <span className={`rounded-[2px] border px-2 py-0.5 ${chip.className}`}>{chip.label}</span>
       </div>
 
-      {record ? (
+      {record && assetDecimals !== null ? (
         <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
-          <dt className="text-[var(--muted)]">Sponsors ({record.sponsors.length})</dt>
+          <dt className="flex items-center text-[var(--muted)]">
+            Backers ({record.sponsors.length})
+            <InfoTip text="Everyone who has vouched real USDG for this agent — their stake is what pays first if it defaults, never a lender's deposit." />
+          </dt>
           <dd className="break-all">
             {record.sponsors.length === 0 ? (
               "none"
@@ -123,22 +127,25 @@ async function AgentLookup({ idStr }: { idStr: string }) {
               <ul className="flex flex-col gap-1">
                 {record.sponsors.map((s) => (
                   <li key={s.sponsor}>
-                    {s.sponsor} — {s.amount.toString()} (raw units) @ {s.premiumBps}bps
+                    {s.sponsor} — {formatUnits(s.amount, assetDecimals)} USDG @ {s.premiumBps / 100}% fee
                   </li>
                 ))}
               </ul>
             )}
           </dd>
-          <dt className="text-[var(--muted)]">Line (delegatedIn)</dt>
-          <dd>{record.delegatedIn.toString()} (raw units)</dd>
+          <dt className="flex items-center text-[var(--muted)]">
+            Credit line
+            <InfoTip text="The total this agent could borrow right now, across every backer combined." />
+          </dt>
+          <dd>{formatUnits(record.delegatedIn, assetDecimals)} USDG</dd>
           <dt className="text-[var(--muted)]">Currently borrowed</dt>
-          <dd>{record.principalOut.toString()} (raw units)</dd>
+          <dd>{formatUnits(record.principalOut, assetDecimals)} USDG</dd>
           <dt className="text-[var(--muted)]">Open loan right now</dt>
           <dd>{record.activeLoan ? "yes" : "no"}</dd>
           <dt className="text-[var(--muted)]">Loans repaid</dt>
           <dd>{record.loansRepaid}</dd>
-          <dt className="text-[var(--muted)]">Volume repaid</dt>
-          <dd>{record.volumeRepaid.toString()} (raw units)</dd>
+          <dt className="text-[var(--muted)]">Total repaid so far</dt>
+          <dd>{formatUnits(record.volumeRepaid, assetDecimals)} USDG</dd>
         </dl>
       ) : (
         <p className="mt-6 text-[var(--muted)]">

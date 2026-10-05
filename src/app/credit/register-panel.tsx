@@ -8,6 +8,7 @@ import { AGENT_CREDIT_POOL_ABI } from "@/lib/credit/abi";
 import { CREDIT_IDENTITY_WRITE_ABI } from "@/lib/credit/identity-abi";
 import { useWalletAgent } from "@/app/wallet-agent";
 import { InfoTip } from "@/app/info-tip";
+import { ROBINHOOD_CHAIN_ID } from "@/lib/chains";
 
 const inputClass = "rounded border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm";
 const buttonClass = "rounded bg-[var(--ink)] px-4 py-2 text-sm text-[var(--bg)] disabled:opacity-50";
@@ -26,7 +27,12 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
   const { address, isConnected } = useAccount();
   const { agent } = useWalletAgent(address);
 
-  const { data: identityAddress } = useReadContract({ address: pool, abi: AGENT_CREDIT_POOL_ABI, functionName: "identity" });
+  const { data: identityAddress, isLoading: identityLoading, isError: identityErrored } = useReadContract({
+    address: pool,
+    abi: AGENT_CREDIT_POOL_ABI,
+    functionName: "identity",
+    chainId: ROBINHOOD_CHAIN_ID,
+  });
 
   const register = useWriteContract();
   const registerReceipt = useWaitForTransactionReceipt({ hash: register.data });
@@ -98,9 +104,24 @@ export function RegisterForCreditPanel({ pool }: { pool: Address }) {
       ) : newAgentId === null ? (
         <div className="mt-3 flex flex-col gap-2">
           {agent && <p className="text-xs text-[var(--muted)]">Registering will tag this id with your AUEVO handle, @{agent.handle}.</p>}
-          <button className={buttonClass} disabled={!identityAddress || register.isPending || registerReceipt.isLoading} onClick={() => register.writeContract({ address: identityAddress!, abi: CREDIT_IDENTITY_WRITE_ABI, functionName: "register", args: [agent ? `auevo:${agent.handle}` : ""] })}>
-            {register.isPending || registerReceipt.isLoading ? "Registering…" : "Register for credit"}
+          <button
+            className={buttonClass}
+            disabled={!identityAddress || register.isPending || registerReceipt.isLoading}
+            onClick={() =>
+              register.writeContract({
+                chainId: ROBINHOOD_CHAIN_ID,
+                address: identityAddress!,
+                abi: CREDIT_IDENTITY_WRITE_ABI,
+                functionName: "register",
+                args: [agent ? `auevo:${agent.handle}` : ""],
+              })
+            }
+          >
+            {identityLoading ? "Checking contract…" : register.isPending || registerReceipt.isLoading ? "Registering…" : "Register for credit"}
           </button>
+          {identityErrored && (
+            <p className="text-xs text-[var(--red)]">Couldn&apos;t read the pool&apos;s identity registry — check your wallet is on Robinhood Chain.</p>
+          )}
           {register.error && <p className="text-xs text-[var(--red)]">{register.error.message}</p>}
         </div>
       ) : (
