@@ -4,6 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import { getAgentById } from "@/lib/social/db";
 import { listSuggestedSkillPools, computeSkillWindow, type SuggestedSkillPool } from "@/lib/auevo/skill";
 import { submitSkillAttempt, SkillSubmitError, submitClaimAttempt, ClaimSubmitError } from "@/lib/auevo/submit";
+import { submitVirtualPortfolioAttempt, VirtualPortfolioSubmitError, VIRTUAL_PORTFOLIO_STARTING_BALANCE_USD, VIRTUAL_PORTFOLIO_FEE_BPS, VIRTUAL_PORTFOLIO_HORIZON_HOURS } from "@/lib/auevo/virtual-portfolio";
 import { EXECUTOR_ALLOWED_MODELS, type ExecutorModel } from "@/lib/auevo/executor-models";
 import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "@/app/proofs/spy";
@@ -359,6 +360,123 @@ export async function runPredictionChallenge(agentId: string): Promise<ExecutorR
     };
   } catch (err) {
     const message = err instanceof ClaimSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
+    await finishRun(supabase, runId, { status: "failed", transcript, error: message });
+    return { runId, status: "failed", proofEventId: null, summary: message };
+  }
+}
+
+function buildFinancialSystemPrompt(currentPrice: number, closesAtIso: string): string {
+  return [
+    "You are an AI agent attempting a verifiable AUEVO Financial challenge: a ONE-TIME allocation decision for a SIMULATED portfolio. This is a simulation only — no real money, wallet, or on-chain transaction is involved.",
+    `Starting simulated capital: $${VIRTUAL_PORTFOLIO_STARTING_BALANCE_USD.toLocaleString()}. The one asset available: SPY, currently $${currentPrice.toFixed(2)} USD.`,
+    `You choose what percentage of the capital to allocate to SPY (0-100%; the rest stays simulated cash). This single allocation is locked at today's price and settles ${VIRTUAL_PORTFOLIO_HORIZON_HOURS}h from now (${closesAtIso}, UTC) against the real price then, net of a fixed ${VIRTUAL_PORTFOLIO_FEE_BPS / 100}% simulated fee on both the entry and exit trade.`,
+    "You are graded against a 100%-allocated (fully invested, buy-and-hold) benchmark over the exact same window and fee model — you only beat it by correctly judging whether to hold MORE or LESS than full exposure. Call submit_allocation with your final percentage.",
+  ].join(" ");
+}
+
+const SUBMIT_ALLOCATION_TOOL: Anthropic.Tool = {
+  name: "submit_allocation",
+  description: "Submit your final allocation percentage into SPY for this simulated portfolio.",
+  input_schema: {
+    type: "object",
+    properties: {
+      allocationPct: { type: "number", description: "0-100: percent of simulated capital to allocate to SPY.", minimum: 0, maximum: 100 },
+      reasoning: { type: "string", description: "One or two sentences on your allocation choice." },
+    },
+    required: ["allocationPct"],
+  },
+};
+
+/**
+ * Runs one Financial attempt end to end for a hosted agent: a single
+ * allocation decision on AUEVO's virtual portfolio (virtual-portfolio.ts)
+ * — the first release's stand-in for the real, on-chain Financial Agent
+ * League, which needs capital and identity a hosted agent doesn't have.
+ * Like Prediction, "completed" here means the allocation was committed,
+ * not that it will win — the Proof Event settles later via the
+ * settle-virtual-portfolios cron.
+ */
+export async function runFinancialChallenge(agentId: string): Promise<ExecutorRunOutcome> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new ExecutorError("Supabase is not configured on the server");
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new ExecutorError("The executor is not configured on the server (no ANTHROPIC_API_KEY)");
+
+  const agent = await getAgentById(agentId);
+  if (!agent || agent.retired_at) throw new ExecutorError("Unknown or retired agent");
+  if (!agent.is_hosted) throw new ExecutorError("Only a hosted (\"Create an agent\") agent can be run by AUEVO's own executor");
+
+  const prices = await fetchTokenPricesUsd(SPY_CHAIN_ID, [SPY_ADDRESS]);
+  const currentPrice = prices.get(SPY_ADDRESS.toLowerCase());
+  if (!currentPrice) throw new ExecutorError("No live SPY price available right now — try again later");
+
+  const closesAt = new Date(Date.now() + VIRTUAL_PORTFOLIO_HORIZON_HOURS * 60 * 60 * 1000);
+  const model = await resolveExecutorModel(agent);
+  const runId = await createRunRow(supabase, agentId, "financial_performance", model);
+
+  const transcript: TranscriptEntry[] = [];
+  const anthropic = new Anthropic({ apiKey });
+  const system = buildFinancialSystemPrompt(currentPrice, closesAt.toISOString());
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: "Make your allocation decision now by calling submit_allocation." },
+  ];
+
+  let finalAllocation: number | null = null;
+  let failureReason: string | null = null;
+
+  try {
+    for (let round = 0; round < MAX_TOOL_ROUNDS && finalAllocation === null; round++) {
+      const response = await anthropic.messages.create({ model, max_tokens: MAX_TOKENS, system, tools: [SUBMIT_ALLOCATION_TOOL], messages });
+      transcript.push({ role: "assistant", content: response.content });
+      messages.push({ role: "assistant", content: response.content });
+
+      const toolUses = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+      if (toolUses.length === 0) {
+        failureReason = "Model returned no tool call";
+        break;
+      }
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      for (const use of toolUses) {
+        if (use.name === "submit_allocation") {
+          const input = use.input as { allocationPct?: unknown };
+          const pct = Number(input.allocationPct);
+          if (Number.isFinite(pct) && pct >= 0 && pct <= 100) finalAllocation = pct;
+          else failureReason = "submit_allocation called with an invalid percentage";
+          toolResults.push({ type: "tool_result", tool_use_id: use.id, content: "Received." });
+        } else {
+          toolResults.push({ type: "tool_result", tool_use_id: use.id, content: "Unknown tool", is_error: true });
+        }
+      }
+      transcript.push({ role: "user", content: toolResults });
+      messages.push({ role: "user", content: toolResults });
+    }
+    if (finalAllocation === null && !failureReason) failureReason = "Ran out of tool-call rounds without a final answer";
+  } catch (err) {
+    failureReason = err instanceof Error ? err.message : "Model call failed";
+  }
+
+  if (finalAllocation === null) {
+    await finishRun(supabase, runId, { status: "failed", transcript, error: failureReason });
+    return { runId, status: "failed", proofEventId: null, summary: failureReason ?? "Run failed" };
+  }
+
+  try {
+    const { attempt, proofEventId } = await submitVirtualPortfolioAttempt({
+      supabase,
+      agentId,
+      topic: "financial",
+      body: `Allocated ${finalAllocation}% of a $${VIRTUAL_PORTFOLIO_STARTING_BALANCE_USD.toLocaleString()} simulated portfolio to SPY at $${currentPrice.toFixed(2)}.`,
+      allocationPct: finalAllocation,
+    });
+    await finishRun(supabase, runId, { status: "completed", transcript, proofEventId });
+    return {
+      runId,
+      status: "completed",
+      proofEventId,
+      summary: `Committed (simulation): ${attempt.allocationPct}% allocated to SPY at $${currentPrice.toFixed(2)} — settles automatically in ${VIRTUAL_PORTFOLIO_HORIZON_HOURS}h.`,
+    };
+  } catch (err) {
+    const message = err instanceof VirtualPortfolioSubmitError ? err.message : err instanceof Error ? err.message : "Submission failed";
     await finishRun(supabase, runId, { status: "failed", transcript, error: message });
     return { runId, status: "failed", proofEventId: null, summary: message };
   }

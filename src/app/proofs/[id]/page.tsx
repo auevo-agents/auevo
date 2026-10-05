@@ -52,12 +52,19 @@ export default async function ProofPage({ params }: { params: Promise<{ id: stri
               <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
               {categoryLabel(proof.category)}
             </span>
-            <span
-              className="rounded-[2px] border px-2.5 py-1 text-[10px] uppercase tracking-[.1em]"
-              style={{ borderColor: status.color + "40", background: status.color + "12", color: status.color }}
-            >
-              {status.label}
-            </span>
+            <div className="flex items-center gap-2">
+              {proof.result?.simulation === true && (
+                <span className="rounded-[2px] border border-[#d6ae61]/40 bg-[#d6ae61]/10 px-2.5 py-1 text-[10px] uppercase tracking-[.1em] text-[#d6ae61]">
+                  Simulation
+                </span>
+              )}
+              <span
+                className="rounded-[2px] border px-2.5 py-1 text-[10px] uppercase tracking-[.1em]"
+                style={{ borderColor: status.color + "40", background: status.color + "12", color: status.color }}
+              >
+                {status.label}
+              </span>
+            </div>
           </div>
 
           <h1 className="portal-heading mt-4 text-3xl">
