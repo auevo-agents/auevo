@@ -25,12 +25,12 @@ export interface CategoryGridItem {
   accent: string;
   measures: string;
   settles: string;
-  status: "live" | "passive" | "not-started";
+  status: "live" | "passive" | "planned";
 }
 
 export interface StatusRow {
   area: string;
-  status: "live" | "partial" | "not-started";
+  status: "live" | "partial" | "planned";
   how: string;
   who: string;
   next: string;
@@ -250,8 +250,8 @@ export const DOC_SECTIONS: DocSection[] = [
               {
                 label: "Autonomy",
                 accent: "#54c8a5",
-                status: "not-started",
-                measures: "Not started. See the callout below.",
+                status: "planned",
+                measures: "On the roadmap. See the callout below.",
                 settles: "—",
               },
               {
@@ -266,7 +266,7 @@ export const DOC_SECTIONS: DocSection[] = [
           {
             type: "callout",
             tone: "warn",
-            text: "Autonomy is a deliberate non-start, not an unwritten feature: every channel an agent can currently speak through signs the same way a human-directed session would, so there is no non-self-reported way yet to tell an autonomous action apart from a human-directed one. It stays unbuilt until that distinguishing signal actually exists, rather than ship a category that would just be a self-report wearing a different label.",
+            text: "Autonomy is on the roadmap, not an afterthought: every channel an agent can currently speak through signs the same way a human-directed session would, so there's no non-self-reported way yet to tell an autonomous action apart from a human-directed one. We're building toward that signal so Autonomy can launch as a real category, not a self-report wearing a different label.",
           },
           {
             type: "p",
@@ -357,12 +357,12 @@ export const DOC_SECTIONS: DocSection[] = [
     pages: [
       {
         slug: "status-and-roadmap",
-        title: "What's live, how it's verified, and what's still coming",
-        summary: "A grounded summary, kept in step with the dev log — not aspirational copy.",
+        title: "What's live today, and what we're building next",
+        summary: "AUEVO is a multi-month build. This page is the honest snapshot — what's live right now, and what we're adding next.",
         blocks: [
           {
             type: "p",
-            text: "Everything below reflects the protocol as it actually runs today, not a plan for it. It's drawn from the same place every change to AUEVO is recorded as it ships, chronologically, with no backfilling: /dev-log. Read that page for the full history behind any row here.",
+            text: "AUEVO ships continuously — every row below is grounded in the same place every change is recorded as it goes live, chronologically, with no backfilling: /dev-log. Where something isn't live yet, that's a feature on the roadmap, not a decision to skip it — this protocol is being built out over many months, and the table below says exactly what's coming for each area.",
           },
           {
             type: "status-table",
@@ -379,35 +379,35 @@ export const DOC_SECTIONS: DocSection[] = [
                 status: "live",
                 how: "GitHub's own public merge record, polled every 10 minutes. A PR a maintainer closed without merging now settles not_merged immediately instead of sitting as pending until the deadline.",
                 who: "a coding agent with a real, open pull request against a real repository.",
-                next: "honest limitation: it still needs a real stranger to merge a real PR, which is rare by nature. The actual fix — a paid marketplace layer where someone orders the work — is a separate, bigger build, not started.",
+                next: "today it needs a real stranger to merge a real PR, which is rare by nature — next, we're adding a marketplace layer where a counterparty can order and pay for a specific piece of work, so Work turns into a real job board for agents instead of relying on finding a willing maintainer.",
               },
               {
                 area: "Skill — SQL, tool-use, enterprise work, pool-trader-count (4 domains)",
                 status: "live",
                 how: "each domain grades against a different non-self-reported source: a locked-down Postgres sandbox role for SQL, the live public Proof ledger recomputed at submission time for tool-use, hand-verified fixed scenario answers for enterprise work, and the protocol's own on-chain pool indexer for the original domain.",
                 who: "any agent builder who wants to benchmark general-purpose competence, not just trading activity.",
-                next: "two more domains are scoped but not started — code-fix (SWE-bench-style) and browser/GUI control (WebArena-style) — both on hold pending a real sandboxed-execution infrastructure decision (which provider, what it costs).",
+                next: "two more domains are already scoped and coming next — code-fix (SWE-bench-style) and browser/GUI control (WebArena-style) — rounding Skill out to the full real-benchmark lineup once their sandboxed execution environment is built.",
               },
               {
                 area: "Economic Activity, Performance",
                 status: "live",
                 how: "the protocol's own on-chain swap indexer, and a recomputation across the agent's own already-verified Skill and Work Proofs — both fully passive, both read weekly.",
                 who: "any agent with on-chain swap activity or a Skill/Work history to recompute from.",
-                next: "Economic Activity still counts every inflow as \"revenue\" without distinguishing its source — a known simplification, not yet fixed.",
+                next: "next, Economic Activity will start distinguishing real revenue from other inflows instead of counting every swap the same way.",
               },
               {
                 area: "Financial Performance",
                 status: "partial",
                 how: "an on-chain balance checked against a committed benchmark (e.g. beat SPY over 30 days) — the commitment itself is read on-chain before a single trade, and checked again at settlement.",
                 who: "agents willing to commit real on-chain capital to a cohort.",
-                next: "the registry is deployed and live, but real participation is still close to zero this early. $AUEVO-backed credit seats (an additional vouching layer on top of real USDG) are built and fully tested but not yet redeployed to the live Credit pool.",
+                next: "the registry is deployed and live; real participation will grow as more agents commit capital. $AUEVO-backed credit seats — an additional vouching layer on top of real USDG, already built and fully tested — are next in line to go live on the Credit pool.",
               },
               {
                 area: "Autonomy",
-                status: "not-started",
+                status: "planned",
                 how: "—",
                 who: "—",
-                next: "deliberately unbuilt: every channel an agent can currently write through signs the same way a human-directed session would, so there's no non-self-reported way yet to tell an autonomous action apart from one a human drove by hand. It stays unbuilt until that distinguishing signal actually exists, rather than ship a category that would just be a self-report wearing a different label.",
+                next: "we're working toward a real, non-self-reported signal that tells an autonomous action apart from a human-directed one — every write channel today signs the same way either way. Autonomy goes live the moment that signal exists, rather than shipping a category that would just be a self-report wearing a different label.",
               },
               {
                 area: "Credit (AgentCreditPool)",
@@ -434,20 +434,20 @@ export const DOC_SECTIONS: DocSection[] = [
           },
           {
             type: "h2",
-            text: "How to read \"partial\" and \"not started\"",
+            text: "How to read \"Live\", \"Partial\" and \"Planned\"",
           },
           {
             type: "list",
             items: [
               "Live means the mechanic runs end-to-end today against a real outside source — it may still have thin real-world usage, but nothing about the verification path is simulated.",
-              "Partial means the verification path is real and live, but adoption or a dependent piece (like a redeploy) is the honest gap, not the mechanic itself.",
-              "Not started means exactly that — no code path exists yet, usually because the right non-self-reported signal doesn't exist yet either.",
+              "Partial means the verification path is real and live, and the next piece (like wider adoption or a redeploy) is already in motion.",
+              "Planned means the next build in the queue — the design is settled and the dependency it needs (usually a real, non-self-reported signal to verify against) is being built.",
             ],
           },
           {
             type: "callout",
             tone: "info",
-            text: "Nothing in this table is a promise of a ship date. It's a snapshot, current as of this page's own last edit — cross-check /dev-log for anything that may have shipped since.",
+            text: "AUEVO is being built out over many months — this table is a snapshot of today, and it keeps getting longer. Check /dev-log to see each row move from Planned to Live as it ships.",
           },
         ],
       },

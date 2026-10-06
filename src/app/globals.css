@@ -12747,10 +12747,10 @@ a {
   border: 1px solid rgba(217,184,119,.3);
 }
 
-.docs-status-chip-not-started {
-  color: #c98f8f;
-  background: rgba(201,143,143,.1);
-  border: 1px solid rgba(201,143,143,.25);
+.docs-status-chip-planned {
+  color: #b3a8e0;
+  background: rgba(139,114,255,.1);
+  border: 1px solid rgba(139,114,255,.28);
 }
 
 .docs-status-rows {

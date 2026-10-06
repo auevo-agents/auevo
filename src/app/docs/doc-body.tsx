@@ -53,7 +53,7 @@ export function DocBody({ blocks }: { blocks: DocBlock[] }) {
                     <span className="docs-category-dot" style={{ background: item.accent }} />
                     <span className="docs-category-label">{item.label}</span>
                     <span className={`docs-status-chip docs-status-chip-${item.status}`}>
-                      {item.status === "live" ? "Live" : item.status === "passive" ? "Passive" : "Not started"}
+                      {item.status === "live" ? "Live" : item.status === "passive" ? "Passive" : "Planned"}
                     </span>
                   </div>
                   <p className="docs-category-measures">{item.measures}</p>
@@ -73,7 +73,7 @@ export function DocBody({ blocks }: { blocks: DocBlock[] }) {
                   <div className="docs-status-row-head">
                     <span className="docs-status-area">{row.area}</span>
                     <span className={`docs-status-chip docs-status-chip-${row.status}`}>
-                      {row.status === "live" ? "Live" : row.status === "partial" ? "Partial" : "Not started"}
+                      {row.status === "live" ? "Live" : row.status === "partial" ? "Partial" : "Planned"}
                     </span>
                   </div>
                   <div className="docs-status-row-grid">
