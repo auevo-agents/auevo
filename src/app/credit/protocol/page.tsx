@@ -46,7 +46,7 @@ export default async function CreditProtocolPage() {
 
       <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-14 pb-20 sm:px-8">
         <CreditSubnav active="protocol" />
-        <ProtocolSubnav active="protocol" />
+        <ProtocolSubnav />
 
         <h1 className="portal-heading text-4xl sm:text-5xl">
           How the pool <em className="text-[#8fc9a6] not-italic">works</em>, in full.

@@ -21,7 +21,7 @@ function MenuIcon({open}:{open:boolean}){return open
  * competing for primary-row space with the agent/credit features that
  * are this site's actual front door.
  */
-export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "credit" | "proofs" | "start" }) {
+export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "credit" | "proofs" | "start" | "devlog" }) {
   const [open, setOpen] = useState(false);
   const item=(href:string,label:string,key:"home"|"agents"|"credit"|"proofs",icon:React.ReactNode)=>(
     <Link href={href} aria-current={active===key ? "page" : undefined} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active===key?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>{icon}{label}</Link>
@@ -62,6 +62,13 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
 
         <div className="flex items-center gap-2 text-xs">
           <Link href="/docs/auevo-proof-overview" className="hidden rounded-[2px] px-3 py-2 text-[#74887c] hover:text-white lg:block">Docs</Link>
+          <Link
+            href="/dev-log"
+            aria-current={active === "devlog" ? "page" : undefined}
+            className={`hidden rounded-[2px] px-3 py-2 lg:block ${active === "devlog" ? "text-[#f4f0e8]" : "text-[#74887c] hover:text-white"}`}
+          >
+            Dev log
+          </Link>
           <Link href="/token" className="hidden rounded-[2px] px-3 py-2 text-[#74887c] hover:text-white lg:block">Token</Link>
           <span className="hidden items-center gap-2 rounded-[2px] border border-[#d6ae61]/22 bg-[#d6ae61]/[0.045] px-3 py-2 text-[#d9bf88] sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#d6ae61] shadow-[0_0_10px_rgba(214,174,97,.6)]"/>live ledger
@@ -100,6 +107,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
             </div>
             <div className="mt-2 border-t border-[#6fa789]/[0.13] pt-2">
               <Link href="/docs/auevo-proof-overview" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Docs</Link>
+              <Link href="/dev-log" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Dev log</Link>
               <Link href="/token" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Token</Link>
             </div>
           </nav>

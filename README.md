@@ -151,9 +151,8 @@ docs/
 
 ## Dev log
 
-Every real change gets a dated entry, by hand, as it ships — never backfilled. Platform-wide:
-[`auevo.io/dev-log`](https://auevo.io/dev-log) (`src/lib/dev-log.ts`). AgentCreditPool has its own, narrower one:
-[`auevo.io/credit/protocol/dev-log`](https://auevo.io/credit/protocol/dev-log) (`src/lib/credit/dev-log.ts`).
+One dated changelog for the whole platform, linked from the header: [`auevo.io/dev-log`](https://auevo.io/dev-log)
+(`src/lib/dev-log.ts`). Every real change gets an entry, by hand, as it ships — never backfilled.
 
 ## Honest risks
 
