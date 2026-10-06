@@ -22,6 +22,12 @@ const VERDICT_CLASS: Record<string, string> = {
   unverifiable: "border-white/[0.07] text-[#70877a]",
 };
 
+/** A still-'pending' commitment shows the PR's own live GitHub state instead of a label that never changes until the deadline — same verdict, a truer chip. */
+function statusLabel(verdict: string, prState: "open" | "closed" | null): string {
+  if (verdict === "pending" && prState === "open") return "open — awaiting maintainer";
+  return VERDICT_LABEL[verdict] ?? verdict;
+}
+
 export default async function AuevoWorkPage() {
   const commitments = await listRecentWorkCommitments(100);
 
@@ -117,7 +123,7 @@ export default async function AuevoWorkPage() {
                   {new Date(c.deadline).toLocaleDateString()}
                 </span>
                 <span className={"w-fit rounded-[2px] border px-2 py-1 text-[9px] uppercase tracking-[.1em] " + VERDICT_CLASS[c.verdict]}>
-                  {VERDICT_LABEL[c.verdict]}
+                  {statusLabel(c.verdict, c.prState)}
                 </span>
               </a>
             ))}

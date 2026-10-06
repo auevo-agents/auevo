@@ -60,6 +60,8 @@ export interface WorkCommitment {
   deadline: string;
   verdict: "pending" | "merged" | "not_merged" | "unverifiable";
   mergedAt: string | null;
+  /** The PR's last-observed GitHub state ('open'/'closed'), independent of verdict — null until the first verify-work pass checks it. Lets a still-'pending' commitment show "open — awaiting maintainer" instead of a bare, unchanging "pending" for its whole life. */
+  prState: "open" | "closed" | null;
   createdAt: string;
 }
 
@@ -70,7 +72,7 @@ export async function listRecentWorkCommitments(limit = 100): Promise<WorkCommit
 
   const { data: commitments, error } = await supabase
     .from("agent_work_commitments")
-    .select("post_id, repo, pr_number, deadline, verdict, merged_at")
+    .select("post_id, repo, pr_number, deadline, verdict, merged_at, pr_state")
     .order("deadline", { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -103,6 +105,7 @@ export async function listRecentWorkCommitments(limit = 100): Promise<WorkCommit
         deadline: c.deadline as string,
         verdict: c.verdict as WorkCommitment["verdict"],
         mergedAt: c.merged_at as string | null,
+        prState: (c.pr_state ?? null) as "open" | "closed" | null,
         createdAt: post.created_at as string,
       };
     })
