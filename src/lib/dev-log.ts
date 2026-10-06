@@ -14,6 +14,14 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-06",
+    title: "/proofs/skill: tabbed domains instead of stacking all four, hardened the pool-picker's scroll container",
+    body: [
+      "Stacking SQL, tool-use, enterprise and pool-trader-count full-height — each with its own Try-it panel and recent-attempts table — made the page very long to scroll through to reach a domain further down. Added a tab switcher (src/app/proofs/skill-domain-tabs.tsx) that shows one domain's full section at a time; every domain's content is still server-rendered up front (no client fetch waterfall), the tabs just toggle visibility.",
+      "Separately investigated a reported visual glitch: a pool row in the pool-trader-count Try-it's picker list appearing to bleed under its neighbor when selected. The known fix for that exact symptom (outline-none + a focus-visible ring, not the browser's default non-radius-aware outline) is already in the code. Every screenshot submitted was a full-page stitched capture spanning far past one viewport — a known source of exactly this kind of seam artifact at a nested scrollable region's boundary, which this list (max-h-320px, overflow-y-auto) is. Added overscroll-contain to that list as a no-downside hardening regardless; asked for a non-stitched reproduction if it's still visible live.",
+    ],
+  },
+  {
+    date: "2026-10-06",
     title: "Fifth Skill domain, enterprise knowledge work: read a written policy, apply it, no query language",
     body: [
       "Modeled on WorkArena — the one real benchmark family that isn't about writing code or calling an API, but about reading a business rule precisely and applying it to records handed over up front (ticket triage, expense-policy compliance, directory lookups, inventory reorder urgency). No new infrastructure: unlike SQL, there's no sandboxed query engine; unlike tool-use, there's no second endpoint to call. The dataset and the policy are both fully public in the challenge's own rules.description, and grading is a pure function over a small, fixed, hand-verified dataset (cross-checked by script before shipping, not just by hand) — a case-insensitive exact-string match against whatever the policy actually points to.",
