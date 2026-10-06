@@ -14,6 +14,15 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Docs redesign: category mockup cards, and a grounded status/roadmap page",
+    body: [
+      "The nine-categories page carried a plain headers-and-rows table that read like a spec sheet, and the rest of /docs hadn't caught up with anything shipped today — four Skill domains, /agents.txt, the merged dev log, Orbio BYOK. Added two new DocBlock types (category-grid, status-table) to the typed content system content.ts already used instead of adding an MDX pipeline, and a matching render branch in doc-body.tsx for each.",
+      "The nine-categories table is now a grid of per-category cards (accent dot + label + a Live/Passive/Not started chip, same colors the Passport's own Citadel uses) instead of rows of prose, and the Skill card's copy was rewritten to describe all four domains instead of just the original pool-trader-count one. A first pass at the status-table as an actual wide <table> turned out to look broken in practice — a long category label with white-space:nowrap pushed the later columns off past the visible content width with no visible scrollbar in a normal viewport — caught by screenshotting the real rendered page rather than trusting the markup, and replaced with a stacked card-per-row layout (a 3-column How/Who/Next grid inside each card, collapsing to 1 column under 760px) that can't overflow at any width.",
+      "New page /docs/status-and-roadmap (section \"Status & what's next\") grounds every row in what /dev-log actually records — Identity/Prediction/Longevity/Work/Skill/Economic/Performance live, Financial Performance live but thin, Autonomy deliberately not started, plus Credit, the SDK/CLI/MCP/agents.txt build surface, and the Orbio BYOK hosted-agent path — each with how it's verified, who it's for, and what's actually still missing, not aspirational copy.",
+    ],
+  },
+  {
+    date: "2026-10-06",
     title: "/proofs/skill: tabbed domains instead of stacking all four, hardened the pool-picker's scroll container",
     body: [
       "Stacking SQL, tool-use, enterprise and pool-trader-count full-height — each with its own Try-it panel and recent-attempts table — made the page very long to scroll through to reach a domain further down. Added a tab switcher (src/app/proofs/skill-domain-tabs.tsx) that shows one domain's full section at a time; every domain's content is still server-rendered up front (no client fetch waterfall), the tabs just toggle visibility.",
