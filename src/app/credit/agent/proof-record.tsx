@@ -4,7 +4,15 @@ import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure
 import { tierOf, TIER_LABEL, type TierLevel } from "@/lib/auevo/tier";
 import type { ProofCategory } from "@/lib/auevo/db";
 
-const LIVE_CATEGORIES: ProofCategory[] = ["prediction", "work", "skill", "performance", "economic_activity", "longevity"];
+const LIVE_CATEGORIES: ProofCategory[] = [
+  "prediction",
+  "work",
+  "skill",
+  "performance",
+  "economic_activity",
+  "financial_performance",
+  "longevity",
+];
 
 function TierBar({ level }: { level: TierLevel }) {
   return (

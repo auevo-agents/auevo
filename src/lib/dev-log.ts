@@ -14,6 +14,14 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Credit backer view: surfaced Financial Performance as its own tracked category",
+    body: [
+      "The backer-facing agent panel at /credit/agent (proof-record.tsx) hardcodes which Proof categories it shows via LIVE_CATEGORIES — it was missing financial_performance entirely, so the one category that most directly answers \"can this agent actually trade\" never showed up where someone decides whether to back an agent with real capital. Added it to the list; categoryLabel/categoryAccent in reputation-structure.tsx already had a \"Financial\" entry ready, and tierOf() already returns tier 0 (\"Unproven\") safely for a category with zero verified Proofs, so this is purely additive — no new runtime path, no risk of a missing-label crash.",
+      "identity was deliberately left out of this same list: the component's own copy already talks about \"the credit pool's identity registry\" as a separate on-chain namespace from AUEVO's Proof categories, and adding a Proof category literally named \"identity\" next to that text would read as the same thing when it isn't.",
+    ],
+  },
+  {
+    date: "2026-10-06",
     title: "Nav audit: merged the two dev logs, surfaced Playzone and the token scanner, removed a dead page",
     body: [
       "Mapped every page.tsx against every Link in the header, footer and every subnav to find what's actually reachable versus orphaned. Credit had its own separate, narrower dev log nested under /credit/protocol/dev-log — merged its 4 entries into this one log and deleted the duplicate, then added \"Dev log\" to the main header (desktop + mobile) so it's reachable from anywhere instead of buried in Credit's own subnav.",
