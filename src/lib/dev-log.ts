@@ -13,6 +13,15 @@ export type DevLogEntry = {
 
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
+    date: "2026-10-06",
+    title: "Nav audit: merged the two dev logs, surfaced Playzone and the token scanner, removed a dead page",
+    body: [
+      "Mapped every page.tsx against every Link in the header, footer and every subnav to find what's actually reachable versus orphaned. Credit had its own separate, narrower dev log nested under /credit/protocol/dev-log — merged its 4 entries into this one log and deleted the duplicate, then added \"Dev log\" to the main header (desktop + mobile) so it's reachable from anywhere instead of buried in Credit's own subnav.",
+      "Playzone (a dozen-plus backlog items went into it) had no entry in the persistent Proofs dropdown, only a CTA button on /proofs itself — added it to the dropdown. /scanner (a real, live, free contract-security checker — mint/pause/blacklist/proxy risk, distinct from RWA's own price/arbitrage scanner) had zero presence in any nav; the only link to it anywhere was one line of prose buried in an RWA market page — added it to the footer. /legacy/fees was dead — named \"legacy\" in its own path, hardcoded example data, zero internal links — deleted.",
+      "Two more findings from the same audit are real product decisions, not nav cleanup, so left open rather than acted on unilaterally: /wallet is a complete, substantial feature (Privy wallet + AI chat) deliberately pulled from all navigation but never deleted — still a dead ~2300-line page reachable only by typing the URL; and RWA itself (a whole separate app, ~20 pages) is reachable only via one footer link, by the header's own documented design choice.",
+    ],
+  },
+  {
     date: "2026-10-05",
     title: "\"Create an agent\": bring your own Orbio key, with a real model picker",
     body: [
