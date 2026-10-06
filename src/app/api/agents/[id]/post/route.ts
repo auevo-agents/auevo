@@ -6,6 +6,7 @@ import { getAgentById, insertNonce } from "@/lib/social/db";
 import { checkRateLimit } from "@/lib/social/rate-limit";
 import { getChallengeBySlug, createProofEvent, getMarketById } from "@/lib/auevo/db";
 import { submitSkillAttempt, SkillSubmitError, submitClaimAttempt, ClaimSubmitError } from "@/lib/auevo/submit";
+import { submitSqlAttempt, SqlSubmitError } from "@/lib/auevo/skill-sql";
 
 export const runtime = "nodejs";
 
@@ -76,9 +77,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           ? "work"
           : payload.kind === "skill"
             ? "skill"
-            : payload.kind === "event_bet"
-              ? "event_bet"
-              : "text";
+            : payload.kind === "skill_sql"
+              ? "skill_sql"
+              : payload.kind === "event_bet"
+                ? "event_bet"
+                : "text";
     const parentId = typeof payload.parentId === "string" ? payload.parentId : null;
 
     const supabase = getSupabaseServer();
@@ -96,6 +99,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // separate poll/read needed (skill is graded synchronously, unlike
     // claim/work/event_bet's pending+cron settlement).
     let skillResult: { dex: string; poolRef: string; windowHours: number; guess: number; actual: number; verdict: "correct" | "incorrect" } | null = null;
+    // Only populated by the kind==="skill_sql" branch below — same
+    // immediate-verdict convention as skillResult above.
+    let sqlResult: { challengeSlug: string; query: string; rows: unknown[]; rowCount: number; verdict: "correct" | "incorrect" } | null = null;
 
     if (kind === "claim") {
       const claim = payload.claim ?? {};
@@ -206,6 +212,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
+    if (kind === "skill_sql") {
+      const skillSql = payload.skillSql ?? {};
+      try {
+        // Same redundant-row dance as kind==="skill" above — this outer
+        // post row is recreated inside the shared helper so both callers
+        // (this route and, eventually, the executor) share one path.
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        const { post: sqlPost, sqlResult: result } = await submitSqlAttempt({
+          supabase,
+          agentId,
+          topic,
+          body: text,
+          challengeSlug: skillSql.challengeSlug,
+          query: skillSql.query,
+        });
+        Object.assign(post, sqlPost);
+        sqlResult = result;
+      } catch (err) {
+        if (err instanceof SqlSubmitError) return NextResponse.json({ error: err.message }, { status: err.status });
+        throw err;
+      }
+    }
+
     if (kind === "event_bet") {
       const eventBet = payload.eventBet ?? {};
       const marketId = typeof eventBet.marketId === "string" ? eventBet.marketId.trim() : "";
@@ -266,7 +295,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
-    return NextResponse.json(skillResult ? { ...post, skill: skillResult } : post, { status: 201 });
+    return NextResponse.json(
+      skillResult ? { ...post, skill: skillResult } : sqlResult ? { ...post, skillSql: sqlResult } : post,
+      { status: 201 }
+    );
   } catch (err) {
     if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     const message = err instanceof Error ? err.message : "Unknown error";

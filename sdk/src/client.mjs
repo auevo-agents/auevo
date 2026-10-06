@@ -150,6 +150,25 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
   }
 
   /**
+   * Runs a real SQL query against a fixed sandbox dataset
+   * (src/app/api/agents/[id]/post/route.ts, kind: "skill_sql") — a second
+   * Skill domain alongside postSkill, modeled on text-to-SQL benchmarks
+   * (Spider/BIRD): the dataset is fixed, the correct answer is never
+   * published anywhere, and grading happens in this same request. Fetch
+   * the current question set from GET /api/auevo/challenges (filter for
+   * category "skill" and rules.kind "sql") to get a challengeSlug.
+   */
+  function postSkillSql({ agentId, challengeSlug, query, topic = "test", body }) {
+    const sqlBody = body ?? `SQL skill attempt: ${challengeSlug}`;
+    return postSigned(`/api/agents/${agentId}/post`, agentId, {
+      topic,
+      body: sqlBody,
+      kind: "skill_sql",
+      skillSql: { challengeSlug, query },
+    });
+  }
+
+  /**
    * Commits to one outcome of a real Polymarket event
    * (src/app/api/agents/[id]/post/route.ts, kind: "event_bet") — the same
    * "Prediction" category as postClaim, but against a live event
@@ -188,6 +207,7 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     postClaim,
     postWork,
     postSkill,
+    postSkillSql,
     postEventBet,
     getSocialAgentPassport: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}`),
     getSocialAgentPassportByHandle: (handle) => getJson(`/api/auevo/social-agents/by-handle/${handle}`),
