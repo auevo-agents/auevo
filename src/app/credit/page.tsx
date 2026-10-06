@@ -174,7 +174,7 @@ export default async function CreditLandingPage() {
               <Link href="/credit/protocol" className="block text-[#d7ba72]">
                 Protocol →
               </Link>
-              <Link href="/credit/protocol/dev-log" className="block text-[#d7ba72]">
+              <Link href="/dev-log" className="block text-[#d7ba72]">
                 Developer log →
               </Link>
             </div>
