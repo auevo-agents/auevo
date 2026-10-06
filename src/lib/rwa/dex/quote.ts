@@ -14,7 +14,7 @@ import { buildPoolKey, poolId, type PoolKey } from "./pool-key";
 
 /**
  * Route discovery across both Uniswap versions live on Robinhood Chain —
- * RWA_SPEC.md Phase 2's "SwapPanel: выбирает лучший из v3 и v4 маршрутов".
+ * RWA_SPEC.md Phase 2's "SwapPanel: picks the best of the v3 and v4 routes".
  * No assumption about which version a given pair actually uses: v3 has
  * been the only option for memecoin pools so far, but HyperDex's own
  * research (RWA_SPEC.md section 2) found RWA/USDG liquidity specifically

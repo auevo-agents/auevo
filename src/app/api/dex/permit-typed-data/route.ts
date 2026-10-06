@@ -10,7 +10,7 @@ export const maxDuration = 15;
 
 /**
  * The EIP-712 payload for the one-time-per-token Permit2 signature —
- * RWA_SPEC.md phase 2's "подпись permit" step. Computed server-side so
+ * RWA_SPEC.md phase 2's "permit signature" step. Computed server-side so
  * `@uniswap/permit2-sdk` (and the `ethers` it pulls in) never has to ship
  * to the browser: the client only ever sees plain JSON to hand straight
  * to wagmi's `useSignTypedData`, and only ever runs viem/wagmi itself.

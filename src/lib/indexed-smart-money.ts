@@ -110,7 +110,7 @@ export function aggregateIndexedWallets(
 }
 
 /**
- * RWA_SPEC.md Phase 6's "лидерборд по акциям" — `aggregateIndexedWallets`
+ * RWA_SPEC.md Phase 6's "stock leaderboard" — `aggregateIndexedWallets`
  * above is untouched (still ETH-only, still what the memecoin Smart Money
  * page reads). This is the USD/multi-quote-asset sibling for the RWA
  * scanner's Smart Money tab: same recipient-not-sender attribution (see

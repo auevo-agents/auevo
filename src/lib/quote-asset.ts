@@ -1,7 +1,7 @@
 /**
  * A recognized "quote leg" for USD-denominated PnL/position math
  * (wallet-pnl.ts, wallet-positions.ts, indexed-smart-money.ts) — RWA_SPEC.md
- * Phase 6's "Обобщить котируемую ногу: WETH → любая из {USDG, USDC, WETH}".
+ * Phase 6's "Generalize the quote leg: WETH → any of {USDG, USDC, WETH}".
  *
  * `usdPrice` is resolved ahead of time by the caller (see
  * rwa/quote-assets.ts for Robinhood Chain's actual resolver) — these

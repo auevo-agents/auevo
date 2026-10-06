@@ -161,9 +161,9 @@ export interface BuiltSwap {
 
 /**
  * The platform fee is taken from the swap's OUTPUT via `PAY_PORTION` — the
- * exact router command RWA_SPEC.md phase 2 names ("отдельной командой
- * роутера (PAY_PORTION/transfer)") — not from the input as that same
- * sentence's own wording ("с входного токена") suggested. Verified against
+ * exact router command RWA_SPEC.md phase 2 names ("a separate router
+ * command (PAY_PORTION/transfer)") — not from the input as that same
+ * sentence's own wording ("from the input token") suggested. Verified against
  * universal-router-sdk's actual source (entities/actions/uniswap.ts): its
  * `flatFee` option (an input-side-shaped fixed TRANSFER) is validated
  * against `minimumAmountOut`, i.e. it is *also* an output-side deduction —

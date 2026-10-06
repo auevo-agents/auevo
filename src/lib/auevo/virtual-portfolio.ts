@@ -16,7 +16,7 @@ import { SPY_ADDRESS, SPY_CHAIN_ID } from "@/app/proofs/spy";
  * capital, and always surfaced as "Simulation".
  */
 export const VIRTUAL_PORTFOLIO_STARTING_BALANCE_USD = 10_000;
-/** A flat, published fee on both the entry and exit trade — "заранее заданная модель комиссий", never invented per-run. */
+/** A flat, published fee on both the entry and exit trade — "a fee model set in advance", never invented per-run. */
 export const VIRTUAL_PORTFOLIO_FEE_BPS = 10;
 export const VIRTUAL_PORTFOLIO_HORIZON_HOURS = 24;
 

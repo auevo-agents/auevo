@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 // (tokenized real-world assets) marketplace + scanner — see
 // docs/RWA_SPEC.md. /legacy/fees and /trade are the old Solana-era pages,
 // kept reachable by direct URL but deliberately left out of the sitemap
-// (RWA_SPEC.md phase 0: "в sitemap не включаем"). /scanner is the EVM
+// (RWA_SPEC.md phase 0: "don't include in the sitemap"). /scanner is the EVM
 // contract-security scanner, which stays relevant to the RWA risk-scoring
 // work in later phases, so it keeps its sitemap entry.
 export default function sitemap(): MetadataRoute.Sitemap {

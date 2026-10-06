@@ -10,7 +10,7 @@ const SWAP_ROWS_LIMIT = 5000;
 const LEADERBOARD_LIMIT = 50;
 
 /**
- * RWA_SPEC.md Phase 6's "лидерборд по акциям" — wallets accumulating
+ * RWA_SPEC.md Phase 6's "stock leaderboard" — wallets accumulating
  * tokenized stocks specifically, not the generic (any-token) Smart Money
  * leaderboard the memecoin-era pages already have. Built from the same
  * indexer_swaps table (both v3 and v4 rows — see indexer/scan-v4.ts for
@@ -20,8 +20,8 @@ const LEADERBOARD_LIMIT = 50;
  *
  * `?ticker=NVDA` narrows to just that ticker's tokens up front (not a
  * post-filter of the full leaderboard) — this is what the asset detail
- * page's own Smart Money block uses (RWA_SPEC.md's "блок на странице
- * актива"), so a wallet's PnL there reflects only its trading of that one
+ * page's own Smart Money block uses (RWA_SPEC.md's "block on the asset
+ * page"), so a wallet's PnL there reflects only its trading of that one
  * stock, not its whole RWA portfolio.
  */
 export async function GET(req: NextRequest) {

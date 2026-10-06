@@ -1,7 +1,7 @@
 /**
  * Country-level gate for tokenized real-world assets (stocks, ETFs,
- * treasuries, private credit) — RWA_SPEC.md section 4: "недоступны
- * резидентам США и санкционных стран". Vercel sets `x-vercel-ip-country`
+ * treasuries, private credit) — RWA_SPEC.md section 4: "unavailable to
+ * US residents and sanctioned countries". Vercel sets `x-vercel-ip-country`
  * on every request at the edge (ISO 3166-1 alpha-2, or absent for
  * localhost/non-Vercel environments) — see
  * https://vercel.com/docs/edge-network/headers#x-vercel-ip-country.

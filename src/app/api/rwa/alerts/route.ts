@@ -23,7 +23,7 @@ function validateParams(type: AlertType, params: Record<string, unknown>): strin
   return null;
 }
 
-/** RWA_SPEC.md Phase 8's alert subscriptions — "подписка на премию > X, новый листинг тикера, крупная сделка". */
+/** RWA_SPEC.md Phase 8's alert subscriptions — "subscribe to premium > X, a new ticker listing, a large trade". */
 export async function GET(req: NextRequest) {
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ indexed: false, alerts: [] });

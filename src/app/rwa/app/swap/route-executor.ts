@@ -6,9 +6,9 @@ import { ERC20_ABI } from "@/lib/erc20-abi";
 import { explorerTxUrl } from "@/lib/rwa/lifi/chains";
 
 /**
- * Drives one LI.FI Route to completion — RWA_SPEC.md Phase 4's "оверлей
- * шагов (approve → send → bridge → receive) со ссылками на эксплореры,
- * статусы через LI.FI /status".
+ * Drives one LI.FI Route to completion — RWA_SPEC.md Phase 4's "a step
+ * overlay (approve → send → bridge → receive) with links to explorers,
+ * statuses via LI.FI /status".
  *
  * Uses wagmi's imperative `wagmi/actions` (not hooks) throughout: this
  * runs as one long async sequence triggered by a single button press,

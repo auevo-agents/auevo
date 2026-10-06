@@ -22,7 +22,7 @@ const STATUS_META: Record<ProofStatus, { label: string; color: string }> = {
 };
 
 /**
- * "Ленту событий в виде дашборда" for the Agent Directory: not just
+ * "An event feed in the form of a dashboard" for the Agent Directory: not just
  * what happened (the homepage's compact live-proof-feed), but the
  * RESULT of each attempt at a glance — a colored status pill plus a
  * one-line gloss of the actual outcome (summarizeProofResult), with a

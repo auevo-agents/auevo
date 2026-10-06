@@ -3,8 +3,8 @@ import { USDG } from "./dex/addresses";
 import { quoteRoute } from "./dex/quote";
 
 /**
- * RWA_SPEC.md Phase 5's Liquidity scanner tab — "для каждого токена квота
- * на $1K/$10K/$100K → price impact". $1K/$10K/$100K was checked against
+ * RWA_SPEC.md Phase 5's Liquidity scanner tab — "for every token, quote
+ * at $1K/$10K/$100K → price impact". $1K/$10K/$100K was checked against
  * outside precedent (CoinMarketCap's own liquidity-score methodology
  * simulates orders across roughly this same $100–$200K range) rather than
  * assumed — it's a reasonable, if not perfectly standardized, convention.

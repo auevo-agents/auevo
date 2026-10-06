@@ -28,8 +28,8 @@ interface BuildBuyBody {
 }
 
 /**
- * One-signature Strategy basket buy — RWA_SPEC.md Phase 7's "покупка
- * корзины ... одной подписью". Mirrors /api/dex/build's own posture: the
+ * One-signature Strategy basket buy — RWA_SPEC.md Phase 7's "buying a
+ * basket ... with one signature". Mirrors /api/dex/build's own posture: the
  * client never assembles calldata itself, and every leg is re-quoted
  * fresh here (never trusting client-supplied prices), so a stale UI state
  * can't point a leg at a route this server didn't itself just verify.

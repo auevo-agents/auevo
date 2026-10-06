@@ -6,7 +6,7 @@
  * treat premium as unknown, not zero or stale.
  *
  * Provider choice, in the order RWA_SPEC.md itself asks for
- * ("сначала Chainlink/Pyth фиды где есть, иначе внешнее API котировок"):
+ * ("first Chainlink/Pyth feeds where available, otherwise an external quote API"):
  *
  * 1. Chainlink Data Streams — confirmed (2026-09-26 research) to be the
  *    REAL production choice: Ondo Finance's own blog names Chainlink as

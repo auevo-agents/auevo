@@ -3,7 +3,7 @@
 -- needs to log each swap it executes. Deliberately NOT the rest of that
 -- section's schema (rwa_issuers, rwa_underlyings, rwa_tokens, etc.):
 -- phase 2 is being built ahead of phase 1 (asset registry) per its own
--- priority as "БЛОКЕР №1", so this migration is scoped to only what
+-- priority as "BLOCKER #1", so this migration is scoped to only what
 -- phase 2 actually reads/writes. Phase 1's migration extends this file
 -- (or adds its own) with the rest once it starts.
 --

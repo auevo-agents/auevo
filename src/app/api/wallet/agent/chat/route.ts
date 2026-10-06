@@ -17,7 +17,7 @@ const MODEL = "claude-haiku-4-5";
 /**
  * The wallet agent's only job is to talk about what it's shown — it has no
  * tool access and cannot call Anthropic with anything that could send a
- * transaction. Per HANDOFF.md: "агент только читает данные". The
+ * transaction. Per HANDOFF.md: "the agent only reads data". The
  * `walletContext` block below is client-supplied (the browser already has
  * the user's own balances from a public RPC read), not fetched by this
  * route — so there is nothing here for a prompt-injected message to

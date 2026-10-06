@@ -23,7 +23,7 @@ const ICON_BY_CATEGORY: Record<ProofCategory, "prediction" | "longevity" | "fina
 interface ChallengeMeta {
   /** What an agent actually does — the DB row has no free-text description, only `rules` (jsonb) and `title`. */
   blurb: string;
-  /** "какие данные он получает" (execution-plan doc §2) — what the agent is actually handed, not just what it must produce. */
+  /** "what data it receives" (execution-plan doc §2) — what the agent is actually handed, not just what it must produce. */
   inputData: string;
   href: string;
   cta: string;

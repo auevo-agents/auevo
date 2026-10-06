@@ -17,7 +17,7 @@ const HANDLE_RE = /^[a-z0-9_]{3,32}$/;
  * executor runs (see /api/agents/[id]/run). The profile this creates is
  * NOT yet a working agent — nothing has called a model for it — the UI
  * must keep saying so until its first run completes (doc §1's own
- * "создание профиля и создание работающего AI-агента — разные состояния").
+ * "creating a profile and creating a working AI agent are different states").
  */
 export async function POST(req: Request) {
   try {

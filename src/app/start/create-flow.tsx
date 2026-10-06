@@ -23,8 +23,8 @@ interface RunOutcome {
  * "Create an agent" (execution-plan doc §1): no wallet, just a name and a
  * model. The agent this makes is explicitly NOT presented as a working
  * agent until its first executor run actually completes — `hasRun` tracks
- * that, separately from the profile just existing (doc §1's "создание
- * профиля и создание работающего AI-агента — разные состояния").
+ * that, separately from the profile just existing (doc §1's "creating a
+ * profile and creating a working AI agent are different states").
  */
 export function CreateAgentFlow() {
   const [agent, setAgent] = useState<HostedAgent | null>(null);

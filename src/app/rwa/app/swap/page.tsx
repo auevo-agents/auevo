@@ -13,9 +13,9 @@ import { executeRoute, LIFI_NATIVE_ADDRESS, type StepLog } from "./route-executo
 import type { Route, RoutesResponse } from "@lifi/types";
 
 /**
- * RWA_SPEC.md section 6's /app/swap: "Swap (одна сеть) / Bridge
- * (кросс-чейн), сравнение маршрутов Best Return / Fastest, трекинг
- * статуса." Both tabs call the same /api/lifi/routes proxy — Swap just
+ * RWA_SPEC.md section 6's /app/swap: "Swap (single chain) / Bridge
+ * (cross-chain), comparing Best Return / Fastest routes, status
+ * tracking." Both tabs call the same /api/lifi/routes proxy — Swap just
  * pins toChainId to fromChainId, since LI.FI treats a same-chain request
  * as ordinary DEX aggregation rather than needing a separate endpoint
  * (confirmed by reading @lifi/sdk's own getRoutes.js — one function, one

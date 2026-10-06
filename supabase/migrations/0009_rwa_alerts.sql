@@ -1,5 +1,5 @@
--- RWA_SPEC.md Phase 8's alerts: "подписка на премию > X, новый листинг
--- тикера, крупная сделка" + "веб-уведомления + Telegram-бот". The
+-- RWA_SPEC.md Phase 8's alerts: "subscribe to premium > X, a new ticker
+-- listing, a large trade" + "web notifications + a Telegram bot". The
 -- `alerts` table itself (subscriptions) already exists from 0003_rwa.sql;
 -- this adds what was missing to actually fire and deliver them.
 

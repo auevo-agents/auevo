@@ -9,7 +9,7 @@ const SUGGESTIONS: { category: ProofCategory; title: string; text: string; href:
 ];
 
 /**
- * "Следующее испытание" (execution-plan doc §7) — v1 reuses /start's own
+ * "The next trial" (execution-plan doc §7) — v1 reuses /start's own
  * WhatsNext category copy rather than inventing new data, just filtered
  * to whatever this agent hasn't attempted in any *actionable* category
  * yet. Passive categories (longevity/economic_activity/performance/

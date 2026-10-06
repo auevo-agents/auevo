@@ -8,7 +8,7 @@ import { runSkillChallenge, runPredictionChallenge, runFinancialChallenge, Execu
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// §8 "лимиты запусков и стоимости модели" — a hosted agent can trigger at
+// §8 "run limits and model cost" — a hosted agent can trigger at
 // most this many model-calling runs a day. Deliberately small: each run
 // costs real Anthropic API spend, and this is the only thing standing
 // between a leaked/guessed run secret and an unbounded bill.

@@ -1,5 +1,5 @@
--- Starter set of rwa_underlyings — RWA_SPEC.md phase 1's "сид ... базовых
--- тикеров". Deliberately NOT the full ~1,092-ticker universe xStocks'
+-- Starter set of rwa_underlyings — RWA_SPEC.md phase 1's "seed ... baseline
+-- tickers". Deliberately NOT the full ~1,092-ticker universe xStocks'
 -- own live token list covers (github.com/backed-fi/cowswap-xstocks-
 -- tokenlist, fetched 2026-09-26) — hand-verifying the correct company
 -- name/category/exchange for over a thousand tickers, many of them non-US

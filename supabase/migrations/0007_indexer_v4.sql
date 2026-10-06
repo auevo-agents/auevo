@@ -1,5 +1,5 @@
--- RWA_SPEC.md Phase 6: "расширить indexer_pools/indexer_swaps полем dex и
--- pool_id bytes32 для v4" — the chain indexer (0001_indexer.sql) has only
+-- RWA_SPEC.md Phase 6: "extend indexer_pools/indexer_swaps with a dex
+-- field and bytes32 pool_id for v4" — the chain indexer (0001_indexer.sql) has only
 -- ever scanned Uniswap v3 (a per-pool contract address, discovered from
 -- the factory's PoolCreated event). v4 has no factory and no per-pool
 -- contract — every v4 pool is identified by a bytes32 pool_id and lives
@@ -17,7 +17,7 @@
 -- Uniswap/v4-core's IPoolManager.sol) has NO recipient field at all — only
 -- `sender`, which for a swap routed through UniversalRouter is the
 -- router/unlock-callback contract, not the trader (RWA_SPEC.md phase 6's
--- own note: "атрибуция для v4 через ... tx.from"). For a v4 row,
+-- own note: "attribution for v4 via ... tx.from"). For a v4 row,
 -- `recipient` therefore holds the enclosing transaction's `from` address
 -- instead of an event field — documented here since it's the one place
 -- this column's meaning differs from its v3 rows.

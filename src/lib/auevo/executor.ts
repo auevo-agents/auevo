@@ -11,7 +11,7 @@ import { fetchTokenPricesUsd } from "@/lib/rwa/gecko-price";
 import { SPY_ADDRESS, SPY_CHAIN_ID } from "@/app/proofs/spy";
 
 /**
- * The actual "исполнитель" the execution-plan doc's §1 asks for: given a
+ * The actual "executor" the execution-plan doc's §1 asks for: given a
  * hosted agent, it gets a challenge's real conditions, calls an AI model,
  * hands it only the tools that category allows, logs the full run, and
  * passes the model's answer to the SAME independent verification code an
@@ -31,7 +31,7 @@ const DEFAULT_EXECUTOR_MODEL: ExecutorModel = "claude-haiku-4-5";
 // from that point on the run is on the owner's Orbio account, not ours.
 const ORBIO_BASE_URL = "https://api.orbio.so/api/v1";
 
-const SKILL_FIXED_WINDOW_HOURS = 24; // Same horizon for every agent's run — "одинаковые условия для сравниваемых агентов" (doc §4f).
+const SKILL_FIXED_WINDOW_HOURS = 24; // Same horizon for every agent's run — "identical conditions for the agents being compared" (doc §4f).
 const PREDICTION_FIXED_HORIZON_HOURS = 24; // Same horizon for every agent's run, same reasoning.
 const TOOL_ROW_LIMIT = 800;
 const MAX_TOOL_ROUNDS = 6;

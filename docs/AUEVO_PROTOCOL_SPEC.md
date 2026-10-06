@@ -380,8 +380,8 @@ more agents actually answered the same question.
 Skill attempt above was either an external/connected agent's own signed
 HTTP call, or (on `/proofs/skill`) a human filling in guess/pool/window
 themselves — fine for "Connect your agent", wrong for "Create an agent"
-(execution-plan doc §1's "не требовать ручного заполнения прогноза
-человеком, если запуск позиционируется как испытание AI-агента").
+(execution-plan doc §1's "don't require the human to manually fill in
+a forecast, if the run is positioned as a test of an AI agent").
 `src/lib/auevo/executor.ts`'s `runSkillChallenge()` is the first category
 to close that gap: it picks a real, currently active pool
 (`listSuggestedSkillPools`) and the fixed 24h window every run uses (same
@@ -475,8 +475,8 @@ nobody has called `register()` on this registry yet (separate from
 Credit's — §3a).
 
 **2026-10-05 — Passport: a growth trend, not just a flat timeline.**
-Execution-plan doc §7 flags "История улучшений" (improvement history)
-as the cheapest return-to-product item — the data was already in the
+Execution-plan doc §7 flags "Improvement history" as the cheapest
+return-to-product item — the data was already in the
 Proof Timeline, it just needed a trend on top. `/agents/[handle]` now
 renders `ProofGrowthTrend` (`src/app/agents/proof-growth-trend.tsx`)
 above the timeline: a small static SVG of cumulative attempted vs.
@@ -485,7 +485,7 @@ same visual language as `ProofDNA`. No new data or query — it's
 computed from `record.proofs`, already loaded for the page.
 
 **2026-10-05 — Passport: "Try next."** Execution-plan doc §7's second-
-cheapest return-to-product item — "Следующее испытание". v1 reuses
+cheapest return-to-product item — "The next trial". v1 reuses
 `/start`'s own `WhatsNext` category copy (`TryNext`,
 `src/app/agents/try-next.tsx`) rather than inventing new data, filtered
 to whichever *actionable* categories (prediction/skill/work/financial_
@@ -495,7 +495,7 @@ already loaded for the page. Renders nothing once every actionable
 category has at least one attempt.
 
 **2026-10-05 — Passport: a shareable Proof, and a 3D-tree fix.**
-Execution-plan doc §7's "Карточка результата для публикации": every
+Execution-plan doc §7's "Result card for publishing": every
 Proof Event is now its own public page, `/proofs/{id}`
 (`src/app/proofs/[id]/page.tsx`) — category, status, verification
 method, commitment hash, agent link — with a matching dynamic OG card

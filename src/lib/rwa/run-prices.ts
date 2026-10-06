@@ -9,7 +9,7 @@ import { STATE_VIEW, USDG } from "./dex/addresses";
 import { withFetchRetry } from "./db-retry";
 
 /**
- * RWA_SPEC.md Phase 1's price/liquidity cron — spec wants "каждые 5 мин".
+ * RWA_SPEC.md Phase 1's price/liquidity cron — spec wants "every 5 min".
  * Vercel's Hobby plan rejects any sub-daily cron schedule outright at
  * build time ("Hobby accounts are limited to daily cron jobs"), which is
  * why this ran once a day for a while (discovered the hard way

@@ -12,7 +12,7 @@
 --
 -- targetWeight below is plain EQUAL weight within each basket, not a
 -- weight sourced from any institutional-holdings filing. RWA_SPEC.md asks
--- for "веса из публичных 13F" — deliberately not attempted here: this
+-- for "weights from public 13F filings" — deliberately not attempted here: this
 -- environment's network egress couldn't reach SEC EDGAR (or any 13F
 -- aggregator) to pull and cite a real filing during this phase (see the
 -- Phase 7 research this migration's sibling code changes are based on),

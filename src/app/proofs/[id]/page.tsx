@@ -22,7 +22,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 };
 
 /**
- * "Карточка результата для публикации" (execution-plan doc §7) — a
+ * "Result card for publishing" (execution-plan doc §7) — a
  * single Proof Event, addressable and shareable on its own, with a
  * matching dynamic OG card (./opengraph-image.tsx) so a link posted
  * elsewhere renders as real evidence instead of a bare URL. Public,

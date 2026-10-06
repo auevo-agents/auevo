@@ -138,7 +138,7 @@ const MAX_REDISTRIBUTE_PASSES = 3;
 
 /**
  * Resolves a basket buy into concrete, quoted, fully-funded legs —
- * RWA_SPEC.md's "если для актива нет пула — исключить и перераспределить".
+ * RWA_SPEC.md's "if there's no pool for an asset — exclude and redistribute".
  * A ticker is excluded (never partially filled) when it has no verified
  * token on this chain, or no live USDG pool at its sized amount; its
  * weight is then redistributed proportionally across the remaining

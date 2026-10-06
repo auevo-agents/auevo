@@ -207,7 +207,7 @@ export default function WalletDetailPage(props: PageProps<"/rwa/app/wallets/[add
     return withData.reduce((sum, p) => sum + (p.unrealizedPnlWeth ?? 0), 0);
   }, [positionViews]);
 
-  // RWA_SPEC.md Phase 6's "/rwa/app/portfolio в USD" — a second, USD-denominated
+  // RWA_SPEC.md Phase 6's "/rwa/app/portfolio in USD" — a second, USD-denominated
   // view scoped to just this wallet's tokenized-stock holdings, alongside
   // (not replacing) the general ETH-denominated Positions section above.
   const [quoteAssets, setQuoteAssets] = useState<QuoteAssetPrice[] | null>(null);

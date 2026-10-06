@@ -22,8 +22,8 @@ import { sortAssetSummaries, type AssetSummary } from "@/lib/rwa/catalog";
 import { LIFI_EVM_CHAINS, isSupportedLifiChain } from "@/lib/rwa/lifi/chains";
 
 /**
- * RWA_SPEC.md section 6's landing page: "живые топы, сканер-превью (топ
- * премий/дисконтов), корзины, эмитенты" — the piece Phase 0 deliberately
+ * RWA_SPEC.md section 6's landing page: "live tops, a scanner preview (top
+ * premiums/discounts), baskets, issuers" — the piece Phase 0 deliberately
  * deferred until the registry (Phase 1) and scanner (Phase 5) had real
  * data to show. Both exist now, so the ticker tape and "live tops" list
  * below read real premium data through the same lib/rwa/scanner.ts

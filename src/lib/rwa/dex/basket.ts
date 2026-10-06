@@ -9,8 +9,8 @@ import type { LegQuote, LegQuoteV3, LegQuoteV4 } from "./quote";
 
 /**
  * Encodes N independent single-hop swaps into ONE UniversalRouter
- * execute() call — RWA_SPEC.md Phase 7's "покупка корзины ... одной
- * подписью" (a Strategy basket buy) and its mirror (a basket sell).
+ * execute() call — RWA_SPEC.md Phase 7's "buying a basket ... with one
+ * signature" (a Strategy basket buy) and its mirror (a basket sell).
  * Every leg keeps its own input/output currency and amount; the only
  * thing shared across legs is the one wallet signature over the whole
  * transaction (plus, per leg, at most one *free, off-chain* Permit2

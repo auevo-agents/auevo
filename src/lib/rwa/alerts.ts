@@ -1,6 +1,6 @@
 /**
- * RWA_SPEC.md Phase 8's alerts — "подписка на премию > X, новый листинг
- * тикера, крупная сделка". Pure evaluation logic lives here (no RPC/DB),
+ * RWA_SPEC.md Phase 8's alerts — "subscribe to premium > X, a new ticker
+ * listing, a large trade". Pure evaluation logic lives here (no RPC/DB),
  * same split as run-prices.ts/run-registry.ts: run-alerts.ts gathers the
  * inputs, these functions decide what fires.
  *
@@ -32,7 +32,7 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
-/** Premium alert params: { ticker, thresholdBps } — fires when premiumBps > thresholdBps (literal "премия > X", not |premium|). */
+/** Premium alert params: { ticker, thresholdBps } — fires when premiumBps > thresholdBps (literal "premium > X", not |premium|). */
 export function checkPremiumAlerts(
   alerts: AlertRow[],
   latestPremiumBpsByTicker: Map<string, number | null>,

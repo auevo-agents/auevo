@@ -1,7 +1,7 @@
 -- RWA (tokenized real-world asset) catalog — docs/RWA_SPEC.md section 5.
 -- The rest of that section's schema beyond app_transfers (already created
 -- in 0002_app_transfers.sql, ahead of this migration, since Phase 2 was
--- prioritized ahead of Phase 1 per the spec's own "БЛОКЕР №1" call).
+-- prioritized ahead of Phase 1 per the spec's own "BLOCKER #1" call).
 --
 -- Not applied automatically. Run this against the Supabase project
 -- backing SUPABASE_URL for this app (Settings -> Database -> SQL
@@ -32,7 +32,7 @@ create table if not exists rwa_tokens (
   symbol text not null,
   decimals integer not null,
   is_proxy boolean not null default false,
-  verified boolean not null default false, -- RWA_SPEC.md section 9: "Показ verified=false токенов в витрине" is explicitly on the "не делать" list — a token stays in this table for the registry's own bookkeeping, just never rendered, until it clears verification
+  verified boolean not null default false, -- RWA_SPEC.md section 9: "Showing verified=false tokens in the storefront" is explicitly on the "do not do" list — a token stays in this table for the registry's own bookkeeping, just never rendered, until it clears verification
   first_seen_block bigint,
   logo_url text,
   discovered_at timestamptz not null default now(),
@@ -47,7 +47,7 @@ create table if not exists rwa_prices (
   chain_id integer not null,
   token_address text not null,
   price_usd numeric,
-  reference_price_usd numeric, -- null when rwa_underlyings.reference_source is unset for this ticker — never a guess (RWA_SPEC.md section 4: "если источника нет — premium = null, не выдумывать")
+  reference_price_usd numeric, -- null when rwa_underlyings.reference_source is unset for this ticker — never a guess (RWA_SPEC.md section 4: "if there's no source — premium = null, don't make it up")
   premium_bps integer, -- (price_usd / reference_price_usd - 1) * 10000, null whenever either input price is null
   liquidity_usd numeric,
   volume_24h_usd numeric,
@@ -124,8 +124,8 @@ create table if not exists alerts (
 
 create index if not exists alerts_account_idx on alerts (account);
 
--- RWA_SPEC.md section 5: "RLS: публичное чтение для каталоговых таблиц,
--- запись только service role" — a deliberate departure from every other
+-- RWA_SPEC.md section 5: "RLS: public read for catalog tables,
+-- write only via service role" — a deliberate departure from every other
 -- table in this project (indexer_*, app_transfers), which are enabled
 -- with zero policies and read exclusively through server-side API routes
 -- using the service-role key. The catalog here is public information by

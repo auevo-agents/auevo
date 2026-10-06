@@ -13,7 +13,7 @@ import { formatPrice } from "@/lib/format";
 
 /**
  * The token's own price against its real-world reference price —
- * RWA_SPEC.md Phase 3's "график токена поверх графика реальной акции".
+ * RWA_SPEC.md Phase 3's "the token's chart overlaid on the real stock's chart".
  * Real Japanese candlesticks (same lightweight-charts setup already
  * proven on /app/market/t/[address]'s CandlestickChart, matched here for
  * a consistent look) rather than a bare line: `rwa_prices` only ever

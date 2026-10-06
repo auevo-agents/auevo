@@ -1,6 +1,6 @@
 /**
  * Thin server-only fetch wrapper around LI.FI's REST API — RWA_SPEC.md
- * Phase 4's "серверный прокси /api/lifi/* (ключ и integrator на сервере)".
+ * Phase 4's "server-side proxy /api/lifi/* (key and integrator on the server)".
  *
  * li.quest is blocked from this sandbox's egress proxy (confirmed via
  * repeated direct curl attempts — see AGENTS.md-adjacent session notes),

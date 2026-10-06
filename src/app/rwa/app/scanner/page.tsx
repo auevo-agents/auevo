@@ -423,8 +423,8 @@ interface NotificationRow {
 }
 
 /**
- * RWA_SPEC.md section 6's "Алерты: подписка на премию > X, новый листинг
- * тикера, крупная сделка" — a subscribe form + list + fired-notifications
+ * RWA_SPEC.md section 6's "Alerts: subscribe to premium > X, a new
+ * ticker listing, a large trade" — a subscribe form + list + fired-notifications
  * feed, scoped under Scanner (the spec lists alerts as part of that
  * section, not as its own top-level route). Evaluated once daily by
  * /api/cron/rwa-alerts (run-alerts.ts) — see that file's own note on why

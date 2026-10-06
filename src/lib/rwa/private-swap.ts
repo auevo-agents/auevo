@@ -2,7 +2,7 @@
  * "Private swap" — HyperDex's nav item for submitting a trade without it
  * sitting in a public mempool first, where it's exposed to front-running/
  * sandwich MEV before it lands. RWA_SPEC.md section 9 excludes "Private
- * swaps / миксеры" — but that line is about privacy MIXERS (obscuring
+ * swaps / mixers" — but that line is about privacy MIXERS (obscuring
  * fund origin, real AML/regulatory risk), not MEV-protected submission,
  * which is a standard, widely-offered DeFi consumer protection (many
  * DEXs/aggregators offer a "protect me from MEV" RPC option) with no

@@ -7,7 +7,7 @@ import { CopyableAddress } from "@/app/copyable-address";
 import { CopyButton } from "@/app/copy-button";
 
 /**
- * RWA_SPEC.md section 6's /app/explorer — "наши транзакции": every swap
+ * RWA_SPEC.md section 6's /app/explorer — "our transactions": every swap
  * (Phase 2, Robinhood Chain v3/v4) and bridge (Phase 4, LI.FI) this app
  * itself has sent through, read back from app_transfers via
  * /api/rwa/transfers. Shows the connected wallet's own rows when a wallet

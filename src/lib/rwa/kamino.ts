@@ -1,6 +1,6 @@
 /**
  * Kamino Finance's public lending-market API — RWA_SPEC.md Phase 8's
- * `/rwa/app/lend` ("Kamino xStocks markets через их публичный API").
+ * `/rwa/app/lend` ("Kamino xStocks markets via their public API").
  *
  * Confirmed live 2026-09-27 against real responses fetched by the user
  * from inside a real browser (this sandbox's own network egress to

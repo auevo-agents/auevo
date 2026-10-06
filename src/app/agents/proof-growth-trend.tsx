@@ -1,7 +1,7 @@
 import type { ProofEvent } from "@/lib/auevo/db";
 
 /**
- * "История улучшений" (execution-plan doc §7) — the one return-to-the-
+ * "Improvement history" (execution-plan doc §7) — the one return-to-the-
  * product feature the doc flags as cheapest to build: the data is
  * already in the Proof Timeline this renders beside, it just needed a
  * trend on top of it instead of only a flat list. Cumulative attempted

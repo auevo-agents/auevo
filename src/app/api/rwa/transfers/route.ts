@@ -6,7 +6,7 @@ export const maxDuration = 15;
 const LIMIT = 200;
 
 /**
- * RWA_SPEC.md section 6's /app/explorer — "наши транзакции", i.e. every
+ * RWA_SPEC.md section 6's /app/explorer — "our transactions", i.e. every
  * swap/bridge this app itself has sent through (app_transfers, written by
  * /api/dex/record for both Phase 2's Robinhood-only v3/v4 swaps and Phase
  * 4's LI.FI same-chain/cross-chain ones). Optionally filtered to one

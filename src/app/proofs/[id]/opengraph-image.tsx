@@ -18,7 +18,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 };
 
 /**
- * "Карточка результата для публикации" (execution-plan doc §7) — a dark,
+ * "Result card for publishing" (execution-plan doc §7) — a dark,
  * evidence-styled card (not the light marketing pitch the root
  * opengraph-image.tsx uses) so a shared Proof Event link renders as real
  * ledger evidence, not a generic site preview.

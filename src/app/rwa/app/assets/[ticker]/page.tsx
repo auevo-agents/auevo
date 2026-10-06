@@ -244,7 +244,7 @@ function shortWallet(address: string): string {
 }
 
 /**
- * RWA_SPEC.md Phase 6's "блок на странице актива" — the same
+ * RWA_SPEC.md Phase 6's "block on the asset page" — the same
  * /api/rwa/scanner/smart-money leaderboard the Scanner's own Smart Money
  * tab uses, narrowed to this one ticker via `?ticker=`, top 5 only.
  */

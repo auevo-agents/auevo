@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
- * RWA_SPEC.md Phase 6's "лидерборд по акциям" — a v3 pool trading a known
+ * RWA_SPEC.md Phase 6's "stock leaderboard" — a v3 pool trading a known
  * RWA token against USDG, a v4 pool trading a DIFFERENT RWA token against
  * WETH, and a third pool trading two non-RWA tokens (must be excluded).
  * The join logic under test (indexer_pools -> which pools are RWA-relevant

@@ -10,8 +10,8 @@ import { Disclaimer } from "@/app/disclaimer";
 import { BrandIcon } from "@/app/brand-icon";
 
 /**
- * RWA_SPEC.md Phase 7's basket buy/sell page — the "покупка корзины ...
- * одной подписью" done-bar. Buy always has one input (USDG), so at most
+ * RWA_SPEC.md Phase 7's basket buy/sell page — the "buying a basket ...
+ * with one signature" done-bar. Buy always has one input (USDG), so at most
  * one Permit2 signature; sell can need one signature per distinct held
  * token that hasn't been Permit2-approved to UniversalRouter before (see
  * lib/rwa/dex/basket.ts's own doc comment) — the on-chain transaction

@@ -7,11 +7,11 @@ import { readOwner } from "@/lib/evm/erc20";
 import { getEvmClient } from "./evm-clients";
 
 /**
- * RWA_SPEC.md Phase 5's risk scoring — "админ прокси (EIP-1967), роли
- * (AccessControl hasRole, owner), селекторы pause/blacklist/freeze/
- * forceTransfer/burnFrom/mint, кто держит MINTER_ROLE. Формула прозрачная,
- * веса в конфиге." Explicitly framed by the spec as NOT a scam score:
- * "насколько эмитент может вмешаться в ваш токен" — a regulated,
+ * RWA_SPEC.md Phase 5's risk scoring — "admin proxy (EIP-1967), roles
+ * (AccessControl hasRole, owner), pause/blacklist/freeze/
+ * forceTransfer/burnFrom/mint selectors, who holds MINTER_ROLE. The formula is transparent,
+ * the weights are in config." Explicitly framed by the spec as NOT a scam score:
+ * "how much the issuer can interfere with your token" — a regulated,
  * issuer-backed stock token having pause/blacklist/freeze is often a
  * *compliance* feature (sanctions/freeze-order capability), not a red
  * flag the way it would be on an anonymous memecoin. This score is framed

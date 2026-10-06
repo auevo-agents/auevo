@@ -9,8 +9,8 @@ export const maxDuration = 20;
 
 /**
  * Best route (v3, v4, or a 2-hop through USDG mixing both) for a given
- * pair and amount — RWA_SPEC.md Phase 2's "SwapPanel: выбирает лучший из
- * v3 и v4 маршрутов". Read-only, no wallet/signature involved; the actual
+ * pair and amount — RWA_SPEC.md Phase 2's "SwapPanel: picks the best of
+ * the v3 and v4 routes". Read-only, no wallet/signature involved; the actual
  * transaction is built by /api/dex/build once the user commits to a size.
  */
 export async function GET(req: NextRequest) {
