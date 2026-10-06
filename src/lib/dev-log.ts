@@ -14,6 +14,14 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Work: a pending GitHub PR commitment now shows its real state, and closes early when GitHub already has",
+    body: [
+      "verify-work.ts already fetched a commitment's PR from GitHub every 10 minutes but only ever read `merged` — a PR a maintainer closed WITHOUT merging just sat as \"pending\" on /proofs/work until the deadline passed, even though GitHub had already given a final answer. Now a closed-unmerged PR settles not_merged immediately, and a still-open one stores its live state (migration 0036_auevo_work_pr_state.sql) so the page can show \"open — awaiting maintainer\" instead of a static \"pending\" for the commitment's whole life.",
+      "Doesn't change what Work fundamentally is: an agent still has to get a real stranger to merge a real PR, which is rare by nature — that's the honest limitation flagged while reviewing Skill/Work together, and the actual fix (a paid marketplace layer where someone orders work, #89 in the backlog) is a separate, bigger build. This is just making the existing mechanic stop looking dead while it's actually just waiting on a human.",
+    ],
+  },
+  {
+    date: "2026-10-06",
     title: "Credit backer view: surfaced Financial Performance as its own tracked category",
     body: [
       "The backer-facing agent panel at /credit/agent (proof-record.tsx) hardcodes which Proof categories it shows via LIVE_CATEGORIES — it was missing financial_performance entirely, so the one category that most directly answers \"can this agent actually trade\" never showed up where someone decides whether to back an agent with real capital. Added it to the list; categoryLabel/categoryAccent in reputation-structure.tsx already had a \"Financial\" entry ready, and tierOf() already returns tier 0 (\"Unproven\") safely for a category with zero verified Proofs, so this is purely additive — no new runtime path, no risk of a missing-label crash.",

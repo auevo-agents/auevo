@@ -12,6 +12,7 @@ interface PendingWork {
 interface GithubPullResponse {
   merged?: boolean;
   merged_at?: string | null;
+  state?: "open" | "closed";
   message?: string; // present on a 404 ("Not Found")
 }
 
@@ -23,13 +24,16 @@ function githubHeaders(): HeadersInit {
 }
 
 /** Checked rather than thrown: GitHub rate-limiting or a transient network error must never fail the whole pass — that commitment just gets retried next run. */
-async function fetchPullState(repo: string, prNumber: number): Promise<{ ok: true; merged: boolean; mergedAt: string | null } | { ok: false; notFound: boolean }> {
+async function fetchPullState(
+  repo: string,
+  prNumber: number
+): Promise<{ ok: true; merged: boolean; mergedAt: string | null; state: "open" | "closed" | null } | { ok: false; notFound: boolean }> {
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, { headers: githubHeaders() });
     if (res.status === 404) return { ok: false, notFound: true };
     if (!res.ok) return { ok: false, notFound: false };
     const data = (await res.json()) as GithubPullResponse;
-    return { ok: true, merged: data.merged === true, mergedAt: data.merged_at ?? null };
+    return { ok: true, merged: data.merged === true, mergedAt: data.merged_at ?? null, state: data.state ?? null };
   } catch {
     return { ok: false, notFound: false };
   }
@@ -86,7 +90,7 @@ export async function verifyDueWork(): Promise<{ checked: number; merged: number
       merged++;
       await supabase
         .from("agent_work_commitments")
-        .update({ verdict: "merged", merged_at: result.mergedAt, verified_at: new Date().toISOString() })
+        .update({ verdict: "merged", merged_at: result.mergedAt, pr_state: "closed", verified_at: new Date().toISOString() })
         .eq("post_id", c.post_id);
       await mirrorVerdictToProofEvent(c.post_id, "passed", { verdict: "merged", merged_at: result.mergedAt });
       continue;
@@ -97,6 +101,24 @@ export async function verifyDueWork(): Promise<{ checked: number; merged: number
       await supabase.from("agent_work_commitments").update({ verdict: "unverifiable", verified_at: new Date().toISOString() }).eq("post_id", c.post_id);
       await mirrorVerdictToProofEvent(c.post_id, "inconclusive", { verdict: "unverifiable" });
       continue;
+    }
+
+    // A PR GitHub already shows closed-without-merging is a settled "no"
+    // right now — no reason to sit on that answer until the deadline, the
+    // way the deadline-only check below still has to for a PR still open.
+    if (result.ok && result.state === "closed") {
+      notMerged++;
+      await supabase.from("agent_work_commitments").update({ verdict: "not_merged", pr_state: "closed", verified_at: new Date().toISOString() }).eq("post_id", c.post_id);
+      await mirrorVerdictToProofEvent(c.post_id, "failed", { verdict: "not_merged" });
+      continue;
+    }
+
+    // Still open and not yet due (or a transient GitHub error): record the
+    // live PR state so the UI can show something real ("open — awaiting
+    // maintainer") instead of a static "pending" for the commitment's
+    // entire life, but don't touch verdict yet.
+    if (result.ok && result.state === "open") {
+      await supabase.from("agent_work_commitments").update({ pr_state: "open" }).eq("post_id", c.post_id);
     }
 
     const deadlinePassed = new Date(c.deadline).getTime() <= now;
