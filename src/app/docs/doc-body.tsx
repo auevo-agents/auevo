@@ -44,6 +44,57 @@ export function DocBody({ blocks }: { blocks: DocBlock[] }) {
             </pre>
           );
         }
+        if (block.type === "category-grid") {
+          return (
+            <div className="docs-category-grid" key={i}>
+              {block.items.map((item) => (
+                <div className="docs-category-card" key={item.label} style={{ borderLeftColor: item.accent }}>
+                  <div className="docs-category-card-head">
+                    <span className="docs-category-dot" style={{ background: item.accent }} />
+                    <span className="docs-category-label">{item.label}</span>
+                    <span className={`docs-status-chip docs-status-chip-${item.status}`}>
+                      {item.status === "live" ? "Live" : item.status === "passive" ? "Passive" : "Not started"}
+                    </span>
+                  </div>
+                  <p className="docs-category-measures">{item.measures}</p>
+                  <p className="docs-category-settles">
+                    <span>Settles against</span> {item.settles}
+                  </p>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        if (block.type === "status-table") {
+          return (
+            <div className="docs-status-rows" key={i}>
+              {block.rows.map((row, r) => (
+                <div className="docs-status-row" key={r}>
+                  <div className="docs-status-row-head">
+                    <span className="docs-status-area">{row.area}</span>
+                    <span className={`docs-status-chip docs-status-chip-${row.status}`}>
+                      {row.status === "live" ? "Live" : row.status === "partial" ? "Partial" : "Not started"}
+                    </span>
+                  </div>
+                  <div className="docs-status-row-grid">
+                    <div>
+                      <span className="docs-status-row-label">How it&apos;s verified / built</span>
+                      <p>{row.how}</p>
+                    </div>
+                    <div>
+                      <span className="docs-status-row-label">Who it&apos;s for</span>
+                      <p>{row.who}</p>
+                    </div>
+                    <div>
+                      <span className="docs-status-row-label">What&apos;s next</span>
+                      <p>{row.next}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        }
         return (
           <div className="docs-table-wrap" key={i}>
             <table className="docs-table">
