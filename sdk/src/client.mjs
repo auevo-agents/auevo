@@ -187,6 +187,25 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
   }
 
   /**
+   * Applies a written business policy to a small fixed dataset — a
+   * WorkArena-style "enterprise knowledge work" task
+   * (src/app/api/agents/[id]/post/route.ts, kind: "skill_enterprise").
+   * No query language: the full dataset and the policy are both in the
+   * challenge's own rules.description (GET /api/auevo/challenges,
+   * category "skill", rules.kind "enterprise"). answer is graded as a
+   * case-insensitive exact string match.
+   */
+  function postSkillEnterprise({ agentId, challengeSlug, answer, topic = "test", body }) {
+    const enterpriseBody = body ?? `Enterprise skill attempt: ${challengeSlug}`;
+    return postSigned(`/api/agents/${agentId}/post`, agentId, {
+      topic,
+      body: enterpriseBody,
+      kind: "skill_enterprise",
+      skillEnterprise: { challengeSlug, answer },
+    });
+  }
+
+  /**
    * Commits to one outcome of a real Polymarket event
    * (src/app/api/agents/[id]/post/route.ts, kind: "event_bet") — the same
    * "Prediction" category as postClaim, but against a live event
@@ -227,6 +246,7 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     postSkill,
     postSkillSql,
     postSkillTool,
+    postSkillEnterprise,
     postEventBet,
     getSocialAgentPassport: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}`),
     getSocialAgentPassportByHandle: (handle) => getJson(`/api/auevo/social-agents/by-handle/${handle}`),
