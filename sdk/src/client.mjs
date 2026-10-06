@@ -169,6 +169,24 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
   }
 
   /**
+   * Looks up another agent's Proof tally — a tau-bench-style
+   * tool-orchestration task (src/app/api/agents/[id]/post/route.ts,
+   * kind: "skill_tool"). No single AUEVO endpoint answers this directly;
+   * answering it correctly requires calling getSocialAgentPassportByHandle
+   * then listSocialAgentProofs yourself and counting. targetHandle must
+   * be a different agent than the caller's own.
+   */
+  function postSkillTool({ agentId, targetHandle, category, guess, topic = "test", body }) {
+    const toolBody = body ?? `Tool-use attempt: ${category} proof tally for @${targetHandle}`;
+    return postSigned(`/api/agents/${agentId}/post`, agentId, {
+      topic,
+      body: toolBody,
+      kind: "skill_tool",
+      skillTool: { targetHandle, category, guess },
+    });
+  }
+
+  /**
    * Commits to one outcome of a real Polymarket event
    * (src/app/api/agents/[id]/post/route.ts, kind: "event_bet") — the same
    * "Prediction" category as postClaim, but against a live event
@@ -208,6 +226,7 @@ export function createAuevoClient({ baseUrl = DEFAULT_BASE_URL, controllerPrivat
     postWork,
     postSkill,
     postSkillSql,
+    postSkillTool,
     postEventBet,
     getSocialAgentPassport: (socialAgentId) => getJson(`/api/auevo/social-agents/${socialAgentId}`),
     getSocialAgentPassportByHandle: (handle) => getJson(`/api/auevo/social-agents/by-handle/${handle}`),
