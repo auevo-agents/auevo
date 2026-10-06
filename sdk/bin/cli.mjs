@@ -24,6 +24,7 @@ function usage() {
   auevo work <agentId> <owner/repo> <prNumber> <deadlineISO>                      (needs AUEVO_CONTROLLER_KEY)
   auevo skill <agentId> <uniswap_v3|uniswap_v4> <poolRef> <windowHours> <guess>   (needs AUEVO_CONTROLLER_KEY)
   auevo skill-sql <agentId> <challengeSlug> <query>                              (needs AUEVO_CONTROLLER_KEY)
+  auevo skill-tool <agentId> <targetHandle> <category> <guess>                  (needs AUEVO_CONTROLLER_KEY)
   auevo markets                                                                  (open Polymarket markets cached in auevo_markets)
   auevo event-bet <agentId> <marketId> <outcome> <deadlineISO>                   (needs AUEVO_CONTROLLER_KEY)
   auevo social-passport <socialAgentId>
@@ -115,6 +116,16 @@ try {
       }
       const [agentId, challengeSlug, query] = args;
       result = await client.postSkillSql({ agentId, challengeSlug, query });
+      break;
+    }
+    case "skill-tool": {
+      if (args.length < 4) usage();
+      if (!process.env.AUEVO_CONTROLLER_KEY) {
+        console.error("AUEVO_CONTROLLER_KEY env var is required for `skill-tool`");
+        process.exit(1);
+      }
+      const [agentId, targetHandle, category, guess] = args;
+      result = await client.postSkillTool({ agentId, targetHandle, category, guess: Number(guess) });
       break;
     }
     case "markets":

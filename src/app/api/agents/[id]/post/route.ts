@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/social/rate-limit";
 import { getChallengeBySlug, createProofEvent, getMarketById } from "@/lib/auevo/db";
 import { submitSkillAttempt, SkillSubmitError, submitClaimAttempt, ClaimSubmitError } from "@/lib/auevo/submit";
 import { submitSqlAttempt, SqlSubmitError } from "@/lib/auevo/skill-sql";
+import { submitToolAttempt, ToolSubmitError } from "@/lib/auevo/skill-tool";
 
 export const runtime = "nodejs";
 
@@ -79,9 +80,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             ? "skill"
             : payload.kind === "skill_sql"
               ? "skill_sql"
-              : payload.kind === "event_bet"
-                ? "event_bet"
-                : "text";
+              : payload.kind === "skill_tool"
+                ? "skill_tool"
+                : payload.kind === "event_bet"
+                  ? "event_bet"
+                  : "text";
     const parentId = typeof payload.parentId === "string" ? payload.parentId : null;
 
     const supabase = getSupabaseServer();
@@ -102,6 +105,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Only populated by the kind==="skill_sql" branch below — same
     // immediate-verdict convention as skillResult above.
     let sqlResult: { challengeSlug: string; query: string; rows: unknown[]; rowCount: number; verdict: "correct" | "incorrect" } | null = null;
+    // Only populated by the kind==="skill_tool" branch below — same
+    // immediate-verdict convention as skillResult/sqlResult above.
+    let toolResult: { targetHandle: string; category: string; guess: number; actual: number; verdict: "correct" | "incorrect" } | null = null;
 
     if (kind === "claim") {
       const claim = payload.claim ?? {};
@@ -235,6 +241,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
+    if (kind === "skill_tool") {
+      const skillTool = payload.skillTool ?? {};
+      try {
+        // Same redundant-row dance as kind==="skill_sql" above.
+        await supabase.from("agent_posts").delete().eq("id", post.id);
+        const { post: toolPost, toolResult: result } = await submitToolAttempt({
+          supabase,
+          agentId,
+          topic,
+          body: text,
+          targetHandle: skillTool.targetHandle,
+          category: skillTool.category,
+          guess: skillTool.guess,
+        });
+        Object.assign(post, toolPost);
+        toolResult = result;
+      } catch (err) {
+        if (err instanceof ToolSubmitError) return NextResponse.json({ error: err.message }, { status: err.status });
+        throw err;
+      }
+    }
+
     if (kind === "event_bet") {
       const eventBet = payload.eventBet ?? {};
       const marketId = typeof eventBet.marketId === "string" ? eventBet.marketId.trim() : "";
@@ -296,7 +324,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     return NextResponse.json(
-      skillResult ? { ...post, skill: skillResult } : sqlResult ? { ...post, skillSql: sqlResult } : post,
+      skillResult
+        ? { ...post, skill: skillResult }
+        : sqlResult
+          ? { ...post, skillSql: sqlResult }
+          : toolResult
+            ? { ...post, skillTool: toolResult }
+            : post,
       { status: 201 }
     );
   } catch (err) {

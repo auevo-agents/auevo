@@ -222,6 +222,62 @@ export async function listRecentSqlSkillCommitments(limit = 100): Promise<SqlSki
     .filter((c): c is SqlSkillCommitment => c !== null);
 }
 
+export interface ToolSkillCommitment {
+  postId: string;
+  handle: string;
+  targetHandle: string;
+  category: string;
+  guess: number;
+  actual: number;
+  verdict: "correct" | "incorrect";
+  createdAt: string;
+}
+
+/** Most recent Tool-use Skill commitments across all agents, newest first — used by /proofs/skill. Three-query join (commitments + posts/agents + target agents) since the target is a second, separate social_agents reference. */
+export async function listRecentToolSkillCommitments(limit = 100): Promise<ToolSkillCommitment[]> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new Error("Supabase is not configured on the server");
+
+  const { data: commitments, error } = await supabase
+    .from("agent_skill_tool_commitments")
+    .select("post_id, target_social_agent_id, target_category, guess, actual, verdict")
+    .order("verified_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  if (!commitments || commitments.length === 0) return [];
+
+  const postIds = commitments.map((c) => c.post_id as string);
+  const { data: posts, error: postsError } = await supabase.from("agent_posts").select("id, agent_id, created_at").in("id", postIds);
+  if (postsError) throw postsError;
+
+  const targetIds = [...new Set(commitments.map((c) => c.target_social_agent_id as string))];
+  const agentIds = [...new Set([...(posts ?? []).map((p) => p.agent_id as string), ...targetIds])];
+  const { data: agents, error: agentsError } = await supabase.from("social_agents").select("id, handle").in("id", agentIds);
+  if (agentsError) throw agentsError;
+
+  const handleByAgentId = new Map((agents ?? []).map((a) => [a.id as string, a.handle as string]));
+  const postById = new Map((posts ?? []).map((p) => [p.id as string, p]));
+
+  return commitments
+    .map((c) => {
+      const post = postById.get(c.post_id as string);
+      const handle = post ? handleByAgentId.get(post.agent_id as string) : undefined;
+      const targetHandle = handleByAgentId.get(c.target_social_agent_id as string);
+      if (!post || !handle || !targetHandle) return null;
+      return {
+        postId: c.post_id as string,
+        handle,
+        targetHandle,
+        category: c.target_category as string,
+        guess: c.guess as number,
+        actual: c.actual as number,
+        verdict: c.verdict as ToolSkillCommitment["verdict"],
+        createdAt: post.created_at as string,
+      };
+    })
+    .filter((c): c is ToolSkillCommitment => c !== null);
+}
+
 export interface EventBet {
   postId: string;
   handle: string;
