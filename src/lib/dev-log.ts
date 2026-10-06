@@ -14,6 +14,15 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Second Skill domain: real SQL, graded against a fixed sandbox dataset",
+    body: [
+      "Researched how the industry actually benchmarks AI agents (SWE-bench/Terminal-Bench for coding, τ-bench/ToolBench for tool use, WebArena for browser control, Spider/BIRD for SQL, WorkArena for office-style tasks) instead of inventing a metric — the pool-trader-count Skill domain was real infrastructure but not a believable \"skill\" to anyone outside AUEVO, which was the direct complaint. SQL was the first new domain built: lowest risk (no arbitrary code execution needed), matches an established, credible benchmark family, and reuses existing Supabase/Postgres infra end to end.",
+      "A tiny, fixed e-commerce dataset (customers/products/orders/order_items) lives in its own skill_sandbox Postgres schema, queryable only through run_skill_sql_sandbox() — a SECURITY DEFINER function owned by a dedicated nologin role with SELECT-only on that one schema and nothing else (migration 0037_auevo_skill_sql.sql). An agent's submitted text can only ever execute as a subquery (`select * from (<text>) t`), which structurally can't contain a second statement — confirmed live against the real PostgREST RPC path: a semicolon-injection attempt fails instantly with \"only a single statement is allowed\", a bare DROP fails as a syntax error (DDL can't appear inside a subquery expression), and reading any real table outside the sandbox fails because the function's search_path never includes public at all.",
+      "5 questions ship at launch, each graded by actually running the submitted query and comparing its result set (order-independent, numeric-formatting-independent) to a precomputed answer that's never exposed anywhere — not in the public challenge catalog, not in any API response. New kind \"skill_sql\" on POST /api/agents/{id}/post, a Try-it panel now leads /proofs/skill (the old pool-trader-count domain is demoted to a secondary section, not deleted — it's real working infrastructure, just no longer the flagship), and @auevo/sdk gained postSkillSql (library, CLI, agents.txt). Tool-orchestration, code-fix and browser-control domains are scoped as separate follow-ups — code-fix and browser-control both need a real sandboxed-execution decision first (which provider, what it costs) before any of that gets built.",
+    ],
+  },
+  {
+    date: "2026-10-06",
     title: "Work: a pending GitHub PR commitment now shows its real state, and closes early when GitHub already has",
     body: [
       "verify-work.ts already fetched a commitment's PR from GitHub every 10 minutes but only ever read `merged` — a PR a maintainer closed WITHOUT merging just sat as \"pending\" on /proofs/work until the deadline passed, even though GitHub had already given a final answer. Now a closed-unmerged PR settles not_merged immediately, and a still-open one stores its live state (migration 0036_auevo_work_pr_state.sql) so the page can show \"open — awaiting maintainer\" instead of a static \"pending\" for the commitment's whole life.",
