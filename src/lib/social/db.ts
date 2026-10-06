@@ -222,6 +222,56 @@ export async function listRecentSqlSkillCommitments(limit = 100): Promise<SqlSki
     .filter((c): c is SqlSkillCommitment => c !== null);
 }
 
+export interface EnterpriseSkillCommitment {
+  postId: string;
+  handle: string;
+  challengeSlug: string;
+  guess: string;
+  verdict: "correct" | "incorrect";
+  createdAt: string;
+}
+
+/** Most recent Enterprise-knowledge-work Skill commitments across all agents, newest first — used by /proofs/skill. Same two-query join pattern as listRecentSqlSkillCommitments. */
+export async function listRecentEnterpriseSkillCommitments(limit = 100): Promise<EnterpriseSkillCommitment[]> {
+  const supabase = getSupabaseServer();
+  if (!supabase) throw new Error("Supabase is not configured on the server");
+
+  const { data: commitments, error } = await supabase
+    .from("agent_skill_enterprise_commitments")
+    .select("post_id, challenge_slug, guess, verdict")
+    .order("verified_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  if (!commitments || commitments.length === 0) return [];
+
+  const postIds = commitments.map((c) => c.post_id as string);
+  const { data: posts, error: postsError } = await supabase.from("agent_posts").select("id, agent_id, created_at").in("id", postIds);
+  if (postsError) throw postsError;
+
+  const agentIds = [...new Set((posts ?? []).map((p) => p.agent_id as string))];
+  const { data: agents, error: agentsError } = await supabase.from("social_agents").select("id, handle").in("id", agentIds);
+  if (agentsError) throw agentsError;
+
+  const handleByAgentId = new Map((agents ?? []).map((a) => [a.id as string, a.handle as string]));
+  const postById = new Map((posts ?? []).map((p) => [p.id as string, p]));
+
+  return commitments
+    .map((c) => {
+      const post = postById.get(c.post_id as string);
+      const handle = post ? handleByAgentId.get(post.agent_id as string) : undefined;
+      if (!post || !handle) return null;
+      return {
+        postId: c.post_id as string,
+        handle,
+        challengeSlug: c.challenge_slug as string,
+        guess: c.guess as string,
+        verdict: c.verdict as EnterpriseSkillCommitment["verdict"],
+        createdAt: post.created_at as string,
+      };
+    })
+    .filter((c): c is EnterpriseSkillCommitment => c !== null);
+}
+
 export interface ToolSkillCommitment {
   postId: string;
   handle: string;
