@@ -17,7 +17,54 @@ import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-a
  * wait out — the dataset is fixed and the answer is never published
  * anywhere (skill_sql_answers is RLS-locked, server-side only), so grading
  * happens in the same request the query is submitted in.
+ *
+ * The API's own challenge spec (rules.description, GET /api/auevo/
+ * challenges) repeats the full schema and the POST wire format in every
+ * single question's text, for an autonomous agent that only ever reads
+ * one question at a time — exactly right for that reader, a wall of
+ * repeated boilerplate for a human looking at five cards in a row.
+ * SCENARIOS below is a hand-written, human-readable version of the same
+ * five questions (same slugs, same logic — cross-check against the
+ * migration before editing either): schema shown once, each card just a
+ * short question and the columns it expects back.
  */
+
+const SCHEMA = [
+  "customers(id, name, country)",
+  "products(id, name, category, price_usd)",
+  "orders(id, customer_id, placed_at)",
+  "order_items(order_id, product_id, quantity)",
+];
+
+interface SqlScenario {
+  slug: string;
+  title: string;
+  question: string;
+  returns: string;
+}
+
+const SCENARIOS: SqlScenario[] = [
+  { slug: "agent-skill-sql-1", title: "US customers", question: "List the names of all customers from the US, alphabetically.", returns: "name" },
+  { slug: "agent-skill-sql-2", title: "Cheapest footwear first", question: "List footwear product names, cheapest first.", returns: "name" },
+  {
+    slug: "agent-skill-sql-3",
+    title: "Total quantity per customer",
+    question: "For each customer, total quantity ordered across all their orders — highest first.",
+    returns: "name, total_quantity",
+  },
+  {
+    slug: "agent-skill-sql-4",
+    title: "Top products by revenue",
+    question: "Products with total revenue over $100 — highest first.",
+    returns: "name, total_revenue",
+  },
+  {
+    slug: "agent-skill-sql-5",
+    title: "Customers who never bought accessories",
+    question: "Customers who have never ordered anything in the 'accessories' category.",
+    returns: "name",
+  },
+];
 
 function hexNonce(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -36,13 +83,6 @@ function canonicalMessage(method: string, path: string, timestamp: number, nonce
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
 const textareaClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm font-mono";
-
-interface SqlChallenge {
-  id: string;
-  slug: string;
-  title: string;
-  rules: { description?: string };
-}
 
 interface SqlVerdict {
   challengeSlug: string;
@@ -189,40 +229,16 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
 }
 
 function QueryStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () => void }) {
-  const [challenges, setChallenges] = useState<SqlChallenge[] | null>(null);
-  const [challengesError, setChallengesError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<SqlChallenge | null>(null);
+  const [selected, setSelected] = useState<SqlScenario>(SCENARIOS[0]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<SqlVerdict | null>(null);
   const { signMessageAsync } = useSignMessage();
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/auevo/challenges")
-      .then((res) => res.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.error) throw new Error(json.error);
-        const sql = (json.challenges ?? []).filter(
-          (c: { category: string; rules?: { kind?: string } }) => c.category === "skill" && c.rules?.kind === "sql"
-        );
-        setChallenges(sql);
-        if (sql.length > 0) setSelected(sql[0]);
-      })
-      .catch((err) => {
-        if (!cancelled) setChallengesError(err instanceof Error ? err.message : "Failed to load SQL questions");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const canSubmit = Boolean(selected) && query.trim().length > 0;
+  const canSubmit = query.trim().length > 0;
 
   async function handlePost() {
-    if (!selected) return;
     setError(null);
     setPending(true);
     try {
@@ -285,30 +301,36 @@ function QueryStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
 
   return (
     <div className="flex flex-col gap-2.5">
-      <StepLabel title="Pick a question" />
-      {challengesError && <p className="text-xs text-[#ff7b82]">{challengesError}</p>}
-      {!challenges && !challengesError && <p className="text-xs text-[#7a8390]">Loading questions…</p>}
+      <StepLabel title="Schema (same for every question)" />
+      <div className="rounded-[3px] border border-white/[0.07] bg-[#0d1016] p-3">
+        <ul className="flex flex-col gap-1 font-mono text-[11px] leading-5 text-[#9aa3b0]">
+          {SCHEMA.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      </div>
 
-      {challenges && challenges.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {challenges.map((c) => {
-            const isSelected = selected?.slug === c.slug;
-            return (
-              <button
-                key={c.slug}
-                type="button"
-                className={`rounded-[3px] border px-3.5 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#c9ad70]/50 focus-visible:ring-offset-0 ${
-                  isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
-                }`}
-                onClick={() => setSelected(c)}
-              >
-                <p className="text-sm text-[#ece8df]">{c.title}</p>
-                {c.rules.description && <p className="mt-1 text-[11px] leading-5 text-[#7a8390]">{c.rules.description}</p>}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <StepLabel title="Pick a question" />
+      <div className="flex flex-col gap-2">
+        {SCENARIOS.map((s) => {
+          const isSelected = selected.slug === s.slug;
+          return (
+            <button
+              key={s.slug}
+              type="button"
+              className={`rounded-[3px] border px-3.5 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#c9ad70]/50 focus-visible:ring-offset-0 ${
+                isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
+              }`}
+              onClick={() => setSelected(s)}
+            >
+              <p className="text-sm text-[#ece8df]">{s.title}</p>
+              <p className="mt-1 text-[11px] leading-5 text-[#7a8390]">
+                {s.question} <span className="text-[#5f6875]">Return: {s.returns}.</span>
+              </p>
+            </button>
+          );
+        })}
+      </div>
 
       <StepLabel title="Your SQL query" />
       <textarea
