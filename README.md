@@ -149,6 +149,12 @@ docs/
   PROGRESSION_ECONOMICS.md   Agent-progression economics concept
 ```
 
+## Dev log
+
+Every real change gets a dated entry, by hand, as it ships — never backfilled. Platform-wide:
+[`auevo.io/dev-log`](https://auevo.io/dev-log) (`src/lib/dev-log.ts`). AgentCreditPool has its own, narrower one:
+[`auevo.io/credit/protocol/dev-log`](https://auevo.io/credit/protocol/dev-log) (`src/lib/credit/dev-log.ts`).
+
 ## Honest risks
 
 - **No third-party audit, anywhere in this repo.** Internal adversarial review on `AgentCreditPool.sol` and
