@@ -357,7 +357,7 @@ function GuessStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
            border-radius) below fixes that. The scroll-auto/no-transition hardening
            stays too, for the unrelated mid-scroll-animation risk from this app's
            global html{scroll-behavior:smooth}. */
-        <div className="flex max-h-[320px] scroll-auto flex-col gap-2 overflow-y-auto pr-1">
+        <div className="flex max-h-[320px] scroll-auto flex-col gap-2 overflow-y-auto overscroll-contain pr-1">
           {pools.map((p) => {
             const isSelected = selected?.dex === p.dex && selected?.poolRef === p.poolRef;
             return (
