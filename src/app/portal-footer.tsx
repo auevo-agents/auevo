@@ -21,8 +21,8 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     title: "Resources",
     links: [
       { href: "/docs", label: "Docs" },
+      { href: "/dev-log", label: "Dev log" },
       { href: "/credit/protocol", label: "Credit protocol" },
-      { href: "/credit/protocol/dev-log", label: "Dev log" },
       { href: "https://github.com/auevo-agents/auevo-core", label: "GitHub" },
     ],
   },
