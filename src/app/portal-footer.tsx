@@ -15,6 +15,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/rwa", label: "RWA marketplace" },
       { href: "/token", label: "$AUEVO" },
+      { href: "/scanner", label: "Token security scanner" },
     ],
   },
   {
