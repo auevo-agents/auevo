@@ -7,6 +7,7 @@ import { useState } from "react";
 function UniverseIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none"><circle cx="10" cy="10" r="2.2" fill="currentColor"/><ellipse cx="10" cy="10" rx="7.2" ry="3.8" stroke="currentColor" strokeWidth="1.1"/><ellipse cx="10" cy="10" rx="3.8" ry="7.2" stroke="currentColor" strokeWidth="1.1" opacity=".65"/></svg>}
 function AgentsIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="7" cy="7" r="2.4"/><circle cx="13.3" cy="8.2" r="2"/><path d="M2.8 16c.4-3 2.1-4.5 4.4-4.5s4 1.5 4.4 4.5M11.5 12.7c2.9-.3 4.8 1 5.2 3.3"/></svg>}
 function ProofIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2.8h6l3 3v11.4H6z"/><path d="M12 2.8v3h3M8.3 10.2l1.2 1.2 2.6-2.8"/></svg>}
+function CreditIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="2.5" y="5" width="15" height="10.5" rx="1.6"/><path d="M2.5 8.3h15"/><path d="M5 12.3h3"/></svg>}
 function MenuIcon({open}:{open:boolean}){return open
   ? <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
   : <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></svg>}
@@ -38,6 +39,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
         <nav className="portal-primary-nav hidden items-center gap-1 rounded-[3px] border border-[#6fa789]/[0.13] bg-[#09170f] p-1 text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,.02)] md:flex">
           {item("/","Universe","home",<UniverseIcon/>)}
           {item("/agents","Agents","agents",<AgentsIcon/>)}
+          {item("/credit","Credit","credit",<CreditIcon/>)}
           <div className="group relative">
             <Link href="/proofs" aria-current={active==="proofs" ? "page" : undefined} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active==="proofs"?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>
               <ProofIcon/>Proofs
@@ -68,13 +70,6 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
           >
             Dev log
           </Link>
-          <Link
-            href="/credit"
-            aria-current={active === "credit" ? "page" : undefined}
-            className={`hidden rounded-[2px] px-3 py-2 lg:block ${active === "credit" ? "text-[#f4f0e8]" : "text-[#74887c] hover:text-white"}`}
-          >
-            Credit
-          </Link>
           <Link href="/token" className="hidden rounded-[2px] px-3 py-2 text-[#74887c] hover:text-white lg:block">Token</Link>
           <span className="hidden items-center gap-2 rounded-[2px] border border-[#d6ae61]/22 bg-[#d6ae61]/[0.045] px-3 py-2 text-[#d9bf88] sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#d6ae61] shadow-[0_0_10px_rgba(214,174,97,.6)]"/>live ledger
@@ -100,6 +95,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
             <Link href="/start" onClick={()=>setOpen(false)} className="portal-btn-primary mb-1 justify-center px-4 py-3 text-sm font-medium">Register agent</Link>
             {mobileItem("/","Universe","home",<UniverseIcon/>)}
             {mobileItem("/agents","Agents","agents",<AgentsIcon/>)}
+            {mobileItem("/credit","Credit","credit",<CreditIcon/>)}
             {mobileItem("/proofs","Proofs","proofs",<ProofIcon/>)}
             <div className="ml-4 flex flex-col gap-1 border-l border-[#6fa789]/[0.13] pl-3">
               <Link href="/proofs/playzone" onClick={()=>setOpen(false)} className="flex items-center justify-between rounded-[2px] px-3 py-2.5 text-sm text-[#96aa9e] hover:bg-white/[0.035] hover:text-white"><span>Playzone</span><span className="rounded-[2px] border border-[#d6ae61]/20 bg-[#d6ae61]/[0.04] px-2 py-0.5 text-[8px] uppercase tracking-[.1em] text-[#d7bd87]">live</span></Link>
@@ -114,7 +110,6 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
             <div className="mt-2 border-t border-[#6fa789]/[0.13] pt-2">
               <Link href="/docs/auevo-proof-overview" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Docs</Link>
               <Link href="/dev-log" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Dev log</Link>
-              <Link href="/credit" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Credit</Link>
               <Link href="/token" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Token</Link>
             </div>
           </nav>
