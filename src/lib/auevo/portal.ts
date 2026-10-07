@@ -1,7 +1,19 @@
+import { unstable_cache } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase";
 import { aggregateCategory, CATEGORY_RESULT_FIELD, type CategoryAggregate } from "@/lib/auevo/score";
 import { UNSETTLED_STATUSES, type ProofCategory, type ProofEvent } from "@/lib/auevo/db";
 import type { SocialAgent } from "@/lib/social/db";
+
+// This app's own Next.js build runs under Cache Components' "previous
+// model" (see node_modules/next/dist/docs/01-app/02-guides/
+// caching-without-cache-components.md) — unlike legacy Next, a plain
+// `fetch`/Supabase call with no explicit cache option is NEVER cached,
+// so every page's own `export const revalidate = 15` was a no-op for
+// these functions: each request re-ran its Supabase round-trip live. The
+// unstable_cache wrapper below is what actually makes that 15s number
+// real — confirmed via `x-vercel-cache: MISS` + `cache-control: private,
+// no-store` on every single repeated request before this was added.
+const PORTAL_REVALIDATE_SECONDS = 15;
 
 export const PORTAL_CATEGORIES: ProofCategory[] = [
   "identity",
@@ -59,7 +71,20 @@ function buildRecord(agent: SocialAgent, proofs: ProofEvent[]): AgentPortalRecor
   };
 }
 
-export async function listAgentPortalRecords(limit = 24, { includeTest = false }: { includeTest?: boolean } = {}): Promise<AgentPortalRecord[]> {
+/**
+ * Every caller here only ever reads id/category/status/verification_method/
+ * result/created_at (and social_agent_id, to bucket rows back to an
+ * agent) off the returned proofs — aggregateCategory() and the forest/
+ * card views never touch the rest. The full-width columns (evidence_*,
+ * validator_signatures, commitment hashes, …) are what made this query's
+ * payload balloon once it's joined across up to 200 agents at once; the
+ * single-agent Passport page's own getPortalRecordByHandle still selects
+ * everything, since its "Raw Proof Events" panel deliberately dumps the
+ * full row.
+ */
+const LIST_PROOF_COLUMNS = "id, social_agent_id, category, status, verification_method, result, created_at";
+
+async function fetchAgentPortalRecords(limit: number, includeTest: boolean): Promise<AgentPortalRecord[]> {
   const supabase = getSupabaseServer();
   if (!supabase) return [];
 
@@ -75,9 +100,7 @@ export async function listAgentPortalRecords(limit = 24, { includeTest = false }
   const ids = agents.map((a) => a.id);
   const { data: proofs, error: proofsError } = await supabase
     .from("auevo_proof_events")
-    .select(
-      "id, agent_id, social_agent_id, task_id, challenge_id, category, rules_hash, commitment, start_at, end_at, input_commitment, output_hash, evidence_uri, evidence_hash, verification_method, validator_set, result, validator_signatures, human_intervention, status, created_at"
-    )
+    .select(LIST_PROOF_COLUMNS)
     .in("social_agent_id", ids)
     .order("created_at", { ascending: false });
 
@@ -89,7 +112,13 @@ export async function listAgentPortalRecords(limit = 24, { includeTest = false }
     .sort((a, b) => b.verified - a.verified || b.attempted - a.attempted || b.ageDays - a.ageDays);
 }
 
-export async function getPortalRecordByHandle(handle: string): Promise<AgentPortalRecord | null> {
+const cachedAgentPortalRecords = unstable_cache(fetchAgentPortalRecords, ["agent-portal-records"], { revalidate: PORTAL_REVALIDATE_SECONDS });
+
+export async function listAgentPortalRecords(limit = 24, { includeTest = false }: { includeTest?: boolean } = {}): Promise<AgentPortalRecord[]> {
+  return cachedAgentPortalRecords(limit, includeTest);
+}
+
+async function fetchPortalRecordByHandle(handle: string): Promise<AgentPortalRecord | null> {
   const supabase = getSupabaseServer();
   if (!supabase) return null;
   const { data: agent, error } = await supabase
@@ -109,4 +138,10 @@ export async function getPortalRecordByHandle(handle: string): Promise<AgentPort
     .limit(250);
 
   return buildRecord(agent as SocialAgent, (proofs ?? []) as ProofEvent[]);
+}
+
+const cachedPortalRecordByHandle = unstable_cache(fetchPortalRecordByHandle, ["agent-portal-record-by-handle"], { revalidate: PORTAL_REVALIDATE_SECONDS });
+
+export async function getPortalRecordByHandle(handle: string): Promise<AgentPortalRecord | null> {
+  return cachedPortalRecordByHandle(handle.toLowerCase());
 }
