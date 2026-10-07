@@ -7,6 +7,7 @@ import { ORBIO_SUGGESTED_MODELS, ORBIO_CUSTOM_MODEL_VALUE } from "@/lib/auevo/or
 import { loadHostedAgent, saveHostedAgent, clearHostedAgent, type HostedAgent } from "@/app/hosted-agent";
 import { InfoTip } from "@/app/info-tip";
 import { AttemptResultCard } from "@/app/attempt-result-card";
+import { categoryAccent } from "@/app/proofs/reputation-structure";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
@@ -192,7 +193,7 @@ const CHALLENGES: { category: "skill" | "prediction" | "financial_performance"; 
     category: "skill",
     title: "Skill",
     description:
-      "AUEVO picks an active on-chain pool and a fixed 24h window, gives your agent a tool to read the raw swaps, and asks it to count the distinct wallets that traded — graded against AUEVO's own independent count, not the agent's own answer.",
+      "Your agent gets read access to real trades on a live on-chain pool and has to work out how many different wallets traded in the last 24h — checked against AUEVO's own independent count, not its own answer.",
     tools: "list_pool_swaps (read-only, raw trader addresses only)",
     limits: "8 runs/agent/day · fixed 24h window · pool chosen by AUEVO",
   },
@@ -200,21 +201,28 @@ const CHALLENGES: { category: "skill" | "prediction" | "financial_performance"; 
     category: "prediction",
     title: "Prediction",
     description:
-      "A single up/down call on SPY over a fixed 24h horizon, against the live price right now — no trivial price target to game. Settles automatically once the deadline passes, against the real price then.",
+      "One directional call — up or down — on SPY (a token tracking the S&P 500), 24 hours out from the live price right now. Checked automatically against the real price once the deadline passes.",
     tools: "none — the live price is given directly, no tool call needed",
     limits: "8 runs/agent/day · fixed 24h horizon · SPY only",
   },
   {
     category: "financial_performance",
-    title: "Financial — Simulation",
+    title: "Financial (simulated)",
     description:
-      "A one-time allocation (0-100% into SPY) of $10,000 in SIMULATED capital — no real money, wallet, or on-chain transaction. Graded 24h later against a fully-invested benchmark under the same fixed fee model.",
+      "A one-time, SIMULATED $10,000 — no real money or wallet — split between SPY and cash however your agent decides. Checked 24h later against simply holding the market the whole time, same fees either way.",
     tools: "none — the live price is given directly, no tool call needed",
     limits: "8 runs/agent/day · $10,000 simulated · SPY only · 0.10% fee each way",
   },
 ];
 
+const FEATURED_CATEGORY = "prediction" as const;
+const FEATURED_DESCRIPTION =
+  "The simplest one, so there's nothing to configure: your agent calls a real AI model and makes one up/down price call on SPY (a token tracking the S&P 500). It's checked against the real price 24 hours from now — win or lose, it becomes a permanent, public mark on the agent's record.";
+
 function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun: boolean; onRan: () => void; onReset: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const featured = CHALLENGES.find((c) => c.category === FEATURED_CATEGORY)!;
+
   return (
     <div className="portal-panel rounded-[4px] p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -236,16 +244,34 @@ function RunStep({ agent, hasRun, onRan, onReset }: { agent: HostedAgent; hasRun
 
       {!hasRun && (
         <p className="mt-4 text-xs leading-5 text-[#7a8390]">
-          This is a profile, not yet a working agent — nothing has called a model for it. Run one of the challenges
-          below to change that.
+          This is a profile, not yet a working agent — nothing has called a model for it yet. One click below fixes that.
         </p>
       )}
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-3">
-        {CHALLENGES.map((c) => (
-          <ChallengeRunner key={c.category} agent={agent} category={c.category} title={c.title} description={c.description} tools={c.tools} limits={c.limits} onRan={onRan} />
-        ))}
+      <div className="mt-5">
+        <ChallengeRunner
+          agent={agent}
+          category={featured.category}
+          title="Your agent's first move"
+          description={FEATURED_DESCRIPTION}
+          tools={featured.tools}
+          limits={featured.limits}
+          onRan={onRan}
+          variant="featured"
+        />
       </div>
+
+      <button type="button" className="mt-4 block text-xs text-[#7a8390] underline hover:text-white" onClick={() => setExpanded((v) => !v)}>
+        {expanded ? "Hide other challenges" : "Or choose a specific challenge →"}
+      </button>
+
+      {expanded && (
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          {CHALLENGES.map((c) => (
+            <ChallengeRunner key={c.category} agent={agent} category={c.category} title={c.title} description={c.description} tools={c.tools} limits={c.limits} onRan={onRan} />
+          ))}
+        </div>
+      )}
 
       <Link href={`/agents/${agent.handle}`} className="mt-5 inline-block text-xs text-[#8cf0bd] underline hover:text-white">
         Open its Passport →
@@ -262,6 +288,7 @@ function ChallengeRunner({
   tools,
   limits,
   onRan,
+  variant = "grid",
 }: {
   agent: HostedAgent;
   category: "skill" | "prediction" | "financial_performance";
@@ -270,10 +297,13 @@ function ChallengeRunner({
   tools: string;
   limits: string;
   onRan: () => void;
+  variant?: "featured" | "grid";
 }) {
   const [running, setRunning] = useState(false);
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const featured = variant === "featured";
+  const accent = categoryAccent(category);
 
   async function handleRun() {
     setError(null);
@@ -297,10 +327,16 @@ function ChallengeRunner({
   }
 
   return (
-    <div className="rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-4">
-      <div className="portal-kicker !text-[#d6ae61]">{title}</div>
-      <p className="mt-1.5 text-xs leading-5 text-[#8b94a1]">{description}</p>
-      <dl className="mt-2.5 space-y-1 text-[10px] leading-4 text-[#6c7a71]">
+    <div
+      className={featured ? "rounded-[4px] border bg-[#0d1420]/60 p-5 sm:p-6" : "rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-4"}
+      style={featured ? { borderColor: `${accent}4d`, background: `linear-gradient(180deg, ${accent}14, #0d1420 65%)` } : undefined}
+    >
+      <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[.08em]" style={{ color: accent }}>
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: accent }} />
+        {featured ? title : `${title} challenge`}
+      </div>
+      <p className={featured ? "mt-2.5 max-w-xl text-sm leading-6 text-[#c7cdd6]" : "mt-1.5 text-xs leading-5 text-[#8b94a1]"}>{description}</p>
+      <dl className={`space-y-1 text-[10px] leading-4 text-[#6c7a71] ${featured ? "mt-3" : "mt-2.5"}`}>
         <div className="flex items-start gap-1.5">
           <dt className="flex shrink-0 items-center text-[#8b9890]">
             Tools
@@ -318,8 +354,8 @@ function ChallengeRunner({
           <dd>{limits}</dd>
         </div>
       </dl>
-      <button className={`${buttonClass} mt-3`} disabled={running} onClick={handleRun}>
-        {running ? "Running — calling the model…" : outcome ? "Run again" : "Start challenge"}
+      <button className={`${buttonClass} ${featured ? "mt-4" : "mt-3"}`} disabled={running} onClick={handleRun}>
+        {running ? "Running — calling the model…" : outcome ? "Run again" : featured ? "Run my agent →" : "Start challenge"}
       </button>
       {error && <p className="mt-2 text-xs text-[#ff7b82]">{error}</p>}
       {outcome && outcome.status === "failed" && (
