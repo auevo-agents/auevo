@@ -1,12 +1,19 @@
 import Link from "next/link";
 import type { ProofCategory } from "@/lib/auevo/db";
 
-const SUGGESTIONS: { category: ProofCategory; title: string; text: string; href: string; cta: string }[] = [
+export const TRY_NEXT_SUGGESTIONS: { category: ProofCategory; title: string; text: string; href: string; cta: string }[] = [
   { category: "prediction", title: "Prediction", text: "Make one public, timestamped price call — no code needed.", href: "/proofs/prediction", cta: "Try it now" },
   { category: "skill", title: "Skill", text: "Guess how many wallets traded a pool, graded instantly.", href: "/proofs/skill", cta: "Try it now" },
   { category: "work", title: "Work", text: "Commit to merging a real GitHub PR by a deadline.", href: "/proofs/work", cta: "Browse open issues" },
   { category: "financial_performance", title: "Financial Performance", text: "Commit capital on-chain, settle against a benchmark like SPY.", href: "/proofs/financial-league", cta: "View cohorts" },
 ];
+
+/** Shared by the Passport's own TryNext panel below and attempt-result-card.tsx — "not attempted" filtered, optionally also excluding the category just attempted (it already has a fresher result right there, no need to suggest it again). */
+export function suggestNext(attempted: ProofCategory[], justAttempted?: ProofCategory, max?: number) {
+  const attemptedSet = new Set(attempted);
+  const suggestions = TRY_NEXT_SUGGESTIONS.filter((s) => !attemptedSet.has(s.category) && s.category !== justAttempted);
+  return typeof max === "number" ? suggestions.slice(0, max) : suggestions;
+}
 
 /**
  * "The next trial" (execution-plan doc §7) — v1 reuses /start's own
@@ -18,8 +25,7 @@ const SUGGESTIONS: { category: ProofCategory; title: string; text: string; href:
  * actionable category has at least one attempt.
  */
 export function TryNext({ attempted }: { attempted: ProofCategory[] }) {
-  const attemptedSet = new Set(attempted);
-  const suggestions = SUGGESTIONS.filter((s) => !attemptedSet.has(s.category));
+  const suggestions = suggestNext(attempted);
   if (suggestions.length === 0) return null;
 
   return (

@@ -6,6 +6,7 @@ import { EXECUTOR_ALLOWED_MODELS, EXECUTOR_MODEL_LABELS } from "@/lib/auevo/exec
 import { ORBIO_SUGGESTED_MODELS, ORBIO_CUSTOM_MODEL_VALUE } from "@/lib/auevo/orbio-models";
 import { loadHostedAgent, saveHostedAgent, clearHostedAgent, type HostedAgent } from "@/app/hosted-agent";
 import { InfoTip } from "@/app/info-tip";
+import { AttemptResultCard } from "@/app/attempt-result-card";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
@@ -343,6 +344,7 @@ function ChallengeRunner({
           )}
         </div>
       )}
+      {outcome && outcome.status === "completed" && <AttemptResultCard agentId={agent.id} agentHandle={agent.handle} category={category} />}
     </div>
   );
 }

@@ -288,7 +288,7 @@ export default async function AuevoSkillPage({ searchParams }: PageProps<"/proof
 
                     {sharedWindows.length > 0 && (
                       <>
-                        <h2 className="mt-10 text-sm font-medium text-[#efe9de]">Head-to-head</h2>
+                        <h2 id="head-to-head" className="mt-10 text-sm font-medium text-[#efe9de]">Head-to-head</h2>
                         <p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#7a8390]">
                           Two or more agents asked about the literal same pool and window — not just a similar one.
                         </p>

@@ -6,6 +6,7 @@ import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
 import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
 import { loadHostedAgent, type HostedAgent } from "@/app/hosted-agent";
+import { AttemptResultCard } from "@/app/attempt-result-card";
 import { SKILL_MIN_WINDOW_HOURS, SKILL_MAX_WINDOW_HOURS } from "@/lib/auevo/skill";
 import type { SuggestedSkillPool } from "@/lib/auevo/skill";
 
@@ -172,6 +173,7 @@ function HostedRunStep({ agent }: { agent: HostedAgent }) {
           )}
         </div>
       )}
+      {outcome && outcome.status === "completed" && <AttemptResultCard agentId={agent.id} agentHandle={agent.handle} category="skill" />}
     </div>
   );
 }
@@ -475,6 +477,7 @@ function GuessStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () =
             Open @{agent.handle}&apos;s Passport →
           </a>
         </div>
+        <AttemptResultCard agentId={agent.id} agentHandle={agent.handle} category="skill" />
       </div>
     );
   }
