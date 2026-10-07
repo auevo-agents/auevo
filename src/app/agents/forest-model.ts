@@ -60,8 +60,13 @@ export function proofMaterial(proof: ForestProof) {
 }
 
 /** Ledger order determines growth; changing a verdict changes its material,
- * never its position. Facets of the same event all carry the same proof ID. */
-export function crystalTree(agent: ForestAgent): Crystal[] {
+ * never its position. Facets of the same event all carry the same proof ID.
+ * `simple`: skip the ~80-facet-per-proof tessellation and push one crystal
+ * per proof instead — for AgentTreeIcon, a ~40-70px thumbnail where that
+ * detail is invisible but was measured costing 200+ paths per proof once
+ * rendered (see agent-tree-icon.tsx). The full interactive 3D bloom keeps
+ * calling this with no options, unaffected. */
+export function crystalTree(agent: ForestAgent, opts?: { simple?: boolean }): Crystal[] {
   const proofs = [...agent.proofs].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   const growth = Math.log2(1 + proofs.length);
   const trunkHeight = .62 + Math.min(1.3, growth * .31);
@@ -85,19 +90,23 @@ export function crystalTree(agent: ForestAgent): Crystal[] {
     const centerZ = Math.sin(angle) * radius;
     const material = proofMaterial(proof);
     const size = .36;
-    // One Proof Event owns a stepped crown, tessellated into glass facets.
-    // There are no anonymous canopy clusters and no synthetic successful events.
-    const facets: number[][] = [];
-    // Every facet of this branched crystal crown retains the real event ID.
-    for(let tier=0;tier<4;tier++){
-      const width=tier===3?1:tier===0?2:3;
-      for(let x=-width;x<=width;x++)for(let z=-width;z<=width;z++){
-        if(Math.abs(x)+Math.abs(z)>width+1 || (Math.abs(x)+Math.abs(z)>1 && (x*3+z+tier)%3===0))continue;
-        facets.push([x*.23+Math.sin(tier+i)*.07,tier*.23,z*.23,(Math.abs(x)+Math.abs(z)>width)?.57:.67]);
+    if (opts?.simple) {
+      cubes.push({ x: centerX, y: height, z: centerZ, size, material, proofId: proof.id });
+    } else {
+      // One Proof Event owns a stepped crown, tessellated into glass facets.
+      // There are no anonymous canopy clusters and no synthetic successful events.
+      const facets: number[][] = [];
+      // Every facet of this branched crystal crown retains the real event ID.
+      for(let tier=0;tier<4;tier++){
+        const width=tier===3?1:tier===0?2:3;
+        for(let x=-width;x<=width;x++)for(let z=-width;z<=width;z++){
+          if(Math.abs(x)+Math.abs(z)>width+1 || (Math.abs(x)+Math.abs(z)>1 && (x*3+z+tier)%3===0))continue;
+          facets.push([x*.23+Math.sin(tier+i)*.07,tier*.23,z*.23,(Math.abs(x)+Math.abs(z)>width)?.57:.67]);
+        }
       }
-    }
-    for (const [dx, dy, dz, factor] of facets) {
-      cubes.push({ x: centerX + dx, y: height + dy, z: centerZ + dz, size: size * factor, material, proofId: proof.id });
+      for (const [dx, dy, dz, factor] of facets) {
+        cubes.push({ x: centerX + dx, y: height + dy, z: centerZ + dz, size: size * factor, material, proofId: proof.id });
+      }
     }
     // Gold branch segments connecting growth to the trunk.
     for (let step = 1; step <= 2; step++) {

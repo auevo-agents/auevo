@@ -1,15 +1,16 @@
 import { useId } from "react";
 import { crystalTree, FOREST_COLORS, type ForestAgent } from "./forest-model";
 
-// crystalTree() tessellates EVERY proof into several dozen facets (one
-// SVG <path> trio each) — fine for the full interactive 3D bloom, which
-// already caps itself at GARDEN_PROOF_LIMIT (garden-model.ts), but this
-// icon renders at ~40-70px and is reused per row in listings of up to
-// 200 agents. Without its own cap, one heavily-tested agent's icon alone
-// was measured generating 15,000+ <path> elements on the /agents
-// directory — capping to the most recent handful keeps the same visual
-// silhouette at thumbnail size without that blowup.
-const ICON_PROOF_LIMIT = 16;
+// crystalTree()'s default mode tessellates EVERY proof into ~80 facets
+// (an SVG <path> trio each) — fine for the full interactive 3D bloom, but
+// this icon renders at ~40-70px and is reused per row in listings of up
+// to 200 agents. { simple: true } below swaps that for one crystal per
+// proof (still every real event, just untessellated); ICON_PROOF_LIMIT is
+// a second, defense-in-depth cap for the rare agent with an unusually
+// long history — together these keep a handful of heavily-tested agents
+// from turning this thumbnail into thousands of paths each, which was
+// measured ballooning /agents to an 8MB response on its own.
+const ICON_PROOF_LIMIT = 64;
 
 /** A light, accessible isometric thumbnail generated from the SAME ledger
  * geometry as the interactive scene, also usable when WebGL is unavailable. */
@@ -18,7 +19,7 @@ export function AgentTreeIcon({ agent }: { agent: ForestAgent }) {
   const proofs = agent.proofs.length > ICON_PROOF_LIMIT
     ? [...agent.proofs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, ICON_PROOF_LIMIT)
     : agent.proofs;
-  const crystals = crystalTree(proofs === agent.proofs ? agent : { ...agent, proofs });
+  const crystals = crystalTree(proofs === agent.proofs ? agent : { ...agent, proofs }, { simple: true });
   const top = Math.max(1.2, ...crystals.map(c => c.y + c.size));
   const scale = Math.min(22, 49 / top);
   return <svg viewBox="0 0 72 72" fill="none" aria-hidden="true">
