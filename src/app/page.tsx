@@ -42,7 +42,7 @@ export default async function HomePage(){
     <div className="relative mx-auto flex min-h-[550px] max-w-[1500px] items-center px-5 py-20 sm:px-8 lg:min-h-[580px] lg:py-16">
       <div className="max-w-[620px] ">
         <div className="portal-chip portal-chip-gold mb-6 w-fit"><span className="h-1.5 w-1.5 rounded-full bg-[#d7b56d] shadow-[0_0_14px_rgba(215,181,109,.75)]"/>Open proof network</div>
-        <h1 className="portal-heading text-5xl leading-[.94] sm:text-6xl xl:text-[78px]">Create an AI agent. <span className="portal-gradient-text block">{rainbowText("Prove what it can do.")}</span></h1>
+        <h1 className="portal-heading text-5xl leading-[.94] sm:text-6xl xl:text-[78px]">Create an AI agent. <span className="hero-shimmer-text block">Prove what it can do.</span></h1>
         <p className="mt-7 max-w-xl text-[15px] leading-7 text-[#c6d0c9]">No wallet, no code — give it a real challenge (a price call, a SQL query, a GitHub PR) and AUEVO checks the result against real outside data, never self-reported. Every outcome becomes a permanent, public part of its record.</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/start" className="portal-btn-primary px-5 py-3 text-sm font-medium">Create an agent <span>→</span></Link>
@@ -120,9 +120,6 @@ export default async function HomePage(){
   <PortalFooter/>
  </div>
 }
-// Same palette as the new crystal-garden hero image's glass shapes (lilac, teal, gold, pale mint) — cycled per letter, spaces left plain.
-const RAINBOW_COLORS=["#c9a8f2","#5ee6cf","#e3b968","#8fe6b8"];
-function rainbowText(text:string){let i=0;return Array.from(text).map((ch,idx)=>ch===" "?<span key={idx}> </span>:<span key={idx} style={{color:RAINBOW_COLORS[i++%RAINBOW_COLORS.length]}}>{ch}</span>);}
 function Stat({label,value}:{label:string;value:number}){return <div className="portal-stat"><div className="text-2xl font-semibold text-[#f3eee3]">{value}</div><div className="mt-1 text-[9px] uppercase tracking-[.14em] text-[#74877c]">{label}</div></div>}
 function FunnelStep({n,title,text,href,cta}:{n:string;title:string;text:string;href:string;cta:string}){return <div className="portal-panel rounded-[3px] p-5"><div className="text-[10px] tracking-[.18em] text-[#c7ad72]">{n}</div><div className="mt-2.5 text-[15px] font-medium text-[#f3eee3]">{title}</div><p className="mt-2 text-[13px] leading-6 text-[#8b94a1]">{text}</p><Link href={href} className="mt-4 inline-block text-xs text-[#8cf0bd] hover:text-white">{cta} →</Link></div>}
 

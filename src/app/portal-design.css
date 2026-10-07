@@ -4,6 +4,13 @@
  color:#f3eee3;background:radial-gradient(ellipse at 70% 0%,#17322366,transparent 48%),#07110e;color-scheme:dark;
 }
 .auevo-portal-header{background:#07110ef5;border-color:#263b30;padding-inline:clamp(20px,4.5vw,72px)}
+/* Homepage hero's second line — a flowing gradient instead of one flat
+   color, same lilac/teal/gold/mint palette as the hero image's glass
+   shapes. The gradient repeats its first stop at the end so the loop
+   (0%->100% background-position) never visibly seams. */
+.hero-shimmer-text{background:linear-gradient(90deg,#c9a8f2,#5ee6cf,#e3b968,#8fe6b8,#c9a8f2);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:#f3eee3;-webkit-text-fill-color:transparent;animation:hero-shimmer 7s linear infinite}
+@keyframes hero-shimmer{from{background-position:0% 50%}to{background-position:100% 50%}}
+@media(prefers-reduced-motion:reduce){.hero-shimmer-text{animation:none;background-position:30% 50%}}
 .auevo-portal-header>div:first-child{height:76px;max-width:1440px}
 .auevo-portal-header .portal-primary-nav{background:none;border:0;box-shadow:none;padding:0;gap:6px}
 .auevo-portal-header .portal-primary-nav>a,.auevo-portal-header .portal-primary-nav>div>a{position:relative;background:none;box-shadow:none;border-radius:0;padding:25px 17px;color:#bdc9c1;font-size:14px}
