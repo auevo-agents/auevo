@@ -10,9 +10,14 @@ import { useState, type ReactNode } from "react";
  * to reach the one they wanted. The server still renders every domain's
  * content (so there's no client-side fetch waterfall and no layout
  * shift once a tab is picked); this just toggles which one is visible.
+ *
+ * `initialTab` lets the server page open straight onto a specific domain
+ * (e.g. from a Playzone catalog card's `?domain=sql` link) instead of
+ * always defaulting to the first tab — falls back to tabs[0] if the key
+ * doesn't match any tab.
  */
-export function SkillDomainTabs({ tabs }: { tabs: { key: string; label: string; panel: ReactNode }[] }) {
-  const [active, setActive] = useState(tabs[0]?.key);
+export function SkillDomainTabs({ tabs, initialTab }: { tabs: { key: string; label: string; panel: ReactNode }[]; initialTab?: string }) {
+  const [active, setActive] = useState(tabs.some((t) => t.key === initialTab) ? initialTab : tabs[0]?.key);
   const activePanel = tabs.find((t) => t.key === active) ?? tabs[0];
 
   return (

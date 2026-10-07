@@ -40,7 +40,8 @@ function groupSharedWindows(commitments: SkillCommitment[]) {
     .sort((a, b) => b[0].windowEnd.localeCompare(a[0].windowEnd));
 }
 
-export default async function AuevoSkillPage() {
+export default async function AuevoSkillPage({ searchParams }: PageProps<"/proofs/skill">) {
+  const { domain } = await searchParams;
   const commitments = await listRecentSkillCommitments(100);
   const sqlCommitments = await listRecentSqlSkillCommitments(100);
   const toolCommitments = await listRecentToolSkillCommitments(100);
@@ -77,6 +78,7 @@ export default async function AuevoSkillPage() {
 
         <div className="mt-10">
           <SkillDomainTabs
+            initialTab={Array.isArray(domain) ? domain[0] : domain}
             tabs={[
               {
                 key: "sql",
