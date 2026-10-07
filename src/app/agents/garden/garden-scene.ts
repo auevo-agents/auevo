@@ -19,7 +19,6 @@ export type GardenOptions = {
   onLost?: () => void;
 };
 export type GardenController = { setEntity: (index:number,kind:EntityKind)=>boolean; inspectEntity:()=>void; select: (index:number)=>void; zoom: (factor:number)=>void; reset:()=>void; demo:()=>boolean; dispose:()=>void };
-const PALETTE: Record<string,string> = { prediction:'#438c65', skill:'#bed4b5', work:'#28684d', performance:'#629969', economic_activity:'#367553', financial_performance:'#d8bd80', identity:'#d4dbc5', autonomy:'#81b292' };
 
 /** Procedural artwork: no asset downloads, generated portrait backgrounds or server credentials. */
 export function buildGarden(agents: ForestAgent[], single=false, mobile=false, entityKinds:Record<string,EntityKind>={}) {
@@ -37,7 +36,7 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
   const leaves = new THREE.MeshStandardMaterial({color:'#5d7d47',roughness:.8,side:THREE.DoubleSide});
   const glass = new Map<string,THREE.MeshPhysicalMaterial>();
   for(const [key,value] of Object.entries(FOREST_COLORS)) {
-    if(key==='trunk')continue; const failed=['failed','cancelled','inconclusive'].includes(key),pending=['scheduled','running','awaiting_settlement'].includes(key),color=PALETTE[key]??value;
+    if(key==='trunk')continue; const failed=['failed','cancelled','inconclusive'].includes(key),pending=['scheduled','running','awaiting_settlement'].includes(key),color=value;
     glass.set(key,new THREE.MeshPhysicalMaterial({color,roughness:failed?.52:.1,metalness:.07,transmission:failed?.08:mobile?.28:.68,thickness:.42,ior:1.47,attenuationColor:color,attenuationDistance:1.2,clearcoat:1,clearcoatRoughness:.11,envMapIntensity:1.5,emissive:color,emissiveIntensity:pending?.08:.015}));
   }
   const highlight=new THREE.MeshBasicMaterial({color:'#d8c58e',transparent:true,opacity:.5,side:THREE.DoubleSide,depthWrite:false});
@@ -114,7 +113,7 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
     const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
     const panels:THREE.Mesh[]=[];for(const [x,c] of [[-4,0xffe8be],[4,0xb1dbc1]] as const){const p=new THREE.Mesh(new THREE.PlaneGeometry(2,5),new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide}));p.position.set(x,2,-2);p.rotation.y=x<0?.7:-.7;room.add(p);panels.push(p);}env=pmrem.fromScene(room,.04);scene.environment=env.texture;scene.environmentIntensity=.72;room.dispose();panels.forEach(p=>{p.geometry.dispose();(p.material as THREE.Material).dispose();});pmrem.dispose();
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new THREE.Vector2(1,1),mobile?.12:.23,.5,1.35));composer.addPass(new OutputPass());
-    orbit=new OrbitControls(camera,canvas);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.07;orbit.enableZoom=true;orbit.zoomSpeed=.7;orbit.minDistance=options.single?5:9;orbit.maxDistance=options.single?18:45;orbit.minPolarAngle=.4;orbit.maxPolarAngle=1.28;orbit.autoRotate=false;
+    orbit=new OrbitControls(camera,canvas);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.07;orbit.enableZoom=true;orbit.zoomSpeed=.7;orbit.minDistance=options.single?5:9;orbit.maxDistance=options.single?18:45;orbit.minPolarAngle=.4;orbit.maxPolarAngle=1.28;orbit.autoRotate=!reduced.matches;orbit.autoRotateSpeed=.4;
     options.onReady?.('webgl');
   } catch {
     if(renderer){composer?.dispose();env?.dispose();renderer.dispose();renderer=null;composer=null;env=null;}

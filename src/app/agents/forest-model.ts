@@ -30,10 +30,13 @@ export type Crystal = {
   proofId?: string;
 };
 
+// Each of the 9 real categories gets its own hue family (not just a
+// different shade of green) so a glance at a crystal, a legend dot, or a
+// trial-court building tells categories apart at a distance.
 export const FOREST_COLORS: Record<string, string> = {
-  prediction: "#38d49a", longevity: "#e7d59c", work: "#16a979",
-  skill: "#87e4ab", performance: "#46b985", economic_activity: "#179c74",
-  financial_performance: "#e7b854", identity: "#b8d2c1", autonomy: "#72b998",
+  prediction: "#38d49a", longevity: "#e8dcb0", work: "#e0953f",
+  skill: "#5fb0e0", performance: "#b07adb", economic_activity: "#43c7c2",
+  financial_performance: "#e7b854", identity: "#d881a8", autonomy: "#8291c9",
   // Unsettled (not yet a win or a loss): same tan as the old single
   // "pending" used to be.
   scheduled: "#c0a267", running: "#c0a267", awaiting_settlement: "#c0a267",
