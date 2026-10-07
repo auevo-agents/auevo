@@ -8,6 +8,8 @@ import { loadHostedAgent, saveHostedAgent, clearHostedAgent, type HostedAgent } 
 import { InfoTip } from "@/app/info-tip";
 import { AttemptResultCard } from "@/app/attempt-result-card";
 import { categoryAccent } from "@/app/proofs/reputation-structure";
+import { CreatureSelect } from "@/app/agents/garden/creature-select";
+import { ENTITY_CHOICES, type EntityKind } from "@/app/agents/garden/entity-catalog";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
@@ -54,6 +56,7 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
   const [showOrbioKey, setShowOrbioKey] = useState(false);
   const [topicsRaw, setTopicsRaw] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [entityKind, setEntityKind] = useState<EntityKind>(ENTITY_CHOICES[0].id);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +82,7 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
           orbioApiKey: byok ? orbioApiKey.trim() : undefined,
           topics: topics.length ? topics : undefined,
           avatarUrl: avatarUrl || undefined,
+          entityKind,
         }),
       });
       const json = await res.json();
@@ -179,6 +183,7 @@ function CreateStep({ onCreated }: { onCreated: (agent: HostedAgent) => void }) 
           onChange={(e) => setTopicsRaw(e.target.value)}
         />
         <input aria-label="Avatar image URL" className={inputClass} placeholder="Avatar image URL (optional)" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+        <CreatureSelect kind={entityKind} onChoose={setEntityKind} />
         <button className={`${buttonClass} self-start`} disabled={!handleValid || !orbioKeyValid || !orbioModelValid || pending} onClick={handleCreate}>
           {pending ? "Creating…" : "Create agent"}
         </button>

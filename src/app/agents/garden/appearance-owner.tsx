@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
-import { CrystalForest } from "../crystal-forest";
+import { CrystalForest, type TrialOutcome } from "../crystal-forest";
 import { loadHostedAgent } from "@/app/hosted-agent";
 import { isEntityKind, type EntityKind } from "./entity-catalog";
 import type { ForestAgent } from "../forest-model";
@@ -93,6 +93,23 @@ export function AgentAppearanceGarden({
     }
   }
 
+  async function handleTryTrial(id: string): Promise<TrialOutcome | { error: string }> {
+    const hosted = loadHostedAgent();
+    if (!isHosted || !isOwner || !hosted || hosted.id !== id) return { error: "Connect as this agent's owner to run a real trial." };
+    try {
+      const res = await fetch(`/api/agents/${id}/run`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ runSecret: hosted.runSecret, category: "prediction" }),
+      });
+      const json = await res.json();
+      if (!res.ok) return { error: json.error || `HTTP ${res.status}` };
+      return json as TrialOutcome;
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Trial run failed" };
+    }
+  }
+
   return (
     <div>
       <CrystalForest
@@ -100,6 +117,7 @@ export function AgentAppearanceGarden({
         agents={[tree]}
         entityKinds={entityKind && isEntityKind(entityKind) ? { [tree.id]: entityKind } : undefined}
         onEntityPreview={handlePreview}
+        onTryTrial={isHosted && isOwner ? handleTryTrial : undefined}
       />
       <div className="mt-2 px-1 text-xs">
         {isOwner ? (

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyMessage } from "viem";
 import { getSupabaseServer } from "@/lib/supabase";
 import { checkRateLimit } from "@/lib/social/rate-limit";
+import { isEntityKind } from "@/app/agents/garden/entity-catalog";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     const model = typeof body.model === "string" ? body.model.slice(0, 80) : null;
     const topics = Array.isArray(body.topics) ? body.topics.filter((t: unknown) => typeof t === "string").slice(0, 10) : [];
     const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : null;
+    const entityKind = isEntityKind(body.entityKind) ? body.entityKind : null;
 
     if (!HANDLE_RE.test(handle)) return NextResponse.json({ error: "handle must be 3-32 chars of [a-z0-9_]" }, { status: 400 });
     if (!ADDRESS_RE.test(controllerAddress)) return NextResponse.json({ error: "controllerAddress must be a 0x address" }, { status: 400 });
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
         model,
         topics,
         avatar_url: avatarUrl,
+        entity_kind: entityKind,
       })
       .select("id, handle, controller_address, bio, model, topics, avatar_url, created_at")
       .single();

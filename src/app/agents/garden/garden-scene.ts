@@ -114,7 +114,7 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
     const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
     const panels:THREE.Mesh[]=[];for(const [x,c] of [[-4,0xffe8be],[4,0xb1dbc1]] as const){const p=new THREE.Mesh(new THREE.PlaneGeometry(2,5),new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide}));p.position.set(x,2,-2);p.rotation.y=x<0?.7:-.7;room.add(p);panels.push(p);}env=pmrem.fromScene(room,.04);scene.environment=env.texture;scene.environmentIntensity=.72;room.dispose();panels.forEach(p=>{p.geometry.dispose();(p.material as THREE.Material).dispose();});pmrem.dispose();
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new THREE.Vector2(1,1),mobile?.12:.23,.5,1.35));composer.addPass(new OutputPass());
-    orbit=new OrbitControls(camera,canvas);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.07;orbit.enableZoom=false;orbit.minPolarAngle=.4;orbit.maxPolarAngle=1.28;orbit.autoRotate=false;
+    orbit=new OrbitControls(camera,canvas);orbit.enablePan=false;orbit.enableDamping=true;orbit.dampingFactor=.07;orbit.enableZoom=true;orbit.zoomSpeed=.7;orbit.minDistance=options.single?5:9;orbit.maxDistance=options.single?18:45;orbit.minPolarAngle=.4;orbit.maxPolarAngle=1.28;orbit.autoRotate=false;
     options.onReady?.('webgl');
   } catch {
     if(renderer){composer?.dispose();env?.dispose();renderer.dispose();renderer=null;composer=null;env=null;}

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
 import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
+import { CreatureSelect } from "@/app/agents/garden/creature-select";
+import { ENTITY_CHOICES, type EntityKind } from "@/app/agents/garden/entity-catalog";
 
 const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
 const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
@@ -77,6 +79,7 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
   const [model, setModel] = useState("");
   const [topicsRaw, setTopicsRaw] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [entityKind, setEntityKind] = useState<EntityKind>(ENTITY_CHOICES[0].id);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [existing, setExisting] = useState(false);
@@ -115,6 +118,7 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
           model: model || undefined,
           topics: topics.length ? topics : undefined,
           avatarUrl: avatarUrl || undefined,
+          entityKind,
         }),
       });
       const json = await res.json();
@@ -166,6 +170,7 @@ function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: 
         value={avatarUrl}
         onChange={(e) => setAvatarUrl(e.target.value)}
       />
+      <CreatureSelect kind={entityKind} onChoose={setEntityKind} />
       <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleRegister}>
         {pending ? "Signing…" : "Sign & register"}
       </button>

@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/social/rate-limit";
 import { generateHostedControllerAddress, generateRunSecret, hashRunSecret, isLikelyOrbioKey } from "@/lib/auevo/hosted-agent";
 import { encryptSecret } from "@/lib/auevo/key-encryption";
 import { EXECUTOR_ALLOWED_MODELS } from "@/lib/auevo/executor-models";
+import { isEntityKind } from "@/app/agents/garden/entity-catalog";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
     const requestedModel = typeof body.model === "string" ? body.model : "";
     const topics = Array.isArray(body.topics) ? body.topics.filter((t: unknown) => typeof t === "string").slice(0, 10) : [];
     const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : null;
+    const entityKind = isEntityKind(body.entityKind) ? body.entityKind : null;
 
     // Bring-your-own-key (Orbio, orbio.so — see migration 0035): optional.
     // Give no key and nothing changes — AUEVO still runs this agent on its
@@ -66,7 +68,7 @@ export async function POST(req: Request) {
     const controllerAddress = generateHostedControllerAddress();
     const { data: agent, error } = await supabase
       .from("social_agents")
-      .insert({ handle, controller_address: controllerAddress, bio, model, topics, avatar_url: avatarUrl, is_hosted: true })
+      .insert({ handle, controller_address: controllerAddress, bio, model, topics, avatar_url: avatarUrl, is_hosted: true, entity_kind: entityKind })
       .select("id, handle, bio, model, topics, avatar_url, created_at")
       .single();
     if (error) {

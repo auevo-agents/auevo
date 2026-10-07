@@ -7,15 +7,21 @@ import type { GardenController } from './garden/garden-scene';
 import { GARDEN_AGENT_LIMIT, GARDEN_PROOF_LIMIT } from './garden/garden-model';
 import { EntityPicker } from './garden/entity-picker';
 import { defaultEntityKind, type EntityKind } from './garden/entity-catalog';
+import { AttemptResultCard } from '../attempt-result-card';
 import styles from './garden/garden.module.css';
 
+export type TrialOutcome = { status:'completed'|'failed'; proofEventId:string|null; summary:string; task:string; answer:string; verdict:'correct'|'incorrect'|'pending' };
+
 /** Existing Agents and Passport pages can keep their current props and imports. */
-export function CrystalForest({ agents, single=false, demoData=false, entityKinds, onEntityPreview }: {agents:ForestAgent[];single?:boolean;demoData?:boolean;entityKinds?:Record<string,EntityKind>;onEntityPreview?:(id:string,kind:EntityKind)=>void}) {
+export function CrystalForest({ agents, single=false, demoData=false, entityKinds, onEntityPreview, onTryTrial }: {agents:ForestAgent[];single?:boolean;demoData?:boolean;entityKinds?:Record<string,EntityKind>;onEntityPreview?:(id:string,kind:EntityKind)=>void;onTryTrial?:(agentId:string)=>Promise<TrialOutcome|{error:string}>}) {
   const canvasRef=useRef<HTMLCanvasElement>(null),controller=useRef<GardenController|null>(null);
   const kindsRef=useRef<Record<string,EntityKind>>(entityKinds??{});
   const [localKinds,setLocalKinds]=useState<Record<string,EntityKind>>({});
   const [state,setState]=useState<'loading'|'webgl'|'software'|'fallback'>('loading');
   const [selected,setSelected]=useState(0),[proofId,setProofId]=useState<string>(),[phase,setPhase]=useState('idle');
+  const [trialState,setTrialState]=useState<'idle'|'running'|'done'|'error'>('idle');
+  const [trialOutcome,setTrialOutcome]=useState<TrialOutcome|null>(null);
+  const [trialError,setTrialError]=useState<string|null>(null);
   const displayed=agents.slice(0,single?1:GARDEN_AGENT_LIMIT),index=Math.min(selected,Math.max(0,displayed.length-1)),agent=displayed[index];
   const proof=agent?.proofs.find(p=>p.id===proofId),busy=!['idle','complete'].includes(phase);
   useEffect(()=>{
@@ -29,8 +35,15 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
     return()=>{cancelled=true;instance?.dispose();controller.current=null;};
   },[agents,single]);
   useEffect(()=>{if(entityKinds){kindsRef.current={...kindsRef.current,...entityKinds};agents.slice(0,single?1:GARDEN_AGENT_LIMIT).forEach((a,i)=>{if(entityKinds[a.id])controller.current?.setEntity(i,entityKinds[a.id]);});}},[entityKinds,agents,single]);
-  const choose=(i:number)=>{if(busy)return;setSelected(i);setProofId(undefined);setPhase('idle');controller.current?.select(i);};
-  const phaseLabel=phase==='walking'?'Walking to the trial court…':phase==='trial'?'Playing the trial animation…':phase==='returning'?'Returning to the tree…':phase==='complete'?'Demo complete. Public Proof history is unchanged.':'Animation only · no AI execution or Proof submission';
+  const choose=(i:number)=>{if(busy)return;setSelected(i);setProofId(undefined);setPhase('idle');setTrialState('idle');setTrialOutcome(null);setTrialError(null);controller.current?.select(i);};
+  const phaseLabel=phase==='walking'?'Walking to the trial court…':phase==='trial'?'Playing the trial animation…':phase==='returning'?'Returning to the tree…':phase==='complete'?'Animation complete.':onTryTrial?'Plays the visual demo alongside one real Prediction attempt.':'Animation only · no AI execution or Proof submission';
+  const runTrial=()=>{
+    if(busy||!agent)return;
+    if(controller.current?.demo())setPhase('walking');
+    if(!onTryTrial)return;
+    setTrialState('running');setTrialOutcome(null);setTrialError(null);
+    onTryTrial(agent.id).then(result=>{if('error' in result){setTrialError(result.error);setTrialState('error');}else{setTrialOutcome(result);setTrialState('done');}}).catch(err=>{setTrialError(err instanceof Error?err.message:'Trial run failed');setTrialState('error');});
+  };
   return <section className={`${styles.garden} ${single?styles.single:''}`} aria-label={single?'Agent garden passport':'Interactive agent garden'}>
     {agent&&<EntityPicker kind={localKinds[agent.id]??entityKinds?.[agent.id]??defaultEntityKind(agent.id)} handle={agent.handle} disabled={busy||state==='loading'||state==='fallback'} onInspect={()=>controller.current?.inspectEntity()} onChoose={kind=>{if(controller.current?.setEntity(index,kind)){kindsRef.current={...kindsRef.current,[agent.id]:kind};setLocalKinds(k=>({...k,[agent.id]:kind}));onEntityPreview?.(agent.id,kind);controller.current.inspectEntity();}}}/>}
     <div className={styles.stage}>
@@ -48,7 +61,24 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
       <div className={styles.tags}><span>{agent.dominantCategory?.replaceAll('_',' ')??'Unproven'}</span><span>{agent.ageDays}d of history</span></div>
       <dl className={styles.metrics}><div><dt>Passed</dt><dd>{agent.verified}</dd></div><div><dt>Attempts</dt><dd>{agent.attempted}</dd></div><div><dt>Pending</dt><dd>{agent.pending}</dd></div></dl>
       {proof&&<div className={styles.proof}><small>SELECTED CRYSTAL</small><strong>{proof.category.replaceAll('_',' ')} · {proof.status.replaceAll('_',' ')}</strong>{demoData?<small>Illustrative record · not a public Proof</small>:<Link href={'/proofs/'+encodeURIComponent(proof.id)}>Inspect Proof ↗</Link>}</div>}
-      <div className={styles.trial}><span className={styles.eyebrow}>PLAYZONE · VISUAL DEMO</span><p>A short visit to the trial court. Real attempts are recorded separately in the Proof ledger.</p><button type="button" className={styles.primary} disabled={busy||state==='fallback'||state==='loading'} onClick={()=>{if(controller.current?.demo())setPhase('walking');}}> {busy?'Trial animation running…':phase==='complete'?'Replay trial animation':'Try the trial animation'} <span aria-hidden="true">↗</span></button><div className={styles.status} role="status" aria-live="polite">{phaseLabel}</div></div>
+      <div className={styles.trial}>
+        <span className={styles.eyebrow}>{onTryTrial?'PLAYZONE · LIVE TRIAL':'PLAYZONE · VISUAL DEMO'}</span>
+        <p>{onTryTrial?`One real Prediction call for @${agent.handle} — verified automatically in ~24h and added to its public Proof ledger, win or lose.`:'A short visit to the trial court. Real attempts are recorded separately in the Proof ledger.'}</p>
+        <button type="button" className={styles.primary} disabled={busy||trialState==='running'||state==='fallback'||state==='loading'} onClick={runTrial}>
+          {trialState==='running'?'Calling the model…':busy?'Trial animation running…':trialOutcome||phase==='complete'?(onTryTrial?'Run another trial':'Replay trial animation'):(onTryTrial?'Run a real trial':'Try the trial animation')} <span aria-hidden="true">↗</span>
+        </button>
+        <div className={styles.status} role="status" aria-live="polite">{phaseLabel}</div>
+        {onTryTrial&&trialState==='error'&&<p className={styles.status} role="alert">{trialError}</p>}
+        {onTryTrial&&trialOutcome&&(
+          <div className={styles.proof}>
+            <small>{trialOutcome.status==='completed'?(trialOutcome.verdict==='correct'?'✓ CORRECT':trialOutcome.verdict==='incorrect'?'✗ INCORRECT':'⏳ PENDING'):'RUN FAILED'}</small>
+            <strong>{trialOutcome.task}</strong>
+            <span>{trialOutcome.answer}</span>
+            {trialOutcome.proofEventId?<Link href={'/proofs/'+encodeURIComponent(trialOutcome.proofEventId)}>See the full verified record ↗</Link>:<small>{trialOutcome.summary}</small>}
+          </div>
+        )}
+        {onTryTrial&&trialOutcome?.status==='completed'&&<AttemptResultCard agentId={agent.id} agentHandle={agent.handle} category="prediction"/>}
+      </div>
       <div className={styles.links}>{!single&&!demoData&&<Link href={'/agents/'+encodeURIComponent(agent.handle)}>Open full Passport ↗</Link>}<Link href="/proofs/playzone">Open real Playzone ↗</Link></div>
       <small className={styles.limit}>{agents.length>displayed.length?`${displayed.length} trees shown · all agents in the directory below. `:''}{agent.proofs.length>GARDEN_PROOF_LIMIT?`Crown shows the latest ${GARDEN_PROOF_LIMIT} events. Full history remains in the Passport.`:'Crystal facets follow recorded Proof events.'}</small>
     </aside>}
