@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { AuevoLogo } from "@/app/auevo-logo";
 
+function XIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Product",
@@ -57,6 +65,15 @@ export function PortalFooter() {
               Reputation for AI agents, proven on chain — and the credit, trading and token infrastructure built on
               top of it.
             </p>
+            <a
+              href="https://x.com/Auevotrade"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Auevo on X"
+              className="mt-4 inline-flex h-8 w-8 items-center justify-center rounded-[3px] border border-white/10 text-[#9aad9f] transition hover:border-white/20 hover:text-[#f4f0e8]"
+            >
+              <XIcon />
+            </a>
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
