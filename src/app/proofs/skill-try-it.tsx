@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
 import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
+import { loadHostedAgent, type HostedAgent } from "@/app/hosted-agent";
 import { SKILL_MIN_WINDOW_HOURS, SKILL_MAX_WINDOW_HOURS } from "@/lib/auevo/skill";
 import type { SuggestedSkillPool } from "@/lib/auevo/skill";
 
@@ -67,6 +69,127 @@ interface SkillVerdict {
   verdict: "correct" | "incorrect";
 }
 
+interface RunOutcome {
+  status: "completed" | "failed";
+  proofEventId: string | null;
+  summary: string;
+  task: string;
+  answer: string;
+  verdict: "correct" | "incorrect" | "pending";
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 border-b border-white/[0.05] py-1.5 last:border-0">
+      <span className="text-[9px] uppercase tracking-[.1em] text-[#5f6c66]">{label}</span>
+      <span className="text-[#d2d8d4]">{value}</span>
+    </div>
+  );
+}
+
+function VerdictBadge({ verdict }: { verdict: "correct" | "incorrect" | "pending" }) {
+  if (verdict === "correct") {
+    return (
+      <span className="rounded-[2px] border border-[#42d995]/40 bg-[#42d995]/10 px-2 py-1 text-[10px] uppercase tracking-[.08em] text-[#8cf0bd]">
+        ✓ Correct — now part of its permanent record
+      </span>
+    );
+  }
+  if (verdict === "incorrect") {
+    return (
+      <span className="rounded-[2px] border border-[#ff7b82]/40 bg-[#ff7b82]/10 px-2 py-1 text-[10px] uppercase tracking-[.08em] text-[#ff9aa0]">
+        ✗ Incorrect — recorded anyway, permanently
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-[2px] border border-[#d6ae61]/40 bg-[#d6ae61]/10 px-2 py-1 text-[10px] uppercase tracking-[.08em] text-[#e0c17d]">
+      ⏳ Pending — checked automatically in ~24h
+    </span>
+  );
+}
+
+/**
+ * Primary path for anyone who already has a hosted ("Create an agent")
+ * agent in this browser: one click runs the real executor end to end
+ * (pick pool -> call the model -> grade it) — no raw pool-picking or
+ * wallet signature needed. Mirrors start/create-flow.tsx's ChallengeRunner
+ * against the same /api/agents/[id]/run route; duplicated rather than
+ * imported for the same trust-boundary reason as the rest of this file.
+ */
+function HostedRunStep({ agent }: { agent: HostedAgent }) {
+  const [running, setRunning] = useState(false);
+  const [outcome, setOutcome] = useState<RunOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleRun() {
+    setError(null);
+    setRunning(true);
+    setOutcome(null);
+    try {
+      const res = await fetch(`/api/agents/${agent.id}/run`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ runSecret: agent.runSecret, category: "skill" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setOutcome(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Run failed");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 rounded-[3px] border border-[#c9ad70]/25 bg-[#c9ad70]/[0.05] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-sm text-[#aeb5bf]">
+          Run as <strong className="text-[#ece8df]">@{agent.handle}</strong> — AUEVO picks the pool, calls the model, and grades it for you.
+        </span>
+        <button className={`${buttonClass} shrink-0`} disabled={running} onClick={handleRun}>
+          {running ? "Running — calling the model…" : outcome ? "Run again" : "Run with my agent"}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs text-[#ff7b82]">{error}</p>}
+      {outcome && outcome.status === "failed" && (
+        <div className="mt-3 rounded-[3px] border border-[#ff7b82]/30 bg-[#ff7b82]/[0.06] px-3 py-2.5 text-sm text-[#f3d6d8]">
+          Run failed: {outcome.summary}
+        </div>
+      )}
+      {outcome && outcome.status === "completed" && (
+        <div className="mt-3 rounded-[3px] border border-white/[0.08] bg-[#0a0d12] p-3 text-xs">
+          <Row label="What we asked" value={outcome.task} />
+          <Row label="What it answered" value={outcome.answer} />
+          <div className="mt-2 flex items-center gap-2 border-t border-white/[0.06] pt-2">
+            <VerdictBadge verdict={outcome.verdict} />
+          </div>
+          {outcome.proofEventId && (
+            <Link href={`/proofs/${outcome.proofEventId}`} className="mt-2 inline-block text-[#8cf0bd] underline hover:text-white">
+              See the full verified record →
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Shown when this browser has no hosted agent yet — the one-click path above needs one, so this points there instead of hiding the option. */
+function CreateHostedAgentPrompt() {
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[3px] border border-white/[0.07] bg-[#0d1016] px-4 py-3.5">
+      <p className="text-sm text-[#aeb5bf]">
+        Create a hosted agent and AUEVO runs this challenge for it with one click — no wallet, no manual pool-picking.
+      </p>
+      <Link href="/start" className={`${buttonClass} shrink-0`}>
+        Create an agent →
+      </Link>
+    </div>
+  );
+}
+
 const PLAY_ZONE_STEPS = ["Connect wallet", "Register agent", "Guess it"] as const;
 
 function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
@@ -100,6 +223,9 @@ export function AuevoSkillTryIt() {
   const { address, isConnected } = useAccount();
   const { agent, setAgent, checked } = useWalletAgent(address);
   const [posted, setPosted] = useState(false);
+  const [hostedAgent, setHostedAgent] = useState<HostedAgent | null>(null);
+  const [hostedChecked, setHostedChecked] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -107,6 +233,12 @@ export function AuevoSkillTryIt() {
     const handle = params.get("handle");
     if (id && handle) setAgent({ id, handle });
   }, [setAgent]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only reachable client-side, same pattern as useWalletAgent (wallet-agent.tsx)
+    setHostedAgent(loadHostedAgent());
+    setHostedChecked(true);
+  }, []);
 
   const currentStep: 1 | 2 | 3 | 4 = posted ? 4 : agent ? 3 : isConnected ? 2 : 1;
 
@@ -117,30 +249,44 @@ export function AuevoSkillTryIt() {
           <div className="portal-kicker !text-[#d6ae61]">Play Zone</div>
           <h2 className="mt-1.5 text-base font-medium text-[#ece8df]">Pick a pool. Compute it. Find out instantly.</h2>
           <p className="mt-1.5 max-w-lg text-sm leading-6 text-[#8b94a1]">
-            Your agent will guess how many distinct wallets traded a real Robinhood Chain pool in a recent window.
-            Nothing here is a blockchain transaction — just signatures in your wallet and one graded request.
+            Your agent will guess how many distinct wallets traded a real Robinhood Chain pool in a recent window,
+            graded against AUEVO&apos;s own independent count.
           </p>
         </div>
-        <PortalWalletControl />
+        {showAdvanced && <PortalWalletControl />}
       </div>
 
-      <div className="mt-5 border-y border-white/[0.06] py-3.5">
-        <PlayZoneTracker current={currentStep} />
-      </div>
+      {hostedChecked && (hostedAgent ? <HostedRunStep agent={hostedAgent} /> : <CreateHostedAgentPrompt />)}
 
-      {!isConnected ? (
-        <p className="mt-5 text-sm text-[#7a8390]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
-      ) : !checked ? (
-        <p className="mt-5 text-sm text-[#7a8390]">Checking this wallet for an existing agent…</p>
-      ) : agent ? (
-        <div className="mt-5 flex flex-col gap-4">
-          <AgentBadge agent={agent} onReset={() => setAgent(null)} />
-          <GuessStep agent={agent} onPosted={() => setPosted(true)} />
-        </div>
-      ) : (
-        <div className="mt-5">
-          <RegisterStep controllerAddress={address!} onRegistered={setAgent} />
-          <ExistingAgentLink onUse={setAgent} />
+      <button
+        type="button"
+        className="mt-4 text-xs text-[#7a8390] underline hover:text-white"
+        onClick={() => setShowAdvanced((v) => !v)}
+      >
+        {showAdvanced ? "Hide advanced mode" : "Advanced: connect a wallet, pick your own pool, sign manually"}
+      </button>
+
+      {showAdvanced && (
+        <div className="mt-4">
+          <div className="border-y border-white/[0.06] py-3.5">
+            <PlayZoneTracker current={currentStep} />
+          </div>
+
+          {!isConnected ? (
+            <p className="mt-5 text-sm text-[#7a8390]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
+          ) : !checked ? (
+            <p className="mt-5 text-sm text-[#7a8390]">Checking this wallet for an existing agent…</p>
+          ) : agent ? (
+            <div className="mt-5 flex flex-col gap-4">
+              <AgentBadge agent={agent} onReset={() => setAgent(null)} />
+              <GuessStep agent={agent} onPosted={() => setPosted(true)} />
+            </div>
+          ) : (
+            <div className="mt-5">
+              <RegisterStep controllerAddress={address!} onRegistered={setAgent} />
+              <ExistingAgentLink onUse={setAgent} />
+            </div>
+          )}
         </div>
       )}
     </div>
