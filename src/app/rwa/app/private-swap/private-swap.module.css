@@ -708,3 +708,38 @@
 .gateItem:has(input:checked){
   color:#edf4ef!important;
 }
+
+
+/* Explicit state-driven gate checkbox */
+.gateItem{
+  grid-template-columns:20px 20px 1fr!important;
+  position:relative;
+}
+.gateCheckInput{
+  position:absolute!important;
+  opacity:0!important;
+  width:1px!important;
+  height:1px!important;
+  pointer-events:none!important;
+}
+.gateCheckVisual{
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border:1.5px solid rgba(118,167,140,.62);
+  border-radius:5px;
+  background:#06170f;
+  color:#06110d;
+  font:900 14px/1 Arial,Helvetica,sans-serif;
+  transition:.15s ease;
+}
+.gateItem:has(.gateCheckInput:checked) .gateCheckVisual{
+  border-color:#d7b56d;
+  background:linear-gradient(180deg,#f0d89a,#c99e4f);
+  box-shadow:0 0 0 3px rgba(215,181,109,.10),0 0 16px rgba(215,181,109,.18);
+}
+.gateItem:has(.gateCheckInput:focus-visible) .gateCheckVisual{
+  outline:2px solid #e7cd8e;
+  outline-offset:3px;
+}
