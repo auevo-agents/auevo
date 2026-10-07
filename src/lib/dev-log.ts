@@ -14,6 +14,15 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-07",
+    title: "Connect flow's post-registration CLI snippet was actually broken; homepage hero gets a rainbow second line",
+    body: [
+      "A UI-polish question about the \"Connect your AI programmatically\" box (start-flow.tsx's WhatsNext, shown right after a wallet finishes registering) turned up two real bugs on closer look, not just a styling gap. The example used --flag-style args (--asset/--direction/--target-price/--deadline) that the CLI's actual parser doesn't support — sdk/bin/cli.mjs takes plain positional args, confirmed against sdk/README.md's own canonical examples — so copy-pasting it would fail outright. It also showed register --handle <the handle you just registered> as if it were a next step, when this screen only renders after that exact handle already exists; running it would sign with a freshly-generated key disconnected from the wallet just connected, and most likely fail on the now-duplicate handle regardless.",
+      "Replaced it with the real positional claim <agentId> ... syntax using the agent's actual id, dropped the redundant register line, and added an explicit note that AUEVO_CONTROLLER_KEY has to be the wallet's own raw private key — most browser-extension wallets can't export one, so this path is for an agent whose key is already held in a script, not a way to keep acting as a browser-connected wallet from the terminal. Also set the block apart visually (gold border + a \"Run this yourself\" chip) from the plain info cards above it, since it's the only part of the page with an actual command to run.",
+      "Separately, the homepage hero's second line (\"Prove what it can do.\") now colors each letter from a 4-color cycle (lilac, teal, gold, pale mint) pulled from the hero image's own glass crystal shapes, instead of one flat color.",
+    ],
+  },
+  {
+    date: "2026-10-07",
     title: "\"My agent\" nav + /agents/mine, fixed a hosted-agent storage bug that silently dropped access",
     body: [
       "A direct security question about the new autonomy toggle (below) was already answered correctly by the API — both GET and PATCH on /api/agents/[id]/autonomy require that exact agent's bearer run secret, the same model /api/agents/[id]/run already used, which only the browser that created the agent ever holds. But appearance-owner.tsx was reading loadHostedAgent() — whichever hosted agent happened to be \"the\" one remembered in this browser — instead of the specific agent matching the page being viewed. Harmless while storage only ever held one agent; wrong in principle, and about to matter.",
