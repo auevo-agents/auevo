@@ -10,6 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FOREST_COLORS, type ForestAgent } from '../forest-model';
 import { createForestEntity, defaultEntityKind, isEntityKind, animateForestEntity, disposeForestEntity, type EntityKind } from './forest-entities';
 import { gardenLayout, gardenFacets, noise, DEMO_DURATION, demoPose } from './garden-model';
+import { CATEGORY_ORDER } from '../../proofs/reputation-structure';
 
 export type GardenOptions = {
   agents: ForestAgent[]; single?: boolean; entityKinds?: Record<string,EntityKind>;
@@ -18,7 +19,9 @@ export type GardenOptions = {
   onReady?: (mode: 'webgl' | 'software') => void;
   onLost?: () => void;
 };
-export type GardenController = { setEntity: (index:number,kind:EntityKind)=>boolean; inspectEntity:()=>void; select: (index:number)=>void; zoom: (factor:number)=>void; reset:()=>void; demo:()=>boolean; dispose:()=>void };
+export type GardenController = { setEntity: (index:number,kind:EntityKind)=>boolean; inspectEntity:()=>void; select: (index:number)=>void; zoom: (factor:number)=>void; reset:()=>void; demo:(index?:number,category?:string)=>boolean; celebrate:(index:number,category?:string)=>void; dispose:()=>void };
+/** The 9 real Proof categories, each a distinct trial-court station in the multi-agent garden; a single-agent Passport collapses them onto its one court instead (see buildGarden). */
+const STATION_CATEGORIES: string[] = CATEGORY_ORDER;
 
 /** Procedural artwork: no asset downloads, generated portrait backgrounds or server credentials. */
 export function buildGarden(agents: ForestAgent[], single=false, mobile=false, entityKinds:Record<string,EntityKind>={}) {
@@ -50,9 +53,30 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(2000,2000),new THREE.MeshStandardMaterial({color:'#477148',bumpMap:groundTexture,bumpScale:.018,roughness:1}));
   ground.name='continuous-forest-ground';ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
   function mesh(geometry:THREE.BufferGeometry,material:THREE.Material,x:number,y:number,z:number,sx=1,sy=sx,sz=sx,parent:THREE.Object3D=scene){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
-  // Trial rings sit directly on the moss, with no black platform.
-  const ringG=new THREE.RingGeometry(.56,.567,64);const trialRing=mesh(ringG,glow,court.x,.026,court.z);trialRing.rotation.x=-Math.PI/2;
-  const trialOuter=mesh(new THREE.RingGeometry(.84,.848,64),gold,court.x,.027,court.z);trialOuter.rotation.x=-Math.PI/2;
+  // The single-agent Passport keeps one plain trial ring (glow/gold, as before) —
+  // no room or need for 9 separate buildings around one tree. The multi-agent
+  // garden instead gets one small station per real Proof category, built from
+  // that category's own glass color, so a creature visibly walks to the right
+  // building for what it's actually attempting — and every viewer sees it.
+  const stations: Record<string,THREE.Vector3> = {}, stationRings: Record<string,THREE.Mesh> = {};
+  let trialRing: THREE.Mesh;
+  if (single) {
+    const ringG=new THREE.RingGeometry(.56,.567,64); trialRing=mesh(ringG,glow,court.x,.026,court.z); trialRing.rotation.x=-Math.PI/2;
+    const trialOuter=mesh(new THREE.RingGeometry(.84,.848,64),gold,court.x,.027,court.z); trialOuter.rotation.x=-Math.PI/2;
+    for (const category of STATION_CATEGORIES) { stations[category]=court; stationRings[category]=trialRing; }
+  } else {
+    // A compact 3x3 plaza (not a wide single row) so all 9 stations stay inside the default camera framing.
+    STATION_CATEGORIES.forEach((category,i)=>{
+      const col=i%3-1, row=Math.floor(i/3)-1, x=court.x+col*1.3, z=court.z+row*1.3;
+      const material=glass.get(category)??glass.get('inconclusive')!;
+      mesh(box,darkStone,x,.11,z,.62,.22,.62);
+      mesh(box,material,x,.42,z,.3,.5,.3);
+      mesh(new THREE.ConeGeometry(.28,.36,4),material,x,.86,z);
+      const ring=mesh(new THREE.RingGeometry(.64,.652,48),material,x,.029,z); ring.rotation.x=-Math.PI/2;
+      stations[category]=new THREE.Vector3(x,court.y,z); stationRings[category]=ring;
+    });
+    trialRing=stationRings[STATION_CATEGORIES[0]];
+  }
   const lampG=new THREE.CylinderGeometry(.055,.07,.27,8);
   function lamp(x:number,y:number,z:number){mesh(box,darkStone,x,y-.025,z,.18,.09,.18);mesh(lampG,gold,x,y+.13,z);mesh(box,glow,x,y+.2,z,.06,.15,.06);}
   for(let i=0;i<8;i++)lamp((i%2?1:-1)*2.2,.06,-2.4+Math.floor(i/2)*1.85);
@@ -94,7 +118,7 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
   const sun=new THREE.DirectionalLight('#ffe5b1',3.5);sun.position.set(-6,11,4);sun.castShadow=true;sun.shadow.mapSize.set(mobile?1024:2048,mobile?1024:2048);sun.shadow.camera.left=-15;sun.shadow.camera.right=15;sun.shadow.camera.top=15;sun.shadow.camera.bottom=-15;sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;sun.shadow.radius=3;scene.add(sun);
   const fill=new THREE.DirectionalLight('#aac9ae',1);fill.position.set(6,7,-7);scene.add(fill);
   const rim=new THREE.DirectionalLight('#b8d19a',1.8);rim.position.set(-3,4,-10);scene.add(rim);
-  return {scene,layout,picks,creatures,homes,anchors,selections,court,trialRing,stoneTexture,groundTexture,sun};
+  return {scene,layout,picks,creatures,homes,anchors,selections,court,trialRing,stations,stationRings,stoneTexture,groundTexture,sun};
 }
 
 /** Real WebGL renderer; public controller also works with a software preview when GPU is absent. */
@@ -102,7 +126,19 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
   const mobile=canvas.clientWidth<650,reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const data=buildGarden(options.agents,options.single,mobile,options.entityKinds), {scene}=data;
   const camera=new THREE.PerspectiveCamera(36,1,.1,120);
-  let selected=0,disposed=false,frame=0,visible=true,inView=true,last=0,elapsed=0,demoStart:number|null=null,phase='',software:SoftwareGarden|null=null;
+  let selected=0,disposed=false,frame=0,visible=true,inView=true,last=0,elapsed=0,software:SoftwareGarden|null=null;
+  // One active walk-to-station-and-back per agent index, so several agents can
+  // visibly be mid-attempt at once (the live Proof feed can trigger any of
+  // them, not just the one the viewer happens to have selected).
+  const trials=new Map<number,{start:number;category:string;phase:string}>();
+  const sparks:{mesh:THREE.Mesh;start:number;from:THREE.Vector3;to:THREE.Vector3}[]=[];
+  const sparkGeo=new THREE.IcosahedronGeometry(.1,0);
+  const SPARK_DURATION=1.1;
+  function spawnSpark(from:THREE.Vector3,to:THREE.Vector3,color:string){
+    const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1});
+    const m=new THREE.Mesh(sparkGeo,material);m.position.copy(from);scene.add(m);
+    sparks.push({mesh:m,start:elapsed,from:from.clone(),to:to.clone()});
+  }
   let renderer:THREE.WebGLRenderer|null=null,composer:EffectComposer|null=null,env:THREE.WebGLRenderTarget|null=null,orbit:OrbitControls|null=null;
   let yaw=.44,pitch=.61,distance=options.single?9.5:options.agents.length>3?24:17;const target=new THREE.Vector3(0,1.25,options.single?-.2:options.agents.length>3?-3:0);
   const cameraHome=()=>{if(options.single){distance=9.4;target.set(0,1.35,0);}else{distance=options.agents.length>3?24:17;target.set(0,1.3,options.agents.length>3?-3:0);}yaw=.44;pitch=.61;};
@@ -124,22 +160,47 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
   const observer=new ResizeObserver(resize);observer.observe(canvas);resize();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down:{x:number;y:number;yaw:number;pitch:number}|null=null;
   const pick=(e:PointerEvent)=>{const r=canvas.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(pointer,camera);const hits=ray.intersectObjects(data.picks,false);const h=hits.find(hit=>{const material=(hit.object as THREE.Mesh).material;return Array.isArray(material)?material.some(m=>m.visible):material?.visible;})??hits[0];if(!h)return;const index=h.object.userData.agentIndex as number;select(index);options.onSelect?.(index,h.instanceId===undefined?undefined:h.object.userData.proofIds?.[h.instanceId]);};
-  const select=(index:number)=>{if(index<0||index>=data.layout.length||demoStart!==null)return;selected=index;data.selections.forEach((m,i)=>m.visible=i===index);};
+  const select=(index:number)=>{if(index<0||index>=data.layout.length||trials.has(selected))return;selected=index;data.selections.forEach((m,i)=>m.visible=i===index);};
   const onDown=(e:PointerEvent)=>{down={x:e.clientX,y:e.clientY,yaw,pitch};if(software)canvas.setPointerCapture(e.pointerId);};
   const onMove=(e:PointerEvent)=>{if(!down||!software)return;yaw=down.yaw+(e.clientX-down.x)*.006;pitch=THREE.MathUtils.clamp(down.pitch+(e.clientY-down.y)*.004,.35,1.25);setCamera();};
-  const onUp=(e:PointerEvent)=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6&&demoStart===null)pick(e);down=null;};const onCancel=()=>{down=null;};
+  const onUp=(e:PointerEvent)=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6&&!trials.has(selected))pick(e);down=null;};const onCancel=()=>{down=null;};
   const onLost=(e:Event)=>{e.preventDefault();visible=false;options.onLost?.();};
   const onVisibility=()=>{visible=!document.hidden;};
   canvas.addEventListener('pointerdown',onDown);canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerup',onUp);canvas.addEventListener('pointercancel',onCancel);canvas.addEventListener('webglcontextlost',onLost);document.addEventListener('visibilitychange',onVisibility);
   const io=new IntersectionObserver(entries=>{inView=entries[0]?.isIntersecting??true;});io.observe(canvas);
   const render=(now:number)=>{if(disposed)return;frame=requestAnimationFrame(render);if(!visible||!inView||now-last<(software?50:mobile?33:20)){last=(!visible||!inView)?now:last;return;}const dt=last?Math.min(.1,(now-last)/1000):0;last=now;elapsed+=dt;
-    data.creatures.forEach((c,i)=>{if(i!==selected||demoStart===null){c.position.copy(data.homes[i]);if(!reduced.matches)c.position.y+=Math.sin(elapsed*2+i)*.018;}});
-    if(demoStart!==null){const home=data.homes[selected],t=elapsed-demoStart,p=demoPose(t,home,data.court,reduced.matches),c=data.creatures[selected];c.position.set(p.x,p.y,p.z);if(p.phase!==phase){phase=p.phase;options.onPhase?.(phase);}c.rotation.y=p.phase==='walking'?Math.atan2(data.court.x-home.x,data.court.z-home.z):p.phase==='returning'?Math.atan2(home.x-data.court.x,home.z-data.court.z):0;data.trialRing.scale.setScalar(p.pulse?1+(reduced.matches?0:Math.sin(elapsed*5)*.06):1);if(t>=DEMO_DURATION){demoStart=null;c.rotation.y=0;data.trialRing.scale.setScalar(1);}}
-    data.creatures.forEach((c,i)=>animateForestEntity(c,elapsed,demoStart!==null&&i===selected&&(phase==='walking'||phase==='returning'),reduced.matches));
+    data.creatures.forEach((c,i)=>{if(!trials.has(i)){c.position.copy(data.homes[i]);if(!reduced.matches)c.position.y+=Math.sin(elapsed*2+i)*.018;}});
+    for(const [i,trial] of trials){
+      const home=data.homes[i],station=data.stations[trial.category]??data.court,t=elapsed-trial.start,p=demoPose(t,home,station,reduced.matches),c=data.creatures[i];
+      if(!c)continue;
+      c.position.set(p.x,p.y,p.z);
+      if(p.phase!==trial.phase){trial.phase=p.phase;if(i===selected)options.onPhase?.(p.phase);}
+      c.rotation.y=p.phase==='walking'?Math.atan2(station.x-home.x,station.z-home.z):p.phase==='returning'?Math.atan2(home.x-station.x,home.z-station.z):0;
+      const ring=data.stationRings[trial.category]??data.trialRing;
+      ring.scale.setScalar(p.pulse?1+(reduced.matches?0:Math.sin(elapsed*5)*.06):1);
+      if(t>=DEMO_DURATION){trials.delete(i);c.rotation.y=0;ring.scale.setScalar(1);}
+    }
+    data.creatures.forEach((c,i)=>{const trial=trials.get(i);animateForestEntity(c,elapsed,!!trial&&(trial.phase==='walking'||trial.phase==='returning'),reduced.matches);});
+    for(let i=sparks.length-1;i>=0;i--){const s=sparks[i],t=(elapsed-s.start)/SPARK_DURATION;if(t>=1){scene.remove(s.mesh);(s.mesh.material as THREE.Material).dispose();sparks.splice(i,1);continue;}const q=t*t*(3-2*t);s.mesh.position.lerpVectors(s.from,s.to,q);s.mesh.position.y+=Math.sin(Math.PI*t)*.9;s.mesh.scale.setScalar(1-t*.3);(s.mesh.material as THREE.MeshBasicMaterial).opacity=1-t;}
     orbit?.update(dt);scene.updateMatrixWorld();camera.updateMatrixWorld();if(composer)composer.render();else software?.render(camera);
   };
   frame=requestAnimationFrame(render);
-  return {select,setEntity(index,kind){if(!isEntityKind(kind))return false;if(demoStart!==null||index<0||index>=data.creatures.length)return false;const old=data.creatures[index];if(old.userData.entityKind===kind)return true;const creature=createForestEntity(kind,mobile);creature.scale.copy(old.scale);creature.position.copy(data.homes[index]);creature.traverse(o=>{o.userData.agentIndex=index;});for(const part of old.children){const at=data.picks.indexOf(part);if(at>=0)data.picks.splice(at,1);}scene.remove(old);disposeForestEntity(old);scene.add(creature);data.creatures[index]=creature;data.picks.push(...creature.children);return true;},inspectEntity(){if(demoStart!==null)return;target.copy(data.homes[selected]).add(new THREE.Vector3(0,.42,0));distance=3.8;yaw=.22;pitch=.32;setCamera();},zoom(factor){if(orbit){const v=camera.position.clone().sub(orbit.target);camera.position.copy(orbit.target).add(v.multiplyScalar(factor).clampLength(options.single?5:9,options.single?18:45));orbit.update();}else{distance=THREE.MathUtils.clamp(distance*factor,options.single?5:9,options.single?18:45);setCamera();}},reset(){cameraHome();setCamera();},demo(){if(demoStart!==null||!data.creatures[selected])return false;cameraHome();setCamera();demoStart=elapsed;phase='';return true;},dispose(){if(disposed)return;disposed=true;cancelAnimationFrame(frame);observer.disconnect();io.disconnect();orbit?.dispose();canvas.removeEventListener('pointerdown',onDown);canvas.removeEventListener('pointermove',onMove);canvas.removeEventListener('pointerup',onUp);canvas.removeEventListener('pointercancel',onCancel);canvas.removeEventListener('webglcontextlost',onLost);document.removeEventListener('visibilitychange',onVisibility);const gs=new Set<THREE.BufferGeometry>(),ms=new Set<THREE.Material>();scene.traverse(o=>{if(o instanceof THREE.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}if(o instanceof THREE.InstancedMesh)o.dispose();});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());data.stoneTexture.dispose();data.groundTexture.dispose();data.sun.shadow.dispose();env?.dispose();composer?.passes.forEach(p=>p.dispose());composer?.dispose();renderer?.dispose();software?.dispose();}};
+  return {select,setEntity(index,kind){if(!isEntityKind(kind))return false;if(trials.has(index)||index<0||index>=data.creatures.length)return false;const old=data.creatures[index];if(old.userData.entityKind===kind)return true;const creature=createForestEntity(kind,mobile);creature.scale.copy(old.scale);creature.position.copy(data.homes[index]);creature.traverse(o=>{o.userData.agentIndex=index;});for(const part of old.children){const at=data.picks.indexOf(part);if(at>=0)data.picks.splice(at,1);}scene.remove(old);disposeForestEntity(old);scene.add(creature);data.creatures[index]=creature;data.picks.push(...creature.children);return true;},inspectEntity(){if(trials.has(selected))return;target.copy(data.homes[selected]).add(new THREE.Vector3(0,.42,0));distance=3.8;yaw=.22;pitch=.32;setCamera();},zoom(factor){if(orbit){const v=camera.position.clone().sub(orbit.target);camera.position.copy(orbit.target).add(v.multiplyScalar(factor).clampLength(options.single?5:9,options.single?18:45));orbit.update();}else{distance=THREE.MathUtils.clamp(distance*factor,options.single?5:9,options.single?18:45);setCamera();}},reset(){cameraHome();setCamera();},
+  demo(index=selected,category){
+    if(index<0||index>=data.creatures.length||trials.has(index))return false;
+    const cat=category&&data.stations[category]?category:STATION_CATEGORIES[0];
+    if(index===selected){cameraHome();setCamera();options.onPhase?.('');}
+    trials.set(index,{start:elapsed,category:cat,phase:''});
+    return true;
+  },
+  celebrate(index,category){
+    if(disposed||index<0||index>=data.layout.length)return;
+    const cat=category&&data.stations[category]?category:STATION_CATEGORIES[0];
+    const from=(data.stations[cat]??data.court).clone();from.y+=.5;
+    const item=data.layout[index];
+    spawnSpark(from,new THREE.Vector3(item.x,item.y+1.6,item.z),FOREST_COLORS[cat]??'#8cf0bd');
+  },
+  dispose(){if(disposed)return;disposed=true;cancelAnimationFrame(frame);observer.disconnect();io.disconnect();orbit?.dispose();canvas.removeEventListener('pointerdown',onDown);canvas.removeEventListener('pointermove',onMove);canvas.removeEventListener('pointerup',onUp);canvas.removeEventListener('pointercancel',onCancel);canvas.removeEventListener('webglcontextlost',onLost);document.removeEventListener('visibilitychange',onVisibility);sparks.forEach(s=>{scene.remove(s.mesh);(s.mesh.material as THREE.Material).dispose();});sparks.length=0;sparkGeo.dispose();const gs=new Set<THREE.BufferGeometry>(),ms=new Set<THREE.Material>();scene.traverse(o=>{if(o instanceof THREE.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}if(o instanceof THREE.InstancedMesh)o.dispose();});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());data.stoneTexture.dispose();data.groundTexture.dispose();data.sun.shadow.dispose();env?.dispose();composer?.passes.forEach(p=>p.dispose());composer?.dispose();renderer?.dispose();software?.dispose();}};
 }
 
 /** GPU-less preview uses the exact same model and perspective, with simpler shaded materials. */

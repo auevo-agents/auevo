@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { ForestAgent } from './forest-model';
+import { FOREST_COLORS, type ForestAgent } from './forest-model';
 import type { GardenController } from './garden/garden-scene';
 import { GARDEN_AGENT_LIMIT, GARDEN_PROOF_LIMIT } from './garden/garden-model';
 import { EntityPicker } from './garden/entity-picker';
 import { defaultEntityKind, type EntityKind } from './garden/entity-catalog';
 import { AttemptResultCard } from '../attempt-result-card';
+import { CATEGORY_ORDER, categoryLabel } from '../proofs/reputation-structure';
 import styles from './garden/garden.module.css';
+
+type RecentEvent = { id:string; category:string; status:string; handle:string|null };
 
 export type TrialOutcome = { status:'completed'|'failed'; proofEventId:string|null; summary:string; task:string; answer:string; verdict:'correct'|'incorrect'|'pending' };
 
@@ -35,14 +38,51 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
     return()=>{cancelled=true;instance?.dispose();controller.current=null;};
   },[agents,single]);
   useEffect(()=>{if(entityKinds){kindsRef.current={...kindsRef.current,...entityKinds};agents.slice(0,single?1:GARDEN_AGENT_LIMIT).forEach((a,i)=>{if(entityKinds[a.id])controller.current?.setEntity(i,entityKinds[a.id]);});}},[entityKinds,agents,single]);
+  // The multi-agent garden shares one set of category buildings — any agent's
+  // real attempt, anywhere, should make its creature visibly walk there, not
+  // just the one the viewer has selected. Reuses the same /recent feed the
+  // Agent Directory's own live ledger already polls.
+  useEffect(()=>{
+    if(single||demoData||!agents.length)return;
+    const displayedNow=agents.slice(0,GARDEN_AGENT_LIMIT);
+    const known=new Set<string>();let cancelled=false,seeded=false;
+    async function poll(){
+      try{
+        const res=await fetch('/api/auevo/proofs/recent?limit=12',{cache:'no-store'});
+        if(!res.ok||cancelled)return;
+        const json=await res.json();
+        const events=(json.proofs??[]) as RecentEvent[];
+        if(!seeded){seeded=true;for(const e of events)known.add(e.id);return;}
+        const indexByHandle=new Map(displayedNow.map((a,i)=>[a.handle,i] as const));
+        for(const e of events){
+          if(known.has(e.id))continue;known.add(e.id);
+          const i=e.handle?indexByHandle.get(e.handle):undefined;
+          if(i===undefined)continue;
+          if(controller.current?.demo(i,e.category)&&e.status==='passed'){const idx=i,cat=e.category;setTimeout(()=>controller.current?.celebrate(idx,cat),4300);}
+        }
+      }catch{
+        // Best-effort live sync — a missed poll just means that agent's creature stays idle until the next one.
+      }
+    }
+    poll();
+    const timer=setInterval(poll,9000);
+    return()=>{cancelled=true;clearInterval(timer);};
+  },[agents,single,demoData]);
   const choose=(i:number)=>{if(busy)return;setSelected(i);setProofId(undefined);setPhase('idle');setTrialState('idle');setTrialOutcome(null);setTrialError(null);controller.current?.select(i);};
   const phaseLabel=phase==='walking'?'Walking to the trial court…':phase==='trial'?'Playing the trial animation…':phase==='returning'?'Returning to the tree…':phase==='complete'?'Animation complete.':onTryTrial?'Plays the visual demo alongside one real Prediction attempt.':'Animation only · no AI execution or Proof submission';
   const runTrial=()=>{
     if(busy||!agent)return;
-    if(controller.current?.demo())setPhase('walking');
+    const category=onTryTrial?'prediction':(agent.dominantCategory??'prediction');
+    if(controller.current?.demo(index,category))setPhase('walking');
     if(!onTryTrial)return;
     setTrialState('running');setTrialOutcome(null);setTrialError(null);
-    onTryTrial(agent.id).then(result=>{if('error' in result){setTrialError(result.error);setTrialState('error');}else{setTrialOutcome(result);setTrialState('done');}}).catch(err=>{setTrialError(err instanceof Error?err.message:'Trial run failed');setTrialState('error');});
+    onTryTrial(agent.id).then(result=>{
+      if('error' in result){setTrialError(result.error);setTrialState('error');}
+      else{
+        setTrialOutcome(result);setTrialState('done');
+        if(result.status==='completed'&&result.verdict==='correct')controller.current?.celebrate(index,'prediction');
+      }
+    }).catch(err=>{setTrialError(err instanceof Error?err.message:'Trial run failed');setTrialState('error');});
   };
   return <section className={`${styles.garden} ${single?styles.single:''}`} aria-label={single?'Agent garden passport':'Interactive agent garden'}>
     {agent&&<EntityPicker kind={localKinds[agent.id]??entityKinds?.[agent.id]??defaultEntityKind(agent.id)} handle={agent.handle} disabled={busy||state==='loading'||state==='fallback'} onInspect={()=>controller.current?.inspectEntity()} onChoose={kind=>{if(controller.current?.setEntity(index,kind)){kindsRef.current={...kindsRef.current,[agent.id]:kind};setLocalKinds(k=>({...k,[agent.id]:kind}));onEntityPreview?.(agent.id,kind);controller.current.inspectEntity();}}}/>}
@@ -82,5 +122,6 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
       <div className={styles.links}>{!single&&!demoData&&<Link href={'/agents/'+encodeURIComponent(agent.handle)}>Open full Passport ↗</Link>}<Link href="/proofs/playzone">Open real Playzone ↗</Link></div>
       <small className={styles.limit}>{agents.length>displayed.length?`${displayed.length} trees shown · all agents in the directory below. `:''}{agent.proofs.length>GARDEN_PROOF_LIMIT?`Crown shows the latest ${GARDEN_PROOF_LIMIT} events. Full history remains in the Passport.`:'Crystal facets follow recorded Proof events.'}</small>
     </aside>}
+    {!single&&agent&&<div className={styles.legend}>{CATEGORY_ORDER.map(category=><span key={category} className={styles.legendItem}><i className={styles.legendDot} style={{background:FOREST_COLORS[category]}}/>{categoryLabel(category)}</span>)}</div>}
   </section>;
 }
