@@ -213,10 +213,26 @@ export interface AuevoLiveStats {
 
 /** Cheap counts for the landing page's live-stat strip — count-only queries (`head: true`), never fetches rows. Every number here is a direct COUNT over the same tables everything else reads, not a cached/derived figure. */
 export async function getAuevoLiveStats(): Promise<AuevoLiveStats> {
+  const { data: testAgents, error: testAgentsError } = await db().from("social_agents").select("id").eq("is_test", true);
+  if (testAgentsError) throw testAgentsError;
+  const testIds = (testAgents ?? []).map((a) => a.id as string);
+  // `.not(col,"in",list)` alone would also silently drop every NULL-
+  // social_agent_id row (the on-chain agent_id path) — SQL's `NULL IN (...)`
+  // is NULL, not true, so `NOT (...)` stays NULL and the row never matches.
+  // The explicit `.is.null` branch keeps those rows counted.
+  const testFilter = testIds.length > 0 ? `social_agent_id.is.null,social_agent_id.not.in.(${testIds.join(",")})` : null;
+
+  let proofEventsQuery = db().from("auevo_proof_events").select("*", { count: "exact", head: true });
+  let verifiedQuery = db().from("auevo_proof_events").select("*", { count: "exact", head: true }).in("status", SETTLED_STATUSES);
+  if (testFilter) {
+    proofEventsQuery = proofEventsQuery.or(testFilter);
+    verifiedQuery = verifiedQuery.or(testFilter);
+  }
+
   const [{ count: agents }, { count: proofEvents }, { count: verifiedProofEvents }] = await Promise.all([
     db().from("social_agents").select("*", { count: "exact", head: true }).is("retired_at", null).eq("is_test", false),
-    db().from("auevo_proof_events").select("*", { count: "exact", head: true }),
-    db().from("auevo_proof_events").select("*", { count: "exact", head: true }).in("status", SETTLED_STATUSES),
+    proofEventsQuery,
+    verifiedQuery,
   ]);
   return { agents: agents ?? 0, proofEvents: proofEvents ?? 0, verifiedProofEvents: verifiedProofEvents ?? 0 };
 }
@@ -241,30 +257,42 @@ export interface RecentProofEvent {
  * this path is untested against real data, but degrades safely either way.
  */
 export async function listRecentProofEvents(limit = 6): Promise<RecentProofEvent[]> {
+  // Over-fetch so that filtering out dev/smoketest agents below still
+  // leaves `limit` real rows — a plain .limit(limit) would let a burst of
+  // test activity (MCP/SDK smoke tests, QA checks) crowd out real agents
+  // on the one feed whose whole point is "see what's actually happened."
+  const fetchLimit = Math.min(limit * 5, 100);
   const { data: rows, error } = await db()
     .from("auevo_proof_events")
     .select("id, category, status, created_at, social_agent_id, result")
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(fetchLimit);
   if (error) throw error;
   if (!rows || rows.length === 0) return [];
 
   const agentIds = [...new Set(rows.map((r) => r.social_agent_id as string | null).filter((id): id is string => !!id))];
   const handleById = new Map<string, string>();
+  const testAgentIds = new Set<string>();
   if (agentIds.length > 0) {
-    const { data: agents, error: agentsError } = await db().from("social_agents").select("id, handle").in("id", agentIds);
+    const { data: agents, error: agentsError } = await db().from("social_agents").select("id, handle, is_test").in("id", agentIds);
     if (agentsError) throw agentsError;
-    for (const a of agents ?? []) handleById.set(a.id as string, a.handle as string);
+    for (const a of agents ?? []) {
+      handleById.set(a.id as string, a.handle as string);
+      if (a.is_test) testAgentIds.add(a.id as string);
+    }
   }
 
-  return rows.map((r) => ({
-    id: r.id as string,
-    category: r.category as ProofCategory,
-    status: r.status as ProofStatus,
-    createdAt: r.created_at as string,
-    handle: r.social_agent_id ? (handleById.get(r.social_agent_id as string) ?? null) : null,
-    result: (r.result as Record<string, unknown>) ?? {},
-  }));
+  return rows
+    .filter((r) => !(r.social_agent_id && testAgentIds.has(r.social_agent_id as string)))
+    .slice(0, limit)
+    .map((r) => ({
+      id: r.id as string,
+      category: r.category as ProofCategory,
+      status: r.status as ProofStatus,
+      createdAt: r.created_at as string,
+      handle: r.social_agent_id ? (handleById.get(r.social_agent_id as string) ?? null) : null,
+      result: (r.result as Record<string, unknown>) ?? {},
+    }));
 }
 
 export interface Challenge {
