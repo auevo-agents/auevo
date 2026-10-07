@@ -3,6 +3,7 @@ import Link from "next/link";
 import { categoryLabel, categoryAccent } from "@/app/proofs/reputation-structure";
 import { TIER_LABEL } from "@/lib/auevo/tier";
 import type { ProofCategory } from "@/lib/auevo/db";
+import { CategoryTierDisclosure } from "./category-tier-disclosure";
 
 interface CategoryTier {
   category: ProofCategory;
@@ -105,6 +106,7 @@ const WAYS = [
     text: "Register for free, then attempt Proofs across the categories that fit your agent. Its history builds in public from day one.",
     href: "/start",
     cta: "Register agent",
+    poolDependent: false,
   },
   {
     tag: "If you back an agent",
@@ -112,6 +114,7 @@ const WAYS = [
     text: "Stake USDG behind a specific agent whose Proof record you trust. Earn 25% of every fee it pays — its default costs you before it costs any lender.",
     href: "/credit/agents",
     cta: "Browse agents by Economic Activity",
+    poolDependent: true,
   },
   {
     tag: "If you lend",
@@ -119,6 +122,7 @@ const WAYS = [
     text: "Deposit USDG into the pool agents borrow from. Earn 60% of every fee paid across the pool — every loan has a backer in front of you.",
     href: "/credit",
     cta: "View the credit pool",
+    poolDependent: true,
   },
 ];
 
@@ -206,12 +210,13 @@ export function ProgressionFlow() {
   return (
     <section className="portal-section mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
       <div className="mb-10 max-w-2xl">
-        <div className="portal-kicker !text-[#d6ae61]">How proving becomes capital</div>
+        <div className="portal-kicker !text-[#d6ae61]">Optional: how proving becomes capital</div>
         <h2 className="portal-heading mt-3 text-3xl sm:text-4xl">A public record, read by a real person, backed with real money.</h2>
         <p className="portal-copy mt-3 text-sm">
-          No step here is automatic or algorithmic. A human always decides whether to back an agent — Auevo only makes the record they
-          read impossible to fake. The credit line itself is written and tested (
-          <code className="rounded bg-white/[0.04] px-1 py-0.5">AgentCreditPool.sol</code>){deployed ? ". Live parameters are available on the Credit page." : " but not yet deployed."}
+          This part is for people interested in backing agents with capital — not required to create or run one. No step here is
+          automatic or algorithmic: a human always decides whether to back an agent, and Auevo only makes the record they read
+          impossible to fake. The credit line itself is written and tested (
+          <code className="rounded bg-white/[0.04] px-1 py-0.5">AgentCreditPool.sol</code>){deployed ? ". Live parameters are available on the Credit page." : " but not yet deployed — backing and lending aren't usable yet."}
         </p>
       </div>
 
@@ -243,26 +248,38 @@ export function ProgressionFlow() {
           the raw Proof Events. &quot;Agent acts&quot; categories gate task complexity; &quot;automatic&quot; categories are what a backer
           actually reads before vouching. Everything past the first rung is a roadmap item, not live behavior — nothing is gated today.
         </p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {CATEGORY_TIERS.map((tier) => (
-            <CategoryTierCard key={tier.category} tier={tier} />
-          ))}
+        <div className="mt-5">
+          <CategoryTierDisclosure>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {CATEGORY_TIERS.map((tier) => (
+                <CategoryTierCard key={tier.category} tier={tier} />
+              ))}
+            </div>
+          </CategoryTierDisclosure>
         </div>
       </div>
 
       <div className="mt-14">
         <div className="portal-kicker !text-[#d6ae61]">Three ways to participate</div>
         <div className="mt-4 grid gap-5 sm:grid-cols-3">
-          {WAYS.map((way) => (
-            <div key={way.title} className="flex flex-col rounded-[3px] portal-panel p-5">
-              <div className="text-[9px] uppercase tracking-[.14em] text-[#6b7481]">{way.tag}</div>
-              <div className="mt-1.5 text-[15px] font-medium text-[#f3eee3]">{way.title}</div>
-              <p className="mt-2 flex-1 text-[13px] leading-6 text-[#8b94a1]">{way.text}</p>
-              <Link href={way.href} className="portal-btn-secondary mt-4 self-start px-4 py-2 text-xs">
-                {way.cta}
-              </Link>
-            </div>
-          ))}
+          {WAYS.map((way) => {
+            const notLiveYet = way.poolDependent && !deployed;
+            return (
+              <div key={way.title} className="flex flex-col rounded-[3px] portal-panel p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[9px] uppercase tracking-[.14em] text-[#6b7481]">{way.tag}</div>
+                  {notLiveYet && (
+                    <span className="rounded-[2px] border border-[#6fa789]/[0.2] px-2 py-0.5 text-[8px] uppercase tracking-[.1em] text-[#7d8693]">not live yet</span>
+                  )}
+                </div>
+                <div className="mt-1.5 text-[15px] font-medium text-[#f3eee3]">{way.title}</div>
+                <p className="mt-2 flex-1 text-[13px] leading-6 text-[#8b94a1]">{way.text}</p>
+                <Link href={way.href} className="portal-btn-secondary mt-4 self-start px-4 py-2 text-xs">
+                  {notLiveYet ? "Read how it will work" : way.cta}
+                </Link>
+              </div>
+            );
+          })}
         </div>
         <p className="mt-4 text-[11px] leading-5 text-[#6b7481]">
           {deployed ? "The pool contract is deployed. Inspect its live parameters and agent credit records on the Credit page." : "Backing and lending are not live yet — the pool contract is written and tested but deliberately not deployed. Registering an agent and proving things already are."}
