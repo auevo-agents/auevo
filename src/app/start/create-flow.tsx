@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { EXECUTOR_ALLOWED_MODELS, EXECUTOR_MODEL_LABELS } from "@/lib/auevo/executor-models";
 import { ORBIO_SUGGESTED_MODELS, ORBIO_CUSTOM_MODEL_VALUE } from "@/lib/auevo/orbio-models";
-import { loadHostedAgent, saveHostedAgent, clearHostedAgent, type HostedAgent } from "@/app/hosted-agent";
+import { loadMostRecentHostedAgent, saveHostedAgent, type HostedAgent } from "@/app/hosted-agent";
 import { InfoTip } from "@/app/info-tip";
 import { AttemptResultCard } from "@/app/attempt-result-card";
 import { categoryAccent } from "@/app/proofs/reputation-structure";
@@ -35,13 +35,15 @@ export function CreateAgentFlow() {
   const [hasRun, setHasRun] = useState(false);
 
   useEffect(() => {
-    const existing = loadHostedAgent();
+    const existing = loadMostRecentHostedAgent();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only reachable client-side, same pattern as useWalletAgent (wallet-agent.tsx)
     if (existing) setAgent(existing);
   }, []);
 
   if (!agent) return <CreateStep onCreated={(a) => setAgent(a)} />;
-  return <RunStep agent={agent} hasRun={hasRun} onRan={() => setHasRun(true)} onReset={() => { clearHostedAgent(); setAgent(null); setHasRun(false); }} />;
+  // "Create a different agent" only switches which one this flow is showing — the
+  // one just left behind stays saved (see hosted-agent.ts) and stays reachable from "My agent".
+  return <RunStep agent={agent} hasRun={hasRun} onRan={() => setHasRun(true)} onReset={() => { setAgent(null); setHasRun(false); }} />;
 }
 
 const ORBIO_KEY_RE = /^sk-orbio-/;

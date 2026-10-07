@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { CrystalForest, type TrialOutcome } from "../crystal-forest";
-import { loadHostedAgent } from "@/app/hosted-agent";
+import { findHostedAgent } from "@/app/hosted-agent";
 import { isEntityKind, type EntityKind } from "./entity-catalog";
 import type { ForestAgent } from "../forest-model";
 
@@ -37,12 +37,12 @@ export function AgentAppearanceGarden({
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- wallet/localStorage identity is only known client-side, same pattern as useWalletAgent (wallet-agent.tsx)
-    setIsOwner(isHosted ? loadHostedAgent()?.id === tree.id : address != null && address.toLowerCase() === controllerAddress.toLowerCase());
+    setIsOwner(isHosted ? findHostedAgent(tree.id) != null : address != null && address.toLowerCase() === controllerAddress.toLowerCase());
   }, [isHosted, address, controllerAddress, tree.id]);
 
   useEffect(() => {
-    const hosted = loadHostedAgent();
-    if (!isHosted || !isOwner || !hosted || hosted.id !== tree.id) return;
+    const hosted = findHostedAgent(tree.id);
+    if (!isHosted || !isOwner || !hosted) return;
     let cancelled = false;
     fetch(`/api/agents/${tree.id}/autonomy?runSecret=${encodeURIComponent(hosted.runSecret)}`)
       .then(res => res.json())
@@ -56,8 +56,8 @@ export function AgentAppearanceGarden({
   }, [isHosted, isOwner, tree.id]);
 
   const toggleAutonomy = useCallback(async () => {
-    const hosted = loadHostedAgent();
-    if (!isHosted || !isOwner || !hosted || hosted.id !== tree.id || !autonomy || autonomyBusy) return;
+    const hosted = findHostedAgent(tree.id);
+    if (!isHosted || !isOwner || !hosted || !autonomy || autonomyBusy) return;
     setAutonomyBusy(true);
     setAutonomyError(null);
     try {
@@ -77,8 +77,8 @@ export function AgentAppearanceGarden({
   }, [isHosted, isOwner, tree.id, autonomy, autonomyBusy]);
 
   async function handleTryTrial(id: string): Promise<TrialOutcome | { error: string }> {
-    const hosted = loadHostedAgent();
-    if (!isHosted || !isOwner || !hosted || hosted.id !== id) return { error: "Connect as this agent's owner to run a real trial." };
+    const hosted = findHostedAgent(id);
+    if (!isHosted || !isOwner || !hosted) return { error: "Connect as this agent's owner to run a real trial." };
     try {
       const res = await fetch(`/api/agents/${id}/run`, {
         method: "POST",

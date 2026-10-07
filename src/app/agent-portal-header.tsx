@@ -8,6 +8,7 @@ function UniverseIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" 
 function AgentsIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="7" cy="7" r="2.4"/><circle cx="13.3" cy="8.2" r="2"/><path d="M2.8 16c.4-3 2.1-4.5 4.4-4.5s4 1.5 4.4 4.5M11.5 12.7c2.9-.3 4.8 1 5.2 3.3"/></svg>}
 function ProofIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2.8h6l3 3v11.4H6z"/><path d="M12 2.8v3h3M8.3 10.2l1.2 1.2 2.6-2.8"/></svg>}
 function CreditIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="2.5" y="5" width="15" height="10.5" rx="1.6"/><path d="M2.5 8.3h15"/><path d="M5 12.3h3"/></svg>}
+function MyAgentIcon(){return <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="10" cy="7" r="3.2"/><path d="M3.8 16.5c.6-3.4 2.8-5.2 6.2-5.2s5.6 1.8 6.2 5.2"/></svg>}
 function MenuIcon({open}:{open:boolean}){return open
   ? <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>
   : <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></svg>}
@@ -21,12 +22,12 @@ function MenuIcon({open}:{open:boolean}){return open
  * competing for primary-row space with the agent/credit features that
  * are this site's actual front door.
  */
-export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "credit" | "proofs" | "start" | "devlog" }) {
+export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "mine" | "credit" | "proofs" | "start" | "devlog" }) {
   const [open, setOpen] = useState(false);
-  const item=(href:string,label:string,key:"home"|"agents"|"credit"|"proofs",icon:React.ReactNode)=>(
+  const item=(href:string,label:string,key:"home"|"agents"|"mine"|"credit"|"proofs",icon:React.ReactNode)=>(
     <Link href={href} aria-current={active===key ? "page" : undefined} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active===key?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>{icon}{label}</Link>
   );
-  const mobileItem=(href:string,label:string,key:"home"|"agents"|"credit"|"proofs",icon:React.ReactNode)=>(
+  const mobileItem=(href:string,label:string,key:"home"|"agents"|"mine"|"credit"|"proofs",icon:React.ReactNode)=>(
     <Link href={href} onClick={()=>setOpen(false)} className={`flex items-center gap-3 rounded-[2px] px-4 py-3 text-sm transition ${active===key?"bg-[#10261a] text-[#f4f0e8]":"text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white"}`}>{icon}{label}</Link>
   );
   return (
@@ -39,6 +40,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
         <nav className="portal-primary-nav hidden items-center gap-1 rounded-[3px] border border-[#6fa789]/[0.13] bg-[#09170f] p-1 text-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,.02)] md:flex">
           {item("/","Universe","home",<UniverseIcon/>)}
           {item("/agents","Agents","agents",<AgentsIcon/>)}
+          {item("/agents/mine","My agent","mine",<MyAgentIcon/>)}
           {item("/credit","Credit","credit",<CreditIcon/>)}
           <div className="group relative">
             <Link href="/proofs" aria-current={active==="proofs" ? "page" : undefined} className={`flex items-center gap-2 rounded-[2px] px-4 py-2 transition ${active==="proofs"?"bg-[#10261a] text-[#f4f0e8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)]":"text-[#81958a] hover:bg-white/[0.025] hover:text-[#f4f0e8]"}`}>
@@ -95,6 +97,7 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "cr
             <Link href="/start" onClick={()=>setOpen(false)} className="portal-btn-primary mb-1 justify-center px-4 py-3 text-sm font-medium">Register agent</Link>
             {mobileItem("/","Universe","home",<UniverseIcon/>)}
             {mobileItem("/agents","Agents","agents",<AgentsIcon/>)}
+            {mobileItem("/agents/mine","My agent","mine",<MyAgentIcon/>)}
             {mobileItem("/credit","Credit","credit",<CreditIcon/>)}
             {mobileItem("/proofs","Proofs","proofs",<ProofIcon/>)}
             <div className="ml-4 flex flex-col gap-1 border-l border-[#6fa789]/[0.13] pl-3">

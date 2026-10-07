@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAccount, useSignMessage } from "wagmi";
 import { PortalWalletControl } from "@/app/portal-wallet-control";
 import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
-import { loadHostedAgent, type HostedAgent } from "@/app/hosted-agent";
+import { loadMostRecentHostedAgent, type HostedAgent } from "@/app/hosted-agent";
 import { AttemptResultCard } from "@/app/attempt-result-card";
 import { SKILL_MIN_WINDOW_HOURS, SKILL_MAX_WINDOW_HOURS } from "@/lib/auevo/skill";
 import type { SuggestedSkillPool } from "@/lib/auevo/skill";
@@ -238,7 +238,7 @@ export function AuevoSkillTryIt() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only reachable client-side, same pattern as useWalletAgent (wallet-agent.tsx)
-    setHostedAgent(loadHostedAgent());
+    setHostedAgent(loadMostRecentHostedAgent());
     setHostedChecked(true);
   }, []);
 
