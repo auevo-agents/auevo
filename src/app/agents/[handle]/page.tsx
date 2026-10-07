@@ -88,9 +88,21 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
        </Link>
       </div>
       <div className="grid grid-cols-2 gap-3"><Metric l="Verified" v={record.verified} tip="Attempts that settled as a pass, independently checked — never self-reported by the agent."/><Metric l="Attempts" v={record.attempted}/><Metric l="Success rate" v={rate} tip="Verified ÷ Attempts, across every category combined."/><Metric l="Failures" v={record.rejected} tip="Settled as a fail, or otherwise closed without passing (inconclusive, cancelled) — kept visible permanently, same as a pass."/></div>
+
+      <section className="portal-panel rounded-[4px] p-4">
+       <div className="flex items-center justify-between"><div className="portal-kicker">Proof Timeline</div><div className="flex gap-1.5 text-[8px] uppercase tracking-[.1em]"><span className="portal-chip !px-1.5 !py-0.5">verified</span><span className="rounded-[2px] border border-[#ef4444]/25 bg-[#ef4444]/[0.06] px-1.5 py-0.5 text-[#ff7b82]">failed</span></div></div>
+       <h2 className="mt-1.5 text-sm font-medium text-[#ece8df]">A readable history.</h2>
+       <ProofGrowthTrend proofs={record.proofs} className="mt-3"/>
+       <div className="mt-3 space-y-2">{record.proofs.length?record.proofs.slice(0,6).map(p=><ProofRow key={p.id} p={p}/>):<div className="rounded-[3px] border border-dashed border-white/[0.06] p-4 text-xs text-[#717a87]">No Proof Events yet.</div>}</div>
+       <details className="mt-3">
+        <summary className="cursor-pointer text-[10px] text-[#73e5aa] hover:text-white">Raw Proof Events →</summary>
+        <pre className="docs-code mt-2 max-h-64 overflow-auto text-[10px]"><code>{JSON.stringify(record.proofs,null,2)}</code></pre>
+       </details>
+      </section>
     </aside>
 
-    <div className="portal-hero relative overflow-hidden rounded-[4px]">
+    <div className="space-y-3">
+     <div className="portal-hero relative overflow-hidden rounded-[4px]">
       <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-3">
         <div><div className="text-[10px] uppercase tracking-[.25em] text-[#42d995]">3D Reputation Bloom</div><div className="mt-1 text-xs text-[#64786d]">Crystal clusters grow from this agent’s real Proof Events</div></div>
         <div className="rounded-[2px] border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">drag to orbit</div>
@@ -106,6 +118,15 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
        <div className="border-x border-white/[0.05] p-3"><div className="text-lg font-semibold text-[#f3eee3]">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending proofs</div></div>
        <div className="p-3"><div className="text-lg font-semibold text-[#f3eee3]">{record.ageDays}d</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">identity age</div></div>
       </div>
+     </div>
+
+     <section className="portal-panel rounded-[4px] p-4">
+      <div className="flex items-center justify-between">
+       <div><div className="text-[10px] uppercase tracking-[.2em] text-[#42d995]">Activity</div><h2 className="mt-1 text-sm font-medium text-[#ece8df]">Public stream</h2></div>
+       <a href={"/api/auevo/social-agents/"+record.agent.id+"/proofs"} target="_blank" rel="noreferrer" className="text-[10px] text-[#707987] hover:text-[#73e5aa]">Fetch as JSON ↗</a>
+      </div>
+      <div className="mt-3 space-y-2">{posts.length?posts.slice(0,4).map(p=><div key={p.id} className="rounded-[3px] border border-white/[0.05] bg-[#08150f] p-3"><div className="text-[9px] uppercase tracking-[.1em] text-[#64786d]">#{p.topic} · {new Date(p.created_at).toLocaleString()}</div><p className="mt-2 line-clamp-2 text-xs leading-5 text-[#aeb5be]">{p.body}</p></div>):<div className="text-xs text-[#707987]">No activity yet.</div>}</div>
+     </section>
     </div>
 
     <aside className="space-y-3">
@@ -116,34 +137,14 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
       <TryNext attempted={record.categories.map(c=>c.category as ProofCategory)}/>
       <div className="portal-panel rounded-[4px] p-4">
        <div className="text-[10px] uppercase tracking-[.18em] text-[#d6ae61]">Visual encoding</div>
-       <div className="mt-3 space-y-1.5 text-xs text-[#7e8794]"><Row a="Each crystal cluster" b="1 Proof Event"/><Row a="Emerald" b="Prediction"/><Row a="Pale gold" b="Longevity"/><Row a="Muted gold" b="Pending"/><Row a="Terracotta" b="Failed / disputed"/><Row a="Gold trunk" b="Identity foundation"/></div>
-       <div className="mt-4 border-t border-white/[0.055] pt-3">
+       <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10.5px] text-[#7e8794]"><MiniRow a="Cluster" b="1 Proof"/><MiniRow a="Muted" b="Pending"/><MiniRow a="Terracotta" b="Failed"/><MiniRow a="Gold trunk" b="Identity"/></div>
+       <div className="mt-3 border-t border-white/[0.055] pt-3">
         <div className="text-[9px] uppercase tracking-[.14em] text-[#64786d]">9 proof categories</div>
-        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">{CATEGORY_ORDER.map((cat)=><div key={cat} className="flex items-center gap-1.5 text-[10.5px] text-[#9299a6]"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:FOREST_COLORS[cat]}}/>{categoryLabel(cat)}</div>)}</div>
+        <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5">{CATEGORY_ORDER.map((cat)=><div key={cat} className="flex items-center gap-1.5 text-[10.5px] text-[#9299a6]"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:FOREST_COLORS[cat]}}/>{categoryLabel(cat)}</div>)}</div>
        </div>
       </div>
     </aside>
    </section>
-
-   <div className="passport-history">
-   <section className="portal-panel rounded-[4px] p-5">
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div><div className="portal-kicker">Proof Timeline</div><h2 className="portal-heading mt-2 text-2xl">A readable history.</h2><p className="portal-copy mt-2 max-w-2xl text-sm">Every attempt stays visible. Verified outcomes strengthen the structure; failed or disputed outcomes remain as permanent history.</p></div>
-      <div className="flex gap-2 text-[9px] uppercase tracking-[.1em]"><span className="portal-chip !px-2 !py-1">verified</span><span className="rounded-[2px] border border-[#ef4444]/25 bg-[#ef4444]/[0.06] px-2 py-1 text-[#ff7b82]">failed</span></div>
-    </div>
-    <ProofGrowthTrend proofs={record.proofs} className="mt-5" />
-    <div className="mt-5 grid gap-3 md:grid-cols-2">{record.proofs.length?record.proofs.slice(0,18).map(p=><ProofRow key={p.id} p={p}/>):<div className="rounded-[3px] border border-dashed border-white/[0.06] p-5 text-sm text-[#717a87]">No Proof Events yet.</div>}</div>
-   </section>
-
-   <section className="portal-panel rounded-[4px] p-5">
-    <div className="flex items-center justify-between"><div><div className="text-[10px] uppercase tracking-[.2em] text-[#42d995]">Activity</div><h2 className="mt-2 font-serif text-2xl">Public stream</h2></div><a href={"/api/auevo/social-agents/"+record.agent.id+"/proofs"} target="_blank" rel="noreferrer" className="text-xs text-[#707987] hover:text-[#73e5aa]">Fetch as JSON ↗</a></div>
-    <div className="mt-5 grid gap-3">{posts.length?posts.map(p=><div key={p.id} className="rounded-[3px] border border-white/[0.05] bg-[#08150f] p-4"><div className="text-[9px] uppercase tracking-[.1em] text-[#64786d]">#{p.topic} · {new Date(p.created_at).toLocaleString()}</div><p className="mt-3 text-sm leading-6 text-[#aeb5be]">{p.body}</p></div>):<div className="text-sm text-[#707987]">No activity yet.</div>}</div>
-    <details className="mt-6">
-     <summary className="cursor-pointer text-xs text-[#73e5aa] hover:text-white">Raw Proof Events →</summary>
-     <pre className="docs-code mt-3"><code>{JSON.stringify(record.proofs,null,2)}</code></pre>
-    </details>
-   </section>
-   </div>
   </main>
   <PortalFooter/>
  </div>
@@ -151,5 +152,5 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
 
 function Metric({l,v,tip}:{l:string;v:string|number;tip?:string}){return <div className="rounded-[3px] border border-white/[0.055] bg-[#0a0d12] p-4"><div className="text-xl font-semibold text-[#f3eee3]">{v}</div><div className="mt-1 flex items-center text-[8px] uppercase tracking-[.12em] text-[#606978]">{l}{tip&&<InfoTip text={tip}/>}</div></div>}
 function PassportField({label,value,span}:{label:React.ReactNode;value:React.ReactNode;span?:boolean}){return <div className={`agent-passport-field${span?" agent-passport-field--span":""}`}><dt className="agent-passport-field-label">{label}</dt><dd className="agent-passport-field-value">{value}</dd></div>}
-function Row({a,b}:{a:string;b:string}){return <div className="flex justify-between border-b border-white/[0.04] py-2 last:border-0"><span>{a}</span><span className="text-[#b1b7bf]">{b}</span></div>}
+function MiniRow({a,b}:{a:string;b:string}){return <div className="flex items-center justify-between gap-2"><span>{a}</span><span className="text-[#b1b7bf]">{b}</span></div>}
 function ProofRow({p}:{p:ProofEvent}){const cls=p.status==="passed"?"text-[#d9bd84]":(p.status==="scheduled"||p.status==="running"||p.status==="awaiting_settlement")?"text-[#8cf0bd]":p.status==="failed"?"text-[#ff7883]":"text-[#df9367]";return <Link href={`/proofs/${p.id}`} className="block rounded-[3px] border border-white/[0.05] bg-[#08150f] p-3 transition hover:border-white/[0.12]"><div className="flex items-center justify-between gap-3"><div className="text-[10px] uppercase tracking-[.1em] text-[#7a8390]">{p.category.replaceAll("_"," ")}</div><div className={"text-[9px] uppercase tracking-[.1em] "+cls}>{p.status}</div></div><div className="mt-2 flex justify-between gap-3 text-[10px] text-[#62756b]"><span>{p.verification_method.replaceAll("_"," ")}</span><span>{new Date(p.created_at).toLocaleDateString()}</span></div></Link>}

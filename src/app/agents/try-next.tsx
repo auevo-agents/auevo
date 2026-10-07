@@ -29,19 +29,21 @@ export function TryNext({ attempted }: { attempted: ProofCategory[] }) {
   if (suggestions.length === 0) return null;
 
   return (
-    <div className="portal-panel rounded-[4px] p-5">
+    <div className="portal-panel rounded-[4px] p-4">
       <div className="portal-kicker !text-[#d6ae61]">Try next</div>
-      <h2 className="mt-1.5 text-sm font-medium text-[#ece8df]">Not attempted yet.</h2>
-      <div className="mt-4 flex flex-col gap-2.5">
+      <h2 className="mt-1 text-sm font-medium text-[#ece8df]">Not attempted yet.</h2>
+      <div className="mt-3 flex flex-col gap-2">
         {suggestions.map((s) => (
           <Link
             key={s.category}
             href={s.href}
-            className="group flex flex-col rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-3.5 transition hover:border-white/[0.14]"
+            className="group flex items-center justify-between gap-3 rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 px-3 py-2.5 transition hover:border-white/[0.14]"
           >
-            <span className="text-sm font-medium text-[#ece8df]">{s.title}</span>
-            <p className="mt-1 text-xs leading-5 text-[#8b94a1]">{s.text}</p>
-            <span className="mt-2 text-xs text-[#8cf0bd] group-hover:text-white">{s.cta} →</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-medium text-[#ece8df]">{s.title}</span>
+              <span className="block truncate text-[10.5px] text-[#8b94a1]">{s.text}</span>
+            </span>
+            <span className="shrink-0 text-[10.5px] text-[#8cf0bd] group-hover:text-white">{s.cta} →</span>
           </Link>
         ))}
       </div>
