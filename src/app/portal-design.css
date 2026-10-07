@@ -26,8 +26,35 @@
 .portal-page .home-cinematic-hero{min-height:550px}.portal-page .home-cinematic-image{background-image:url('/images/auevo-crystal-hero.webp');background-size:auto 100%;background-position:right center;filter:saturate(.94) brightness(.86)}
 .portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110e 0%,#07110ef5 27%,#07110e9c 45%,#07110e00 72%)}
 .portal-page .home-cinematic-topmask{display:none}.portal-page .home-cinematic-bottom{background:linear-gradient(0deg,#07110e,transparent)}
-.universe-stats{position:relative;z-index:2;max-width:1400px;margin:-12px auto 0;border:1px solid #9d9e5433;background:#14261bef;border-radius:12px;box-shadow:0 14px 45px #0003;padding:24px 8px;gap:0}
-.universe-stats>div{padding-left:0;border-left:0;text-align:center;border-right:1px solid #91ad7626}.universe-stats>div:last-child{border-right:0}
+/* The stats+ticker bar breaks out of the page's centered max-width to run
+   edge-to-edge — the ticker needs real room to scroll, and a full-bleed
+   bar reads as "live" in a way a boxed card doesn't. */
+.universe-bar{position:relative;z-index:2;margin:-12px 0 0;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;border-top:1px solid #9d9e5433;border-bottom:1px solid #9d9e5433;background:linear-gradient(165deg,#1a2c22,#0b1912);box-shadow:inset 0 1px 0 #e6d7a322,0 14px 40px #0007;display:flex;align-items:stretch}
+.universe-stats{flex:0 0 auto;display:grid;grid-auto-flow:column;gap:0;padding:20px clamp(20px,4.5vw,72px)}
+.universe-stats>div{padding:0 22px;text-align:center;border-right:1px solid #91ad7626}.universe-stats>div:first-child{padding-left:0}.universe-stats>div:last-child{border-right:0}
+/* Live agent-action strip, filling the rest of .universe-bar. A pure-CSS
+   loop (duplicated content + translateX(-50%), same trick as
+   landing-ticker.tsx) so it keeps scrolling smoothly with no new data;
+   agent-activity-ticker.tsx only ever grows the item list, never resets it,
+   so a genuinely new Proof Event just joins the loop. */
+.activity-ticker{flex:1 1 auto;min-width:0;border-left:1px solid #91ad7626;overflow:hidden;white-space:nowrap;position:relative;display:flex;align-items:center}
+.activity-ticker:before,.activity-ticker:after{content:'';position:absolute;top:0;bottom:0;width:48px;z-index:2;pointer-events:none}
+.activity-ticker:before{left:0;background:linear-gradient(90deg,#0b1912,transparent)}
+.activity-ticker:after{right:0;background:linear-gradient(270deg,#0b1912,transparent)}
+.activity-ticker-track{display:inline-flex;align-items:center;gap:30px;padding:0 28px;animation-name:activity-ticker-scroll;animation-timing-function:linear;animation-iteration-count:infinite}
+.activity-ticker:hover .activity-ticker-track{animation-play-state:paused}
+@keyframes activity-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.activity-ticker-item{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#9fb0a4}
+.activity-ticker-item b{color:#f2f4ee;font-weight:600}
+.activity-ticker-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:#d6ae61}
+.activity-ticker-dot-verified{background:#42d995}.activity-ticker-dot-failed,.activity-ticker-dot-cancelled{background:#e0735c}.activity-ticker-dot-inconclusive{background:#9aa4ab}
+.activity-ticker-status{text-transform:uppercase;font-size:9px;letter-spacing:.09em;color:#8fa391}
+.activity-ticker-status-verified{color:#8cf0bd}.activity-ticker-status-failed,.activity-ticker-status-cancelled{color:#f0a68c}
+.activity-ticker-time{color:#657265;font-size:10.5px}
+.activity-ticker-dotsep{color:#91ad7640}
+.activity-ticker-empty{flex:1 1 auto;min-width:0;border-left:1px solid #91ad7626;display:flex;align-items:center;padding:0 28px;font-size:12px;color:#7c8c7f}
+@media(max-width:1100px){.activity-ticker,.activity-ticker-empty{display:none}}
+@media(prefers-reduced-motion:reduce){.activity-ticker-track{animation:none}}
 .home-feed-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.home-feed-grid p{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .crystal-motif{width:100%;height:140px;filter:drop-shadow(0 5px 12px #238a5d22)}
 .passport-avatar{width:76px;height:76px;margin-top:20px;border:1px solid #b69e5266;border-radius:12px;background:#20352999}.passport-avatar svg{width:100%;height:100%}
@@ -38,7 +65,7 @@
 .docs-shell .docs-title{font-size:44px}.docs-shell .docs-article{color:#c2cec3}.docs-shell .docs-sidebar{background:#0c1e15;border-color:#6b8b6040}.docs-shell .docs-toc{background:#10241b;border:1px solid #7d996533;border-radius:12px}.docs-shell code{color:#d7c18b}
 .token-page .token-stat,.scanner-premium :is(.scan-card,.scan-section,.scan-sidebar),.fees-premium .fee-card{background:#11251b;border:1px solid #6f8b5d40;border-radius:12px}.token-page .token-hero h1{color:#ecd9a3}.token-page .token-hero{background:radial-gradient(ellipse at center,#1b3a2466,transparent 65%)}
 @media(max-width:1100px){.credit-overview-grid{grid-template-columns:1fr 1fr}.credit-overview-grid>section:first-child{grid-column:1/-1}.proof-hero-visual{grid-template-columns:1fr 1fr}.passport-history{grid-template-columns:1fr}}
-@media(max-width:700px){.portal-page .home-cinematic-hero{min-height:610px}.portal-page .home-cinematic-image{background-size:auto 100%;background-position:65% center;opacity:.5}.portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110ef0,#07110e80)}.universe-stats{margin:0 20px;padding:20px 8px;row-gap:22px}.universe-stats>div:nth-child(2){border:0}.home-feed-grid,.credit-overview-grid,.proof-hero-visual{grid-template-columns:1fr}.credit-schematic{gap:10px}.credit-schematic .crystal-motif{height:110px}.proof-live-feed{min-height:220px}.portal-page h1{overflow-wrap:anywhere}.credit-subnav{gap:6px}.passport-history{gap:20px}}
+@media(max-width:700px){.portal-page .home-cinematic-hero{min-height:610px}.portal-page .home-cinematic-image{background-size:auto 100%;background-position:65% center;opacity:.5}.portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110ef0,#07110e80)}.universe-bar{flex-direction:column}.universe-stats{display:grid;grid-template-columns:repeat(2,1fr);grid-auto-flow:row;margin:0;padding:18px 20px;row-gap:18px}.universe-stats>div:nth-child(2){border:0}.home-feed-grid,.credit-overview-grid,.proof-hero-visual{grid-template-columns:1fr}.credit-schematic{gap:10px}.credit-schematic .crystal-motif{height:110px}.proof-live-feed{min-height:220px}.portal-page h1{overflow-wrap:anywhere}.credit-subnav{gap:6px}.passport-history{gap:20px}}
 .home-feed-avatar{width:50px;height:50px;flex-shrink:0;border:1px solid #b69e5244;border-radius:9px;background:#24372855}.home-feed-avatar svg{width:100%;height:100%}
 /* Secondary protocol and onboarding cards follow the same panel geometry. */
 .portal-page .portal-shell [class*="rounded-[3px]"][class*="border"],.portal-page .portal-shell [class*="rounded-[4px]"][class*="border"]{border-radius:10px}
@@ -63,7 +90,7 @@
 :is(.portal-page,.auevo-design) .portal-btn-primary:disabled{opacity:.4;filter:saturate(.4);transform:none}
 .portal-page .portal-btn-secondary{background:linear-gradient(150deg,#1d3026,#0b1912);border:1px solid #b0ad7255;color:#e4dfc8;box-shadow:inset 0 1px 0 #ffffff08,0 5px 18px #0003;border-radius:9px;transition:transform .3s,border-color .3s}.portal-page .portal-btn-secondary:hover{border-color:#cbb47699;transform:translateY(-2px)}
 .auevo-portal-header{box-shadow:0 8px 28px #0002}.auevo-portal-header .auevo-wordmark-gold{font-size:29px!important;letter-spacing:.08em!important}.auevo-portal-header .auevo-tree-mark{width:39px;height:39px;border:1px solid #baa46588;border-radius:5px;background:#102019;padding:4px}
-.portal-page .home-cinematic-image{animation:atelier-hero 20s ease-in-out infinite;transform-origin:75% 60%}.home-feed-grid .portal-panel{padding:24px}.home-feed-grid .home-feed-avatar{box-shadow:inset 0 1px 0 #eed69c22,0 4px 12px #0006}.universe-stats{background:linear-gradient(165deg,#1a2c22,#0b1912);box-shadow:inset 0 1px 0 #e6d7a322,0 14px 40px #0007;border-color:#a6a16f55}.universe-stats .portal-stat>div:first-child{font-family:'Auevo Editorial',Georgia,serif;font-size:34px;font-weight:600}
+.portal-page .home-cinematic-image{animation:atelier-hero 20s ease-in-out infinite;transform-origin:75% 60%}.home-feed-grid .portal-panel{padding:24px}.home-feed-grid .home-feed-avatar{box-shadow:inset 0 1px 0 #eed69c22,0 4px 12px #0006}.universe-stats .portal-stat>div:first-child{font-family:'Auevo Editorial',Georgia,serif;font-size:34px;font-weight:600}
 .credit-intro h1{font-size:clamp(48px,5vw,76px)}.credit-overview-grid{grid-template-columns:1.65fr 1fr 1fr;gap:20px}.credit-overview-grid>section{padding:28px}.credit-overview-grid h2{font-family:'Auevo Sans',Arial,sans-serif;font-size:20px;font-weight:600}.credit-schematic{margin:22px -12px 30px;gap:4px}.credit-schematic h3{font-family:'Auevo Sans',Arial,sans-serif;font-size:16px;font-weight:600}.credit-arrow{top:96px;right:-15px;text-shadow:0 0 12px #e4bc5b88;animation:atelier-flow 3.8s ease-in-out infinite}
 .passport-avatar{width:88px;height:88px;border:1px solid #d5bb7899;box-shadow:inset 0 1px 0 #e9d58d33,0 7px 22px #0005}.passport-page .portal-heading{font-size:34px}.passport-page .portal-hero{background:#07110e}.passport-page aside .grid.grid-cols-2>div{background:linear-gradient(145deg,#152a20,#0c1b14);box-shadow:inset 0 1px 0 #e2d09712,0 6px 20px #0003;border-color:#94a47e40;border-radius:12px}
 .portal-page .proof-section-content>div>div[class*='rounded-'],.portal-page .proof-section-content>div>a[class*='rounded-']{background:radial-gradient(ellipse at top,#25412c35,transparent 65%),linear-gradient(150deg,#12241b,#09150f);box-shadow:inset 0 1px 0 #c9d49714,0 14px 35px #0004;border-color:#8ba07944;border-radius:14px;transition:transform .4s,border-color .4s}.portal-page .proof-section-content>div>a:hover{transform:translateY(-4px);border-color:#c8b37677}

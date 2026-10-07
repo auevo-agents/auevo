@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/auevo-work-board-sync",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/agent-autonomy",
+      "schedule": "0 * * * *"
     }
   ]
 }

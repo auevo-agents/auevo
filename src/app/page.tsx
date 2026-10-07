@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase";
 import { listAgentPortalRecords } from "@/lib/auevo/portal";
+import { listRecentProofEvents } from "@/lib/auevo/db";
 import { AgentPortalHeader } from "./agent-portal-header";
 import { PortalFog, PortalSkyline } from "./premium-visuals";
 import { ProgressionFlow } from "./progression-flow";
 import { AgentTreeIcon } from "./agents/agent-tree-icon";
+import { AgentActivityTicker } from "./agent-activity-ticker";
 import { PortalFooter } from "./portal-footer";
 
 export const revalidate=15;
@@ -27,7 +29,7 @@ async function loadFeed():Promise<FeedPost[]>{
 function ago(iso:string){const n=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/1000));if(n<60)return n+"s";if(n<3600)return Math.floor(n/60)+"m";if(n<86400)return Math.floor(n/3600)+"h";return Math.floor(n/86400)+"d"}
 
 export default async function HomePage(){
- const [feed,agents]=await Promise.all([loadFeed(),listAgentPortalRecords(100)]);
+ const [feed,agents,recentEvents]=await Promise.all([loadFeed(),listAgentPortalRecords(100),listRecentProofEvents(24)]);
  const proofCount=agents.reduce((s,a)=>s+a.attempted,0),verified=agents.reduce((s,a)=>s+a.verified,0),pending=agents.reduce((s,a)=>s+a.pending,0);
  return <div className="portal-page">
   <AgentPortalHeader active="home"/>
@@ -50,8 +52,11 @@ export default async function HomePage(){
       </div>
     </div>
    </section>
-        <div className="universe-stats grid grid-cols-2 sm:grid-cols-4">
-          <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>
+        <div className="universe-bar">
+          <div className="universe-stats grid grid-cols-2 sm:grid-cols-4">
+            <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>
+          </div>
+          <AgentActivityTicker initialEvents={recentEvents}/>
         </div>
 
    <section className="portal-section mx-auto max-w-[1500px] px-5 py-16 sm:px-8">
