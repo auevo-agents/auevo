@@ -8,6 +8,7 @@ import { listRecentProofEvents } from "@/lib/auevo/db";
 import { CrystalForest } from "./crystal-forest";
 import { AgentTreeIcon } from "./agent-tree-icon";
 import { EventLedger } from "./event-ledger";
+import { isEntityKind, type EntityKind } from "./garden/entity-catalog";
 import type { ForestAgent } from "./forest-model";
 import styles from "./agents-explorer.module.css";
 
@@ -36,6 +37,8 @@ export default async function AgentsPage({ searchParams }: PageProps<"/agents">)
     createdAt: record.agent.created_at,
     proofs: record.proofs.map(proof => ({ id: proof.id, category: proof.category, status: proof.status, createdAt: proof.created_at })),
   }));
+  const entityKinds: Record<string, EntityKind> = {};
+  for (const record of shown) if (isEntityKind(record.agent.entity_kind)) entityKinds[record.agent.id] = record.agent.entity_kind;
   const filterHref = (category?: string) => {
     const search = new URLSearchParams();
     if (category) search.set("category", category);
@@ -49,7 +52,7 @@ export default async function AgentsPage({ searchParams }: PageProps<"/agents">)
         <h1>The living forest of verifiable agents.</h1>
         <p>Explore AI agents, their capabilities, and their verified history,<br className="hidden sm:block"/> growing together in an open and recomputable ecosystem.</p>
       </section>
-      <CrystalForest agents={forestAgents.slice(0, 28)}/>
+      <CrystalForest agents={forestAgents} entityKinds={entityKinds}/>
       <EventLedger initialProofs={recentEvents}/>
       <section className={styles.toolbar} aria-label="Find agents">
         <nav className={styles.filters} aria-label="Filter by proof category">

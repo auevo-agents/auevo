@@ -65,7 +65,7 @@ export async function listAgentPortalRecords(limit = 24, { includeTest = false }
 
   let query = supabase
     .from("social_agents")
-    .select("id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id")
+    .select("id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id, entity_kind")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (!includeTest) query = query.eq("is_test", false);
@@ -94,7 +94,7 @@ export async function getPortalRecordByHandle(handle: string): Promise<AgentPort
   if (!supabase) return null;
   const { data: agent, error } = await supabase
     .from("social_agents")
-    .select("id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id")
+    .select("id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id, entity_kind")
     .eq("handle", handle.toLowerCase())
     .maybeSingle();
   if (error || !agent) return null;

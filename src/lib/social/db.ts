@@ -14,9 +14,11 @@ export interface SocialAgent {
   is_hosted: boolean;
   /** This agent's id on the SEPARATE Credit identity registry, if it ever registered one — see src/lib/credit/link.ts. Null for most agents. */
   credit_agent_id: string | null;
+  /** Cosmetic forest-garden appearance (entity-catalog.ts EntityKind), owner-chosen. Null until saved — callers fall back to defaultEntityKind(id). Never affects reputation. */
+  entity_kind: string | null;
 }
 
-const AGENT_COLUMNS = "id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id";
+const AGENT_COLUMNS = "id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id, entity_kind";
 
 export async function getAgentById(id: string): Promise<SocialAgent | null> {
   const supabase = getSupabaseServer();

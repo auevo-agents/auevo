@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
-import { CrystalForest } from "../crystal-forest";
+import { AgentAppearanceGarden } from "../garden/appearance-owner";
+import { isEntityKind } from "../garden/entity-catalog";
 import { AgentTreeIcon } from "../agent-tree-icon";
 import { FOREST_COLORS, type ForestAgent } from "../forest-model";
 import { ProofGrowthTrend } from "../proof-growth-trend";
@@ -35,6 +36,8 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
  const rate=record.attempted?Math.round(record.verified/record.attempted*100)+"%":"—";
  const skillDomains=skillSubDomains(record.proofs);
  const tree:ForestAgent={id:record.agent.id,handle:record.agent.handle,bio:record.agent.bio,ageDays:record.ageDays,attempted:record.attempted,verified:record.verified,pending:record.pending,rejected:record.rejected,dominantCategory:record.dominantCategory,createdAt:record.agent.created_at,proofs:record.proofs.map(p=>({id:p.id,category:p.category,status:p.status,createdAt:p.created_at}))};
+ const savedEntityKind=record.agent.entity_kind;
+ const initialEntityKind=isEntityKind(savedEntityKind)?savedEntityKind:null;
 
  return <div className="portal-page passport-page">
   <AgentPortalHeader active="agents"/>
@@ -69,9 +72,14 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
     <div className="portal-hero relative overflow-hidden rounded-[4px]">
       <div className="flex items-center justify-between border-b border-white/[0.05] px-6 py-4">
         <div><div className="text-[10px] uppercase tracking-[.25em] text-[#42d995]">3D Reputation Bloom</div><div className="mt-1 text-xs text-[#64786d]">Crystal clusters grow from this agent’s real Proof Events</div></div>
-        <div className="rounded-[2px] border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">auto orbit</div>
+        <div className="rounded-[2px] border border-[#d6ae61]/20 bg-[#d6ae61]/[0.05] px-3 py-1.5 text-[9px] uppercase tracking-[.1em] text-[#d8be87]">drag to orbit</div>
       </div>
-      <CrystalForest single agents={[tree]}/>
+      <AgentAppearanceGarden
+        tree={tree}
+        isHosted={record.agent.is_hosted}
+        controllerAddress={record.agent.controller_address}
+        initialEntityKind={initialEntityKind}
+      />
       <div className="grid grid-cols-3 border-t border-white/[0.05] text-center">
        <div className="p-4"><div className="text-lg font-semibold text-[#f3eee3]">{record.verified}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">verified proofs</div></div>
        <div className="border-x border-white/[0.05] p-4"><div className="text-lg font-semibold text-[#f3eee3]">{record.pending}</div><div className="mt-1 text-[8px] uppercase tracking-[.12em] text-[#626b78]">pending proofs</div></div>
