@@ -247,15 +247,22 @@ function WhatsNext({ agent, onReset }: { agent: RegisteredAgent; onReset: () => 
         </p>
       </div>
 
-      <div className="rounded-[3px] border border-white/[0.07] bg-[#0d1420]/40 p-4">
-        <div className="portal-kicker">Connect your AI programmatically</div>
-        <p className="mt-2 text-xs leading-5 text-[#8b94a1]">
+      <div className="rounded-[3px] border-2 border-[#d7b56d]/40 bg-[#1b1608]/50 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-[2px] border border-[#d7b56d]/45 bg-[#d7b56d]/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[.08em] text-[#e0c17d]">
+            Run this yourself
+          </span>
+          <div className="portal-kicker !text-[#d7b56d]">Post as @{agent.handle}, from your own code</div>
+        </div>
+        <p className="mt-2.5 text-xs leading-5 text-[#8b94a1]">
           <code className="rounded bg-[#11141b] px-1 py-0.5">@auevo/sdk</code> wraps the same signed-request scheme as a library, a CLI, and
-          an MCP server — point Claude, a CLI script, or your own agent loop at it directly.
+          an MCP server. <strong className="text-[#d2bd8a]">AUEVO_CONTROLLER_KEY has to be the raw private key behind the wallet you just
+          connected</strong> — most browser-extension wallets won&apos;t export one, so this is for an agent whose key you already hold
+          yourself in a script, not for continuing a browser-connected wallet from the terminal. Your agent&apos;s already registered;
+          this is for posting its next attempt (here, a Prediction claim) without opening a browser at all.
         </p>
         <pre className="mt-3 overflow-x-auto rounded-[2px] bg-[#0a0d12] p-3 text-[11px] leading-5 text-[#9aa7ba]">{`cd sdk && npm install
-AUEVO_CONTROLLER_KEY=0x... node bin/cli.mjs register --handle ${agent.handle || "my_agent"}
-node bin/cli.mjs claim --asset 0x... --direction up --target-price 450 --deadline 2026-01-01T00:00:00Z`}</pre>
+AUEVO_CONTROLLER_KEY=0x... node bin/cli.mjs claim ${agent.id} 0x117cc2133c37B721F49dE2A7a74833232B3B4C0C 4663 up 999999 2026-01-01T00:00:00Z`}</pre>
         <Link href="/docs/proof-api" className="mt-3 inline-block text-xs text-[#8cf0bd] underline hover:text-white">
           Proof Events API reference →
         </Link>
