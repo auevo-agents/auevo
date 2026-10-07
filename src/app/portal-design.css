@@ -57,8 +57,7 @@
 @media(prefers-reduced-motion:reduce){.activity-ticker-track{animation:none}}
 .home-feed-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.home-feed-grid p{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .crystal-motif{width:100%;height:140px;filter:drop-shadow(0 5px 12px #238a5d22)}
-.passport-avatar{width:76px;height:76px;margin-top:20px;border:1px solid #b69e5266;border-radius:12px;background:#20352999}.passport-avatar svg{width:100%;height:100%}
-.passport-page .portal-hero{align-self:start}.passport-history{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:28px}.passport-history>section{min-width:0}
+.passport-page .portal-hero{align-self:start}.passport-history{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:20px}.passport-history>section{min-width:0}
 .passport-page aside .grid.grid-cols-2>div{background:#11251b;border-color:#74926933;border-radius:10px}
 .proof-hero-visual{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:center;min-width:0}.proof-flow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.proof-flow-stage{text-align:center}.proof-live-feed{min-width:0;align-self:stretch;display:flex;flex-direction:column;justify-content:center}.proof-live-feed>div:last-child>div{flex-wrap:wrap;border-bottom:1px solid #83a97724;padding:9px 0}.proof-section-content>div:first-child{text-align:center;display:block}.proof-section-content>div:first-child p{margin:12px auto 0}.proof-section-content>div>div[class*="rounded-"],.proof-section-content>div>a[class*="rounded-"]{border-radius:12px;border-color:#77966f40;background:#11271c;padding:24px}
 .credit-intro{padding-top:20px}.credit-overview-grid{display:grid;grid-template-columns:1.45fr 1fr 1fr;gap:22px}.credit-overview-grid>section{min-width:0}.credit-schematic{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:35px 0;text-align:center}.credit-schematic>div{position:relative}.credit-schematic p{font-size:11px;color:#91a69a;line-height:1.6;margin-top:8px}.credit-schematic h3{font-family:Georgia,serif;font-size:21px}.credit-arrow{position:absolute;right:-18px;top:72px;color:#d7ba72;font-size:24px}.credit-parameters>div{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #8eab7d26;font-size:12px}.credit-parameters dt{color:#95ab9d}.credit-parameters dd{text-align:right;overflow-wrap:anywhere;max-width:65%;color:#e4dfcd}.credit-subnav{border-bottom:1px solid #78997433;gap:18px;padding-bottom:8px}.credit-subnav [aria-current=page]{background:none;color:#d7ba72;border-bottom:2px solid #d7ba72;border-radius:0}
@@ -92,7 +91,40 @@
 .auevo-portal-header{box-shadow:0 8px 28px #0002}.auevo-portal-header .auevo-wordmark-gold{font-size:29px!important;letter-spacing:.08em!important}.auevo-portal-header .auevo-tree-mark{width:39px;height:39px;border:1px solid #baa46588;border-radius:5px;background:#102019;padding:4px}
 .portal-page .home-cinematic-image{animation:atelier-hero 20s ease-in-out infinite;transform-origin:75% 60%}.home-feed-grid .portal-panel{padding:24px}.home-feed-grid .home-feed-avatar{box-shadow:inset 0 1px 0 #eed69c22,0 4px 12px #0006}.universe-stats .portal-stat>div:first-child{font-family:'Auevo Editorial',Georgia,serif;font-size:34px;font-weight:600}
 .credit-intro h1{font-size:clamp(48px,5vw,76px)}.credit-overview-grid{grid-template-columns:1.65fr 1fr 1fr;gap:20px}.credit-overview-grid>section{padding:28px}.credit-overview-grid h2{font-family:'Auevo Sans',Arial,sans-serif;font-size:20px;font-weight:600}.credit-schematic{margin:22px -12px 30px;gap:4px}.credit-schematic h3{font-family:'Auevo Sans',Arial,sans-serif;font-size:16px;font-weight:600}.credit-arrow{top:96px;right:-15px;text-shadow:0 0 12px #e4bc5b88;animation:atelier-flow 3.8s ease-in-out infinite}
-.passport-avatar{width:88px;height:88px;border:1px solid #d5bb7899;box-shadow:inset 0 1px 0 #e9d58d33,0 7px 22px #0005}.passport-page .portal-heading{font-size:34px}.passport-page .portal-hero{background:#07110e}.passport-page aside .grid.grid-cols-2>div{background:linear-gradient(145deg,#152a20,#0c1b14);box-shadow:inset 0 1px 0 #e2d09712,0 6px 20px #0003;border-color:#94a47e40;border-radius:12px}
+.passport-page .portal-heading{font-size:34px}.passport-page .portal-hero{background:#07110e}.passport-page aside .grid.grid-cols-2>div{background:linear-gradient(145deg,#152a20,#0c1b14);box-shadow:inset 0 1px 0 #e2d09712,0 6px 20px #0003;border-color:#94a47e40;border-radius:12px}
+/* The agent card, styled after a real passport biodata page: a bound
+   "cover" band up top (issuing authority + document title), a photo next
+   to holder data in labeled fields, and a decorative machine-readable
+   zone at the bottom — see en.wikipedia.org/wiki/Machine-readable_passport
+   for the seven-zone layout this borrows the shape of. Nothing here is a
+   real MRZ encoding; it's typography, not a credential. */
+.agent-passport{position:relative;overflow:hidden;border-radius:8px;border:1px solid #c9ad6a4d;background:linear-gradient(165deg,#132a1d,#081610 70%);box-shadow:inset 0 0 0 1px #0f2117,inset 0 1px 0 #e9d58d14,0 18px 45px #0005}
+.agent-passport:before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.05;background-image:repeating-linear-gradient(55deg,#d8c593 0 1px,transparent 1px 13px),repeating-linear-gradient(-35deg,#d8c593 0 1px,transparent 1px 13px)}
+.agent-passport-band{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid #c9ad6a40;background:linear-gradient(90deg,#0d2117,#132a1d 55%,#0d2117)}
+.agent-passport-brand{display:flex;align-items:center;gap:9px}
+.agent-passport-brand .auevo-tree-mark{width:22px;height:22px}
+.agent-passport-brand-text{display:flex;flex-direction:column;line-height:1.15}
+.agent-passport-brand-text b{font-family:Georgia,'Times New Roman',serif;font-size:14px;font-weight:600;letter-spacing:.14em;color:#f1e6c2}
+.agent-passport-brand-text span{font-size:8px;letter-spacing:.22em;color:#9fae85}
+.agent-passport-body{position:relative;padding:18px}
+.agent-passport-id-row{display:flex;gap:14px;align-items:flex-end}
+.agent-passport-photo{width:68px;height:68px;flex-shrink:0;border:1px solid #d5bb7899;border-radius:6px;background:#1a2e22;box-shadow:inset 0 1px 0 #e9d58d33,0 6px 16px #0005}
+.agent-passport-photo svg{width:100%;height:100%}
+.agent-passport-holder-label{font-size:8.5px;letter-spacing:.2em;color:#8a9a86;text-transform:uppercase}
+.agent-passport-handle{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:22px;letter-spacing:.01em;color:#f3eee3;line-height:1.15;margin-top:2px}
+.agent-passport-bio{margin-top:10px;font-size:11.5px;line-height:1.6;color:#8b9a90}
+.agent-passport-fields{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #c9ad6a2e}
+.agent-passport-field{padding:8px 0;border-bottom:1px solid #c9ad6a1f}
+.agent-passport-field:nth-child(odd){padding-right:12px;border-right:1px solid #c9ad6a1f}
+.agent-passport-field:nth-child(even){padding-left:12px}
+.agent-passport-field.agent-passport-field--span{grid-column:1/-1;padding-right:0;padding-left:0;border-right:0}
+.agent-passport-field-label{display:flex;align-items:center;font-size:8px;letter-spacing:.14em;color:#7f9080;text-transform:uppercase}
+.agent-passport-field-value{margin-top:3px;font-size:12px;color:#d9d4c0;font-family:'Auevo Sans',Arial,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-passport-field-value .compact-wallet-address{padding:0;border:0;background:none;font-size:11.5px}
+.agent-passport-tags{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+.agent-passport-mrz{margin-top:14px;border-radius:4px;border:1px solid #c9ad6a2e;background:#081209;padding:9px 11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;letter-spacing:.09em;line-height:1.75;color:#a99a5f;overflow:hidden;white-space:nowrap}
+.agent-passport-footer{display:block;border-top:1px solid #c9ad6a40;background:#0d2117;padding:12px 18px;font-size:11px;color:#d9bf88;text-decoration:none;transition:background .2s}
+.agent-passport-footer:hover{background:#132a1d}
 .portal-page .proof-section-content>div>div[class*='rounded-'],.portal-page .proof-section-content>div>a[class*='rounded-']{background:radial-gradient(ellipse at top,#25412c35,transparent 65%),linear-gradient(150deg,#12241b,#09150f);box-shadow:inset 0 1px 0 #c9d49714,0 14px 35px #0004;border-color:#8ba07944;border-radius:14px;transition:transform .4s,border-color .4s}.portal-page .proof-section-content>div>a:hover{transform:translateY(-4px);border-color:#c8b37677}
 .luxury-atmosphere{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at var(--ambient-x,65%) var(--ambient-y,35%),#a7b57905,transparent 30%)}.luxury-atmosphere i{position:absolute;width:2px;height:2px;border-radius:50%;background:#d9c994;box-shadow:0 0 6px #e3cd78;opacity:0;animation:atelier-dust 20s linear infinite}.luxury-reveal{opacity:.001;translate:0 18px;transition:opacity .85s var(--reveal-delay,0ms),translate .85s cubic-bezier(.2,.7,.2,1) var(--reveal-delay,0ms)}.luxury-reveal.luxury-visible{opacity:1;translate:0 0}
 @keyframes atelier-sheen{0%,65%{transform:translateX(-75%)}90%,100%{transform:translateX(75%)}}
