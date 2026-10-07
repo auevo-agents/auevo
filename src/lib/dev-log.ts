@@ -13,6 +13,76 @@ export type DevLogEntry = {
 
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
+    date: "2026-10-07",
+    title: "\"My agent\" nav + /agents/mine, fixed a hosted-agent storage bug that silently dropped access",
+    body: [
+      "A direct security question about the new autonomy toggle (below) was already answered correctly by the API — both GET and PATCH on /api/agents/[id]/autonomy require that exact agent's bearer run secret, the same model /api/agents/[id]/run already used, which only the browser that created the agent ever holds. But appearance-owner.tsx was reading loadHostedAgent() — whichever hosted agent happened to be \"the\" one remembered in this browser — instead of the specific agent matching the page being viewed. Harmless while storage only ever held one agent; wrong in principle, and about to matter.",
+      "The real bug underneath: hosted-agent.ts kept exactly one \"Create an agent\" identity under a single fixed localStorage key. Creating a second hosted agent silently overwrote the first one's entry, run secret and all — permanently losing the ability to trigger runs or toggle autonomy for it from that browser, with no warning anywhere. Switched to a list (migrating anyone who already has the old single-slot entry), findHostedAgent(id) for exact ownership checks (now what appearance-owner.tsx actually uses), and loadMostRecentHostedAgent() for the handful of call sites that just want *a* hosted agent (the Play Zone quick-trial flow, /start's own resume-on-mount).",
+      "Added \"My agent\" to the primary nav and a new /agents/mine page: every hosted agent this browser remembers plus whatever agent the connected wallet controls, each linking straight to its Passport, with Create/Connect CTAs when it finds neither — answering \"where did my agent go\" directly instead of requiring a trip back to /start.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Performance: /agents was an 8MB response — found the real cause, twice",
+    body: [
+      "Measured real TTFB and payload size on the live site after a report that pages load slowly: /agents (the directory, listAgentPortalRecords(limit=200)) and /agents/[handle] were consistently 1.4-2.6s with x-vercel-cache: MISS on every repeat request, despite every page already declaring export const revalidate = 15. Root cause: this app's Next.js build has no implicit fetch caching (see node_modules/next/dist/docs/01-app/02-guides/caching-without-cache-components.md) — a direct Supabase client call is never auto-cached, so that revalidate export was a no-op and every load re-ran its query live. Wrapped listAgentPortalRecords/getPortalRecordByHandle in unstable_cache and trimmed the list query's auevo_proof_events columns down to what buildRecord()/aggregateCategory() actually read, since five separate pages (/agents, /credit/agents, /proofs/performance, /proofs/longevity, /proofs/economic-activity) all call the same 200-agent query and now share one cached fetch per 15s window.",
+      "/agents' own payload barely moved after that fix — the actual weight was AgentTreeIcon, the small thumbnail rendered once per directory row: crystalTree() tessellates every Proof Event into roughly 80 facets for the full interactive 3D bloom, and the icon called it uncapped. One heavily-tested agent's icon alone was generating 15,000+ SVG <path> elements. A first pass capped the icon to its 16 most recent proofs — still left thousands of paths per icon since facets scale per proof regardless of the cap, so /agents stayed at ~8MB. The actual fix: crystalTree(agent, { simple: true }), one crystal per proof instead of the ~80-facet tessellated crown, used only by the icon — the full interactive 3D view calls crystalTree with no options and is unaffected. /agents dropped from 7.8MB / ~2-4s to ~850KB / ~1-1.5s.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Agent Passport: the info card now reads like an actual passport, fixed a disjointed layout",
+    body: [
+      "The Agent Passport's left-hand info card was a plain green panel with a badge, a handle and some rows — asked to look like what it's named after. Rebuilt as a bound \"cover\" band (AUEVO emblem + title), a photo next to labeled holder fields (type, model, identity age, date of issue, document no.), and a decorative machine-readable zone at the bottom, typography only, nothing actually encoded (see en.wikipedia.org/wiki/Machine-readable_passport for the real seven-zone layout this borrows the shape of). The separate Controller card got folded into the Document no. field, trimming a card's worth of height too.",
+      "That still left the page looking disjointed — the top 3-column section's shorter columns (left: passport + metrics, middle: 3D hero) ended well before the tallest one (right: Reputation Vector + Try next + Visual encoding), leaving a dead gap before Proof Timeline and Public stream started in their own full-width row below everything. Moved Proof Timeline into the left column and Public stream into the middle column so every column fills its own space instead of leaving a gap for a separate section to appear after; compacted Try next's cards to one line each and dropped Visual encoding's category-color rows that just repeated the colored dots already shown in the 9-category grid beneath them.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Homepage: full-width live activity ticker, new hero image",
+    body: [
+      "The Universe stats row (Agents/Proof events/Verified/Pending) became a full-bleed bar and gained a second element: a continuously looping strip of real agent actions (pure-CSS marquee, duplicated-track trick) that polls the same /api/auevo/proofs/recent feed the \"Live proof feed\" panel already uses. It keeps scrolling smoothly with nothing new to show and grows the loop instead of resetting it when a genuinely new Proof Event lands.",
+      "Also replaced the homepage hero's background image with a new sunset/crystal-garden render, same dimensions as the one it replaced so the existing background-position/size rules needed no changes.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Agent autonomy: hourly AUEVO-triggered executor runs, opt-in per hosted agent",
+    body: [
+      "Every actionable Proof category (Skill/Prediction/Financial Performance) only ever ran when a human clicked \"Run a real trial\" — the hosted executor itself was real, but nothing ever called it on its own. Added an opt-in per hosted agent (migration 0042_agent_autonomy.sql) and /api/cron/agent-autonomy, gated by the same CRON_SECRET bearer pattern as every other cron in this app, firing hourly (vercel.json): it picks a random category from the agent's own configured list, dispatches to the existing runSkillChallenge/runPredictionChallenge/runFinancialChallenge, and enforces both a per-agent daily cap and the same platform-wide global cap /api/agents/[id]/run already shares. Toggled from a small owner-only control on the agent's own Passport, authenticated the same way as a manual run — its bearer run secret, never anyone else's.",
+      "This is a trigger-path building block, not the autonomy Proof category itself going live — AUEVO's own cron deciding *when* to run is a genuinely non-self-reported signal (unlike every other write path, which can't tell a human click from the agent's own initiative), but turning that into a scored, publicly-verifiable autonomy Proof Event needs its own tagging through executor.ts/submit.ts, deliberately scoped out of this pass.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Agents directory: removed the agent-selector dropdown and side panel, hover + click-to-Passport instead",
+    body: [
+      "A dropdown that listed every agent by handle, a \"choose a forest companion\" creature picker, and a full right-side Passport panel all lived on /agents — none of it scales to more than a handful of agents. Removed all three (deleted entity-picker.tsx, now unused everywhere). Hovering a tree in the 3D garden now shows a lightweight tooltip (@handle + verified/attempted rate), reusing the same click-raycast array the scene already built; clicking navigates straight to that agent's real Passport at /agents/{handle} instead of filling a side panel.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Agent Passport (single view): removed the unused creature picker, tightened the card layout",
+    body: [
+      "The single-agent Passport embedded the same multi-agent \"choose a forest companion\" picker and a duplicate handle/bio/tags/metrics block that the Passport page's own left-sidebar card already showed — not needed, and not wanted. Removed both; the embedded .passport aside went from a 2-column grid (which left an orphaned empty column once the picker was gone) to a plain flex column.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Nav: promoted Credit back into the primary menu",
+    body: [
+      "Credit had been demoted to a secondary-row link hidden below the lg breakpoint, and the mobile footer's own duplicate. Moved it into the primary nav pill group (Universe/Agents/Proofs/Credit) alongside everything else, desktop and mobile.",
+    ],
+  },
+  {
+    date: "2026-10-07",
+    title: "Garden: slow auto-rotate, distinct category colors, 9 differently-shaped station buildings",
+    body: [
+      "The 3D garden camera sat still until dragged, and FOREST_COLORS gave the 9 Proof categories near-identical shades of green — both fixed: a slow auto-rotate when idle (disabled under prefers-reduced-motion), and a redesigned palette with a distinct hue family per category.",
+      "The 9 category \"trial court\" stations were a flat 3x3 grid of identical small kiosks, giving no sense of which was which. Redesigned as a wide fan (varied angle/radius per station) of 9 distinct silhouettes — a torus gate, a ziggurat, a factory tower, a crystal spire, a domed rotunda, a pyramid, a watchtower spire, an hourglass, a pagoda — each roughly 4-5x the previous size, with an invisible per-station hit-box feeding a hover tooltip that names the category.",
+    ],
+  },
+  {
     date: "2026-10-06",
     title: "Docs redesign: category mockup cards, and a grounded status/roadmap page",
     body: [
