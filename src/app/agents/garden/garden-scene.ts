@@ -19,6 +19,7 @@ export type GardenOptions = {
   onReady?: (mode: 'webgl' | 'software') => void;
   onLost?: () => void;
   onStationHover?: (info: { category: string; x: number; y: number } | null) => void;
+  onAgentHover?: (info: { index: number; x: number; y: number } | null) => void;
 };
 export type GardenController = { setEntity: (index:number,kind:EntityKind)=>boolean; inspectEntity:()=>void; select: (index:number)=>void; zoom: (factor:number)=>void; reset:()=>void; demo:(index?:number,category?:string)=>boolean; celebrate:(index:number,category?:string)=>void; dispose:()=>void };
 /** The 9 real Proof categories, each a distinct trial-court station in the multi-agent garden; a single-agent Passport collapses them onto its one court instead (see buildGarden). */
@@ -213,22 +214,34 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
   const onUp=(e:PointerEvent)=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6&&!trials.has(selected))pick(e);down=null;};const onCancel=()=>{down=null;};
   const onLost=(e:Event)=>{e.preventDefault();visible=false;options.onLost?.();};
   const onVisibility=()=>{visible=!document.hidden;};
-  // Which building is under the cursor right now — a separate, lighter raycast
-  // than click-picking (against each station's one invisible hit-box, not
-  // every decorative mesh), run on every pointer move so the label follows
-  // the cursor rather than only updating on click.
-  const hoverRay=new THREE.Raycaster(),hoverPointer=new THREE.Vector2();let hoveredStation:string|null=null;
+  // What's under the cursor right now — a separate, lighter raycast than
+  // click-picking, run on every pointer move so a label follows the cursor
+  // instead of only updating on click. An agent (tree/creature) wins over a
+  // station building when both are hit, since it's the more specific target.
+  const hoverRay=new THREE.Raycaster(),hoverPointer=new THREE.Vector2();let hoveredStation:string|null=null,hoveredAgent:number|null=null;
   const onHoverMove=(e:PointerEvent)=>{
-    if(!data.stationHits.length||!options.onStationHover)return;
     const r=canvas.getBoundingClientRect();
     hoverPointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
     hoverRay.setFromCamera(hoverPointer,camera);
+    if(options.onAgentHover){
+      const hits=hoverRay.intersectObjects(data.picks,false);
+      const h=hits.find(hit=>{const material=(hit.object as THREE.Mesh).material;return Array.isArray(material)?material.some(m=>m.visible):material?.visible;})??hits[0];
+      const idx=h?.object.userData.agentIndex as number|undefined;
+      if(idx!==undefined){
+        if(idx!==hoveredAgent){hoveredAgent=idx;options.onAgentHover({index:idx,x:e.clientX-r.left,y:e.clientY-r.top});}
+        else options.onAgentHover({index:idx,x:e.clientX-r.left,y:e.clientY-r.top});
+        if(hoveredStation){hoveredStation=null;options.onStationHover?.(null);}
+        return;
+      }
+      if(hoveredAgent!==null){hoveredAgent=null;options.onAgentHover(null);}
+    }
+    if(!data.stationHits.length||!options.onStationHover)return;
     const hit=hoverRay.intersectObjects(data.stationHits,false)[0];
     const category=hit?.object.userData.station as string|undefined;
     hoveredStation=category??null;
     options.onStationHover(category?{category,x:e.clientX-r.left,y:e.clientY-r.top}:null);
   };
-  const onHoverLeave=()=>{if(hoveredStation){hoveredStation=null;options.onStationHover?.(null);}};
+  const onHoverLeave=()=>{if(hoveredStation){hoveredStation=null;options.onStationHover?.(null);}if(hoveredAgent!==null){hoveredAgent=null;options.onAgentHover?.(null);}};
   canvas.addEventListener('pointerdown',onDown);canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerup',onUp);canvas.addEventListener('pointercancel',onCancel);canvas.addEventListener('webglcontextlost',onLost);document.addEventListener('visibilitychange',onVisibility);
   canvas.addEventListener('pointermove',onHoverMove);canvas.addEventListener('pointerleave',onHoverLeave);
   const io=new IntersectionObserver(entries=>{inView=entries[0]?.isIntersecting??true;});io.observe(canvas);
