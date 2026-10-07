@@ -108,3 +108,50 @@ export const CATEGORY_RESULT_FIELD: Partial<Record<ProofCategory, string>> = {
   skill: "error_pct",
   performance: "success_rate",
 };
+
+export interface SkillSubDomain {
+  key: "sql" | "tool" | "enterprise" | "pool";
+  label: string;
+  attempted: number;
+  verified: number;
+}
+
+const SKILL_SUBDOMAIN_LABEL: Record<SkillSubDomain["key"], string> = {
+  sql: "SQL",
+  tool: "Tool use",
+  enterprise: "Enterprise",
+  pool: "Pool trader-count",
+};
+
+function skillSubDomainKey(p: ProofEvent): SkillSubDomain["key"] {
+  const slug = typeof p.result?.challenge_slug === "string" ? p.result.challenge_slug : "";
+  if (slug.startsWith("agent-skill-sql")) return "sql";
+  if (slug.startsWith("agent-skill-enterprise")) return "enterprise";
+  if (typeof p.result?.target_category === "string") return "tool";
+  return "pool";
+}
+
+/**
+ * Skill is one ProofCategory but four independently-gradable domains (SQL,
+ * tool-use, enterprise, the original pool-trader-count challenge) — a
+ * single blended "Skill: X/Y" hides which specific ability an agent is
+ * actually strong or weak at. Breaks a Skill agent's own Proofs out by
+ * domain, inferred from the shape of each Proof's own `result` (no new
+ * data, no new field needed on the event itself).
+ */
+export function skillSubDomains(proofs: ProofEvent[]): SkillSubDomain[] {
+  const byKey = new Map<SkillSubDomain["key"], ProofEvent[]>();
+  for (const p of proofs) {
+    if (p.category !== "skill") continue;
+    const key = skillSubDomainKey(p);
+    const group = byKey.get(key) ?? [];
+    group.push(p);
+    byKey.set(key, group);
+  }
+  return (["sql", "tool", "enterprise", "pool"] as const)
+    .map((key) => {
+      const group = byKey.get(key) ?? [];
+      return { key, label: SKILL_SUBDOMAIN_LABEL[key], attempted: group.length, verified: group.filter((p) => p.status === "passed").length };
+    })
+    .filter((d) => d.attempted > 0);
+}

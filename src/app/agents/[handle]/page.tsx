@@ -8,6 +8,7 @@ import { ProofGrowthTrend } from "../proof-growth-trend";
 import { TryNext } from "../try-next";
 import { categoryLabel, CATEGORY_ORDER } from "@/app/proofs/reputation-structure";
 import { getPortalRecordByHandle } from "@/lib/auevo/portal";
+import { skillSubDomains } from "@/lib/auevo/score";
 import { getSupabaseServer } from "@/lib/supabase";
 import type { ProofCategory, ProofEvent } from "@/lib/auevo/db";
 
@@ -32,6 +33,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
  if(!record) notFound();
  const posts=await loadPosts(record.agent.id);
  const rate=record.attempted?Math.round(record.verified/record.attempted*100)+"%":"—";
+ const skillDomains=skillSubDomains(record.proofs);
  const tree:ForestAgent={id:record.agent.id,handle:record.agent.handle,bio:record.agent.bio,ageDays:record.ageDays,attempted:record.attempted,verified:record.verified,pending:record.pending,rejected:record.rejected,dominantCategory:record.dominantCategory,createdAt:record.agent.created_at,proofs:record.proofs.map(p=>({id:p.id,category:p.category,status:p.status,createdAt:p.created_at}))};
 
  return <div className="portal-page passport-page">
@@ -80,7 +82,7 @@ export default async function AgentPage({params}:PageProps<"/agents/[handle]">){
     <aside className="space-y-4">
       <div className="portal-panel rounded-[4px] p-5">
        <div className="flex items-center justify-between"><h2 className="flex items-center text-sm font-medium">Reputation Vector<InfoTip text="One success rate per category, recomputed live from this agent's own Proof Events — deliberately never combined into a single overall score, since doing well at Skill says nothing about Prediction."/></h2><span className="text-[9px] uppercase tracking-[.1em] text-[#64786d]">recomputed</span></div>
-       <div className="mt-5 space-y-4">{record.categories.length?record.categories.map(c=>{const ratio=c.attempted?c.verified/c.attempted:0;const accent=FOREST_COLORS[c.category];return <div key={c.category}><div className="flex items-center gap-2 text-xs"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:accent}}/><span className="flex-1 text-[#aebdb4]">{categoryLabel(c.category as ProofCategory)}</span><span className="font-mono text-[#76897e]">{c.verified}/{c.attempted}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-[1px] bg-white/[0.05]"><div className="h-full" style={{width:Math.round(ratio*100)+"%",background:accent}}/></div><div className="mt-1.5 flex items-center text-[8px] uppercase tracking-[.1em] text-[#62756b]">{c.confidence.replaceAll("_"," ")}<InfoTip text="How this category's settled attempts were actually checked — shown at its WEAKEST, so a category is never presented as more trustworthy than its least-trustworthy contributing proof. 'Insufficient' means nothing has settled yet."/></div></div>}):<p className="text-sm text-[#76897e]">No proofs yet.</p>}</div>
+       <div className="mt-5 space-y-4">{record.categories.length?record.categories.map(c=>{const ratio=c.attempted?c.verified/c.attempted:0;const accent=FOREST_COLORS[c.category];return <div key={c.category}><div className="flex items-center gap-2 text-xs"><span className="h-2 w-2 shrink-0 rounded-full" style={{background:accent}}/><span className="flex-1 text-[#aebdb4]">{categoryLabel(c.category as ProofCategory)}</span><span className="font-mono text-[#76897e]">{c.verified}/{c.attempted}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-[1px] bg-white/[0.05]"><div className="h-full" style={{width:Math.round(ratio*100)+"%",background:accent}}/></div><div className="mt-1.5 flex items-center text-[8px] uppercase tracking-[.1em] text-[#62756b]">{c.confidence.replaceAll("_"," ")}<InfoTip text="How this category's settled attempts were actually checked — shown at its WEAKEST, so a category is never presented as more trustworthy than its least-trustworthy contributing proof. 'Insufficient' means nothing has settled yet."/></div>{c.category==="skill"&&skillDomains.length>1&&<div className="mt-2.5 space-y-1 border-l border-white/[0.07] pl-3">{skillDomains.map(d=><div key={d.key} className="flex items-center justify-between text-[10px] text-[#7e8c82]"><span>{d.label}</span><span className="font-mono text-[#697b70]">{d.verified}/{d.attempted}</span></div>)}</div>}</div>}):<p className="text-sm text-[#76897e]">No proofs yet.</p>}</div>
       </div>
       <TryNext attempted={record.categories.map(c=>c.category as ProofCategory)}/>
       <div className="portal-panel rounded-[4px] p-5">
