@@ -9,6 +9,7 @@ import { EntityPicker } from './garden/entity-picker';
 import { defaultEntityKind, type EntityKind } from './garden/entity-catalog';
 import { AttemptResultCard } from '../attempt-result-card';
 import { CATEGORY_ORDER, categoryLabel } from '../proofs/reputation-structure';
+import type { ProofCategory } from '@/lib/auevo/db';
 import styles from './garden/garden.module.css';
 
 type RecentEvent = { id:string; category:string; status:string; handle:string|null };
@@ -25,6 +26,7 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
   const [trialState,setTrialState]=useState<'idle'|'running'|'done'|'error'>('idle');
   const [trialOutcome,setTrialOutcome]=useState<TrialOutcome|null>(null);
   const [trialError,setTrialError]=useState<string|null>(null);
+  const [stationHover,setStationHover]=useState<{category:string;x:number;y:number}|null>(null);
   const displayed=agents.slice(0,single?1:GARDEN_AGENT_LIMIT),index=Math.min(selected,Math.max(0,displayed.length-1)),agent=displayed[index];
   const proof=agent?.proofs.find(p=>p.id===proofId),busy=!['idle','complete'].includes(phase);
   useEffect(()=>{
@@ -32,10 +34,10 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
     let cancelled=false,instance:GardenController|undefined;
     import('./garden/garden-scene').then(({mountGarden})=>{
       if(cancelled)return;
-      instance=mountGarden(canvas,{agents,single,entityKinds:kindsRef.current,onReady:mode=>{setState(mode);setSelected(0);setProofId(undefined);setPhase('idle');},onSelect:(i,id)=>{setSelected(i);setProofId(id);},onPhase:setPhase,onLost:()=>{setState('fallback');setPhase('idle');instance?.dispose();}});
+      instance=mountGarden(canvas,{agents,single,entityKinds:kindsRef.current,onReady:mode=>{setState(mode);setSelected(0);setProofId(undefined);setPhase('idle');},onSelect:(i,id)=>{setSelected(i);setProofId(id);},onPhase:setPhase,onStationHover:setStationHover,onLost:()=>{setState('fallback');setPhase('idle');instance?.dispose();}});
       controller.current=instance;
     }).catch(error=>{console.error('AUEVO garden could not initialize',error);if(!cancelled)setState('fallback');});
-    return()=>{cancelled=true;instance?.dispose();controller.current=null;};
+    return()=>{cancelled=true;instance?.dispose();controller.current=null;setStationHover(null);};
   },[agents,single]);
   useEffect(()=>{if(entityKinds){kindsRef.current={...kindsRef.current,...entityKinds};agents.slice(0,single?1:GARDEN_AGENT_LIMIT).forEach((a,i)=>{if(entityKinds[a.id])controller.current?.setEntity(i,entityKinds[a.id]);});}},[entityKinds,agents,single]);
   // The multi-agent garden shares one set of category buildings — any agent's
@@ -93,6 +95,7 @@ export function CrystalForest({ agents, single=false, demoData=false, entityKind
       <div className={styles.sceneCaption}><span>{single?'Your agent, in its own world.':'Every tree has a story.'}</span><small>{state==='software'?'Simplified graphics · WebGL unavailable':state==='loading'?'Preparing the garden…':state==='fallback'?'Graphics unavailable · passports remain accessible':'Drag to orbit · select a tree or character'}</small></div>
       <div className={styles.controls}><button type="button" aria-label="Zoom out" onClick={()=>controller.current?.zoom(1.12)}>−</button><button type="button" aria-label="Zoom in" onClick={()=>controller.current?.zoom(.88)}>+</button><button type="button" onClick={()=>controller.current?.reset()}>Reset view</button></div>
       {(!agent||state==='fallback')&&<div className={styles.unavailable}><h3>{agent?'The garden needs a graphics-capable device.':'The garden begins with an agent.'}</h3><p>{agent?'You can still explore the public history below.':'Register an agent to start a public Proof history.'}</p></div>}
+      {stationHover&&<div className={styles.stationTip} style={{left:stationHover.x,top:stationHover.y}}>{categoryLabel(stationHover.category as ProofCategory)}</div>}
     </div>
     {agent&&<aside className={styles.passport}>
       <div className={styles.eyebrow}>AGENT PASSPORT</div>

@@ -18,6 +18,7 @@ export type GardenOptions = {
   onPhase?: (phase: string) => void;
   onReady?: (mode: 'webgl' | 'software') => void;
   onLost?: () => void;
+  onStationHover?: (info: { category: string; x: number; y: number } | null) => void;
 };
 export type GardenController = { setEntity: (index:number,kind:EntityKind)=>boolean; inspectEntity:()=>void; select: (index:number)=>void; zoom: (factor:number)=>void; reset:()=>void; demo:(index?:number,category?:string)=>boolean; celebrate:(index:number,category?:string)=>void; dispose:()=>void };
 /** The 9 real Proof categories, each a distinct trial-court station in the multi-agent garden; a single-agent Passport collapses them onto its one court instead (see buildGarden). */
@@ -58,19 +59,21 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
   // garden instead gets one small station per real Proof category, built from
   // that category's own glass color, so a creature visibly walks to the right
   // building for what it's actually attempting — and every viewer sees it.
-  const stations: Record<string,THREE.Vector3> = {}, stationRings: Record<string,THREE.Mesh> = {};
+  const stations: Record<string,THREE.Vector3> = {}, stationRings: Record<string,THREE.Mesh> = {}, stationHits: THREE.Object3D[] = [];
   let trialRing: THREE.Mesh;
   if (single) {
     const ringG=new THREE.RingGeometry(.56,.567,64); trialRing=mesh(ringG,glow,court.x,.026,court.z); trialRing.rotation.x=-Math.PI/2;
     const trialOuter=mesh(new THREE.RingGeometry(.84,.848,64),gold,court.x,.027,court.z); trialOuter.rotation.x=-Math.PI/2;
     for (const category of STATION_CATEGORIES) { stations[category]=court; stationRings[category]=trialRing; }
   } else {
-    // Hand-placed, not a grid: each landmark sits at its own distance and
-    // angle from the court so the plaza reads as a real place, not a rack
-    // of identical booths. Buildings tower well over the trees on purpose —
-    // these are the one shared landmark every agent's creature visits.
-    const STATION_OFFSETS: [number,number][] = [
-      [-6.0,-.3],[-4.1,1.6],[-1.8,-.8],[.3,1.9],[2.6,-.5],[4.8,1.3],[-2.9,2.7],[1.6,-1.1],[5.8,-.2],
+    // Each landmark gets its own compass direction and distance from the
+    // court — a fan spanning left-far to right-far, angled outward so no
+    // two buildings share a bearing, never a grid. (angleDeg, radiusX,
+    // radiusZ) per station: x = sin(angle)*radiusX, z = cos(angle)*radiusZ
+    // (always positive — buildings stay in front of the trees, never
+    // behind the court where they'd collide with the forest).
+    const STATION_FAN: [number,number,number][] = [
+      [-80,5.8,2.0],[-60,4.6,2.6],[-40,6.2,1.8],[-20,5.0,3.2],[0,3.6,3.6],[20,5.4,2.4],[40,6.4,2.0],[60,4.8,2.8],[80,5.6,1.6],
     ];
     const buildStation=(category:string,x:number,z:number):THREE.Mesh=>{
       const material=glass.get(category)??glass.get('inconclusive')!;
@@ -108,9 +111,13 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
       return ring;
     };
     STATION_CATEGORIES.forEach((category,i)=>{
-      const [dx,dz]=STATION_OFFSETS[i]??[0,0], x=court.x+dx, z=court.z+dz;
+      const [angleDeg,radiusX,radiusZ]=STATION_FAN[i]??[0,5,3], rad=angleDeg*Math.PI/180;
+      const x=court.x+Math.sin(rad)*radiusX, z=court.z+Math.cos(rad)*radiusZ;
       const ring=buildStation(category,x,z);
       stations[category]=new THREE.Vector3(x,court.y,z); stationRings[category]=ring;
+      // A big invisible hit-box (taller/wider than any single silhouette) is what hover-picking tests against — simpler than raycasting every decorative mesh.
+      const hit=mesh(new THREE.CylinderGeometry(1.9,1.9,5.2,10,1,true),new THREE.MeshBasicMaterial({visible:false}),x,2.6,z);
+      hit.userData.station=category; stationHits.push(hit);
     });
     trialRing=stationRings[STATION_CATEGORIES[0]];
   }
@@ -155,7 +162,7 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
   const sun=new THREE.DirectionalLight('#ffe5b1',3.5);sun.position.set(-6,11,4);sun.castShadow=true;sun.shadow.mapSize.set(mobile?1024:2048,mobile?1024:2048);sun.shadow.camera.left=-15;sun.shadow.camera.right=15;sun.shadow.camera.top=15;sun.shadow.camera.bottom=-15;sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;sun.shadow.radius=3;scene.add(sun);
   const fill=new THREE.DirectionalLight('#aac9ae',1);fill.position.set(6,7,-7);scene.add(fill);
   const rim=new THREE.DirectionalLight('#b8d19a',1.8);rim.position.set(-3,4,-10);scene.add(rim);
-  return {scene,layout,picks,creatures,homes,anchors,selections,court,trialRing,stations,stationRings,stoneTexture,groundTexture,sun};
+  return {scene,layout,picks,creatures,homes,anchors,selections,court,trialRing,stations,stationRings,stationHits,stoneTexture,groundTexture,sun};
 }
 
 /** Real WebGL renderer; public controller also works with a software preview when GPU is absent. */
@@ -206,7 +213,24 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
   const onUp=(e:PointerEvent)=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6&&!trials.has(selected))pick(e);down=null;};const onCancel=()=>{down=null;};
   const onLost=(e:Event)=>{e.preventDefault();visible=false;options.onLost?.();};
   const onVisibility=()=>{visible=!document.hidden;};
+  // Which building is under the cursor right now — a separate, lighter raycast
+  // than click-picking (against each station's one invisible hit-box, not
+  // every decorative mesh), run on every pointer move so the label follows
+  // the cursor rather than only updating on click.
+  const hoverRay=new THREE.Raycaster(),hoverPointer=new THREE.Vector2();let hoveredStation:string|null=null;
+  const onHoverMove=(e:PointerEvent)=>{
+    if(!data.stationHits.length||!options.onStationHover)return;
+    const r=canvas.getBoundingClientRect();
+    hoverPointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
+    hoverRay.setFromCamera(hoverPointer,camera);
+    const hit=hoverRay.intersectObjects(data.stationHits,false)[0];
+    const category=hit?.object.userData.station as string|undefined;
+    hoveredStation=category??null;
+    options.onStationHover(category?{category,x:e.clientX-r.left,y:e.clientY-r.top}:null);
+  };
+  const onHoverLeave=()=>{if(hoveredStation){hoveredStation=null;options.onStationHover?.(null);}};
   canvas.addEventListener('pointerdown',onDown);canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerup',onUp);canvas.addEventListener('pointercancel',onCancel);canvas.addEventListener('webglcontextlost',onLost);document.addEventListener('visibilitychange',onVisibility);
+  canvas.addEventListener('pointermove',onHoverMove);canvas.addEventListener('pointerleave',onHoverLeave);
   const io=new IntersectionObserver(entries=>{inView=entries[0]?.isIntersecting??true;});io.observe(canvas);
   const render=(now:number)=>{if(disposed)return;frame=requestAnimationFrame(render);if(!visible||!inView||now-last<(software?50:mobile?33:20)){last=(!visible||!inView)?now:last;return;}const dt=last?Math.min(.1,(now-last)/1000):0;last=now;elapsed+=dt;
     data.creatures.forEach((c,i)=>{if(!trials.has(i)){c.position.copy(data.homes[i]);if(!reduced.matches)c.position.y+=Math.sin(elapsed*2+i)*.018;}});
@@ -240,7 +264,7 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
     const item=data.layout[index];
     spawnSpark(from,new THREE.Vector3(item.x,item.y+1.6,item.z),FOREST_COLORS[cat]??'#8cf0bd');
   },
-  dispose(){if(disposed)return;disposed=true;cancelAnimationFrame(frame);observer.disconnect();io.disconnect();orbit?.dispose();canvas.removeEventListener('pointerdown',onDown);canvas.removeEventListener('pointermove',onMove);canvas.removeEventListener('pointerup',onUp);canvas.removeEventListener('pointercancel',onCancel);canvas.removeEventListener('webglcontextlost',onLost);document.removeEventListener('visibilitychange',onVisibility);sparks.forEach(s=>{scene.remove(s.mesh);(s.mesh.material as THREE.Material).dispose();});sparks.length=0;sparkGeo.dispose();const gs=new Set<THREE.BufferGeometry>(),ms=new Set<THREE.Material>();scene.traverse(o=>{if(o instanceof THREE.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}if(o instanceof THREE.InstancedMesh)o.dispose();});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());data.stoneTexture.dispose();data.groundTexture.dispose();data.sun.shadow.dispose();env?.dispose();composer?.passes.forEach(p=>p.dispose());composer?.dispose();renderer?.dispose();software?.dispose();}};
+  dispose(){if(disposed)return;disposed=true;cancelAnimationFrame(frame);observer.disconnect();io.disconnect();orbit?.dispose();canvas.removeEventListener('pointerdown',onDown);canvas.removeEventListener('pointermove',onMove);canvas.removeEventListener('pointerup',onUp);canvas.removeEventListener('pointercancel',onCancel);canvas.removeEventListener('webglcontextlost',onLost);document.removeEventListener('visibilitychange',onVisibility);canvas.removeEventListener('pointermove',onHoverMove);canvas.removeEventListener('pointerleave',onHoverLeave);sparks.forEach(s=>{scene.remove(s.mesh);(s.mesh.material as THREE.Material).dispose();});sparks.length=0;sparkGeo.dispose();const gs=new Set<THREE.BufferGeometry>(),ms=new Set<THREE.Material>();scene.traverse(o=>{if(o instanceof THREE.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}if(o instanceof THREE.InstancedMesh)o.dispose();});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());data.stoneTexture.dispose();data.groundTexture.dispose();data.sun.shadow.dispose();env?.dispose();composer?.passes.forEach(p=>p.dispose());composer?.dispose();renderer?.dispose();software?.dispose();}};
 }
 
 /** GPU-less preview uses the exact same model and perspective, with simpler shaded materials. */
