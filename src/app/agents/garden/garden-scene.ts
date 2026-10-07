@@ -65,14 +65,51 @@ export function buildGarden(agents: ForestAgent[], single=false, mobile=false, e
     const trialOuter=mesh(new THREE.RingGeometry(.84,.848,64),gold,court.x,.027,court.z); trialOuter.rotation.x=-Math.PI/2;
     for (const category of STATION_CATEGORIES) { stations[category]=court; stationRings[category]=trialRing; }
   } else {
-    // A compact 3x3 plaza (not a wide single row) so all 9 stations stay inside the default camera framing.
-    STATION_CATEGORIES.forEach((category,i)=>{
-      const col=i%3-1, row=Math.floor(i/3)-1, x=court.x+col*1.3, z=court.z+row*1.3;
+    // Hand-placed, not a grid: each landmark sits at its own distance and
+    // angle from the court so the plaza reads as a real place, not a rack
+    // of identical booths. Buildings tower well over the trees on purpose —
+    // these are the one shared landmark every agent's creature visits.
+    const STATION_OFFSETS: [number,number][] = [
+      [-6.0,-.3],[-4.1,1.6],[-1.8,-.8],[.3,1.9],[2.6,-.5],[4.8,1.3],[-2.9,2.7],[1.6,-1.1],[5.8,-.2],
+    ];
+    const buildStation=(category:string,x:number,z:number):THREE.Mesh=>{
       const material=glass.get(category)??glass.get('inconclusive')!;
-      mesh(box,darkStone,x,.11,z,.62,.22,.62);
-      mesh(box,material,x,.42,z,.3,.5,.3);
-      mesh(new THREE.ConeGeometry(.28,.36,4),material,x,.86,z);
-      const ring=mesh(new THREE.RingGeometry(.64,.652,48),material,x,.029,z); ring.rotation.x=-Math.PI/2;
+      mesh(box,darkStone,x,.16,z,2.6,.3,2.6);
+      // Each category gets its own silhouette, not just its own color.
+      if(category==='identity'){
+        mesh(box,darkStone,x,1.0,z,.5,1.9,.5);
+        mesh(new THREE.TorusGeometry(1.15,.22,10,24),material,x,2.1,z).rotation.x=Math.PI/2;
+      }else if(category==='skill'){
+        mesh(box,material,x,.9,z,2.6,1.5,2.6);
+        mesh(box,material,x,2.1,z,1.9,1.0,1.9);
+        mesh(box,material,x,3.0,z,1.1,.8,1.1);
+      }else if(category==='work'){
+        mesh(new THREE.CylinderGeometry(1.1,1.3,2.6,10),material,x,1.5,z);
+        mesh(new THREE.ConeGeometry(1.3,1.2,10),material,x,3.3,z);
+        mesh(new THREE.CylinderGeometry(.28,.32,1.8,8),material,x+1.0,2.6,z-.6);
+      }else if(category==='performance'){
+        mesh(box,darkStone,x,1.1,z,.6,2.2,.6);
+        mesh(new THREE.IcosahedronGeometry(1,0),material,x,3.3,z,1.1,2.0,1.1);
+      }else if(category==='economic_activity'){
+        mesh(new THREE.CylinderGeometry(1.5,1.6,1.4,16),material,x,1.0,z);
+        mesh(new THREE.SphereGeometry(1.5,16,12,0,Math.PI*2,0,Math.PI/2),material,x,1.7,z);
+      }else if(category==='financial_performance'){
+        mesh(new THREE.ConeGeometry(1.7,3.6,4),material,x,2.0,z);
+      }else if(category==='prediction'){
+        mesh(new THREE.CylinderGeometry(.5,.7,3.4,10),material,x,1.9,z);
+        mesh(new THREE.ConeGeometry(.75,1.3,10),material,x,4.2,z);
+      }else if(category==='autonomy'){
+        mesh(new THREE.ConeGeometry(1.1,1.9,8),material,x,1.95,z);
+        mesh(new THREE.ConeGeometry(1.1,1.9,8),material,x,3.85,z).rotation.x=Math.PI;
+      }else{
+        [1.4,1.1,.8,.5].forEach((r,i)=>mesh(new THREE.CylinderGeometry(r,r*1.15,.5,14),material,x,.6+i*.65,z));
+      }
+      const ring=mesh(new THREE.RingGeometry(1.5,1.56,48),material,x,.032,z); ring.rotation.x=-Math.PI/2;
+      return ring;
+    };
+    STATION_CATEGORIES.forEach((category,i)=>{
+      const [dx,dz]=STATION_OFFSETS[i]??[0,0], x=court.x+dx, z=court.z+dz;
+      const ring=buildStation(category,x,z);
       stations[category]=new THREE.Vector3(x,court.y,z); stationRings[category]=ring;
     });
     trialRing=stationRings[STATION_CATEGORIES[0]];
@@ -140,8 +177,11 @@ export function mountGarden(canvas:HTMLCanvasElement,options:GardenOptions):Gard
     sparks.push({mesh:m,start:elapsed,from:from.clone(),to:to.clone()});
   }
   let renderer:THREE.WebGLRenderer|null=null,composer:EffectComposer|null=null,env:THREE.WebGLRenderTarget|null=null,orbit:OrbitControls|null=null;
-  let yaw=.44,pitch=.61,distance=options.single?9.5:options.agents.length>3?24:17;const target=new THREE.Vector3(0,1.25,options.single?-.2:options.agents.length>3?-3:0);
-  const cameraHome=()=>{if(options.single){distance=9.4;target.set(0,1.35,0);}else{distance=options.agents.length>3?24:17;target.set(0,1.3,options.agents.length>3?-3:0);}yaw=.44;pitch=.61;};
+  // Multi-mode pulled back a bit further than before (17/24 -> 21/28) — the
+  // station buildings are now landmark-scaled (4-5x the old booths), so the
+  // default framing needs more room to show both the plaza and the trees.
+  let yaw=.44,pitch=.61,distance=options.single?9.5:options.agents.length>3?28:21;const target=new THREE.Vector3(0,1.25,options.single?-.2:options.agents.length>3?-3:0);
+  const cameraHome=()=>{if(options.single){distance=9.4;target.set(0,1.35,0);}else{distance=options.agents.length>3?28:21;target.set(0,1.3,options.agents.length>3?-3:0);}yaw=.44;pitch=.61;};
   try {
     // Fail before binding to WebGL so a 2D fallback can use this same canvas.
     const probe=document.createElement('canvas'),probeGL=probe.getContext('webgl2');if(!probeGL)throw new Error('WebGL2 unavailable');probeGL.getExtension('WEBGL_lose_context')?.loseContext();
