@@ -1,6 +1,6 @@
-import Image from "next/image";
 import type { Metadata } from "next";
 import { AgentPortalHeader } from "@/app/agent-portal-header";
+import { AuevoMark } from "@/app/auevo-logo";
 import { CopyableAddress } from "@/app/copyable-address";
 import { fetchDexscreenerToken } from "@/lib/dexscreener";
 import { formatPrice, formatUsdCompact } from "@/lib/format";
@@ -65,7 +65,7 @@ export default async function TokenPage() {
       <AgentPortalHeader />
 
       <section className="token-hero">
-        <Image src="/images/auevo-tree-logo.webp" width={150} height={150} alt="AUEVO tree logo" className="token-hero-mark" />
+        <AuevoMark className="token-hero-mark" title="AUEVO tree logo" />
         <h1>$AUEVO</h1>
         <span className="token-hero-badge">Launching soon</span>
         <p className="token-hero-lead">

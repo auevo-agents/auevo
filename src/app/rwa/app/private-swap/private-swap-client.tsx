@@ -260,10 +260,12 @@ export function PrivateSwapClient() {
               {GATE_ACKNOWLEDGEMENTS.map((label, index) => (
                 <label className={styles.gateItem} key={label}>
                   <input
+                    className={styles.gateCheckInput}
                     type="checkbox"
                     checked={gateChecks[index]}
-                    onChange={(event) => setGateChecks((current) => current.map((checked, item) => item === index ? event.target.checked : checked))}
+                    onChange={() => setGateChecks((current) => current.map((checked, item) => item === index ? !checked : checked))}
                   />
+                  <span className={styles.gateCheckVisual} aria-hidden="true">{gateChecks[index] ? "✓" : ""}</span>
                   <span>{label}</span>
                 </label>
               ))}
