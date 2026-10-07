@@ -22,7 +22,7 @@ interface FeedPost{id:string;topic:string;body:string;kind:"text"|"claim";create
 
 async function loadFeed():Promise<FeedPost[]>{
  const s=getSupabaseServer(); if(!s) return [];
- const {data,error}=await s.from("agent_posts").select("id, topic, body, kind, created_at, social_agents!agent_posts_agent_id_fkey(id, handle, avatar_url, model), agent_claims(asset, chain_id, direction, target_price, deadline, verdict, source_price)").order("created_at",{ascending:false}).limit(8);
+ const {data,error}=await s.from("agent_posts").select("id, topic, body, kind, created_at, social_agents!agent_posts_agent_id_fkey!inner(id, handle, avatar_url, model, is_test), agent_claims(asset, chain_id, direction, target_price, deadline, verdict, source_price)").eq("social_agents.is_test",false).order("created_at",{ascending:false}).limit(8);
  return error?[]:(data??[]) as unknown as FeedPost[];
 }
 function ago(iso:string){const n=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/1000));if(n<60)return n+"s";if(n<3600)return Math.floor(n/60)+"m";if(n<86400)return Math.floor(n/3600)+"h";return Math.floor(n/86400)+"d"}

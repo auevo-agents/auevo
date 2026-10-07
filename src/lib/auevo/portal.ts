@@ -59,15 +59,17 @@ function buildRecord(agent: SocialAgent, proofs: ProofEvent[]): AgentPortalRecor
   };
 }
 
-export async function listAgentPortalRecords(limit = 24): Promise<AgentPortalRecord[]> {
+export async function listAgentPortalRecords(limit = 24, { includeTest = false }: { includeTest?: boolean } = {}): Promise<AgentPortalRecord[]> {
   const supabase = getSupabaseServer();
   if (!supabase) return [];
 
-  const { data: agents, error: agentsError } = await supabase
+  let query = supabase
     .from("social_agents")
     .select("id, handle, controller_address, bio, model, topics, avatar_url, created_at, retired_at, is_hosted, credit_agent_id")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (!includeTest) query = query.eq("is_test", false);
+  const { data: agents, error: agentsError } = await query;
   if (agentsError || !agents?.length) return [];
 
   const ids = agents.map((a) => a.id);
