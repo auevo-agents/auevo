@@ -25,9 +25,10 @@ const CONFIDENCE_BY_METHOD: Record<VerificationMethod, EvidenceConfidence> = {
 export interface CategoryAggregate {
   category: ProofCategory;
   attempted: number;
+  /** Count of proofs that settled as an actual PASS — the success numerator shown everywhere as "verified" / the success rate. Never includes a failed attempt, however "verified" (checked) its failure was. */
   verified: number;
   confidence: EvidenceConfidence;
-  /** median/best/worst of the named numeric result field, over VERIFIED proofs only. Null if verified=0. */
+  /** median/best/worst of the named numeric result field, over every SETTLED proof (passed or failed) — a failed attempt still carries a real, honest result and hiding it would be cherry-picking. Null if nothing has settled. */
   resultField: string | null;
   median: number | null;
   best: number | null;
@@ -49,17 +50,16 @@ function median(values: number[]): number | null {
  */
 export function aggregateCategory(proofs: ProofEvent[], category: ProofCategory, resultField: string | null): CategoryAggregate {
   const inCategory = proofs.filter((p) => p.category === category);
-  // "verified" here means settled either way (passed or failed) — same
-  // meaning the old flat "verified" status had, back when it covered both
-  // a correct and an incorrect but resolved outcome. Unresolved
-  // (scheduled/running/awaiting_settlement) and non-terminal
-  // (inconclusive/cancelled) Proofs don't count toward confidence or the
-  // numeric aggregates below.
-  const verifiedProofs = inCategory.filter((p) => (SETTLED_STATUSES as string[]).includes(p.status));
+  // Settled either way (passed or failed). Used for confidence and for the
+  // numeric median/best/worst spread below — never for the "verified"
+  // success count returned at the bottom, which must mean an actual pass.
+  // Unresolved (scheduled/running/awaiting_settlement) and non-terminal
+  // (inconclusive/cancelled) Proofs don't count toward either.
+  const settledProofs = inCategory.filter((p) => (SETTLED_STATUSES as string[]).includes(p.status));
 
-  // Confidence reflects the WEAKEST verification method among verified
+  // Confidence reflects the WEAKEST verification method among settled
   // proofs — a category is never shown as more trustworthy than its
-  // least-trustworthy contributing Proof.
+  // least-trustworthy contributing Proof, pass or fail.
   const rank: EvidenceConfidence[] = [
     "SELF_REPORTED",
     "COUNTERPARTY_CONFIRMED",
@@ -68,7 +68,7 @@ export function aggregateCategory(proofs: ProofEvent[], category: ProofCategory,
     "DETERMINISTICALLY_VERIFIED",
   ];
   let confidence: EvidenceConfidence = "INSUFFICIENT";
-  for (const p of verifiedProofs) {
+  for (const p of settledProofs) {
     const c = CONFIDENCE_BY_METHOD[p.verification_method];
     if (confidence === "INSUFFICIENT" || rank.indexOf(c) < rank.indexOf(confidence)) confidence = c;
   }
@@ -76,8 +76,8 @@ export function aggregateCategory(proofs: ProofEvent[], category: ProofCategory,
   let med: number | null = null;
   let best: number | null = null;
   let worst: number | null = null;
-  if (resultField && verifiedProofs.length > 0) {
-    const values = verifiedProofs
+  if (resultField && settledProofs.length > 0) {
+    const values = settledProofs
       .map((p) => p.result?.[resultField])
       .filter((v): v is number => typeof v === "number");
     if (values.length > 0) {
@@ -90,7 +90,7 @@ export function aggregateCategory(proofs: ProofEvent[], category: ProofCategory,
   return {
     category,
     attempted: inCategory.length,
-    verified: verifiedProofs.length,
+    verified: inCategory.filter((p) => p.status === "passed").length,
     confidence,
     resultField,
     median: med,
