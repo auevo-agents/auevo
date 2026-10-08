@@ -173,10 +173,41 @@ tier is a proposal, not current behavior.
 ## 6. What we deliberately don't do
 
 - We don't introduce a single numeric score/tier/badge.
-- We don't invent utility for the $AUEVO token (staking/governance/
-  fee-share for the token) — the `/token` page deliberately stays silent
-  on this, and it's not our call to change that without an explicit
-  request.
 - We don't make the credit line automatic/algorithmic based on Proof
   history — the decision stays with the human backer; the Proof history
   only makes that decision informed.
+
+## 7. $AUEVO staking/governance — direction, not a spec (2026-10-08)
+
+As of $AUEVO's launch (via Pons, see `contracts/DEPLOYMENTS_PENDING.md`),
+staking and governance for the token are an explicit future direction, not
+the "we don't invent utility" non-goal §6 used to state. Nothing below is
+designed or built yet — this is a placeholder so the intent survives
+between sessions, not a commitment to any specific mechanism.
+
+What's already decided:
+- $AUEVO itself (the Pons-deployed ERC20) stays a plain, immutable,
+  liquid trading token — no vote-checkpointing or staking logic gets
+  retrofitted into it (it can't be, post-launch, and mixing a traded
+  token directly with voting power is bad practice regardless — see
+  OpenZeppelin's own wrapper-token pattern, already vendored under
+  `contracts/node_modules/@openzeppelin/contracts/governance/` and
+  `.../token/ERC20/extensions/ERC20Votes.sol`/`ERC20Wrapper.sol`).
+  Any staking/governance mechanism is a separate contract (or set of
+  contracts) that locks $AUEVO and tracks stake/voting power itself,
+  keeping multiple staking variants possible later without ever
+  touching the token contract.
+- `AgentCreditPool.vouchSeat()` already exists as a real, tested (118
+  assertions) precedent for "lock $AUEVO against a specific agentId" —
+  whatever agent-linked staking looks like, it likely extends or sits
+  next to that pattern rather than replacing it.
+
+What's still open (revisit explicitly, don't assume):
+- What "staking for agents" means — a backer vouching for an agent
+  (seat-like), an agent's own operator posting a bond/skin-in-the-game,
+  plain liquid staking unrelated to any specific agent, or more than one
+  of these at once.
+- What governance actually controls — protocol parameters, treasury
+  (the 70% trading-fee share Pons routes to AUEVO's fee wallet), both,
+  or something else — and whether voting power comes from staked
+  $AUEVO, from registered agents, or some mix.
