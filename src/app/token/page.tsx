@@ -48,7 +48,6 @@ export default async function TokenPage() {
     { label: "Price", value: formatPrice(market?.priceUsd ?? null) },
     { label: "Market cap", value: formatUsdCompact(market?.marketCapUsd ?? null) },
     { label: "Total supply", value: AUEVO_TOTAL_SUPPLY.toLocaleString("en-US") },
-    { label: "Contract", value: "—" },
   ];
 
   return (
@@ -64,19 +63,20 @@ export default async function TokenPage() {
           Chain via Pons — fixed supply, liquidity locked from block one,
           no admin key on the token contract.
         </p>
+
+        {AUEVO_CONTRACT && (
+          <div className="token-contract-box">
+            <span className="token-contract-box-label">Official $AUEVO contract</span>
+            <CopyableAddress address={AUEVO_CONTRACT} head={42} tail={0} className="token-contract-box-value" />
+          </div>
+        )}
       </section>
 
       <section className="token-stats" aria-label="Token stats (unavailable before launch)">
         {stats.map((stat) => (
           <div className="token-stat" key={stat.label}>
             <span className="token-stat-label">{stat.label}</span>
-            {stat.label === "Contract" && AUEVO_CONTRACT ? (
-              <span className="token-stat-value">
-                <CopyableAddress address={AUEVO_CONTRACT} />
-              </span>
-            ) : (
-              <span className="token-stat-value">{stat.value}</span>
-            )}
+            <span className="token-stat-value">{stat.value}</span>
           </div>
         ))}
       </section>
