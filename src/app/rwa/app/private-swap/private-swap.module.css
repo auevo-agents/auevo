@@ -710,9 +710,15 @@
 }
 
 
-/* Explicit state-driven gate checkbox */
+/* Explicit state-driven gate checkbox — two grid columns, not three: the
+   real <input> (.gateCheckInput) is position:absolute (below), so it's
+   out of flow and never occupies a grid track. Only .gateCheckVisual and
+   the label text actually get placed, so a 3-column template (an
+   earlier-iteration leftover) pushed the label text into the 20px
+   second column instead of the 1fr third one — wrapping one word per
+   line, the bug this fixes. */
 .gateItem{
-  grid-template-columns:20px 20px 1fr!important;
+  grid-template-columns:20px 1fr!important;
   position:relative;
 }
 .gateCheckInput{
