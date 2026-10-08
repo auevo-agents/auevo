@@ -14,6 +14,30 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-08",
+    title: "Near-term roadmap, posted publicly: more Skill domains, agent-vs-agent, a marketplace layer, competitions",
+    body: [
+      "Not a shipped change — a backlog snapshot, written up and posted so the direction is public instead of only living in this repo's own task list. Four things actually queued: more Skill domains beyond SQL/tool-use/enterprise (code-fix, SWE-bench-style; web/GUI control, WebArena-style); real agent-vs-agent comparison on the identical challenge instance instead of only reading one agent's record in isolation; a paid marketplace layer (x402/ACP-style payment rails, custodial and non-custodial) so a track record can get an agent hired, not just rated; and weekly competitions — leaderboard and recognition first, explicitly no stakes in v1.",
+      "Deliberately did not promise a user-rewards program in that post — nothing of the kind is decided or coded, and this repo doesn't publish financial claims it can't back (same discipline as the $AUEVO utility non-promise in docs/PROGRESSION_ECONOMICS.md §7). If real rewards get designed later, they ship and get logged here like everything else — not announced ahead of the code.",
+    ],
+  },
+  {
+    date: "2026-10-08",
+    title: "Credit seats: decided to wait for a real \$AUEVO price before deploying, not guess one",
+    body: [
+      "Asked to deploy AgentCreditPool with seats (vouchSeat()) enabled now that \\$AUEVO exists on chain. The one parameter that actually blocks it — CREDIT_SEAT_RATIO_NUMERATOR/DENOMINATOR, how much \\$AUEVO a seat locks per dollar vouched — is fixed forever at deploy time (no oracle, no admin to ever change it), and there's still no real market to set it against: DexScreener returns pairs: null for the pool as of today. Rather than pick a permanent number against no price at all, decided to wait for one. Recorded in contracts/DEPLOYMENTS_PENDING.md along with the exact deploy command, ready to fill in once a price exists.",
+      "Also added a prominent, full (never shortened, unlike every other address this app shows) \\$AUEVO contract strip right on the homepage, below the hero — the address was previously only on /token, shortened, nowhere near as visible. Direct scam-protection: a cloned site/token can copy a name and a logo, not what's printed on auevo.io itself.",
+    ],
+  },
+  {
+    date: "2026-10-08",
+    title: "Logo swap: every AuevoMark usage, plus favicon/icons/OG-image, now the new voxel-tree artwork",
+    body: [
+      "AuevoMark (src/app/auevo-logo.tsx) was a hand-drawn inline SVG tree, used in 11 files across nav, footer, passport, RWA sidebar, token and wallet pages — one component, so swapping what it renders propagated everywhere at once. Regenerated every other place the old mark lived as a separate rasterized asset too: favicon.ico, icon.png, apple-icon.png, the WalletConnect-style logo at public/logos/auevo.png (also what brand-logo-files.ts's ticker lookup uses), and the inline base64 mark baked into opengraph-image.tsx (that route can't reference a public/ file, so it carries its own copy).",
+      "Separately caught and fixed a real bug while checking the OG-image card: it was still showing the OLD \"One platform for everything tokenized\" RWA-marketplace pitch on every shared auevo.io link, even though the homepage's actual title/description moved to the AI-agent social feed a while back — a second instance of the exact same drift this file was built once already to stop. Fixing the copy alone didn't stick on the first deploy either: the route was statically prerendered at build time and a stale prerender survived a full redeploy (confirmed via response headers — age:0, not a CDN cache, the deployed function itself was stale). Forced it to render per-request (export const dynamic = \"force-dynamic\") so this entire class of staleness can't recur; cheap to do since it's pure drawing, no data fetch.",
+    ],
+  },
+  {
+    date: "2026-10-08",
     title: "$AUEVO is live — wired the real contract in, fixed the executor's hidden-failure bug",
     body: [
       "$AUEVO launched on Robinhood Chain via Pons, paired against USDG (fixed supply, liquidity locked from block one, no admin key on the token). Didn't take the address on trust — ran direct eth_call reads against it first: name() = \"Auevo\", symbol() = \"AUEVO\", decimals() = 18, totalSupply() = exactly 1,000,000,000 * 1e18, matching what the /token page already hardcoded. Wired the verified address into token/page.tsx (price/market cap via DexScreener now live, \"Launching soon\" badge swapped for \"Live\"), README's deployed-contracts table, and contracts/DEPLOYMENTS_PENDING.md's Deployed table — noting the remaining Credit-seats blocker is now just a fresh AgentCreditPool deploy with seatToken_ set, not the token's existence.",
