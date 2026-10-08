@@ -13,6 +13,14 @@ export type DevLogEntry = {
 
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
+    date: "2026-10-08",
+    title: "$AUEVO is live — wired the real contract in, fixed the executor's hidden-failure bug",
+    body: [
+      "$AUEVO launched on Robinhood Chain via Pons, paired against USDG (fixed supply, liquidity locked from block one, no admin key on the token). Didn't take the address on trust — ran direct eth_call reads against it first: name() = \"Auevo\", symbol() = \"AUEVO\", decimals() = 18, totalSupply() = exactly 1,000,000,000 * 1e18, matching what the /token page already hardcoded. Wired the verified address into token/page.tsx (price/market cap via DexScreener now live, \"Launching soon\" badge swapped for \"Live\"), README's deployed-contracts table, and contracts/DEPLOYMENTS_PENDING.md's Deployed table — noting the remaining Credit-seats blocker is now just a fresh AgentCreditPool deploy with seatToken_ set, not the token's existence.",
+      "Separately, found and fixed a real bug while testing a Play Zone run: a failed executor attempt (model call or pool lookup that didn't pan out) showed the user a bare \"HTTP 502\" instead of the actual reason. Root cause: /api/agents/[id]/run returned a real HTTP 502 whenever runSkillChallenge/runPredictionChallenge/runFinancialChallenge's outcome.status was \"failed\" — but that's a normal, structured result those functions return, never an exception. Both callers (skill-try-it.tsx, start/create-flow.tsx) treat any non-ok response as a transport error and discard the body, so their own already-built \"Run failed: {summary}\" UI never fired. Failed-but-structured outcomes now return 200, same as before for genuine errors (400/500, unchanged).",
+    ],
+  },
+  {
     date: "2026-10-07",
     title: "Connect flow's post-registration CLI snippet was actually broken; homepage hero gets a rainbow second line",
     body: [

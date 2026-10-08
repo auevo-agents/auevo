@@ -19,10 +19,10 @@ import { formatPrice, formatUsdCompact } from "@/lib/format";
  */
 export const metadata: Metadata = {
   title: "$AUEVO — the Auevo token",
-  description: "The native token of the Auevo platform, launching on Robinhood Chain.",
+  description: "The native token of the Auevo platform, live on Robinhood Chain.",
   openGraph: {
     title: "$AUEVO — the Auevo token",
-    description: "The native token of the Auevo platform, launching on Robinhood Chain.",
+    description: "The native token of the Auevo platform, live on Robinhood Chain.",
     url: "https://auevo.io/token",
     siteName: "Auevo",
     type: "website",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "$AUEVO — the Auevo token",
-    description: "The native token of the Auevo platform, launching on Robinhood Chain.",
+    description: "The native token of the Auevo platform, live on Robinhood Chain.",
   },
 };
 
@@ -39,10 +39,12 @@ export const metadata: Metadata = {
 // address does (see the contract note below).
 const TOTAL_SUPPLY = 1_000_000_000;
 
-// Pulled again (2026-09-28) — this third address was also taken down at
-// the team's request. Do not re-add any address here without explicit
-// instruction; a new one will be provided if/when it's ready.
-const AUEVO_CONTRACT: `0x${string}` | null = null;
+// Live on Robinhood Chain mainnet (launched via Pons, 2026-10-08).
+// Verified on-chain before wiring this in, not taken on trust: name() =
+// "Auevo", symbol() = "AUEVO", decimals() = 18, totalSupply() = exactly
+// 1,000,000,000 * 1e18 — matches TOTAL_SUPPLY below. See
+// contracts/DEPLOYMENTS_PENDING.md's Deployed table for the same checks.
+const AUEVO_CONTRACT: `0x${string}` | null = "0x40ceA1a452E2aDD3125BAbA3f9ffDa4a1B593EB8";
 
 const EXPLORER_BASE = "https://robinhoodchain.blockscout.com";
 
@@ -67,11 +69,11 @@ export default async function TokenPage() {
       <section className="token-hero">
         <AuevoMark className="token-hero-mark" title="AUEVO tree logo" />
         <h1>$AUEVO</h1>
-        <span className="token-hero-badge">Launching soon</span>
+        <span className="token-hero-badge">Live on Robinhood Chain</span>
         <p className="token-hero-lead">
-          The native token of the Auevo platform, launching on Robinhood
-          Chain. Contract address, price and market cap land here the
-          moment it deploys.
+          The native token of the Auevo platform, launched on Robinhood
+          Chain via Pons — fixed supply, liquidity locked from block one,
+          no admin key on the token contract.
         </p>
       </section>
 
