@@ -1,0 +1,28 @@
+.garden{display:grid;grid-template-columns:minmax(0,1fr) 278px;gap:0;overflow:hidden;border:1px solid #415b4270;border-radius:16px;background:#091b12;color:#eff0df;box-shadow:0 25px 65px #0003;font-family:Arial,Helvetica,sans-serif}
+.stage{min-width:0;position:relative;height:560px;overflow:hidden;background:radial-gradient(ellipse at 20% 5%,#48553a,#11291c 45%,#081b12 90%);isolation:isolate}
+.canvas{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab}.canvas:active{cursor:grabbing}
+.badge{position:absolute;top:22px;left:24px;z-index:2;font-size:10px;letter-spacing:.18em;color:#e3d4a5;pointer-events:none}
+.topHint{position:absolute;right:22px;top:22px;font-size:11px;color:#b9c6b1;pointer-events:none}
+.sceneCaption{position:absolute;left:24px;bottom:26px;z-index:2;display:flex;flex-direction:column;gap:7px;pointer-events:none;text-shadow:0 2px 8px #031108}
+.sceneCaption>span{font-family:Georgia,serif;font-size:25px;color:#f2eedb}.sceneCaption small{font-size:11px;color:#c1ccba}
+.controls{position:absolute;right:20px;bottom:25px;z-index:3;display:flex;gap:6px}.controls button{border:1px solid #697b5670;border-radius:7px;background:#0e281de8;color:#e7ead7;padding:9px 12px;font-size:12px;cursor:pointer;min-height:38px}.controls button:first-child,.controls button:nth-child(2){font-size:20px;padding:3px 11px}
+.stationTip{position:absolute;z-index:4;transform:translate(-50%,-135%);background:#0e281de8;border:1px solid #697b5670;border-radius:6px;padding:6px 10px;font-size:11px;line-height:1.5;color:#f2eedb;white-space:nowrap;pointer-events:none}
+.passport{padding:27px 23px;background:linear-gradient(150deg,#172a1c,#08180f);border-left:1px solid #425d3d70;min-width:0;display:flex;flex-direction:column;justify-content:flex-start}
+.eyebrow{font-size:10px;letter-spacing:.16em;color:#cbbb8b}
+.trial p{font-size:11px;line-height:1.7;color:#afbea6;margin:11px 0 15px}.primary{background:linear-gradient(135deg,#426443,#183d28);color:#f1f1db;border:1px solid #6f885873;border-radius:9px;padding:13px 11px;display:flex;justify-content:space-between;gap:10px;width:100%;font:inherit;font-size:11px;cursor:pointer;text-align:left;transition:filter .2s,transform .2s}.primary:hover{filter:brightness(1.13)}.primary:active{transform:translateY(1px)}.primary:disabled{opacity:.6;cursor:wait}.status{font-size:10px;line-height:1.6;margin-top:11px;color:#b0bfa4;min-height:32px}.links{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}.links a,.proof a{font-size:11px;color:#d0c096;text-decoration:none}.links a:hover,.proof a:hover{text-decoration:underline}.limit{font-size:10px;color:#a4b29b;line-height:1.6;display:block;margin-top:20px}.proof{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}.proof small{font-size:9px;color:#adba9e;letter-spacing:.13em}.proof strong{font-size:11px;font-weight:400;text-transform:capitalize}.proof span{font-size:11px;color:#c8d0b9;line-height:1.5}
+.legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 16px;padding:14px 23px;border-top:1px solid #415b4270;background:#0a1a10}.legendItem{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#aeb9a5}.legendDot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.unavailable{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px;text-align:center;background:#102618}.unavailable h3{font-family:Georgia,serif;font-weight:400;font-size:25px}.unavailable p{font-size:13px;color:#bfccb5}
+/* The multi-agent garden has no side panel at all (hover gives a quick peek,
+   a click opens the real Passport) — just the stage filling the whole card. */
+.wide{grid-template-columns:1fr}
+.single{grid-template-columns:1fr;border:0;border-radius:0;box-shadow:none}.single .stage{height:380px}
+/* Single mode's own aside holds only the trial section and an optional
+   selected-crystal note (handle/bio/tags/metrics live in the Passport
+   page's own card next to this widget) — a plain flex column with no
+   leftover grid cells keeps this from ballooning into empty space. */
+.single .passport{border-left:0;border-top:1px solid #425d3d70;padding:16px 20px;display:flex;flex-direction:column;gap:2px}.single .trial p{max-width:460px}.single .status{min-height:0}.single .proof{margin-bottom:10px}.single .limit{margin-top:10px}
+.garden button:focus-visible,.garden a:focus-visible{outline:2px solid #d8d3a3;outline-offset:3px}
+@media(max-width:1050px){.topHint{display:none}.sceneCaption>span{font-size:21px}.sceneCaption{bottom:80px}}
+@media(max-width:760px){.stage{height:440px}.badge{left:18px;top:18px}.sceneCaption{left:18px;bottom:70px}.controls{right:16px;bottom:20px}.controls button{min-width:44px;min-height:44px}.single .stage{height:380px}}
+@media(max-width:430px){.stage{height:350px}.sceneCaption>span{font-size:20px}.sceneCaption small{font-size:10px;max-width:245px}.single .stage{height:350px}.sceneCaption{bottom:78px}}
+@media(prefers-reduced-motion:reduce){.garden *{transition:none!important}}

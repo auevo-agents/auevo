@@ -1,0 +1,140 @@
+import { BrandIcon } from "./brand-icon";
+
+export type MockupKind = "chips" | "asset-grid" | "compare" | "checklist" | "apr" | "alert" | "risk";
+
+/**
+ * Small "show it working" previews embedded in each feature card, the
+ * same move HyperDex's own cards make instead of a paragraph alone.
+ * `chips` is the only one backed by real data (tickers this app's
+ * registry has actually verified, passed down from the server); the
+ * rest are illustrative product chrome — a route comparison, a bridge
+ * status checklist, an APR row, an alert toast — not a claim about a
+ * specific live number.
+ */
+const FEATURED_ASSETS = ["NVDA", "TSLA", "SPY", "QQQ", "AAPL", "MSFT", "AMZN", "META", "GOOGL", "AMD", "COIN", "PLTR", "MSTR", "NFLX", "TSM"] as const;
+
+export function CardMockup({ kind, tickers }: { kind: MockupKind; tickers?: string[] }) {
+  if (kind === "asset-grid") {
+    return (
+      <div className="landing2-mockup landing2-mockup-asset-grid" role="list" aria-label="Featured tokenized assets">
+        {FEATURED_ASSETS.map((symbol) => (
+          <span className="landing2-mockup-chip" role="listitem" key={symbol}>
+            <BrandIcon symbol={symbol} kind="ticker" size={16} />
+            <span>{symbol}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (kind === "chips") {
+    const shown = tickers && tickers.length > 0 ? tickers.slice(0, 6) : ["NVDA", "TSLA", "SPY", "QQQ"];
+    return (
+      <div className="landing2-mockup">
+        <div className="landing2-mockup-chips">
+          {shown.map((t) => (
+            <span className="landing2-mockup-chip" key={t}>
+              <BrandIcon symbol={t} kind="ticker" size={14} />
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "compare") {
+    return (
+      <div className="landing2-mockup">
+        <div className="landing2-mockup-rows">
+          <div className="landing2-mockup-row">
+            <span>Issuer A</span>
+            <span>Reference quote</span>
+          </div>
+          <div className="landing2-mockup-row landing2-mockup-row-best">
+            <span>Issuer B</span>
+            <b>Compare offers</b>
+          </div>
+          <div className="landing2-mockup-row">
+            <span>Issuer C</span>
+            <span>Token quote</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "checklist") {
+    return (
+      <div className="landing2-mockup">
+        <div className="landing2-mockup-check">
+          <span className="landing2-mockup-check-icon">✓</span>
+          One wallet signature
+        </div>
+        <div className="landing2-mockup-check">
+          <span className="landing2-mockup-check-icon">✓</span>
+          Route split across legs
+        </div>
+        <div className="landing2-mockup-check">
+          <span className="landing2-mockup-check-icon">✓</span>
+          Confirmed on-chain
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "apr") {
+    return (
+      <div className="landing2-mockup">
+        <div className="landing2-mockup-rows">
+          <div className="landing2-mockup-row">
+            <span>SPY / USDG</span>
+            <span>Uniswap v4</span>
+          </div>
+          <div className="landing2-mockup-row">
+            <span>NVDA / USDG</span>
+            <span>Uniswap v4</span>
+          </div>
+          <div className="landing2-mockup-row">
+            <span>TSLA / USDG</span>
+            <span>Uniswap v4</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "risk") {
+    return (
+      <div className="landing2-mockup">
+        <div className="landing2-mockup-row">
+          <span>Contract review</span>
+          <b>On-chain</b>
+        </div>
+        <div className="landing2-mockup-check" style={{ marginTop: 10 }}>
+          <span className="landing2-mockup-check-icon">✓</span>
+          Permission checks listed
+        </div>
+        <div className="landing2-mockup-check">
+          <span className="landing2-mockup-check-icon">✓</span>
+          Source linked to deployment
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="landing2-mockup">
+      <div className="landing2-mockup-row landing2-mockup-row-best">
+        <span>
+          <b>Illustrative alert</b> · NVDA
+        </span>
+        <span>Telegram</span>
+      </div>
+      <div className="landing2-mockup-check" style={{ marginTop: 10 }}>
+        <span className="landing2-mockup-check-icon">✓</span>
+        Delivered to web + bot
+      </div>
+    </div>
+  );
+}

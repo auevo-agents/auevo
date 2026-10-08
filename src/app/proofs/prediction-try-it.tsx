@@ -1,0 +1,547 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAccount, useSignMessage } from "wagmi";
+import { PortalWalletControl } from "@/app/portal-wallet-control";
+import { useWalletAgent, AgentBadge, type RegisteredAgent } from "@/app/wallet-agent";
+import type { PredictionAsset } from "@/lib/auevo/prediction-assets";
+
+/**
+ * The live, clickable version of "try the Prediction pipeline" — same
+ * information as the step list this replaces, but as two signed
+ * requests instead of curl commands. Nothing here ever sends an
+ * on-chain transaction or spends gas: register_agent/post_claim are
+ * free signed HTTP requests (src/lib/social/auth.ts's scheme),
+ * independently re-implemented here the same way sdk/ does, since this
+ * is a different trust boundary (browser, not a server or CLI).
+ */
+
+function hexNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha256Hex(raw: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function canonicalMessage(method: string, path: string, timestamp: number, nonce: string, bodyHash: string): string {
+  return `${method}\n${path}\n${timestamp}\n${nonce}\n${bodyHash}`;
+}
+
+const inputClass = "portal-input w-full rounded-[3px] px-3.5 py-2.5 text-sm";
+const buttonClass = "portal-btn-primary px-4 py-2.5 text-sm disabled:opacity-50";
+
+const DURATIONS = [
+  { label: "1 minute", ms: 60_000 },
+  { label: "5 minutes", ms: 5 * 60_000 },
+  { label: "1 hour", ms: 60 * 60_000 },
+  { label: "1 day", ms: 24 * 60 * 60_000 },
+];
+
+interface LiveMarket {
+  id: string;
+  slug: string;
+  question: string;
+  category: string | null;
+  outcomes: string[];
+  outcome_prices: string[];
+  end_date: string;
+  volume_24hr: number | null;
+  liquidity: number | null;
+}
+
+const PLAY_ZONE_STEPS = ["Connect wallet", "Register agent", "Make a prediction"] as const;
+
+function PlayZoneTracker({ current }: { current: 1 | 2 | 3 | 4 }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {PLAY_ZONE_STEPS.map((label, i) => {
+        const n = i + 1;
+        const done = current > n;
+        const active = current === n;
+        return (
+          <div key={label} className="flex items-center gap-1.5">
+            {i > 0 && <span className={`h-px w-4 sm:w-8 ${done ? "bg-[#c9ad70]/60" : "bg-white/[0.08]"}`} />}
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium ${
+                  done ? "bg-[#c9ad70] text-white" : active ? "border border-[#c9ad70] text-[#ddc797]" : "border border-white/[0.12] text-[#5f6875]"
+                }`}
+              >
+                {done ? "✓" : n}
+              </span>
+              <span className={`hidden text-xs sm:inline ${active ? "text-[#ece8df]" : done ? "text-[#8b94a1]" : "text-[#5f6875]"}`}>{label}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function AuevoPredictionTryIt({ assets }: { assets: PredictionAsset[] }) {
+  const { address, isConnected } = useAccount();
+  const { agent, setAgent, checked } = useWalletAgent(address);
+  const [posted, setPosted] = useState(false);
+  const [mode, setMode] = useState<"price" | "event">("price");
+
+  // Arriving from /start with ?agent=&handle= — already registered, skip straight to the bet.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("agent");
+    const handle = params.get("handle");
+    if (id && handle) setAgent({ id, handle });
+  }, [setAgent]);
+
+  const currentStep: 1 | 2 | 3 | 4 = posted ? 4 : agent ? 3 : isConnected ? 2 : 1;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="portal-kicker !text-[#d6ae61]">Play Zone</div>
+          <h2 className="mt-1.5 text-base font-medium text-[#ece8df]">Three steps. No money, no gas.</h2>
+          <p className="mt-1.5 max-w-lg text-sm leading-6 text-[#8b94a1]">
+            Your agent will make one public, timestamped bet on a real stock price. In a few minutes you&apos;ll see
+            whether it was right — that result becomes a permanent, public mark on its record. Every step below is
+            just a signature in your wallet, never a blockchain transaction.
+          </p>
+        </div>
+        <PortalWalletControl />
+      </div>
+
+      <div className="mt-5 border-y border-white/[0.06] py-3.5">
+        <PlayZoneTracker current={currentStep} />
+      </div>
+
+      {!isConnected ? (
+        <p className="mt-5 text-sm text-[#7a8390]">Connect a wallet above to start — it becomes the key that speaks for your agent.</p>
+      ) : !checked ? (
+        <p className="mt-5 text-sm text-[#7a8390]">Checking this wallet for an existing agent…</p>
+      ) : agent ? (
+        <div className="mt-5 flex flex-col gap-4">
+          <AgentBadge agent={agent} onReset={() => setAgent(null)} />
+          <div className="flex gap-2">
+            {(["price", "event"] as const).map((m) => (
+              <button
+                key={m}
+                className={`rounded-[3px] border px-3 py-1.5 text-xs transition ${
+                  mode === m ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+                }`}
+                onClick={() => setMode(m)}
+              >
+                {m === "price" ? "SPY price bet" : "Live Polymarket event"}
+              </button>
+            ))}
+          </div>
+          {mode === "price" ? (
+            <ClaimStep agent={agent} assets={assets} onPosted={() => setPosted(true)} />
+          ) : (
+            <EventBetStep agent={agent} onPosted={() => setPosted(true)} />
+          )}
+        </div>
+      ) : (
+        <div className="mt-5">
+          <RegisterStep controllerAddress={address!} onRegistered={setAgent} />
+          <ExistingAgentLink onUse={setAgent} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A section title inside a Play Zone step — the step's own number/progress is shown once, by PlayZoneTracker above, not repeated here. */
+function StepLabel({ title }: { title: string }) {
+  return <span className="text-sm font-medium text-[#ece8df]">{title}</span>;
+}
+
+function RegisterStep({ controllerAddress, onRegistered }: { controllerAddress: string; onRegistered: (a: RegisteredAgent) => void }) {
+  const [handle, setHandle] = useState("");
+  const [bio, setBio] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const { signMessageAsync } = useSignMessage();
+
+  const handleValid = /^[a-z0-9_]{3,32}$/.test(handle);
+
+  async function handleRegister() {
+    setError(null);
+    setPending(true);
+    try {
+      const timestamp = Date.now();
+      const message = `register\n${handle}\n${timestamp}`;
+      const signature = await signMessageAsync({ message });
+
+      const res = await fetch("/api/agents/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ handle, controllerAddress, timestamp, signature, bio: bio || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      onRegistered({ id: json.id, handle: json.handle });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <StepLabel title="Give your agent a name" />
+      <p className="text-xs leading-5 text-[#7a8390]">
+        This is a public identity, not an account — there&apos;s no password or email. Your wallet signature proves
+        it&apos;s really you controlling it later. Pick any free handle.
+      </p>
+      <input
+        aria-label="Agent handle"
+        className={inputClass}
+        placeholder="Choose a handle (3-32 chars, a-z 0-9 _)"
+        value={handle}
+        onChange={(e) => setHandle(e.target.value.toLowerCase())}
+      />
+      <input aria-label="Agent description" className={inputClass} placeholder="A short description (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
+      <button className={`${buttonClass} self-start`} disabled={!handleValid || pending} onClick={handleRegister}>
+        {pending ? "Signing…" : "Sign & register"}
+      </button>
+      {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
+    </div>
+  );
+}
+
+function ExistingAgentLink({ onUse }: { onUse: (a: RegisteredAgent) => void }) {
+  const [open, setOpen] = useState(false);
+  const [id, setId] = useState("");
+  const [handle, setHandle] = useState("");
+
+  if (!open) {
+    return (
+      <button className="mt-3 text-xs text-[#7a8390] underline hover:text-white" onClick={() => setOpen(true)}>
+        Already registered an agent with this wallet? Use it instead.
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <input className={`${inputClass} flex-1`} placeholder="agent id (uuid)" value={id} onChange={(e) => setId(e.target.value)} />
+      <input className={`${inputClass} flex-1`} placeholder="handle" value={handle} onChange={(e) => setHandle(e.target.value)} />
+      <button className={buttonClass} disabled={!id || !handle} onClick={() => onUse({ id, handle })}>
+        Use
+      </button>
+    </div>
+  );
+}
+
+function ClaimStep({ agent, assets, onPosted }: { agent: RegisteredAgent; assets: PredictionAsset[]; onPosted: () => void }) {
+  const [selected, setSelected] = useState<PredictionAsset | null>(assets[0] ?? null);
+  const [direction, setDirection] = useState<"up" | "down">("up");
+  const [targetPrice, setTargetPrice] = useState("");
+  const [durationMs, setDurationMs] = useState(DURATIONS[1].ms);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [posted, setPosted] = useState<{ id: string; deadline: string } | null>(null);
+  const { signMessageAsync } = useSignMessage();
+
+  const parsedPrice = Number(targetPrice);
+  const canSubmit = Boolean(selected) && Number.isFinite(parsedPrice) && parsedPrice > 0;
+
+  async function handlePost() {
+    if (!selected) return;
+    setError(null);
+    setPending(true);
+    try {
+      const deadline = new Date(Date.now() + durationMs).toISOString();
+      const payload = {
+        topic: "test",
+        body: `Prediction: ${selected.ticker} will be ${direction === "up" ? "at or above" : "at or below"} ${parsedPrice} by ${deadline}.`,
+        kind: "claim",
+        claim: { asset: selected.address.toLowerCase(), chainId: selected.chainId, direction, targetPrice: parsedPrice, deadline },
+      };
+      const rawBody = JSON.stringify(payload);
+      const path = `/api/agents/${agent.id}/post`;
+      const timestamp = Date.now();
+      const nonce = hexNonce();
+      const message = canonicalMessage("POST", path, timestamp, nonce, await sha256Hex(rawBody));
+      const signature = await signMessageAsync({ message });
+
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ payload: rawBody, timestamp, nonce, signature }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setPosted({ id: json.id, deadline });
+      onPosted();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Posting the claim failed");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (posted) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        <StepLabel title="Bet placed" />
+        <div className="rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
+          <p>
+            Your bet is now on the record, permanently — marked <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>.
+            Nobody can check the answer early, including you: AUEVO reads {selected?.ticker ?? "the asset"}&apos;s real price automatically
+            at <strong className="text-[#ece8df]">{new Date(posted.deadline).toLocaleString()}</strong> and marks it right or wrong within
+            5 minutes after that.
+          </p>
+          <a href={`/agents/${agent.handle}`} className="mt-2 inline-block text-[#a99cff] underline hover:text-white">
+            Open @{agent.handle}&apos;s Passport to check later →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  function fillGuaranteedExample() {
+    setDirection("down");
+    setTargetPrice(selected ? String(Math.ceil(selected.priceUsd * 2)) : "999999");
+    setDurationMs(DURATIONS[0].ms);
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <StepLabel title="Pick a real asset" />
+      <p className="text-xs leading-5 text-[#7a8390]">
+        Every one of these is an already-tokenized real asset on Robinhood Chain, priced live from the same feed
+        AUEVO settles against — a stock, ETF, or commodity, not a toy.
+      </p>
+      {assets.length === 0 ? (
+        <p className="text-xs text-[#ff7b82]">No priced assets available right now — try again shortly.</p>
+      ) : (
+        <div className="flex max-h-[180px] flex-wrap gap-1.5 overflow-y-auto pr-1">
+          {assets.map((a) => (
+            <button
+              key={`${a.chainId}:${a.address}`}
+              type="button"
+              className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition outline-none focus-visible:ring-2 focus-visible:ring-[#c9ad70]/50 focus-visible:ring-offset-0 ${
+                selected?.address === a.address ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+              }`}
+              onClick={() => setSelected(a)}
+            >
+              {a.ticker}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <StepLabel title={selected ? `Make a bet: where will ${selected.ticker} be?` : "Make a bet"} />
+
+      <div className="flex items-center justify-between rounded-[3px] border border-white/[0.07] bg-[#0d1016] px-4 py-2.5">
+        <span className="text-sm text-[#7a8390]">{selected ? `${selected.ticker} right now` : "pick an asset above"}</span>
+        <span className="font-medium text-[#ece8df]">{selected ? `$${selected.priceUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}</span>
+      </div>
+
+      <p className="text-xs leading-5 text-[#7a8390]">
+        Pick a direction and a price. Example:{" "}
+        {selected
+          ? `"at or above $${Math.round(selected.priceUsd * 0.99)}" is an easy bet right now; "at or above $${Math.round(selected.priceUsd * 1.5)}" is a hard one.`
+          : `"at or above <lower than today's price>" is an easy bet; far above today's price is a hard one.`}
+      </p>
+      <div className="flex gap-2">
+        {(["up", "down"] as const).map((d) => (
+          <button
+            key={d}
+            className={`flex-1 rounded-[3px] border px-3 py-2.5 text-sm transition ${
+              direction === d ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+            }`}
+            onClick={() => setDirection(d)}
+          >
+            {d === "up" ? "↑ will be at or above" : "↓ will be at or below"}
+          </button>
+        ))}
+      </div>
+      <input
+        className={inputClass}
+        placeholder="your target price, in USD"
+        value={targetPrice}
+        onChange={(e) => setTargetPrice(e.target.value)}
+        inputMode="decimal"
+      />
+      <button type="button" className="self-start text-xs text-[#7a8390] underline hover:text-white" onClick={fillGuaranteedExample}>
+        Just show me how it works (fills in a bet that will obviously resolve correct, settling in 1 minute)
+      </button>
+      <div className="flex gap-2">
+        {DURATIONS.map((d) => (
+          <button
+            key={d.label}
+            className={`flex-1 rounded-[3px] border px-2 py-2 text-xs transition ${
+              durationMs === d.ms ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+            }`}
+            onClick={() => setDurationMs(d.ms)}
+          >
+            settles in {d.label}
+          </button>
+        ))}
+      </div>
+      <button className={`${buttonClass} self-start`} disabled={!canSubmit || pending} onClick={handlePost}>
+        {pending ? "Signing…" : "Sign & post prediction"}
+      </button>
+      {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
+    </div>
+  );
+}
+
+function EventBetStep({ agent, onPosted }: { agent: RegisteredAgent; onPosted: () => void }) {
+  const [markets, setMarkets] = useState<LiveMarket[] | null>(null);
+  const [marketsError, setMarketsError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [posted, setPosted] = useState<{ id: string; deadline: string; question: string } | null>(null);
+  const { signMessageAsync } = useSignMessage();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auevo/markets")
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        if (json.error) throw new Error(json.error);
+        setMarkets(json.markets ?? []);
+      })
+      .catch((err) => {
+        if (!cancelled) setMarketsError(err instanceof Error ? err.message : "Failed to load live markets");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selected = markets?.find((m) => m.id === selectedId) ?? null;
+  const canSubmit = Boolean(selected && selectedOutcome);
+
+  async function handlePost() {
+    if (!selected || !selectedOutcome) return;
+    setError(null);
+    setPending(true);
+    try {
+      const payload = {
+        topic: "test",
+        body: `Event bet: "${selected.question}" will resolve "${selectedOutcome}" by ${selected.end_date}.`.slice(0, 512),
+        kind: "event_bet",
+        eventBet: { marketId: selected.id, outcome: selectedOutcome },
+      };
+      const rawBody = JSON.stringify(payload);
+      const path = `/api/agents/${agent.id}/post`;
+      const timestamp = Date.now();
+      const nonce = hexNonce();
+      const message = canonicalMessage("POST", path, timestamp, nonce, await sha256Hex(rawBody));
+      const signature = await signMessageAsync({ message });
+
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ payload: rawBody, timestamp, nonce, signature }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setPosted({ id: json.id, deadline: selected.end_date, question: selected.question });
+      onPosted();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Posting the event bet failed");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (posted) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        <StepLabel title="Bet placed" />
+        <div className="rounded-[3px] border border-[#4fc6a4]/25 bg-[#4fc6a4]/[0.07] px-4 py-3.5 text-sm leading-6 text-[#aeb5bf]">
+          <p>
+            Your bet on &ldquo;{posted.question}&rdquo; is now on the record, permanently — marked{" "}
+            <code className="rounded bg-[#11141b] px-1 py-0.5 text-xs">pending</code>. AUEVO settles it only against Polymarket&apos;s own
+            public resolution, after <strong className="text-[#ece8df]">{new Date(posted.deadline).toLocaleString()}</strong> — nobody,
+            including you, can check or change the answer early.
+          </p>
+          <a href={`/agents/${agent.handle}`} className="mt-2 inline-block text-[#a99cff] underline hover:text-white">
+            Open @{agent.handle}&apos;s Passport to check later →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <StepLabel title="Pick a live event to bet on" />
+      <p className="text-xs leading-5 text-[#7a8390]">
+        Real Polymarket markets, synced hourly. <strong className="text-[#ece8df]">No stake — this is a free, reputation-only
+        prediction, settled against Polymarket&apos;s own public resolution. No money ever moves through Auevo.</strong>
+      </p>
+
+      {marketsError && <p className="text-xs text-[#ff7b82]">{marketsError}</p>}
+      {!markets && !marketsError && <p className="text-xs text-[#7a8390]">Loading live markets…</p>}
+      {markets && markets.length === 0 && <p className="text-xs text-[#7a8390]">No open markets cached yet — check back shortly.</p>}
+
+      {/* scroll-auto, no `transition`: same hardening as skill-try-it.tsx's pool list —
+          this app sets html{scroll-behavior:smooth} globally, and selecting a market here
+          also grows that row's own height (the outcome buttons below render only when
+          selected), so an animated scroll/color-fade mid-reflow is the likely cause of a
+          row visually overlapping its neighbor right after a click. */}
+      <div className="flex max-h-[420px] scroll-auto flex-col gap-2 overflow-y-auto pr-1">
+        {markets?.map((m) => {
+          const isSelected = m.id === selectedId;
+          return (
+            <div
+              key={m.id}
+              className={`rounded-[3px] border px-3.5 py-3 ${
+                isSelected ? "border-[#c9ad70]/40 bg-[#c9ad70]/[0.08]" : "border-white/[0.07] bg-[#0d1016]"
+              }`}
+            >
+              <button type="button" className="w-full text-left" onClick={() => setSelectedId(isSelected ? null : m.id)}>
+                <p className="text-sm text-[#ece8df]">{m.question}</p>
+                <p className="mt-1 text-[11px] text-[#7a8390]">
+                  Ends {new Date(m.end_date).toLocaleDateString()} · {m.category ?? "uncategorized"}
+                </p>
+              </button>
+              {isSelected && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {m.outcomes.map((outcome, i) => {
+                    const price = Number(m.outcome_prices[i]);
+                    // One decimal place always, not Math.round() to a whole
+                    // number — a market at 99.7%/0.3% (still genuinely live,
+                    // just lopsided) would otherwise round to a flat
+                    // "100%"/"0%" and read as already-resolved.
+                    const pct = Number.isFinite(price) ? `${(price * 100).toFixed(1)}%` : "—";
+                    const chosen = selectedOutcome === outcome;
+                    return (
+                      <button
+                        key={outcome}
+                        type="button"
+                        className={`rounded-[3px] border px-2.5 py-1.5 text-xs transition outline-none focus-visible:ring-2 focus-visible:ring-[#4fc6a4]/50 focus-visible:ring-offset-0 ${
+                          chosen ? "border-[#4fc6a4]/40 bg-[#4fc6a4]/[0.12] text-[#ece8df]" : "border-white/[0.07] text-[#8b94a1] hover:text-[#ece8df]"
+                        }`}
+                        onClick={() => setSelectedOutcome(outcome)}
+                      >
+                        {outcome} · {pct}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <button className={`${buttonClass} self-start`} disabled={!canSubmit || pending} onClick={handlePost}>
+        {pending ? "Signing…" : "Sign & post event bet"}
+      </button>
+      {error && <p className="text-xs text-[#ff7b82]">{error}</p>}
+    </div>
+  );
+}

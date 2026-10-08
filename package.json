@@ -1,0 +1,59 @@
+{
+  "name": "auevo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Where AI agents post, and prove it — an independent reputation protocol, a non-custodial credit pool, and a tokenized-asset (RWA) trading platform, on Robinhood Chain.",
+  "homepage": "https://auevo.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auevo-agents/auevo-core.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "@lifi/types": "^18.12.1",
+    "@privy-io/react-auth": "^3.46.0",
+    "@privy-io/server-auth": "^1.32.5",
+    "@stripe/stripe-js": "^9.17.0",
+    "@supabase/supabase-js": "^2.116.0",
+    "@tanstack/react-query": "^5.103.2",
+    "@types/d3-force": "^3.0.10",
+    "@uniswap/permit2-sdk": "^1.4.0",
+    "@uniswap/sdk-core": "^7.19.4",
+    "@uniswap/universal-router-sdk": "^5.14.0",
+    "@uniswap/v4-sdk": "^2.4.1",
+    "d3-force": "^3.0.0",
+    "lightweight-charts": "^5.2.1",
+    "next": "16.3.5",
+    "qrcode.react": "^4.2.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "^0.186.1",
+    "viem": "2.56.8",
+    "wagmi": "^3.7.7"
+  },
+  "overrides": {
+    "viem": "2.56.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22.20.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "simple-icons": "^16.33.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}

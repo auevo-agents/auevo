@@ -1,0 +1,212 @@
+/* Shared non-RWA visual language. The live ledger and transaction flows are unchanged. */
+.portal-page,.docs-shell,.token-page,.scanner-premium,.fees-premium{
+ --ink:#f3eee3;--muted:#91a69a;--panel:#10241b;--panel-2:#0b1b14;--line:rgba(150,185,157,.16);
+ color:#f3eee3;background:radial-gradient(ellipse at 70% 0%,#17322366,transparent 48%),#07110e;color-scheme:dark;
+}
+.auevo-portal-header{background:#07110ef5;border-color:#263b30;padding-inline:clamp(20px,4.5vw,72px)}
+/* Homepage hero's second line — a flowing gradient instead of one flat
+   color, same lilac/teal/gold/mint palette as the hero image's glass
+   shapes. The gradient repeats its first stop at the end so the loop
+   (0%->100% background-position) never visibly seams. */
+.hero-shimmer-text{background:linear-gradient(90deg,#c9a8f2,#5ee6cf,#e3b968,#8fe6b8,#c9a8f2);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:#f3eee3;-webkit-text-fill-color:transparent;animation:hero-shimmer 7s linear infinite}
+@keyframes hero-shimmer{from{background-position:0% 50%}to{background-position:100% 50%}}
+@media(prefers-reduced-motion:reduce){.hero-shimmer-text{animation:none;background-position:30% 50%}}
+.auevo-portal-header>div:first-child{height:76px;max-width:1440px}
+.auevo-portal-header .portal-primary-nav{background:none;border:0;box-shadow:none;padding:0;gap:6px}
+.auevo-portal-header .portal-primary-nav>a,.auevo-portal-header .portal-primary-nav>div>a{position:relative;background:none;box-shadow:none;border-radius:0;padding:25px 17px;color:#bdc9c1;font-size:14px}
+.auevo-portal-header .portal-primary-nav>a>svg,.auevo-portal-header .portal-primary-nav>div>a>svg{display:none}
+.auevo-portal-header .portal-primary-nav [aria-current=page]{color:#f3eee3}
+.auevo-portal-header .portal-primary-nav [aria-current=page]:after{content:'';position:absolute;left:16px;right:16px;bottom:0;height:2px;background:#d5b76e}
+.auevo-portal-header .auevo-wordmark{color:#d6ba7b}
+.portal-page .portal-heading,.docs-title,.token-page h1,.scanner-premium h1,.legal-page h1{font-family:Georgia,'Times New Roman',serif;font-weight:400;color:#f3eee3;letter-spacing:-.035em}
+.portal-page .portal-gradient-text{background:none;color:#f3eee3;-webkit-text-fill-color:#f3eee3}
+.portal-page .portal-copy{color:#98aea0;line-height:1.75}
+.portal-page .portal-kicker{color:#cbb376;letter-spacing:.18em}
+.portal-page .portal-panel,.portal-page .portal-hero{background:linear-gradient(145deg,rgba(25,51,37,.8),rgba(10,27,19,.94));border:1px solid rgba(130,169,137,.2);border-radius:14px;box-shadow:inset 0 1px 0 #c8e1bb08,0 18px 45px #00000016}
+.portal-page .portal-btn-primary,.auevo-portal-header .portal-btn-primary{border:1px solid #3db981;background:#2caf78;color:#f7fff9;border-radius:8px;box-shadow:inset 0 1px 0 #ffffff20;transition:background .2s}
+.portal-page .portal-btn-primary:hover,.auevo-portal-header .portal-btn-primary:hover{background:#35c188}
+.portal-page .portal-btn-secondary{border:1px solid #76927655;border-radius:8px;background:#10241b;color:#dedeca;box-shadow:none}
+.portal-page .portal-input{background:#071710;border:1px solid #627d6055;border-radius:8px;color:#f1eee2;min-width:0}
+.portal-page :is(a,button,input,summary):focus-visible,.auevo-portal-header :is(a,button):focus-visible{outline:2px solid #d7ba72;outline-offset:4px}
+.portal-page .portal-chip{border-radius:5px;background:#b5963c0b;border-color:#b5963c33;color:#cdbd8b}
+.portal-page table{font-size:13px}.portal-page th{font-weight:400;color:#c1cdbf}.portal-page td{border-color:#709c7620}
+.portal-page .home-cinematic-hero{min-height:550px}.portal-page .home-cinematic-image{background-image:url('/images/auevo-crystal-hero.webp');background-size:auto 100%;background-position:right center;filter:saturate(.94) brightness(.86)}
+.portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110e 0%,#07110ef5 27%,#07110e9c 45%,#07110e00 72%)}
+.portal-page .home-cinematic-topmask{display:none}.portal-page .home-cinematic-bottom{background:linear-gradient(0deg,#07110e,transparent)}
+/* The stats+ticker bar breaks out of the page's centered max-width to run
+   edge-to-edge — the ticker needs real room to scroll, and a full-bleed
+   bar reads as "live" in a way a boxed card doesn't. */
+.universe-bar{position:relative;z-index:2;margin:-12px 0 0;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;border-top:1px solid #9d9e5433;border-bottom:1px solid #9d9e5433;background:linear-gradient(165deg,#1a2c22,#0b1912);box-shadow:inset 0 1px 0 #e6d7a322,0 14px 40px #0007;display:flex;align-items:stretch}
+.universe-stats{flex:0 0 auto;display:grid;grid-auto-flow:column;gap:0;padding:20px clamp(20px,4.5vw,72px)}
+.universe-stats>div{padding:0 22px;text-align:center;border-right:1px solid #91ad7626}.universe-stats>div:first-child{padding-left:0}.universe-stats>div:last-child{border-right:0}
+/* Live agent-action strip, filling the rest of .universe-bar. A pure-CSS
+   loop (duplicated content + translateX(-50%), same trick as
+   landing-ticker.tsx) so it keeps scrolling smoothly with no new data;
+   agent-activity-ticker.tsx only ever grows the item list, never resets it,
+   so a genuinely new Proof Event just joins the loop. */
+.activity-ticker{flex:1 1 auto;min-width:0;border-left:1px solid #91ad7626;overflow:hidden;white-space:nowrap;position:relative;display:flex;align-items:center}
+.activity-ticker:before,.activity-ticker:after{content:'';position:absolute;top:0;bottom:0;width:48px;z-index:2;pointer-events:none}
+.activity-ticker:before{left:0;background:linear-gradient(90deg,#0b1912,transparent)}
+.activity-ticker:after{right:0;background:linear-gradient(270deg,#0b1912,transparent)}
+.activity-ticker-track{display:inline-flex;align-items:center;gap:30px;padding:0 28px;animation-name:activity-ticker-scroll;animation-timing-function:linear;animation-iteration-count:infinite}
+.activity-ticker:hover .activity-ticker-track{animation-play-state:paused}
+@keyframes activity-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.activity-ticker-item{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#9fb0a4}
+.activity-ticker-item b{color:#f2f4ee;font-weight:600}
+.activity-ticker-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:#d6ae61}
+.activity-ticker-dot-verified{background:#42d995}.activity-ticker-dot-failed,.activity-ticker-dot-cancelled{background:#e0735c}.activity-ticker-dot-inconclusive{background:#9aa4ab}
+.activity-ticker-status{text-transform:uppercase;font-size:9px;letter-spacing:.09em;color:#8fa391}
+.activity-ticker-status-verified{color:#8cf0bd}.activity-ticker-status-failed,.activity-ticker-status-cancelled{color:#f0a68c}
+.activity-ticker-time{color:#657265;font-size:10.5px}
+.activity-ticker-dotsep{color:#91ad7640}
+.activity-ticker-empty{flex:1 1 auto;min-width:0;border-left:1px solid #91ad7626;display:flex;align-items:center;padding:0 28px;font-size:12px;color:#7c8c7f}
+@media(max-width:1100px){.activity-ticker,.activity-ticker-empty{display:none}}
+@media(prefers-reduced-motion:reduce){.activity-ticker-track{animation:none}}
+.home-feed-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.home-feed-grid p{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.crystal-motif{width:100%;height:140px;filter:drop-shadow(0 5px 12px #238a5d22)}
+.passport-page .portal-hero{align-self:start}
+.passport-page aside .grid.grid-cols-2>div{background:#11251b;border-color:#74926933;border-radius:10px}
+.proof-hero-visual{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:center;min-width:0}.proof-flow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.proof-flow-stage{text-align:center}.proof-live-feed{min-width:0;align-self:stretch;display:flex;flex-direction:column;justify-content:center}.proof-live-feed>div:last-child>div{flex-wrap:wrap;border-bottom:1px solid #83a97724;padding:9px 0}.proof-section-content>div:first-child{text-align:center;display:block}.proof-section-content>div:first-child p{margin:12px auto 0}.proof-section-content>div>div[class*="rounded-"],.proof-section-content>div>a[class*="rounded-"]{border-radius:12px;border-color:#77966f40;background:#11271c;padding:24px}
+.credit-intro{padding-top:20px}.credit-overview-grid{display:grid;grid-template-columns:1.45fr 1fr 1fr;gap:22px}.credit-overview-grid>section{min-width:0}.credit-schematic{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:35px 0;text-align:center}.credit-schematic>div{position:relative}.credit-schematic p{font-size:11px;color:#91a69a;line-height:1.6;margin-top:8px}.credit-schematic h3{font-family:Georgia,serif;font-size:21px}.credit-arrow{position:absolute;right:-18px;top:72px;color:#d7ba72;font-size:24px}.credit-parameters>div{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #8eab7d26;font-size:12px}.credit-parameters dt{color:#95ab9d}.credit-parameters dd{text-align:right;overflow-wrap:anywhere;max-width:65%;color:#e4dfcd}.credit-subnav{border-bottom:1px solid #78997433;gap:18px;padding-bottom:8px}.credit-subnav [aria-current=page]{background:none;color:#d7ba72;border-bottom:2px solid #d7ba72;border-radius:0}
+.docs-shell .docs-title{font-size:44px}.docs-shell .docs-article{color:#c2cec3}.docs-shell .docs-sidebar{background:#0c1e15;border-color:#6b8b6040}.docs-shell .docs-toc{background:#10241b;border:1px solid #7d996533;border-radius:12px}.docs-shell code{color:#d7c18b}
+.token-page .token-stat,.scanner-premium :is(.scan-card,.scan-section,.scan-sidebar),.fees-premium .fee-card{background:#11251b;border:1px solid #6f8b5d40;border-radius:12px}.token-page .token-hero h1{color:#ecd9a3}.token-page .token-hero{background:radial-gradient(ellipse at center,#1b3a2466,transparent 65%)}
+@media(max-width:1100px){.credit-overview-grid{grid-template-columns:1fr 1fr}.credit-overview-grid>section:first-child{grid-column:1/-1}.proof-hero-visual{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.portal-page .home-cinematic-hero{min-height:610px}.portal-page .home-cinematic-image{background-size:auto 100%;background-position:65% center;opacity:.5}.portal-page .home-cinematic-left{background:linear-gradient(90deg,#07110ef0,#07110e80)}.universe-bar{flex-direction:column}.universe-stats{display:grid;grid-template-columns:repeat(2,1fr);grid-auto-flow:row;margin:0;padding:18px 20px;row-gap:18px}.universe-stats>div:nth-child(2){border:0}.home-feed-grid,.credit-overview-grid,.proof-hero-visual{grid-template-columns:1fr}.credit-schematic{gap:10px}.credit-schematic .crystal-motif{height:110px}.proof-live-feed{min-height:220px}.portal-page h1{overflow-wrap:anywhere}.credit-subnav{gap:6px}}
+.home-feed-avatar{width:50px;height:50px;flex-shrink:0;border:1px solid #b69e5244;border-radius:9px;background:#24372855}.home-feed-avatar svg{width:100%;height:100%}
+/* Secondary protocol and onboarding cards follow the same panel geometry. */
+.portal-page .portal-shell [class*="rounded-[3px]"][class*="border"],.portal-page .portal-shell [class*="rounded-[4px]"][class*="border"]{border-radius:10px}
+.portal-page .portal-shell :is(.text-\[\#a99cff\],.text-\[\#b1a3ff\],.text-\[\#c6b6ff\]){color:#d7ba72}
+
+.site.scanner-premium{background:radial-gradient(ellipse at 70% 0%,#17322366,transparent 48%),#07110e}.scanner-premium .scan-sidebar h1{font-family:Georgia,serif;font-weight:400}.scanner-premium .scan-sidebar h1 span{color:#d7ba72}
+
+/* Atelier: local typography, dark glass, champagne metal and living light. */
+@font-face{font-family:Auevo Sans;src:url('/fonts/manrope.woff') format('woff');font-weight:200 800;font-display:swap}
+@font-face{font-family:Auevo Editorial;src:url('/fonts/cormorant-garamond.woff') format('woff');font-weight:300 700;font-display:swap}
+:is(.portal-page,.docs-shell,.token-page,.scanner-premium,.fees-premium,.auevo-design,.auevo-portal-header){font-family:'Auevo Sans',Arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:450}
+:is(.portal-page,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-heading,h1,h2.font-serif,h3.font-serif),.auevo-design h1,.docs-title,.auevo-portal-header .auevo-wordmark-gold{font-family:'Auevo Editorial',Georgia,serif!important;font-weight:500!important;letter-spacing:-.025em;line-height:1.05}
+.portal-page h1{font-weight:500!important}.portal-page :is(p,.portal-copy){letter-spacing:.005em}.portal-page :is(.portal-kicker,[class*='uppercase']){font-weight:550}.portal-page .portal-kicker{font-size:10px;letter-spacing:.21em}
+.portal-page,.docs-shell{background:radial-gradient(ellipse at 75% 15%,#19372a33,transparent 45%),#060f0c}
+.portal-page .portal-panel,.portal-page .portal-hero{position:relative;border:1px solid #8ca18738;border-radius:16px!important;background:radial-gradient(ellipse at 5% 0%,#37554126,transparent 48%),linear-gradient(145deg,#10221bdb,#081610f5 65%);box-shadow:inset 0 1px 0 #e5edc20d,inset 0 -1px 0 #0005,0 18px 50px #0005;transition:border-color .4s,box-shadow .4s,transform .5s cubic-bezier(.2,.7,.2,1);overflow:hidden}
+.portal-page .portal-panel:hover{border-color:#b8aa6555;box-shadow:inset 0 1px 0 #e5edc21a,0 22px 55px #0006,0 0 35px #547e3e08}
+.portal-page .portal-panel:before{content:'';pointer-events:none;position:absolute;left:12%;right:12%;top:0;height:1px;background:linear-gradient(90deg,transparent,#d8c89355,transparent)}
+.portal-page .portal-input{background:linear-gradient(160deg,#102019,#070f0c);border:1px solid #8a9c7655;border-radius:10px;box-shadow:inset 0 2px 5px #0004;min-height:44px}.portal-page .portal-input:focus{border-color:#d5bb78;box-shadow:0 0 0 3px #d5bb7812;outline:none}
+:is(.portal-page,.auevo-design,.auevo-portal-header) .portal-btn-primary{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(110deg,#aa8744 0%,#dbbf7b 35%,#f0dc9f 50%,#cfad63 78%,#ae8b45 100%)!important;border:1px solid #edd89d99!important;border-radius:9px!important;color:#182017!important;text-shadow:0 1px 0 #fff3;font-family:'Auevo Sans',Arial,sans-serif;font-weight:650!important;letter-spacing:.01em;box-shadow:inset 0 1px 0 #fff7,inset 0 -1px 0 #72522388,0 6px 18px #0005,0 0 26px #e9c87c0c!important;transition:transform .25s,filter .25s,box-shadow .25s}
+:is(.portal-page,.auevo-design,.auevo-portal-header) .portal-btn-primary:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:inset 0 1px 0 #fff9,0 9px 24px #0006,0 0 24px #e9c87c22!important}
+:is(.portal-page,.auevo-design,.auevo-portal-header) .portal-btn-primary:before{content:'';position:absolute;pointer-events:none;inset:-50%;background:linear-gradient(110deg,transparent 40%,#fff4 49%,transparent 58%);transform:translateX(-75%);animation:atelier-sheen 8s ease-in-out infinite}
+:is(.portal-page,.auevo-design) .portal-btn-primary:disabled{opacity:.4;filter:saturate(.4);transform:none}
+.portal-page .portal-btn-secondary{background:linear-gradient(150deg,#1d3026,#0b1912);border:1px solid #b0ad7255;color:#e4dfc8;box-shadow:inset 0 1px 0 #ffffff08,0 5px 18px #0003;border-radius:9px;transition:transform .3s,border-color .3s}.portal-page .portal-btn-secondary:hover{border-color:#cbb47699;transform:translateY(-2px)}
+.auevo-portal-header{box-shadow:0 8px 28px #0002}.auevo-portal-header .auevo-wordmark-gold{font-size:29px!important;letter-spacing:.08em!important}.auevo-portal-header .auevo-tree-mark{width:39px;height:39px;border:1px solid #baa46588;border-radius:5px;background:#102019;padding:4px}
+.portal-page .home-cinematic-image{animation:atelier-hero 20s ease-in-out infinite;transform-origin:75% 60%}.home-feed-grid .portal-panel{padding:24px}.home-feed-grid .home-feed-avatar{box-shadow:inset 0 1px 0 #eed69c22,0 4px 12px #0006}.universe-stats .portal-stat>div:first-child{font-family:'Auevo Editorial',Georgia,serif;font-size:34px;font-weight:600}
+.credit-intro h1{font-size:clamp(48px,5vw,76px)}.credit-overview-grid{grid-template-columns:1.65fr 1fr 1fr;gap:20px}.credit-overview-grid>section{padding:28px}.credit-overview-grid h2{font-family:'Auevo Sans',Arial,sans-serif;font-size:20px;font-weight:600}.credit-schematic{margin:22px -12px 30px;gap:4px}.credit-schematic h3{font-family:'Auevo Sans',Arial,sans-serif;font-size:16px;font-weight:600}.credit-arrow{top:96px;right:-15px;text-shadow:0 0 12px #e4bc5b88;animation:atelier-flow 3.8s ease-in-out infinite}
+.passport-page .portal-hero{background:#07110e}.passport-page aside .grid.grid-cols-2>div{background:linear-gradient(145deg,#152a20,#0c1b14);box-shadow:inset 0 1px 0 #e2d09712,0 6px 20px #0003;border-color:#94a47e40;border-radius:12px}
+/* The agent card, styled after a real passport biodata page: a bound
+   "cover" band up top (issuing authority + document title), a photo next
+   to holder data in labeled fields, and a decorative machine-readable
+   zone at the bottom — see en.wikipedia.org/wiki/Machine-readable_passport
+   for the seven-zone layout this borrows the shape of. Nothing here is a
+   real MRZ encoding; it's typography, not a credential. */
+.agent-passport{position:relative;overflow:hidden;border-radius:8px;border:1px solid #c9ad6a4d;background:linear-gradient(165deg,#132a1d,#081610 70%);box-shadow:inset 0 0 0 1px #0f2117,inset 0 1px 0 #e9d58d14,0 18px 45px #0005}
+.agent-passport:before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.05;background-image:repeating-linear-gradient(55deg,#d8c593 0 1px,transparent 1px 13px),repeating-linear-gradient(-35deg,#d8c593 0 1px,transparent 1px 13px)}
+.agent-passport-band{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid #c9ad6a40;background:linear-gradient(90deg,#0d2117,#132a1d 55%,#0d2117)}
+.agent-passport-brand{display:flex;align-items:center;gap:9px}
+.agent-passport-brand .auevo-tree-mark{width:22px;height:22px}
+.agent-passport-brand-text{display:flex;flex-direction:column;line-height:1.15}
+.agent-passport-brand-text b{font-family:Georgia,'Times New Roman',serif;font-size:14px;font-weight:600;letter-spacing:.14em;color:#f1e6c2}
+.agent-passport-brand-text span{font-size:8px;letter-spacing:.22em;color:#9fae85}
+.agent-passport-body{position:relative;padding:18px}
+.agent-passport-id-row{display:flex;gap:14px;align-items:flex-end}
+.agent-passport-photo{width:68px;height:68px;flex-shrink:0;border:1px solid #d5bb7899;border-radius:6px;background:#1a2e22;box-shadow:inset 0 1px 0 #e9d58d33,0 6px 16px #0005}
+.agent-passport-photo svg{width:100%;height:100%}
+.agent-passport-holder-label{font-size:8.5px;letter-spacing:.2em;color:#8a9a86;text-transform:uppercase}
+.agent-passport-handle{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:22px;letter-spacing:.01em;color:#f3eee3;line-height:1.15;margin-top:2px}
+.agent-passport-bio{margin-top:10px;font-size:11.5px;line-height:1.6;color:#8b9a90}
+.agent-passport-fields{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #c9ad6a2e}
+.agent-passport-field{padding:8px 0;border-bottom:1px solid #c9ad6a1f}
+.agent-passport-field:nth-child(odd){padding-right:12px;border-right:1px solid #c9ad6a1f}
+.agent-passport-field:nth-child(even){padding-left:12px}
+.agent-passport-field.agent-passport-field--span{grid-column:1/-1;padding-right:0;padding-left:0;border-right:0}
+.agent-passport-field-label{display:flex;align-items:center;font-size:8px;letter-spacing:.14em;color:#7f9080;text-transform:uppercase}
+.agent-passport-field-value{margin-top:3px;font-size:12px;color:#d9d4c0;font-family:'Auevo Sans',Arial,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-passport-field-value .compact-wallet-address{padding:0;border:0;background:none;font-size:11.5px}
+.agent-passport-tags{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+.agent-passport-mrz{margin-top:14px;border-radius:4px;border:1px solid #c9ad6a2e;background:#081209;padding:9px 11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;letter-spacing:.09em;line-height:1.75;color:#a99a5f;overflow:hidden;white-space:nowrap}
+.agent-passport-footer{display:block;border-top:1px solid #c9ad6a40;background:#0d2117;padding:12px 18px;font-size:11px;color:#d9bf88;text-decoration:none;transition:background .2s}
+.agent-passport-footer:hover{background:#132a1d}
+.portal-page .proof-section-content>div>div[class*='rounded-'],.portal-page .proof-section-content>div>a[class*='rounded-']{background:radial-gradient(ellipse at top,#25412c35,transparent 65%),linear-gradient(150deg,#12241b,#09150f);box-shadow:inset 0 1px 0 #c9d49714,0 14px 35px #0004;border-color:#8ba07944;border-radius:14px;transition:transform .4s,border-color .4s}.portal-page .proof-section-content>div>a:hover{transform:translateY(-4px);border-color:#c8b37677}
+.luxury-atmosphere{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at var(--ambient-x,65%) var(--ambient-y,35%),#a7b57905,transparent 30%)}.luxury-atmosphere i{position:absolute;width:2px;height:2px;border-radius:50%;background:#d9c994;box-shadow:0 0 6px #e3cd78;opacity:0;animation:atelier-dust 20s linear infinite}.luxury-reveal{opacity:.001;translate:0 18px;transition:opacity .85s var(--reveal-delay,0ms),translate .85s cubic-bezier(.2,.7,.2,1) var(--reveal-delay,0ms)}.luxury-reveal.luxury-visible{opacity:1;translate:0 0}
+@keyframes atelier-sheen{0%,65%{transform:translateX(-75%)}90%,100%{transform:translateX(75%)}}
+@keyframes atelier-hero{0%,100%{transform:scale(1.015) translateY(0)}50%{transform:scale(1.04) translateY(-4px)}}
+@keyframes atelier-flow{0%,100%{opacity:.45;transform:translateX(-3px)}50%{opacity:1;transform:translateX(3px)}}
+@keyframes atelier-dust{0%{opacity:0;transform:translate3d(0,30px,0)}20%,70%{opacity:.3}100%{opacity:0;transform:translate3d(35px,-130px,0)}}
+@media(max-width:1100px){.credit-overview-grid{grid-template-columns:1fr 1fr}.credit-overview-grid>section:first-child{grid-column:1/-1}}
+@media(max-width:700px){.credit-overview-grid{grid-template-columns:1fr}.credit-overview-grid>section{padding:22px}.auevo-portal-header .auevo-wordmark-gold{font-size:24px!important}.auevo-portal-header .auevo-tree-mark{width:34px;height:34px}.passport-page .portal-heading{font-size:30px}.credit-schematic{margin:18px -8px 20px}.luxury-atmosphere i:nth-child(n+9){display:none}}
+@media(prefers-reduced-motion:reduce){.luxury-atmosphere{display:none}.luxury-reveal{opacity:1;translate:0 0}.portal-page .home-cinematic-image,.portal-btn-primary:before,.credit-arrow{animation:none!important}.portal-page :is(a,button){transition:none!important}}
+.crystal-motif{position:relative;width:100%;height:195px;isolation:isolate;overflow:visible;filter:none}.sculpture-art{position:absolute;width:min(100%,240px);height:100%;left:50%;transform:translateX(-50%);background-image:url('/images/auevo-sculptures.webp');background-size:200% 200%;background-repeat:no-repeat;mix-blend-mode:screen;animation:atelier-sculpture 7s ease-in-out infinite;will-change:transform}.sculpture-0 .sculpture-art{background-position:0 0}.sculpture-1 .sculpture-art{background-position:100% 0;animation-delay:-1.7s}.sculpture-2 .sculpture-art{background-position:0 100%;animation-delay:-3.4s}.sculpture-3 .sculpture-art{background-position:100% 100%;animation-delay:-5.1s}.sculpture-aura{position:absolute;inset:15% 15% 0;background:radial-gradient(ellipse,#c8ac4e12,transparent 65%);animation:atelier-aura 7s ease-in-out infinite}.sculpture-dust i{position:absolute;left:30%;top:40%;width:2px;height:2px;background:#e3ca7d;box-shadow:0 0 8px #e3ca7d;animation:atelier-dust 6s linear infinite}.sculpture-dust i:nth-child(2){left:70%;top:60%;animation-delay:-2s}.sculpture-dust i:nth-child(3){left:55%;top:30%;animation-delay:-4s}.portal-page .portal-panel:hover .sculpture-art{filter:brightness(1.1)}.proof-flow-stage .crystal-motif{height:175px}.credit-schematic .crystal-motif{height:210px}.credit-schematic>div:after{content:'';position:absolute;bottom:72px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,#a99e5533,transparent)}
+@keyframes atelier-sculpture{0%,100%{transform:translateX(-50%) translateY(0) rotate(-.5deg)}50%{transform:translateX(-50%) translateY(-7px) rotate(.8deg)}}
+@keyframes atelier-aura{0%,100%{opacity:.45;transform:scale(.95)}50%{opacity:1;transform:scale(1.1)}}
+@media(max-width:700px){.credit-schematic .crystal-motif{height:160px}.proof-flow-stage .crystal-motif{height:150px}.credit-arrow{top:85px}.crystal-motif{height:175px}}
+@media(prefers-reduced-motion:reduce){.sculpture-art,.sculpture-aura,.sculpture-dust i{animation:none!important}.sculpture-dust{display:none}}
+/* Quiet, lightweight form and wallet surfaces. */
+.portal-page .portal-input{background:linear-gradient(135deg,#21372bd9,#172b21d9)!important;border:1px solid #c0c4a044!important;box-shadow:inset 0 1px 0 #ffffe50b,0 3px 12px #0002!important;border-radius:11px!important;color:#eee9da;padding:13px 16px;min-height:47px;font-size:13px;font-weight:450;letter-spacing:.005em;transition:border-color .3s,box-shadow .3s,background .3s}.portal-page .portal-input::placeholder{color:#9cac9a;opacity:.75}.portal-page .portal-input:focus{border-color:#d5be7b99!important;box-shadow:0 0 0 3px #d5be7b0e,inset 0 1px 0 #ffffe51a!important;background:#24392e!important}.portal-page input[type=number]{color-scheme:dark}
+.portal-wallet-control .product-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.portal-wallet-control .wallet-pill,.compact-wallet-address{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(140deg,#24382b88,#13251ba6)!important;border:1px solid #bcba8244!important;border-radius:9px!important;box-shadow:inset 0 1px 0 #e2dda60d;padding:8px 10px!important;font-family:'Auevo Sans',Arial,sans-serif;font-size:12px!important;color:#d9dfcc!important;min-height:36px;white-space:nowrap}.portal-wallet-control .wallet-pill i{width:6px;height:6px;border:0;font-size:0!important;line-height:0;background:#79c49a!important;box-shadow:0 0 9px #79c49a44;border-radius:50%;flex-shrink:0}.portal-wallet-control .wallet-pill span{font-family:'Auevo Sans',Arial,sans-serif!important;font-size:12px!important;font-weight:550;letter-spacing:.04em}.portal-wallet-control .product-header-actions>button{background:transparent;border:1px solid #8f9c7433;border-radius:8px;color:#a2b59f;font-family:'Auevo Sans',Arial,sans-serif;font-size:10px;padding:8px 10px;min-height:36px;box-shadow:none}.portal-wallet-control .product-header-actions>button:hover{border-color:#bbaa6866;color:#e0d4ac}.compact-wallet-address svg{height:15px;width:15px;color:#c6b17d}.compact-wallet-address .copy-btn,.portal-wallet-control .copy-btn{border:0!important;background:transparent!important;padding:2px 4px!important;color:#c6b17d!important;box-shadow:none!important;font-size:14px!important;min-height:0!important}
+.portal-wallet-control .app-connect-button{background:linear-gradient(135deg,#2a4031,#112519)!important;border:1px solid #c9bc7c66!important;border-radius:9px!important;padding:11px 16px!important;color:#e7dbb5!important;font-family:'Auevo Sans',Arial,sans-serif!important;font-size:12px!important;box-shadow:inset 0 1px 0 #e2dda617,0 5px 15px #0003}.portal-wallet-control .wallet-modal{background:linear-gradient(145deg,#1b3024,#091811);border:1px solid #bab37b55;border-radius:18px;box-shadow:0 30px 100px #000b;font-family:'Auevo Sans',Arial,sans-serif}.portal-wallet-control .wallet-modal-item{background:#1d3126;border:1px solid #8e9f7033;border-radius:10px;color:#e3e5d4}.portal-wallet-control .wallet-modal-header strong{font-family:'Auevo Editorial',Georgia,serif;font-size:30px;font-weight:500}.portal-wallet-control .wallet-modal-sub,.portal-wallet-control .wallet-modal-foot{color:#9bab98}
+.portal-page .portal-shell :is(pre,code){background-color:#14251c!important;border-radius:7px;color:#b8c5af}.portal-page .portal-shell pre{border:1px solid #a5b58c33!important;padding:20px!important;line-height:1.9;box-shadow:inset 0 1px 0 #e5edc208}.portal-page .portal-shell .group.flex.flex-col[class*='border']{background:linear-gradient(145deg,#1a2d22b3,#0e1f16)!important;border-color:#94a47e3b;border-radius:13px;padding:22px;box-shadow:inset 0 1px 0 #e5edc20b,0 9px 30px #0003}.portal-page .portal-shell .group.flex.flex-col[class*='border']:hover{border-color:#baa96a88;transform:translateY(-3px)}.portal-page .portal-shell .group.flex.flex-col[class*='border']>span:nth-child(2){font-weight:600;font-size:14px}.portal-page .portal-shell .group.flex.flex-col[class*='border'] p{line-height:1.8;color:#a0b19d;font-size:12px}.auevo-design.auevo-design{font-family:'Auevo Sans',Arial,sans-serif}.auevo-design .auevo-portal-header .portal-logo .auevo-wordmark-gold{font-family:'Auevo Editorial',Georgia,serif!important}
+.portal-page .portal-panel:has(.portal-wallet-control){backdrop-filter:none!important;overflow:visible;translate:none!important}
+.portal-page .portal-panel:has(.info-tip){overflow:visible}
+.sculpture-art{mask-image:radial-gradient(ellipse at center,#000 54%,#000b 72%,transparent 96%)}
+
+/* Compact identity and deep emerald controls. */
+.portal-logo.auevo-logo-tree{gap:8px!important}
+.portal-logo .auevo-tree-mark{width:26px!important;height:26px!important;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:0!important;overflow:hidden;mask-image:radial-gradient(ellipse at center,#000 46%,#000b 61%,transparent 76%)}
+.portal-logo .auevo-tree-mark img{width:120%;height:120%;max-width:none;filter:none}
+.portal-logo .auevo-wordmark-gold{font-size:17px!important;letter-spacing:.12em!important}
+.auevo-portal-header .portal-logo .auevo-wordmark-gold{font-size:22px!important;letter-spacing:.10em!important}
+:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']){position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(120deg,#163c2c,#234d38 48%,#123425)!important;border:1px solid #80a78c55!important;color:#e5eedf!important;text-shadow:none;box-shadow:inset 0 1px 0 #c7e5ca1f,inset 0 -1px 0 #061a1599,0 5px 15px #0004!important;transition:transform .18s,filter .25s,box-shadow .25s,border-color .25s}
+:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):before{content:'';position:absolute;pointer-events:none;inset:-60%;opacity:0;background:linear-gradient(115deg,transparent 39%,#b9e5c92a 49%,transparent 59%);transform:translateX(-80%);animation:none}
+:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px);border-color:#94b59b88!important;box-shadow:inset 0 1px 0 #daf7dc28,0 7px 20px #0005,0 0 18px #72bf8a0c!important}
+:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):hover:not(:disabled):before{opacity:1;animation:emerald-sheen .7s ease-out forwards}
+:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):active:not(:disabled){transform:translateY(1px) scale(.985);filter:brightness(.92);box-shadow:inset 0 3px 9px #0008,inset 0 -1px 0 #b5dab514,0 1px 4px #0003!important}
+@keyframes emerald-sheen{from{transform:translateX(-80%)}to{transform:translateX(80%)}}
+.live-feed-dot{position:relative}.live-feed-dot:after{content:"";position:absolute;inset:-4px;border-radius:999px;border:1px solid currentColor;opacity:.55;animation:live-feed-ping 2.2s cubic-bezier(0,0,.2,1) infinite}
+@keyframes live-feed-ping{0%{transform:scale(.6);opacity:.55}75%,100%{transform:scale(1.9);opacity:0}}
+.live-feed-row{animation:live-feed-row-in .5s cubic-bezier(.16,1,.3,1) both}
+.live-feed-row.live-feed-row-flash{position:relative}
+.live-feed-row.live-feed-row-flash:before{content:"";position:absolute;inset:-4px -8px;border-radius:4px;background:linear-gradient(90deg,#42d99524,transparent 70%);animation:live-feed-flash 2.4s ease-out forwards}
+.live-feed-row-new-chip{animation:live-feed-chip-in .35s ease-out both,live-feed-chip-out .4s ease-in 1.8s forwards}
+@keyframes live-feed-row-in{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes live-feed-flash{0%{opacity:1}100%{opacity:0}}
+@keyframes live-feed-chip-in{0%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:scale(1)}}
+@keyframes live-feed-chip-out{0%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.live-feed-dot:after{animation:none;display:none}.live-feed-row{animation:none}.live-feed-row.live-feed-row-flash:before{animation:none;display:none}.live-feed-row-new-chip{animation:none}}
+
+.eventLedger{margin-top:22px;border:1px solid #44634d66;border-radius:16px;background:linear-gradient(115deg,#11241b,#091711);padding:16px 16px 6px;overflow:hidden}
+.eventLedgerHead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:0 6px 14px}
+.eventLedgerTitle{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.12em;font-weight:600;color:#d6ae61}
+.eventLedgerTally{display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:11px;font-weight:600}
+.eventLedgerTallyNote{color:#7a8c80;font-weight:400;text-transform:none;letter-spacing:0}
+.eventLedgerTable{width:100%;border-collapse:collapse;table-layout:fixed}
+.eventLedgerTable th{text-align:left;color:#c1d0c4;font-size:10px;font-weight:400;letter-spacing:.04em;background:#1b35254a;padding:9px 9px;border-block:1px solid #3d5a4566}
+.eventLedgerTable th:first-child{border-radius:9px 0 0 9px}
+.eventLedgerTable th:last-child{border-radius:0 9px 9px 0}
+.eventLedgerTable td{border-bottom:1px solid #38503d55;padding:10px 9px;font-size:12px;color:#b5c7b8;vertical-align:middle}
+.eventLedgerTable tbody tr:last-child td{border:0}
+.eventLedgerTable tbody tr:hover{background:#1e413021}
+.eventLedgerAgent{color:#ece8df;font-weight:500;text-decoration:none}
+.eventLedgerAgent:hover{color:#8cf0bd}
+.eventLedgerCategory{color:#9fb0a4;font-size:11px}
+.eventLedgerDetail{color:#8b9a92;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eventLedgerStatus{display:inline-block;border:1px solid;border-radius:2px;padding:2px 8px;font-size:9px;text-transform:uppercase;letter-spacing:.08em}
+.eventLedgerNewChip{margin-left:6px;display:inline-block;border-radius:2px;border:1px solid #42d99566;background:#42d99526;color:#8cf0bd;padding:1px 5px;font-size:8px;text-transform:uppercase;letter-spacing:.08em;vertical-align:middle}
+.eventLedgerTime a{color:#69768a;font-size:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-decoration:none}
+.eventLedgerTime a:hover{color:#8cf0bd}
+@media(max-width:760px){.eventLedgerTable th:nth-child(3),.eventLedgerTable td:nth-child(3){display:none}.eventLedger{padding:13px 10px 4px}.eventLedgerTable th,.eventLedgerTable td{padding:8px 6px;font-size:11px}}
+
+.info-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;border:1px solid currentColor;border-radius:999px;font-size:9px;line-height:1;color:#8b94a1;cursor:help;vertical-align:middle;opacity:.75}
+.info-tip:hover,.info-tip:focus-visible{opacity:1;color:#d6ae61;outline:none}
+.info-tip-bubble{position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%) translateY(4px);width:max-content;max-width:260px;padding:10px 12px;border-radius:4px;background:#f3eee3;color:#1a1f17;font-size:11px;line-height:1.5;font-weight:400;text-align:left;box-shadow:0 10px 30px #0008;opacity:0;visibility:hidden;transition:opacity .15s ease,transform .15s ease;pointer-events:none;z-index:40}
+.info-tip-bubble:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#f3eee3}
+.info-tip:hover .info-tip-bubble,.info-tip:focus-visible .info-tip-bubble{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+@media(max-width:640px){.info-tip-bubble{max-width:200px;left:auto;right:-8px;transform:translateX(0) translateY(4px)}.info-tip-bubble:after{left:auto;right:12px;transform:translateX(0)}.info-tip:hover .info-tip-bubble,.info-tip:focus-visible .info-tip-bubble{transform:translateX(0) translateY(0)}}
+@media(prefers-reduced-motion:reduce){.info-tip-bubble{transition:none}}
+@media(max-width:700px){.auevo-portal-header .portal-logo .auevo-wordmark-gold{font-size:20px!important}.portal-logo .auevo-tree-mark{width:24px!important;height:24px!important}}
+@media(prefers-reduced-motion:reduce){:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):before{display:none}}

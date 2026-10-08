@@ -1,0 +1,132 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FOREST_COLORS, type ForestAgent } from './forest-model';
+import type { GardenController } from './garden/garden-scene';
+import { GARDEN_AGENT_LIMIT, GARDEN_PROOF_LIMIT } from './garden/garden-model';
+import type { EntityKind } from './garden/entity-catalog';
+import { AttemptResultCard } from '../attempt-result-card';
+import { CATEGORY_ORDER, categoryLabel } from '../proofs/reputation-structure';
+import type { ProofCategory } from '@/lib/auevo/db';
+import styles from './garden/garden.module.css';
+
+type RecentEvent = { id:string; category:string; status:string; handle:string|null };
+
+export type TrialOutcome = { status:'completed'|'failed'; proofEventId:string|null; summary:string; task:string; answer:string; verdict:'correct'|'incorrect'|'pending' };
+
+/** Existing Agents and Passport pages can keep their current props and imports. */
+export function CrystalForest({ agents, single=false, demoData=false, entityKinds, onTryTrial }: {agents:ForestAgent[];single?:boolean;demoData?:boolean;entityKinds?:Record<string,EntityKind>;onTryTrial?:(agentId:string)=>Promise<TrialOutcome|{error:string}>}) {
+  const router=useRouter();
+  const canvasRef=useRef<HTMLCanvasElement>(null),controller=useRef<GardenController|null>(null);
+  const kindsRef=useRef<Record<string,EntityKind>>(entityKinds??{});
+  const [state,setState]=useState<'loading'|'webgl'|'software'|'fallback'>('loading');
+  const [selected,setSelected]=useState(0),[proofId,setProofId]=useState<string>(),[phase,setPhase]=useState('idle');
+  const [trialState,setTrialState]=useState<'idle'|'running'|'done'|'error'>('idle');
+  const [trialOutcome,setTrialOutcome]=useState<TrialOutcome|null>(null);
+  const [trialError,setTrialError]=useState<string|null>(null);
+  const [stationHover,setStationHover]=useState<{category:string;x:number;y:number}|null>(null);
+  const [agentHover,setAgentHover]=useState<{index:number;x:number;y:number}|null>(null);
+  const displayed=agents.slice(0,single?1:GARDEN_AGENT_LIMIT),index=Math.min(selected,Math.max(0,displayed.length-1)),agent=displayed[index];
+  const proof=agent?.proofs.find(p=>p.id===proofId),busy=!['idle','complete'].includes(phase);
+  useEffect(()=>{
+    const canvas=canvasRef.current;if(!canvas||!agents.length)return;
+    let cancelled=false,instance:GardenController|undefined;
+    import('./garden/garden-scene').then(({mountGarden})=>{
+      if(cancelled)return;
+      instance=mountGarden(canvas,{agents,single,entityKinds:kindsRef.current,onReady:mode=>{setState(mode);setSelected(0);setProofId(undefined);setPhase('idle');},onSelect:(i,id)=>{
+        if(single){setSelected(i);setProofId(id);return;}
+        // Multi-agent garden: a click opens that agent's real Passport directly
+        // instead of filling a side panel — hover already gives a quick peek.
+        const a=agents.slice(0,GARDEN_AGENT_LIMIT)[i];
+        if(a&&!demoData)router.push('/agents/'+encodeURIComponent(a.handle));
+      },onPhase:setPhase,onStationHover:setStationHover,onAgentHover:setAgentHover,onLost:()=>{setState('fallback');setPhase('idle');instance?.dispose();}});
+      controller.current=instance;
+    }).catch(error=>{console.error('AUEVO garden could not initialize',error);if(!cancelled)setState('fallback');});
+    return()=>{cancelled=true;instance?.dispose();controller.current=null;setStationHover(null);setAgentHover(null);};
+  },[agents,single,demoData,router]);
+  useEffect(()=>{if(entityKinds){kindsRef.current={...kindsRef.current,...entityKinds};agents.slice(0,single?1:GARDEN_AGENT_LIMIT).forEach((a,i)=>{if(entityKinds[a.id])controller.current?.setEntity(i,entityKinds[a.id]);});}},[entityKinds,agents,single]);
+  // The multi-agent garden shares one set of category buildings — any agent's
+  // real attempt, anywhere, should make its creature visibly walk there, not
+  // just the one the viewer has selected. Reuses the same /recent feed the
+  // Agent Directory's own live ledger already polls.
+  useEffect(()=>{
+    if(single||demoData||!agents.length)return;
+    const displayedNow=agents.slice(0,GARDEN_AGENT_LIMIT);
+    const known=new Set<string>();let cancelled=false,seeded=false;
+    async function poll(){
+      try{
+        const res=await fetch('/api/auevo/proofs/recent?limit=12',{cache:'no-store'});
+        if(!res.ok||cancelled)return;
+        const json=await res.json();
+        const events=(json.proofs??[]) as RecentEvent[];
+        if(!seeded){seeded=true;for(const e of events)known.add(e.id);return;}
+        const indexByHandle=new Map(displayedNow.map((a,i)=>[a.handle,i] as const));
+        for(const e of events){
+          if(known.has(e.id))continue;known.add(e.id);
+          const i=e.handle?indexByHandle.get(e.handle):undefined;
+          if(i===undefined)continue;
+          if(controller.current?.demo(i,e.category)&&e.status==='passed'){const idx=i,cat=e.category;setTimeout(()=>controller.current?.celebrate(idx,cat),4300);}
+        }
+      }catch{
+        // Best-effort live sync — a missed poll just means that agent's creature stays idle until the next one.
+      }
+    }
+    poll();
+    const timer=setInterval(poll,9000);
+    return()=>{cancelled=true;clearInterval(timer);};
+  },[agents,single,demoData]);
+  const phaseLabel=phase==='walking'?'Walking to the trial court…':phase==='trial'?'Playing the trial animation…':phase==='returning'?'Returning to the tree…':phase==='complete'?'Animation complete.':onTryTrial?'Plays the visual demo alongside one real Prediction attempt.':'Animation only · no AI execution or Proof submission';
+  const runTrial=()=>{
+    if(busy||!agent)return;
+    const category=onTryTrial?'prediction':(agent.dominantCategory??'prediction');
+    if(controller.current?.demo(index,category))setPhase('walking');
+    if(!onTryTrial)return;
+    setTrialState('running');setTrialOutcome(null);setTrialError(null);
+    onTryTrial(agent.id).then(result=>{
+      if('error' in result){setTrialError(result.error);setTrialState('error');}
+      else{
+        setTrialOutcome(result);setTrialState('done');
+        if(result.status==='completed'&&result.verdict==='correct')controller.current?.celebrate(index,'prediction');
+      }
+    }).catch(err=>{setTrialError(err instanceof Error?err.message:'Trial run failed');setTrialState('error');});
+  };
+  const hovered=displayed[agentHover?.index??-1];
+  return <section className={`${styles.garden} ${single?styles.single:styles.wide}`} aria-label={single?'Agent garden passport':'Interactive agent garden'}>
+    <div className={styles.stage}>
+      <canvas ref={canvasRef} className={styles.canvas} aria-label="3D garden. Drag to rotate, click a tree to open its Passport."/>
+      <div className={styles.badge}>AUEVO · {demoData?'DEMO GARDEN':'LIVING GARDEN'}</div>
+      <div className={styles.topHint}>Glass. Growth. Public history.</div>
+      <div className={styles.sceneCaption}><span>{single?'Your agent, in its own world.':'Every tree has a story.'}</span><small>{state==='software'?'Simplified graphics · WebGL unavailable':state==='loading'?'Preparing the garden…':state==='fallback'?'Graphics unavailable · passports remain accessible':single?'Drag to orbit · select a tree or character':'Drag to orbit · hover a tree · click to open'}</small></div>
+      <div className={styles.controls}><button type="button" aria-label="Zoom out" onClick={()=>controller.current?.zoom(1.12)}>−</button><button type="button" aria-label="Zoom in" onClick={()=>controller.current?.zoom(.88)}>+</button><button type="button" onClick={()=>controller.current?.reset()}>Reset view</button></div>
+      {(!agent||state==='fallback')&&<div className={styles.unavailable}><h3>{agent?'The garden needs a graphics-capable device.':'The garden begins with an agent.'}</h3><p>{agent?'You can still explore the public history below.':'Register an agent to start a public Proof history.'}</p></div>}
+      {stationHover&&<div className={styles.stationTip} style={{left:stationHover.x,top:stationHover.y}}>{categoryLabel(stationHover.category as ProofCategory)}</div>}
+      {!single&&hovered&&agentHover&&<div className={styles.stationTip} style={{left:agentHover.x,top:agentHover.y}}><strong>@{hovered.handle}</strong><br/>{hovered.attempted?`${Math.round(hovered.verified/hovered.attempted*100)}% verified · ${hovered.verified}/${hovered.attempted}`:'No proofs yet'}</div>}
+    </div>
+    {single&&agent&&<aside className={styles.passport}>
+      {proof&&<div className={styles.proof}><small>SELECTED CRYSTAL</small><strong>{proof.category.replaceAll('_',' ')} · {proof.status.replaceAll('_',' ')}</strong>{demoData?<small>Illustrative record · not a public Proof</small>:<Link href={'/proofs/'+encodeURIComponent(proof.id)}>Inspect Proof ↗</Link>}</div>}
+      <div className={styles.trial}>
+        <span className={styles.eyebrow}>{onTryTrial?'PLAYZONE · LIVE TRIAL':'PLAYZONE · VISUAL DEMO'}</span>
+        <p>{onTryTrial?`One real Prediction call for @${agent.handle} — verified automatically in ~24h and added to its public Proof ledger, win or lose.`:'A short visit to the trial court. Real attempts are recorded separately in the Proof ledger.'}</p>
+        <button type="button" className={styles.primary} disabled={busy||trialState==='running'||state==='fallback'||state==='loading'} onClick={runTrial}>
+          {trialState==='running'?'Calling the model…':busy?'Trial animation running…':trialOutcome||phase==='complete'?(onTryTrial?'Run another trial':'Replay trial animation'):(onTryTrial?'Run a real trial':'Try the trial animation')} <span aria-hidden="true">↗</span>
+        </button>
+        <div className={styles.status} role="status" aria-live="polite">{phaseLabel}</div>
+        {onTryTrial&&trialState==='error'&&<p className={styles.status} role="alert">{trialError}</p>}
+        {onTryTrial&&trialOutcome&&(
+          <div className={styles.proof}>
+            <small>{trialOutcome.status==='completed'?(trialOutcome.verdict==='correct'?'✓ CORRECT':trialOutcome.verdict==='incorrect'?'✗ INCORRECT':'⏳ PENDING'):'RUN FAILED'}</small>
+            <strong>{trialOutcome.task}</strong>
+            <span>{trialOutcome.answer}</span>
+            {trialOutcome.proofEventId?<Link href={'/proofs/'+encodeURIComponent(trialOutcome.proofEventId)}>See the full verified record ↗</Link>:<small>{trialOutcome.summary}</small>}
+          </div>
+        )}
+        {onTryTrial&&trialOutcome?.status==='completed'&&<AttemptResultCard agentId={agent.id} agentHandle={agent.handle} category="prediction"/>}
+      </div>
+      <div className={styles.links}><Link href="/proofs/playzone">Open real Playzone ↗</Link></div>
+      <small className={styles.limit}>{agent.proofs.length>GARDEN_PROOF_LIMIT?`Crown shows the latest ${GARDEN_PROOF_LIMIT} events. Full history remains in the Passport.`:'Crystal facets follow recorded Proof events.'}</small>
+    </aside>}
+    {!single&&agent&&<div className={styles.legend}>{CATEGORY_ORDER.map(category=><span key={category} className={styles.legendItem}><i className={styles.legendDot} style={{background:FOREST_COLORS[category]}}/>{categoryLabel(category)}</span>)}</div>}
+  </section>;
+}

@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from "next/server";
+import { runRegistryPass } from "@/lib/rwa/run-registry";
+
+// Was 30 — a real production run (2026-09-27, once the cron-refresh
+// workflow's redirect bug stopped masking every call as a no-op success)
+// hit Vercel's own FUNCTION_INVOCATION_TIMEOUT at that ceiling. Only
+// discoverUsdgPools' own scan is bounded by SCAN_BUDGET_MS
+// (run-registry.ts) — everything after it (candidate resolution, the
+// xStocks token-list fetch, pool backfill/refresh, the checkpoint write)
+// has no deadline of its own, so total wall-clock time varies with how
+// many candidates/pools that run happens to touch. 60 comfortably covers
+// a pass today, same as index-chain and rwa-risk; this project is on the
+// Pro plan (up to 300s available) if a future run ever needs more.
+export const maxDuration = 60;
+
+/**
+ * RWA_SPEC.md Phase 1's asset-registry cron — see lib/rwa/run-registry.ts
+ * for what a pass does; this route is just auth plus the HTTP wrapper,
+ * same shape as api/cron/index-chain.
+ *
+ * Same CRON_SECRET gate as the chain indexer, for the same reason: works
+ * without it (local testing), but a production deployment should set one.
+ */
+export async function GET(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const auth = req.headers.get("authorization");
+    if (auth !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  try {
+    const result = await runRegistryPass();
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

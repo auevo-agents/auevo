@@ -1,0 +1,159 @@
+import { formatUnits } from "viem";
+import { AgentPortalHeader } from "@/app/agent-portal-header";
+import { getCreditPoolAddress, readAgentRecord, readAssetDecimals, readIdentityOwner, verdictOf } from "@/lib/credit/contract";
+import { getCreditAgentIdForHandle } from "@/lib/credit/link";
+import { PortalFooter } from "@/app/portal-footer";
+import { CreditAgentActions } from "./credit-agent-actions";
+import { ProofRecordPanel } from "./proof-record";
+import { CreditSubnav } from "../credit-subnav";
+import { InfoTip } from "@/app/info-tip";
+
+export const revalidate = 15;
+
+function verdictChip(verdict: string) {
+  if (verdict === "repaid") return { label: "✓ repaid", className: "text-[var(--green)] border-[var(--green)]/40 bg-[var(--green)]/10" };
+  if (verdict === "defaulted") return { label: "✗ defaulted", className: "text-[var(--red)] border-[var(--red)]/40 bg-[var(--red)]/10" };
+  if (verdict === "no repayments yet") return { label: "no repayments yet", className: "text-[var(--muted)] border-[var(--line-2)]" };
+  return { label: "no record", className: "text-[var(--muted)] border-[var(--line-2)]" };
+}
+
+export default async function CreditAgentPage({ searchParams }: PageProps<"/credit/agent">) {
+  const { id, handle } = await searchParams;
+  const idStr = Array.isArray(id) ? id[0] : id;
+  const handleStr = Array.isArray(handle) ? handle[0] : handle;
+
+  // A handle alone used to dead-end here — the credit identity registry
+  // has no concept of a handle, so this resolves the link set up via
+  // "Register for credit" (src/lib/credit/link.ts) automatically, rather
+  // than making every visitor who searched by handle separately dig up
+  // and paste in a raw numeric id they have no way to find.
+  const linkedId = handleStr && !idStr ? await getCreditAgentIdForHandle(handleStr) : null;
+  const effectiveIdStr = idStr ?? linkedId?.toString();
+
+  return (
+    <div className="portal-page">
+      <AgentPortalHeader active="credit" />
+
+      <section className="portal-shell relative mx-auto max-w-[1100px] px-5 pt-10 pb-20 sm:px-8">
+        <CreditSubnav active="agents" />
+
+        {handleStr && (
+          <div className="mb-6">
+            <ProofRecordPanel handle={handleStr} />
+          </div>
+        )}
+
+        {handleStr && !idStr && linkedId === null && (
+          <p className="mb-6 text-sm text-[var(--muted)]">
+            @{handleStr} hasn&apos;t linked a credit agent id yet — it needs to{" "}
+            <a href="/credit" className="underline hover:text-[var(--ink)]">
+              register for credit
+            </a>{" "}
+            first, or you can paste its id directly below if you already have it.
+          </p>
+        )}
+
+        <form action="/credit/agent" method="get" className="mb-6 flex flex-wrap items-end gap-2">
+          {handleStr && <input type="hidden" name="handle" value={handleStr} />}
+          <label className="flex-1">
+            <span className="mb-1 block text-xs text-[var(--muted)]">On-chain agent id</span>
+            <input
+              name="id"
+              defaultValue={effectiveIdStr}
+              placeholder="agent id (uint256)"
+              className="w-full portal-input rounded-[3px] px-3 py-2 text-sm"
+            />
+          </label>
+          <button className="portal-btn-secondary rounded-[3px] px-4 py-2 text-sm" type="submit">
+            {effectiveIdStr ? "Update" : "Check credit record"}
+          </button>
+        </form>
+
+        {!effectiveIdStr ? (
+          !handleStr && <p className="text-[var(--muted)]">No agent id or handle given.</p>
+        ) : (
+          <AgentLookup idStr={effectiveIdStr} />
+        )}
+      </section>
+      <PortalFooter />
+    </div>
+  );
+}
+
+async function AgentLookup({ idStr }: { idStr: string }) {
+  let agentId: bigint;
+  try {
+    agentId = BigInt(idStr);
+  } catch {
+    return <p className="text-[var(--muted)]">&quot;{idStr}&quot; is not a valid agent id.</p>;
+  }
+
+  if (!getCreditPoolAddress()) {
+    return (
+      <div className="portal-panel rounded-[3px] p-6 text-[var(--muted)]">
+        AgentCreditPool has not been deployed yet — see <code className="rounded bg-[var(--panel-2)] px-1.5 py-0.5">contracts/README.md</code>.
+      </div>
+    );
+  }
+
+  const [record, owner, assetDecimals] = await Promise.all([
+    readAgentRecord(agentId),
+    readIdentityOwner(agentId),
+    readAssetDecimals(),
+  ]);
+  const verdict = verdictOf(record);
+  const chip = verdictChip(verdict);
+  const pool = getCreditPoolAddress();
+
+  return (
+    <div>
+      <h1 className="portal-heading text-3xl">Agent #{idStr}</h1>
+      {owner && <p className="mt-1 text-sm text-[var(--muted)] break-all">owner: {owner}</p>}
+
+      <div className="mt-4 flex items-center gap-2 text-sm">
+        <span className={`rounded-[2px] border px-2 py-0.5 ${chip.className}`}>{chip.label}</span>
+      </div>
+
+      {record && assetDecimals !== null ? (
+        <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+          <dt className="flex items-center text-[var(--muted)]">
+            Backers ({record.sponsors.length})
+            <InfoTip text="Everyone who has vouched real USDG for this agent — their stake is what pays first if it defaults, never a lender's deposit." />
+          </dt>
+          <dd className="break-all">
+            {record.sponsors.length === 0 ? (
+              "none"
+            ) : (
+              <ul className="flex flex-col gap-1">
+                {record.sponsors.map((s) => (
+                  <li key={s.sponsor}>
+                    {s.sponsor} — {formatUnits(s.amount, assetDecimals)} USDG @ {s.premiumBps / 100}% fee
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+          <dt className="flex items-center text-[var(--muted)]">
+            Credit line
+            <InfoTip text="The total this agent could borrow right now, across every backer combined." />
+          </dt>
+          <dd>{formatUnits(record.delegatedIn, assetDecimals)} USDG</dd>
+          <dt className="text-[var(--muted)]">Currently borrowed</dt>
+          <dd>{formatUnits(record.principalOut, assetDecimals)} USDG</dd>
+          <dt className="text-[var(--muted)]">Open loan right now</dt>
+          <dd>{record.activeLoan ? "yes" : "no"}</dd>
+          <dt className="text-[var(--muted)]">Loans repaid</dt>
+          <dd>{record.loansRepaid}</dd>
+          <dt className="text-[var(--muted)]">Total repaid so far</dt>
+          <dd>{formatUnits(record.volumeRepaid, assetDecimals)} USDG</dd>
+        </dl>
+      ) : (
+        <p className="mt-6 text-[var(--muted)]">
+          No credit record for this agent id — it has never been vouched for on this pool.
+        </p>
+      )}
+
+      {pool && assetDecimals !== null && <CreditAgentActions agentId={agentId} pool={pool} assetDecimals={assetDecimals} />}
+    </div>
+  );
+}

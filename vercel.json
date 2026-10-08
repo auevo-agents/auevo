@@ -1,0 +1,76 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/index-chain",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/rwa-registry",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/rwa-prices",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/rwa-reference-prices",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/rwa-risk",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/rwa-alerts",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/prune-indexer",
+      "schedule": "37 3 * * *"
+    },
+    {
+      "path": "/api/cron/verify-claims",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/settle-financial-league",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/settle-virtual-portfolios",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/auevo-longevity",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/auevo-economic-activity",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/verify-work",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/auevo-performance",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/auevo-identity",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/auevo-polymarket-sync",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/auevo-work-board-sync",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/agent-autonomy",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

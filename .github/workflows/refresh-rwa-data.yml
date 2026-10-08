@@ -1,0 +1,101 @@
+name: Refresh RWA data
+
+# Vercel's Hobby plan (this project's actual plan) hard-rejects any cron
+# entry in vercel.json more frequent than once a day — see run-prices.ts's
+# own doc comment for how that was discovered. This workflow is the free
+# workaround: it hits the same cron routes on GitHub Actions' own
+# scheduler instead, so prices/registry/risk/alerts refresh hourly instead
+# of once a day, at no cost. vercel.json's daily crons are left in place
+# as a safety net in case this workflow is ever paused or disabled — the
+# routes are idempotent/checkpointed, so an extra daily call costs nothing.
+#
+# Budget check: this repo is public (since 2026-10-04), so GitHub Actions
+# minutes on standard runners are unlimited and free — before that, on a
+# private repo, the free tier was 2,000 minutes/month, and five sequential
+# calls per run, hourly (720 runs/month), stayed comfortably inside it.
+# No spending limit is set regardless, so a quota being hit again in the
+# future (e.g. if the repo ever goes private) would just stop the schedule
+# firing, not silently bill anyone — see the repo's Settings → Billing.
+#
+# If prices alone need to be fresher than this (e.g. every 5–15 minutes),
+# that's the point where Vercel Pro (which also lifts the maxDuration
+# ceiling every pass here is currently budgeted around) becomes the
+# simpler answer instead of tuning this further.
+#
+# Setup (one-time): add a repository secret named CRON_SECRET (Settings →
+# Secrets and variables → Actions → New repository secret) with the exact
+# same value already set as CRON_SECRET in the Vercel project's env vars —
+# these routes reject any other value with 401.
+#
+# auevo.io redirects (confirmed from this workflow's own first run: every
+# curl printed only "Redirecting…" and nothing else) — without -L, curl
+# treats a redirect as a "successful" response and never touches the
+# actual route, so this workflow's very first run silently did nothing at
+# all on every endpoint despite showing green. -L follows it;
+# --location-trusted keeps forwarding the Authorization header even if
+# the redirect target is a different host, which is fine here since we
+# only ever point this at our own domain(s). -D - dumps response headers
+# (including the Location line) into the log so a future redirect target
+# change is visible here instead of silently swallowed again.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+env:
+  BASE_URL: ${{ vars.APP_BASE_URL || 'https://auevo.io' }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: rwa-prices
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-prices"
+
+      - name: rwa-registry
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-registry"
+
+      - name: rwa-risk
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-risk"
+
+      - name: rwa-alerts
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/rwa-alerts"
+
+      - name: index-chain
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/index-chain"
+
+      - name: auevo-polymarket-sync
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/auevo-polymarket-sync"
+
+      - name: auevo-work-board-sync
+        continue-on-error: true
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS -L --fail-with-body --location-trusted --max-time 90 -D - -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/auevo-work-board-sync"
