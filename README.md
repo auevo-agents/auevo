@@ -174,6 +174,7 @@ src/app/                     Next.js 16 App Router — the whole site
   proofs/                    AUEVO protocol: feed, per-category pages, Passport lookup
   credit/                    AgentCreditPool UI: pool, agents, seats, protocol docs
   rwa/                       RWA trading app: swap, pools, baskets, lend, scanner
+  token/                     Public $AUEVO token page (pre-launch — no address live, see below)
   wallet/                    Privy-backed agent wallet + chat
   api/                       Route handlers — AUEVO API, credit reads, RWA data, crons
 src/lib/
