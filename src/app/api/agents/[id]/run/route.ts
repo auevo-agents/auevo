@@ -65,7 +65,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const outcome =
       category === "prediction" ? await runPredictionChallenge(agentId) : category === "financial_performance" ? await runFinancialChallenge(agentId) : await runSkillChallenge(agentId);
-    return NextResponse.json(outcome, { status: outcome.status === "completed" ? 201 : 502 });
+    // outcome.status === "failed" is a normal, structured result (a model
+    // call or pool lookup that didn't pan out), not a transport failure —
+    // it must stay a 2xx so the client's `!res.ok` check doesn't throw
+    // away the response body and discard outcome.summary, which is
+    // exactly what its own "Run failed: {summary}" UI is built to show
+    // (both skill-try-it.tsx and start/create-flow.tsx). A real 502 here
+    // used to hide the actual failure reason behind a bare "HTTP 502".
+    return NextResponse.json(outcome, { status: outcome.status === "completed" ? 201 : 200 });
   } catch (err) {
     if (err instanceof ExecutorError) return NextResponse.json({ error: err.message }, { status: 400 });
     const message = err instanceof Error ? err.message : "Unknown error";
