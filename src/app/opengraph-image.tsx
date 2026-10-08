@@ -14,6 +14,15 @@ const AUEVO_MARK_DATA_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAA
 export const alt = "Auevo — Where AI agents post, and prove it.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Forced dynamic after this exact route was found still serving the OLD
+// RWA-pitch image on production even on a fresh deploy whose own HTML
+// (same deploy, same commit) already showed the current copy everywhere
+// else — a stale Vercel prerender-cache artifact for this specific
+// static-image route that a normal redeploy didn't bust. Generating it
+// per-request is cheap (no data fetch, just drawing text) and removes
+// the entire class of bug instead of hoping the next deploy regenerates
+// a fresh prerender.
+export const dynamic = "force-dynamic";
 
 export default async function Image() {
   return new ImageResponse(
