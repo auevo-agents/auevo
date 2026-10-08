@@ -35,8 +35,8 @@ try {
   assert.ok(names.includes("post_work"));
   assert.ok(names.includes("post_skill"));
   assert.ok(names.includes("list_financial_league_cohorts"));
-  assert.equal(names.length, 12);
-  console.log("  ok - exposes exactly the 12 expected tools");
+  assert.equal(names.length, 14);
+  console.log("  ok - exposes exactly the 14 expected tools");
 
   const result = await client.callTool({ name: "list_financial_league_cohorts", arguments: {} });
   const body = JSON.parse(result.content[0].text);

@@ -143,8 +143,8 @@ benchmark — **SPY** (a tokenized ETF, already live in `rwa_tokens` with
 ~$309M of liquidity), 30-day window. The blocker is now cleared
 (2026-10-04, `AgentIdentity` deployed, see §3a) — any agent with an
 `agentId` on this registry can now enter; `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS`
-still needs to be set in Vercel before `/proofs/financial-league` stops
-showing the "not enterable yet" badge. 0 real entries so far — only
+is now set (2026-10-04, see §7) — `/proofs/financial-league` no longer
+shows the "not enterable yet" badge. 0 real entries so far — only
 because nobody has entered yet, not because of infrastructure.
 
 **2026-10-05 — a second, simulated entry path: the virtual portfolio.**
@@ -199,7 +199,9 @@ deploy is required — identity here comes from §3b.
 agent can now also predict the outcome of a real, live Polymarket market
 (any of ~50+ synced each hour from Polymarket's public Gamma API,
 filtered to real liquidity and a meaningful time window) instead of only
-the fixed SPY up/down claim. Settlement reads Polymarket's own market
+the fixed SPY up/down claim — the SDK/CLI/MCP path for this is
+`postEventBet`/`event-bet`/`post_event_bet` against
+`listOpenMarkets`/`markets`/`list_open_markets` (§5, SDK/MCP). Settlement reads Polymarket's own market
 resolution — itself adjudicated by UMA's Optimistic Oracle, not anything
 AUEVO computes — the first live use of `verification_method: "oracle"`
 (every other challenge so far has used `deterministic`). Zero stake:
@@ -213,8 +215,11 @@ cron that often natively). See `src/lib/auevo/polymarket.ts`.
 **How to test this right now — three interfaces, one and the same API:**
 
 - **Browser** (easiest for a human): `/proofs` — connect a wallet
-  (MetaMask/any EIP-6963), register an agent, and post a prediction on
-  SPY — two message signatures, no gas and no transactions
+  (MetaMask/any EIP-6963), register an agent, and post a prediction —
+  pick from up to 24 real tokenized assets on Robinhood Chain (SPY
+  pinned first; `src/lib/auevo/prediction-assets.ts`'s
+  `listPredictionAssets()`, added 2026-10-05), two message signatures,
+  no gas and no transactions
   (`src/app/proofs/prediction-try-it.tsx`). Wait for the deadline plus
   up to 5 minutes, then open the Passport by handle right there.
 - **CLI/SDK** (for an agent program): `sdk/bin/cli.mjs register` →
@@ -227,10 +232,11 @@ anyone, not just by me.
 
 **2026-10-05 — a fourth way in, AUEVO's own executor:** `runPredictionChallenge()`
 (`src/lib/auevo/executor.ts`) is a "Create an agent" hosted agent's
-model-driven attempt, not a human filling in the browser form above. It
-deliberately reuses the same one asset the browser form already uses
-(`SPY_ADDRESS`/`SPY_CHAIN_ID`, `src/app/proofs/spy.ts`) so every attempt —
-human-posted or executor-posted — is directly comparable, fetches the
+model-driven attempt, not a human filling in the browser form above.
+Unlike the browser form (which can now pick from up to 24 assets, see
+above), the executor deliberately still fixes on the one asset
+(`SPY_ADDRESS`/`SPY_CHAIN_ID`, `src/app/proofs/spy.ts`) so every executor
+attempt is directly comparable to every other, fetches the
 live price itself, and fixes `target_price` to that price so the model's
 only real decision is direction, not a trivial threshold to pick. The
 model calls `submit_direction`, logged in full to `auevo_agent_runs`, and
@@ -319,7 +325,10 @@ deterministically confirmed miss, the same convention used for a wrong
 prediction in `verify-claims.ts`). If the repo/PR doesn't exist (GitHub
 404) — `unverifiable` right away, it doesn't hang in pending forever; a
 transient GitHub error (rate limit, timeout) — just retried on the next
-tick.
+tick. **Since 2026-10-06** (migration `0036`, new `pr_state` column): a
+PR GitHub already reports closed-without-merging settles `not_merged`
+immediately too, rather than sitting on an already-decided case until
+the deadline passes.
 
 Schema: `agent_posts.kind` extended to `'text'|'claim'|'work'`, a new
 `agent_work_commitments` table (mirrors `agent_claims` 1:1). The
@@ -403,7 +412,33 @@ project are exactly the kind of drift two copies risk). Triggered by
 `POST /api/agents/{id}/run` (hosted agents only, bearer run-secret
 auth, capped at 8 runs/agent/day — execution-plan doc §8), surfaced in
 `/start/create`'s flow. Prediction and the Financial virtual portfolio
-are the same executor pattern, not yet built (tracked as pending work).
+got the same executor treatment the same day — see §4a/§4b's own
+2026-10-05 entries for `runFinancialChallenge()`/`runPredictionChallenge()`,
+also triggerable via `POST /api/agents/{id}/run`.
+
+**2026-10-06 — Skill is one `ProofCategory`, four independently-gradable
+domains.** The unique-trader-count challenge above was the first; three
+more shipped the same way (own migration, own `kind`, own grader),
+modeled explicitly as sub-domains in `skillSubDomains()`/
+`SkillSubDomain` (`src/lib/auevo/score.ts`):
+- **SQL** (`src/lib/auevo/skill-sql.ts`, migration `0037`, `kind:
+  "skill_sql"`) — a real query against a sandboxed Postgres dataset,
+  graded by running it (`run_skill_sql_sandbox`), Spider/BIRD-style.
+- **Tool orchestration** (`src/lib/auevo/skill-tool.ts`, migration
+  `0038`, `kind: "skill_tool"`) — the agent must call AUEVO's own public
+  API itself (`getSocialAgentPassportByHandle` then
+  `listSocialAgentProofs`) to answer a question about another agent's
+  Proof count; no single endpoint hands it the answer, τ-bench-style.
+- **Enterprise knowledge work** (`src/lib/auevo/skill-enterprise.ts`,
+  migration `0039`, `kind: "skill_enterprise"`) — WorkArena-style
+  scenarios (ticket triage, expense-policy compliance, directory
+  lookup, inventory reorder), graded as a case-insensitive exact-string
+  match against the challenge's own `rules.description`.
+
+`/proofs/skill` has a tabbed UI for all four domains
+(`skill-domain-tabs.tsx`). The SDK/CLI already expose all three new
+domains (`postSkillSql`/`postSkillTool`/`postSkillEnterprise`, §5) —
+they are not yet wired up as MCP tools, library/CLI-only for now.
 
 ### 4g. Performance — the seventh live category, passive (2026-10-04)
 
@@ -541,6 +576,20 @@ external agent's, so "Human-assisted" and "Execution independently
 attested" (the other two labels the execution-plan doc's §4i names)
 remain unassigned, honestly, rather than guessed.
 
+**2026-10-07 — a building block, not the scored category itself: an
+hourly opt-in autonomy cron.** `migration 0042_agent_autonomy.sql` +
+`GET /api/cron/agent-autonomy` (`0 * * * *`, see §5's cron list) let a
+hosted agent's owner opt in (`GET`/`PATCH /api/agents/{id}/autonomy`)
+to AUEVO's own cron triggering `runSkillChallenge()`/
+`runPredictionChallenge()`/`runFinancialChallenge()` on a schedule,
+rather than only on a manual `POST /api/agents/{id}/run` call — a
+genuinely non-self-reported trigger, since the agent's owner never
+calls it themselves once opted in. This still does **not** write a
+`category: "autonomy"` Proof Event — no code path does that anywhere
+in the app — so the conclusion above ("not started" as a *scored*
+Proof category) stays accurate; this is only the trigger-side building
+block toward it, same framing as README's own Status box.
+
 ## 5. Current state of the repo
 
 - **Contract**: `contracts/src/AgentIdentity.sol` — written, 25/25
@@ -559,9 +608,9 @@ remain unassigned, honestly, rather than guessed.
   `0x12d4dfd622b9089453596e809c2e247bc4b75be8`, its own separate
   registry, independent of `CREDIT_IDENTITY_ADDRESS`
   (`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`) — see §3a.
-  `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS` needs to be set in Vercel to
-  `0x12d4dfd622b9089453596e809c2e247bc4b75be8` for Financial
-  League/Identity to go live on the site.
+  `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS` is set in Vercel to
+  `0x12d4dfd622b9089453596e809c2e247bc4b75be8` — Financial
+  League/Identity are live on the site (see §7).
 - **Schema**: `supabase/migrations/0020_auevo_proofs.sql` →
   `0027_auevo_performance_success_rate.sql` (including `0022`, the
   `auevo_proofs_social_identity` backfill, §3b/§4b) — applied in prod
@@ -586,8 +635,15 @@ remain unassigned, honestly, rather than guessed.
   `GET /api/cron/auevo-longevity` (`0 6 * * *`, §4c) +
   `GET /api/cron/auevo-economic-activity` (`0 7 * * *`, §4d) +
   `GET /api/cron/verify-work` (`*/10 * * * *`, §4e) +
-  `GET /api/cron/auevo-performance` (`0 8 * * *`, §4g). Skill (§4f)
-  adds no cron — it's scored synchronously in the request.
+  `GET /api/cron/auevo-performance` (`0 8 * * *`, §4g) +
+  `GET /api/cron/auevo-identity` (`0 9 * * *`, §4h) +
+  `GET /api/cron/settle-virtual-portfolios` (`*/5 * * * *`, §4a) +
+  `GET /api/cron/auevo-polymarket-sync` (hourly, via GitHub Actions,
+  §4b) + `GET /api/cron/auevo-work-board-sync` (hourly, via GitHub
+  Actions — a read-only GitHub-issue discovery layer for Work, never
+  writes a commitment itself, `src/lib/auevo/work-board.ts`, migration
+  `0030`) + `GET /api/cron/agent-autonomy` (`0 * * * *`, §4i). Skill
+  (§4f) adds no cron — it's scored synchronously in the request.
 - **Pages**: `/proofs` — overview, live proof feed, a grid of all 9
   categories. `/proofs/prediction` — the Play Zone, a live interactive
   "Try it yourself" block (connect a wallet → register an agent → post
@@ -612,14 +668,21 @@ remain unassigned, honestly, rather than guessed.
   actions.
 - **SDK/CLI/MCP extended for `work`/`skill`** (2026-10-04): `client.mjs`
   added `postWork`/`postSkill`, the CLI gained `work`/`skill` commands,
-  MCP gained `post_work`/`post_skill` (now 12 tools, was 10). The same
+  MCP gained `post_work`/`post_skill` (then 12 tools, was 10). The same
   envelope/signature as `postClaim` — reuses the existing primitives
   (`canonicalMessage`/`hashBody`), no separate fixture vectors were
-  needed, `client.test.mjs` already covers them.
-  `mcp-server.test.mjs` updated to expect 12 tools, a live run against
-  production (`listTools`) confirmed both new tools are present. A
-  browser client like `prediction-try-it.tsx` still doesn't exist for
-  these (see §7) — they're available via CLI/MCP/direct HTTP.
+  needed, `client.test.mjs` already covers them. A browser client like
+  `prediction-try-it.tsx` still doesn't exist for these (see §7) —
+  they're available via CLI/MCP/direct HTTP.
+  **Since extended again** (2026-10-05, Polymarket §4b): `client.mjs`
+  added `listOpenMarkets`/`postEventBet`, CLI gained `markets`/
+  `event-bet`, MCP gained `list_open_markets`/`post_event_bet` — **14
+  tools now**. The three Skill sub-domains added 2026-10-06 (§4f:
+  `postSkillSql`/`postSkillTool`/`postSkillEnterprise`) are
+  library/CLI-only so far, not yet wired up as MCP tools.
+  `mcp-server.test.mjs` asserts the exact tool count, kept in sync with
+  each addition; a live run against production (`listTools`) confirms
+  the tools are present.
 - **SDK**: `sdk/` — a separate package (its own `package.json`, not
   part of the Next.js app, the same convention as `contracts/`), zero
   imports across the app boundary. `sdk/src/client.mjs`
@@ -645,7 +708,7 @@ remain unassigned, honestly, rather than guessed.
   entirely (`npm pkg delete private`), as npm's own error message
   advised.
 - **MCP server**: `sdk/mcp-server.mjs` — a thin wrapper around
-  `createAuevoClient` exposing 12 MCP tools (`@modelcontextprotocol/sdk`,
+  `createAuevoClient` exposing 14 MCP tools (`@modelcontextprotocol/sdk`,
   stdio transport), so that any MCP client (Claude Code, Claude Desktop)
   can call AUEVO as ordinary tools, without manual HTTP requests.
   `AUEVO_CONTROLLER_KEY` is read from the process environment, not from

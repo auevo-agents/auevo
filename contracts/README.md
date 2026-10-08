@@ -165,8 +165,13 @@ anything else here. Short version:
   contract has no owner, no admin function, no privileged address at all.
   Every line exists only because some third party called `vouch()` with
   that agent's owner's own EIP-712-signed consent.
-- One sponsor, one open loan per agent at a time — a deliberately smaller
-  surface than a comparable existing design (no treasury/seat/stock-vault backer types yet).
+- One open loan per agent at a time — the one deliberately smaller
+  surface left relative to a comparable existing design. Multiple
+  sponsors per agent (up to `MAX_SPONSORS_PER_AGENT = 20`, pro-rata
+  shares), an `operatorWallet` delegate that can borrow on the agent's
+  behalf, and an optional seat-token-locking backer type (`vouchSeat()`)
+  are all written and tested — see below. Treasury/stock-vault backer
+  types remain future work.
 - Points at an *existing* identity registry (`IAgentIdentity`, matching
   ERC-8004/ERC-721 `ownerOf`) rather than minting its own — see the open
   decision below.
@@ -178,7 +183,7 @@ anything else here. Short version:
   chain pulls in `Bytes.sol`'s `MCOPY` — see `compile-all.js`'s comment;
   Robinhood Chain already runs another live EIP-712-based credit pool,
   so Cancun support is proven, not assumed).
-- 30 integration tests against a local Ganache node
+- 65 integration tests against a local Ganache node
   (`test/run-credit.mjs`) covering: share accounting on deposit/withdraw,
   enrolling as a root above the minimum stake, `vouch()` rejecting a
   consent signed by anyone other than the agent's current owner,
@@ -212,23 +217,47 @@ anything else here. Short version:
 - **No independent, paid, professional audit.** Same posture as
   DcaVault.sol/DcaVaultV4.sol — doubly true here given this moves a
   stablecoin, not just swaps one.
-- **No mainnet deployment**, and deploying needs one decision made
-  first, consciously, by you: which identity registry to point
-  `CREDIT_IDENTITY_ADDRESS` at. Reusing the ERC-8004 registry already
-  live on this chain
-  (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`) means any agent already
-  registered there needs no new identity to use this pool — but it also
-  means trusting that registry's own owner, which its own audit found
-  to be a single EOA today, not a multisig. See `script/deploy-credit-
-  pool.mjs`'s own header for the full list of required deploy-time
-  decisions (asset token, its decimals, reserve address) — none of them
-  have a hardcoded default in that script, on purpose.
 - **No fork test against the real, live ERC-8004 registry on Robinhood
   Chain** — the integration tests use a mock (`test/mocks/
   MockAgentIdentity.sol`) so the pool's own logic could be exercised
   deterministically, same philosophy as `test/mocks/MockUniswap.sol` for
   DcaVault.
-- **No backend/frontend wiring yet** — this is the contract layer only.
+- **Seats are not enabled on the currently-live pool.** The identity-
+  registry decision below was made and the pool deployed — but it
+  deployed with `CREDIT_SEAT_TOKEN_ADDRESS` unset (`seatToken =
+  address(0)`, which makes `vouchSeat()` revert), since `$AUEVO` didn't
+  exist on chain yet at that deploy. `vouchSeat()` is written and
+  tested, not switched on. This contract has no admin function to add
+  seats after the fact, so turning them on means a fresh deploy — see
+  [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md) for the current
+  status and what it's waiting on.
+
+The identity-registry decision that used to be open here has been made:
+`CREDIT_IDENTITY_ADDRESS` points at this project's own `AgentIdentity.sol`
+deployment (`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`), not the
+canonical ERC-8004 registry at
+`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` — avoiding a dependency on
+that registry's single-EOA owner. The pool is **deployed and wired into
+the frontend**: `src/app/credit/{agent,agents,seats}/page.tsx` and
+`src/app/api/credit/{check,agent-id,link}/route.ts` are all live against
+the real pool — see [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed)
+for the deploy params and tx hash.
+
+### Seats (`vouchSeat()`) and the `$AUEVO` price dependency
+
+A second, optional backer type alongside the root stake-based sponsor:
+an existing sponsor can additionally lock a seat token (meant to be
+`$AUEVO`) to vouch for more agents, at a fixed, deploy-time
+`CREDIT_SEAT_RATIO_NUMERATOR`/`DENOMINATOR` — no oracle, no admin path
+to change that ratio later. The seat-token burn on default is
+**additive only**: it was a design-review finding that a naive "just
+burn the seat token" implementation could be made to look like it
+replaces the real pool-share burn that actually protects lenders, when
+it must only ever be extra skin in the game on top of that burn, never
+a substitute for it. `$AUEVO` is now live on chain (see
+[`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed)), but
+there's no liquid market price for it yet to set that ratio against —
+seats stay off on the live pool until there is one.
 
 ## AgentIdentity — status: written, tested, reviewed. **Deployed to mainnet twice, by design** — [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) is the `CREDIT_IDENTITY_ADDRESS` AgentCreditPool above points at, and [`0x12d4dfd622b9089453596e809c2e247bc4b75be8`](https://robinhoodchain.blockscout.com/address/0x12d4dfd622b9089453596e809c2e247bc4b75be8) (2026-10-04) is `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS`, for Financial Agent League / the Identity Proof category. Same contract, byte-identical on chain (confirmed via `eth_getCode`) — kept as two separate registries/agentId namespaces on purpose, not merged. See [`DEPLOYMENTS_PENDING.md`](./DEPLOYMENTS_PENDING.md#deployed).
 
@@ -340,8 +369,7 @@ at a placeholder address.
 `binaries.soliditylang.org` and `foundry.paradigm.xyz` were unreachable
 from the environment these contracts were built in, so this uses
 `solc`'s npm/WASM build instead of a native binary or Foundry. Slither
-needed a small wrapper script (see `../CLAUDE.md` or ask if it's not
-obvious from context) to work around two solc-js CLI quirks: no
+needed a small wrapper script to work around two solc-js CLI quirks: no
 `--allow-paths` support, and a non-JSON diagnostic line printed to
 stdout ahead of the actual `--standard-json` output. If you have Foundry
 available, `forge test` (once a `foundry.toml` and Foundry-style test

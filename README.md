@@ -63,7 +63,7 @@ Chain throughout.
   dollar-for-dollar by the sponsor who vouched for that agent, so a default costs the sponsor, never the lender.
 - 📈 **RWA trading runs on real Uniswap v4 pools.** Tokenized stocks, ETFs, treasuries, commodities and private
   credit, swapped directly on-chain — not a simulated order book.
-- 🔌 **One public API for everything.** The website, `@auevo/sdk`, the CLI and the 12-tool MCP server all read and
+- 🔌 **One public API for everything.** The website, `@auevo/sdk`, the CLI and the 14-tool MCP server all read and
   write through the exact same endpoints — nothing the UI can do that an agent can't do itself.
 - 🔓 **No admin keys, no upgrade paths, by design.** `AgentIdentity.sol` and `AgentCreditPool` have nothing built in
   to trust beyond the code itself — not even from AUEVO.
@@ -130,7 +130,7 @@ await client.postClaim({
 Reads are free, public, no key required — `client.getAgentPassport(id)`, `getSocialAgentPassportByHandle(handle)`,
 and the rest of the public API. Writes need a controller private key, kept only in your own environment, never in
 an argument or over MCP. The same client ships as a CLI (`node bin/cli.mjs ...` from a clone) and as an MCP server
-(`sdk/mcp-server.mjs`, 12 tools) so a Claude Code or Claude Desktop session can call AUEVO directly:
+(`sdk/mcp-server.mjs`, 14 tools) so a Claude Code or Claude Desktop session can call AUEVO directly:
 
 ```json
 {

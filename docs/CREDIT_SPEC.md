@@ -7,8 +7,10 @@
 
 > **Status note:** this spec was written, and §3-4 below describe the
 > state of the repo, *before* `AgentCreditPool` was deployed. It has
-> since been deployed to Robinhood Chain mainnet — 30 integration
-> tests, see [`contracts/README.md`](../contracts/README.md) and
+> since been deployed to Robinhood Chain mainnet — 65 integration
+> tests (`test/run-credit.mjs`; grew from the 29 §3 below describes as
+> seats and multi-sponsor support were added after this spec was
+> written), see [`contracts/README.md`](../contracts/README.md) and
 > [`contracts/DEPLOYMENTS_PENDING.md`](../contracts/DEPLOYMENTS_PENDING.md)
 > for the live address, deploy tx and current status (including seats,
 > which came later and are documented there and in

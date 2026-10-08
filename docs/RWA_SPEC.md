@@ -3,6 +3,29 @@
 > For Claude Code. Read this file in full before starting work. Work phase by phase; at the end of each one — build, tests, a short report, and a commit to branch `rwa/<phase>`.
 > Before writing any code, read `AGENTS.md`: this is Next.js 16, the API differs from what you're used to — check against `node_modules/next/dist/docs/`.
 
+> **Status note (2026-10-08):** this is the original phased build plan, and
+> most of it shipped close to spec (Phases 0–6 and the no-hardcoding
+> discipline are still accurate as written). A few things have since moved
+> past what this doc says, kept here rather than rewritten so the history
+> stays honest:
+> - **Private swaps — section 2/line 30 and section 9's "will NOT do
+>   this" are reversed.** A "Private Swap" feature shipped
+>   (`src/app/rwa/app/private-swap/`), routed through the third-party
+>   provider Houdini — a deposit-address-based swap with sanctions/AML
+>   attestations and a stated hold/review window, not the non-custodial
+>   MEV-protection concept this doc's principle (§4) was written against.
+>   This is a real policy change, not a doc typo — see the dedicated note
+>   after section 9.
+> - **Phase 7's "Automated — not doing this in this iteration" and Phase
+>   8's "Adding v4 liquidity — later" / lending "Deposits — later" are
+>   all live now** — see those phases' own updated bullets below.
+> - **Section 3's "blocker #1" is resolved** — `bestLeg()`
+>   (`src/lib/rwa/dex/quote.ts`) now probes both v3 and v4 per hop.
+> - **Routes live under `/rwa/app/...`, not `/app/...`** — section 6's
+>   route list predates a prefix change; `/` itself is no longer the RWA
+>   landing page (it's the agent-reputation homepage, a separate product
+>   focus — see `AUEVO_PROTOCOL_SPEC.md`).
+
 ## 1. Goal
 
 Rebuild Auevo from a memecoin terminal into a **marketplace + scanner for tokenized real-world assets (RWA)**: stocks, ETFs, gold, treasuries, private credit.
@@ -27,12 +50,14 @@ Starting chain — **Robinhood Chain (4663)**, then multichain via an aggregator
 - **Pools:** 199 Uniswap v4 pools on Robinhood Chain and Base, stock pairs against **USDG**. Liquidity ~$9.7M, 24h volume ~$8.9K. Fee APR = daily fees × 365 / liquidity.
 - **Lend:** a wrapper over Kamino (Solana), xStocks / STRCx / Sentora markets. Supply, Borrow, Multiply. No fee.
 - **Explorer:** a log of all their own swaps/bridges with statuses Pending / Done / Partial / Refunded / Failed. Their real volume is tiny (40 transactions, ~$2.3K) — the niche is wide open.
-- **Private swaps** — we will NOT do this (regulatory risk).
+- **Private swaps** — written here as something we will NOT do
+  (regulatory risk). **Reversed since** — see the status note at the
+  top of this doc and the note after section 9.
 
 ## 3. Current state of the repo (what exists)
 
 - One chain: Robinhood Chain 4663 (`src/lib/chains.ts`, `src/lib/wagmi.ts`), wagmi 3 + viem 2, our own connect-button.
-- Swaps: Uniswap **V3** SwapRouter02 `exactInputSingle`, single hop only (`src/lib/uniswap.ts`, `src/app/app/swap-panel.tsx`). **No v4, no USDG → stocks can't currently be bought on Robinhood Chain. This is blocker #1.**
+- Swaps: Uniswap **V3** SwapRouter02 `exactInputSingle`, single hop only (`src/lib/uniswap.ts`, `src/app/app/swap-panel.tsx`). **No v4, no USDG → stocks can't currently be bought on Robinhood Chain. This is blocker #1.** (Resolved — see Phase 2: `bestLeg()` in `dex/quote.ts` now probes both v3 and v4 per hop.)
 - Market data: GeckoTerminal (`src/lib/geckoterminal.ts`, network `robinhood`).
 - Indexer: V3 `PoolCreated` + `Swap` into Supabase (`src/lib/indexer/*`, `supabase/migrations/0001_indexer.sql`), a daily cron (`vercel.json`).
 - Wallet analytics (`wallet-pnl.ts`, `wallet-positions.ts`, `indexed-smart-money.ts`) — all in WETH, assumes pairs against WETH.
@@ -65,6 +90,15 @@ Starting chain — **Robinhood Chain (4663)**, then multichain via an aggregator
 RLS: public read for catalog tables, write only via the service role.
 
 ## 6. Section layout (routes)
+
+> **Stale prefix, see the status note at the top of this doc:** every
+> route below was written as `/app/...`; the real app serves them all
+> under **`/rwa/app/...`** instead (`src/app/rwa/app/*/page.tsx`), and
+> `/` itself is no longer the RWA landing page described below — `/` is
+> the unrelated agent-reputation homepage, the app's primary focus
+> moved there after this doc was written (see `contracts/DEPLOYMENTS_PENDING.md`
+> and `AUEVO_PROTOCOL_SPEC.md`). Read every `/app/...` path below as
+> `/rwa/app/...`.
 
 Storefront (public):
 - `/` — landing page: "Every tokenized stock. Every issuer. Scanned." Blocks: live top lists, a scanner preview (top premiums/discounts), baskets, issuers.
@@ -151,12 +185,18 @@ Sidebar (`src/app/app/sidebar.tsx`) — rebuild around these sections. Remove th
 - **Strategy baskets** (our own, `source=auevo`): a JSON/table of baskets (themes: Mag7, AI chips, energy, investor trackers — weights taken from public 13F filings only, with the source/date cited). Weights: target / equal / custom sliders. **Single-transaction purchase** via UniversalRouter (several V4_SWAP calls in one execute) — the main improvement over HyperDex (which needs N signatures). Sell 25/50/100%. If one leg has no route, exclude it and redistribute.
 - **Index baskets**: integrate Reserve DTF (reading composition, NAV, mint/redeem or purchase via an aggregator) on whichever chains have them. Show NAV vs market price — another scanner metric.
 - **DCA**: adapt `DcaVault` to USDG + v4 (or UniversalRouter), recurring buys of a stock/basket. **Mainnet deploy only after an external audit** — until then, testnet/fork only, UI behind a feature flag.
-- Automated (rebalanced accounts) — not doing this in this iteration.
+- Automated (HyperDex's custodial, scheduled-rebalance accounts) —
+  not doing this; a non-custodial "check rebalance, build the trade,
+  user signs it" tool per basket shipped instead
+  (`resolveBasketRebalance()`, `src/lib/rwa/baskets.ts` +
+  `/api/rwa/baskets/[id]/build-rebalance`), consistent with this doc's
+  own non-custodial principle (§4) even though HyperDex's custodial
+  version remains out of scope per section 9.
 - ✅ Done when: buying a basket of 5–10 stocks in one signature works on Robinhood Chain.
 
 ### Phase 8 — pools, lending, alerts (as time allows)
-- `/app/pools`: a list of RWA v3/v4 pools with liquidity/volume/fee APR (HyperDex's formula). Adding v4 liquidity — later.
-- `/app/lend`: a read-only rate table (Kamino xStocks markets via their public API + Robinhood Chain lending markets, if any appear). Deposits — later.
+- `/app/pools`: a list of RWA v3/v4 pools with liquidity/volume/fee APR (HyperDex's formula). Adding v4 liquidity is live (`add-liquidity-panel.tsx`, full-range v4 RWA/USDG positions via Permit2 + `V4_POSITION_MANAGER`).
+- `/app/lend`: Kamino xStocks borrow rates via their public API (read-only) + a live **Earn** panel — deposit/withdraw into Morpho's curated USDG vaults on Robinhood Chain (`earn-panel.tsx`, `src/lib/rwa/morpho-vaults.ts`) — two distinct lending-adjacent features, not one.
 - Alerts: web notifications + a Telegram bot (premium > X, new listing, a large trade on a ticker).
 
 ## 8. Env (add to `.env.example`)
@@ -173,8 +213,21 @@ SOLANA_RPC_URL=
 
 ## 9. What not to do
 
-- Private swaps / mixers.
-- Our own lending contracts and our own automated vaults.
+- Private swaps / mixers — **this line is stale, see the status note at
+  the top of this doc.** A "Private Swap" feature is live, brokered
+  through the third-party provider Houdini (deposit-address swap,
+  sanctions/AML/age attestation, no on-chain link between sending and
+  receiving wallet). This is a different thing from the non-custodial,
+  MEV-protected-RPC concept (`src/lib/rwa/private-swap.ts`) this
+  principle was originally written against — that module is unrelated
+  and not wired into the live Private Swap UI. Flagging rather than
+  silently deleting this line, since it's a real reversal of a stated
+  compliance decision, not a doc-accuracy nit — resolve explicitly
+  rather than let the doc just go quiet about it.
+- Our own lending contracts and our own automated vaults — still true:
+  the live Earn panel (Phase 8) deposits into Morpho's own vaults, it
+  doesn't deploy one; the live basket rebalance tool (Phase 7) builds a
+  trade the user signs, it doesn't run a scheduled custodial vault.
 - Deploying DcaVault to mainnet without an audit.
 - Hardcoding addresses without a source.
 - Showing `verified=false` tokens in the storefront.
