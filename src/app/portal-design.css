@@ -210,3 +210,16 @@
 @media(prefers-reduced-motion:reduce){.info-tip-bubble{transition:none}}
 @media(max-width:700px){.auevo-portal-header .portal-logo .auevo-wordmark-gold{font-size:20px!important}.portal-logo .auevo-tree-mark{width:24px!important;height:24px!important}}
 @media(prefers-reduced-motion:reduce){:is(.portal-page,.auevo-design,.auevo-portal-header,.docs-shell,.token-page,.scanner-premium,.fees-premium) :is(.portal-btn-primary,.app-connect-button,button[class*='bg-[#c9ad70]']):before{display:none}}
+
+/* Homepage: the official $AUEVO contract, impossible to miss and easy to
+   verify against a fake/scam token sharing the same name — full address
+   (never shortened here, unlike every other address this app shows),
+   right below the hero so it's one of the first things on the page. */
+.auevo-contract-strip{border-bottom:1px solid rgba(215,181,109,.16);background:linear-gradient(180deg,rgba(215,181,109,.09),rgba(215,181,109,.03))}
+.auevo-contract-strip-inner{margin:0 auto;display:flex;max-width:1500px;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 20px;padding:16px 20px;text-align:center}
+.auevo-contract-strip-label{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#d7b56d;font-weight:600;white-space:nowrap}
+.auevo-contract-strip-value{font-size:15px;color:#f3eee3;white-space:nowrap}
+.auevo-contract-strip-value .scan-mono{font-size:15px}
+.auevo-contract-strip-link{font-size:12px;color:#8cf0bd;text-decoration:underline;white-space:nowrap}
+.auevo-contract-strip-link:hover{color:#fff}
+@media(max-width:640px){.auevo-contract-strip-value,.auevo-contract-strip-value .scan-mono{font-size:12px}}

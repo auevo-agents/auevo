@@ -8,6 +8,8 @@ import { ProgressionFlow } from "./progression-flow";
 import { AgentTreeIcon } from "./agents/agent-tree-icon";
 import { AgentActivityTicker } from "./agent-activity-ticker";
 import { PortalFooter } from "./portal-footer";
+import { CopyableAddress } from "./copyable-address";
+import { AUEVO_CONTRACT } from "@/lib/auevo/token";
 
 export const revalidate=15;
 
@@ -52,6 +54,13 @@ export default async function HomePage(){
       </div>
     </div>
    </section>
+        <div className="auevo-contract-strip">
+          <div className="auevo-contract-strip-inner">
+            <span className="auevo-contract-strip-label">Official $AUEVO contract</span>
+            <CopyableAddress address={AUEVO_CONTRACT} head={42} tail={0} className="auevo-contract-strip-value" />
+            <Link href="/token" className="auevo-contract-strip-link">View token →</Link>
+          </div>
+        </div>
         <div className="universe-bar">
           <div className="universe-stats grid grid-cols-2 sm:grid-cols-4">
             <Stat label="Agents" value={agents.length}/><Stat label="Proof events" value={proofCount}/><Stat label="Verified" value={verified}/><Stat label="Pending" value={pending}/>

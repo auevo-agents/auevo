@@ -4,6 +4,7 @@ import { AuevoMark } from "@/app/auevo-logo";
 import { CopyableAddress } from "@/app/copyable-address";
 import { fetchDexscreenerToken } from "@/lib/dexscreener";
 import { formatPrice, formatUsdCompact } from "@/lib/format";
+import { AUEVO_CONTRACT, AUEVO_TOTAL_SUPPLY } from "@/lib/auevo/token";
 
 /**
  * $AUEVO's own public page — separate metadata for the same reason
@@ -34,18 +35,6 @@ export const metadata: Metadata = {
   },
 };
 
-// Fixed at 1,000,000,000 — told directly by the token's own team, not an
-// on-chain read, so it needs no explorer-link verification the way an
-// address does (see the contract note below).
-const TOTAL_SUPPLY = 1_000_000_000;
-
-// Live on Robinhood Chain mainnet (launched via Pons, 2026-10-08).
-// Verified on-chain before wiring this in, not taken on trust: name() =
-// "Auevo", symbol() = "AUEVO", decimals() = 18, totalSupply() = exactly
-// 1,000,000,000 * 1e18 — matches TOTAL_SUPPLY below. See
-// contracts/DEPLOYMENTS_PENDING.md's Deployed table for the same checks.
-const AUEVO_CONTRACT: `0x${string}` | null = "0x40ceA1a452E2aDD3125BAbA3f9ffDa4a1B593EB8";
-
 const EXPLORER_BASE = "https://robinhoodchain.blockscout.com";
 
 export default async function TokenPage() {
@@ -58,7 +47,7 @@ export default async function TokenPage() {
   const stats: { label: string; value: string }[] = [
     { label: "Price", value: formatPrice(market?.priceUsd ?? null) },
     { label: "Market cap", value: formatUsdCompact(market?.marketCapUsd ?? null) },
-    { label: "Total supply", value: TOTAL_SUPPLY.toLocaleString("en-US") },
+    { label: "Total supply", value: AUEVO_TOTAL_SUPPLY.toLocaleString("en-US") },
     { label: "Contract", value: "—" },
   ];
 
