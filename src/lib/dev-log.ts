@@ -14,6 +14,14 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-08",
+    title: "Correction: restored the /token page itself — only the retired address needed to go",
+    body: [
+      "The previous entry below over-corrected: asked to remove the retired \\$AUEVO contract address everywhere, the page itself got deleted along with it, plus every nav link to it. That was wrong — restored /token to its original pre-launch form (a local AUEVO_CONTRACT = null, \"Launching soon\" badge, em-dash stats, no explorer/DexScreener links), the same honest not-live-yet pattern already used for DcaVault elsewhere in this app, and in fact the exact pattern this very page used twice before its own history (an address pulled and re-nulled on request, with a comment telling future edits not to re-add one unprompted) — so this is really the third time, not a new pattern.",
+      "Restored alongside it: the \"$AUEVO\"/\"Token\" links in the main header (desktop + mobile), the footer, and the RWA app's nav + promo banner — none of them show an address, so none needed to go. Left removed: the homepage's contract-strip (it specifically existed to display the address) and the shared src/lib/auevo/token.ts constants file (the page now holds its own null constant again, same as originally).",
+    ],
+  },
+  {
+    date: "2026-10-08",
     title: "\$AUEVO relaunch: pulled the 2026-10-08 Pons launch's contract address from the whole site",
     body: [
       "Decided to relaunch \\$AUEVO rather than keep the token that launched earlier today via Pons. Removed every public trace of that specific contract address: the standalone /token page is gone entirely (deleted src/app/token/page.tsx and the shared src/lib/auevo/token.ts constants it and the homepage both imported), the homepage's contract-verification strip below the hero is gone, and the \"$AUEVO\"/\"Token\" nav links are gone from the main header (desktop + mobile), the footer, and the RWA app's own \"more\" nav + its promo banner.",
