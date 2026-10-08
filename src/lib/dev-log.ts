@@ -14,6 +14,14 @@ export type DevLogEntry = {
 export const AUEVO_DEV_LOG: DevLogEntry[] = [
   {
     date: "2026-10-08",
+    title: "\$AUEVO relaunch: pulled the 2026-10-08 Pons launch's contract address from the whole site",
+    body: [
+      "Decided to relaunch \\$AUEVO rather than keep the token that launched earlier today via Pons. Removed every public trace of that specific contract address: the standalone /token page is gone entirely (deleted src/app/token/page.tsx and the shared src/lib/auevo/token.ts constants it and the homepage both imported), the homepage's contract-verification strip below the hero is gone, and the \"$AUEVO\"/\"Token\" nav links are gone from the main header (desktop + mobile), the footer, and the RWA app's own \"more\" nav + its promo banner.",
+      "Also scrubbed the address out of README.md and contracts/DEPLOYMENTS_PENDING.md's deployed-contracts tables, replacing both with an explicit note that the old address is retired and not to be trusted if it resurfaces in a cache, screenshot, or search result — the real one, once the relaunch is live, goes in those two files first. AgentCreditPool's seat mechanism (vouchSeat()) stays blocked on a real \\$AUEVO/USDG price exactly as before, now explicitly against whichever launch ends up being the one that sticks, not the pulled one. Conceptual mentions of \"$AUEVO\" with no address (Credit's seat-mechanism docs, docs/PROGRESSION_ECONOMICS.md §7) were left alone — they describe a future mechanism, not the specific retired deployment.",
+    ],
+  },
+  {
+    date: "2026-10-08",
     title: "Docs audit: fixed drift across every docs/*.md, contracts/*.md, README.md and sdk/README.md against the real code",
     body: [
       "Ran a full pass checking every doc's claims against the actual code, not trusting any existing doc text as ground truth — including re-running all 4 contract test suites directly (13/65/15/25 for DcaVault/AgentCreditPool/DcaVaultV4/AgentIdentity) rather than copying a number from elsewhere. Found the same test-count mixup copy-pasted into three different docs: AgentCreditPool's real count (65, test/run-credit.mjs) had drifted to \"30\"/\"29\" in docs/CREDIT_SPEC.md and contracts/README.md, and to \"118 integration-test assertions\" (that's the correct TOTAL across all four suites, matching README's own badge, not AgentCreditPool's own count) in contracts/DEPLOYMENTS_PENDING.md. Fixed all three.",

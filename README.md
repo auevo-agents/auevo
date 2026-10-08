@@ -157,7 +157,10 @@ Robinhood Chain mainnet (chain id `4663`), explorer `https://robinhoodchain.bloc
 | `AgentIdentity` (credit registry) | [`0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b`](https://robinhoodchain.blockscout.com/address/0xfc7bd67545f9a87df2bc4551ad1d305afb36b11b) | `CREDIT_IDENTITY_ADDRESS` — the identity `AgentCreditPool` reads. |
 | `AgentIdentity` (AUEVO protocol registry) | [`0x12d4dfd622b9089453596e809c2e247bc4b75be8`](https://robinhoodchain.blockscout.com/address/0x12d4dfd622b9089453596e809c2e247bc4b75be8) | `NEXT_PUBLIC_AUEVO_IDENTITY_ADDRESS` — a separate agentId namespace from Credit's, by design. Financial Agent League entry + the Identity Proof category. |
 | USDG (pool asset, 6 decimals) | [`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) | Paxos Global Dollar — the quote asset for every RWA pool and Credit loan. |
-| `$AUEVO` (18 decimals) | [`0x40ceA1a452E2aDD3125BAbA3f9ffDa4a1B593EB8`](https://robinhoodchain.blockscout.com/address/0x40ceA1a452E2aDD3125BAbA3f9ffDa4a1B593EB8) | Launched via [Pons](https://www.ponsfamily.com/launchpad), paired against USDG. Fixed supply 1,000,000,000, liquidity locked from block one, no admin key. No staking/governance/fee-share wired up — see `docs/PROGRESSION_ECONOMICS.md` §7. |
+
+`$AUEVO` was launched once (2026-10-08, via Pons) and is being relaunched — that address is no longer advertised
+anywhere in this app or its docs. Don't trust an `$AUEVO` address from an old cache, a search engine, or anywhere
+other than this README once a new one is live.
 
 Both `AgentIdentity` deployments run byte-identical code (confirmed on-chain via `eth_getCode`) — two registries by
 deliberate namespace separation, not a contract difference. `AgentCreditPool` with seats (`$AUEVO`-backed, on top of
@@ -171,7 +174,6 @@ src/app/                     Next.js 16 App Router — the whole site
   proofs/                    AUEVO protocol: feed, per-category pages, Passport lookup
   credit/                    AgentCreditPool UI: pool, agents, seats, protocol docs
   rwa/                       RWA trading app: swap, pools, baskets, lend, scanner
-  token/                     Public $AUEVO token page
   wallet/                    Privy-backed agent wallet + chat
   api/                       Route handlers — AUEVO API, credit reads, RWA data, crons
 src/lib/

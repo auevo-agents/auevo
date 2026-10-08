@@ -60,7 +60,6 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "more",
     label: "More",
     links: [
-      { id: "auevo-token", label: "$AUEVO", href: "/token", icon: "coin" },
       { id: "token-scanner", label: "Token Scanner", href: "/scanner", icon: "shield" },
       { id: "docs", label: "Docs", href: "/rwa/docs", icon: "book" },
     ],

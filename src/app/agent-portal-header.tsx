@@ -72,7 +72,6 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "mi
           >
             Dev log
           </Link>
-          <Link href="/token" className="hidden rounded-[2px] px-3 py-2 text-[#74887c] hover:text-white lg:block">Token</Link>
           <span className="hidden items-center gap-2 rounded-[2px] border border-[#d6ae61]/22 bg-[#d6ae61]/[0.045] px-3 py-2 text-[#d9bf88] sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#d6ae61] shadow-[0_0_10px_rgba(214,174,97,.6)]"/>live ledger
           </span>
@@ -113,7 +112,6 @@ export function AgentPortalHeader({ active }: { active?: "home" | "agents" | "mi
             <div className="mt-2 border-t border-[#6fa789]/[0.13] pt-2">
               <Link href="/docs/auevo-proof-overview" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Docs</Link>
               <Link href="/dev-log" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Dev log</Link>
-              <Link href="/token" onClick={()=>setOpen(false)} className="block rounded-[2px] px-4 py-3 text-sm text-[#a7b9ae] hover:bg-white/[0.035] hover:text-white">Token</Link>
             </div>
           </nav>
         </div>
